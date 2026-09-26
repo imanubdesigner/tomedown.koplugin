@@ -1,6 +1,6 @@
 --[[--
-stub di ui/widget/inputdialog.lua: i test impostano dialog.input_text e
-invocano il callback Salva come farebbe la UI.
+stub of ui/widget/inputdialog.lua: the tests set dialog.input_text and
+invoke the Save callback the way the UI would.
 --]]
 
 local InputDialog = { last = nil }
@@ -20,8 +20,8 @@ function InputDialog:new(o)
     return o
 end
 
--- buttons è una lista di righe, ogni riga una lista di pulsanti:
--- riga 1 = Annulla, riga 2 = Salva
+-- buttons is a list of rows, each row a list of buttons:
+-- row 1 = Cancel, row 2 = Save
 function InputDialog:simulateSave()
     local row = self.buttons and self.buttons[2]
     local save = row and row[1]

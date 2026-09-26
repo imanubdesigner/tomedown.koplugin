@@ -1,4 +1,4 @@
--- stub del logger di KOReader: registra in logger.history invece di stampare
+-- stub of KOReader's logger: records into logger.history instead of printing
 local logger = { history = {} }
 
 local function record(level, ...)

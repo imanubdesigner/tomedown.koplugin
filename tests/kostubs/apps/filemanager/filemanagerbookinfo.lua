@@ -1,8 +1,8 @@
--- stub di apps/filemanager/filemanagerbookinfo.lua
+-- stub of apps/filemanager/filemanagerbookinfo.lua
 local BookInfo = {}
 
--- replica la firma reale (filemanagerbookinfo.lua v2026.07.2):
--- display_title = title, oppure nome file senza estensione
+-- mirrors the real signature (filemanagerbookinfo.lua v2026.07.2):
+-- display_title = title, or the file name without its extension
 function BookInfo.extendProps(props, file)
     local out = {}
     for k, v in pairs(props or {}) do

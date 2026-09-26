@@ -1,7 +1,7 @@
 --[[--
-Utilità condivise dai test: path del plugin, stub di ambiente e check.
+Shared test helpers: plugin path, environment stubs and assertions.
 
-Ogni test fa:
+Every test starts with:
     local HERE = arg[0]:match("^(.*)/") or "."
     package.path = HERE .. "/?.lua;" .. package.path
     local T = require("common")
@@ -35,13 +35,13 @@ function M.check(cond, msg)
     M.failed = M.failed + 1
     local info = debug.getinfo(2, "Sl")
     local where = info and (info.short_src .. ":" .. info.currentline) or "?"
-    print("  FALLITO " .. where .. " -> " .. tostring(msg))
+    print("  FAIL " .. where .. " -> " .. tostring(msg))
     return false
 end
 
 function M.finish(name)
-    local status = M.failed == 0 and "verdi" or ("FALLITE: " .. M.failed)
-    print(string.format("%s: %d asserzioni %s", name, M.tests, status))
+    local status = M.failed == 0 and "green" or ("FAILED: " .. M.failed)
+    print(string.format("%s: %d assertions %s", name, M.tests, status))
     if M.failed > 0 then
         os.exit(1)
     end

@@ -1,8 +1,8 @@
 --[[--
-stub di libs/libkoreader-lfs (solo dir/attributes/mkdir), in Lua puro.
+stub of libs/libkoreader-lfs (dir/attributes/mkdir only), in pure Lua.
 
-lfs.dir deve: (a) fare error() se la cartella non esiste (main.lua fa pcall
-sul suo ritorno) e (b) restituire un iteratore da usare come
+lfs.dir must: (a) raise error() when the folder does not exist (main.lua
+pcalls its return values) and (b) return an iterator usable as
 `for entry in iter, dir_obj do`.
 --]]
 

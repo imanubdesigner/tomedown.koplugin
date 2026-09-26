@@ -1,15 +1,15 @@
 --[[--
-Test di main.lua con un ambiente KOReader finto.
+Tests for main.lua with a fake KOReader environment.
 
-Copre: hash md5, esportazione, indice, formato .sdr vecchi, menu, dialoghi,
-server fallback, upload su Koofr e soprattutto la patch di backoff
-(UPLOAD_MAX_ATTEMPTS = 3, delay 2s/4s, solo per errori transitori).
+Covers: md5 hash, export, index, legacy .sdr format, menu, dialogs,
+fallback servers, Koofr upload and above all the backoff patch
+(UPLOAD_MAX_ATTEMPTS = 3, 2s/4s delays, transient errors only).
 --]]
 local HERE = arg[0]:match("^(.*)/") or "."
 package.path = HERE .. "/?.lua;" .. package.path
 local T = require("common")
 
--- --------------------------------------------------------------- ambiente
+-- --------------------------------------------------------------- environment
 
 local store = {}
 G_reader_settings = {
@@ -49,7 +49,7 @@ local cloud_list_callback
 
 local provider = {}
 function provider.run(callback)
-    -- KOReader: verifica la connessione, poi esegue il passaggio
+    -- KOReader: checks the connection, then runs the step
     callback()
 end
 function provider.uploadFile(url, local_path, etag, overwrite)
@@ -113,9 +113,9 @@ local function modernAnnotations()
             datetime = "2026-09-03 11:30:00",
             chapter = "Capitolo II",
         },
-        -- segnalibro di pagina (nessun drawer): escluso
+        -- page bookmark (no drawer): excluded
         { text = "Segnalibro di pagina", pageno = 5, datetime = "2026-09-01 09:00:00" },
-        -- evidenziato cancellato: escluso
+        -- deleted highlight: excluded
         {
             drawer = "underline",
             text = "Cancellato",
@@ -164,7 +164,7 @@ readhistory.hist = {
 local MdBook = require("main")
 local plugin = MdBook:new { ui = ui }
 
--- ------------------------------------------------------------- aiuti
+-- ------------------------------------------------------------- helpers
 
 local function resetUpload()
     uploads, attempt_count, upload_script = {}, {}, {}
@@ -217,17 +217,17 @@ local function onlyWidget()
     return UIManager.shown[1]
 end
 
--- ------------------------------------------------- 1. md5 dello stub
+-- ------------------------------------------------- 1. the stub's md5
 
-T.check(md5("") == "d41d8cd98f00b204e9800998ecf8427e", "md5 della stringa vuota")
-T.check(md5("abc") == "900150983cd24fb0d6963f7d28e17f72", "md5 di 'abc'")
+T.check(md5("") == "d41d8cd98f00b204e9800998ecf8427e", "md5 of the empty string")
+T.check(md5("abc") == "900150983cd24fb0d6963f7d28e17f72", "md5 of 'abc'")
 T.check(md5("The quick brown fox jumps over the lazy dog")
-    == "9e107d9d372bb6826bd81d3542a419d6", "md5 di una frase")
+    == "9e107d9d372bb6826bd81d3542a419d6", "md5 of a sentence")
 T.check(md5(string.rep("1234567890", 10))
-    == "49cb3608e2b33fad6b65df8cb8f49668", "md5 su più blocchi")
+    == "49cb3608e2b33fad6b65df8cb8f49668", "md5 across multiple blocks")
 T.check(#md5("x") == 32, "md5 esadecimale su 32 caratteri")
 
--- ------------------------------------------- 2. esportazione corrente
+-- ------------------------------------------- 2. current export
 
 cleanDir()
 resetUpload()
@@ -238,82 +238,82 @@ plugin:runExport({ FILE }, {})
 UIManager:runPending()
 
 local md = T.readFile(MD_PATH)
-T.check(md ~= nil, "md del libro scritto in " .. MD_PATH)
+T.check(md ~= nil, "book md written to " .. MD_PATH)
 if md then
     T.check(T.contains(md, 'title: "Blackwater"'), "frontmatter title")
     T.check(T.contains(md, 'author: "Michael McDowell"'), "frontmatter author")
-    T.check(T.contains(md, "highlights: 2"), "solo gli evidenziati validi")
+    T.check(T.contains(md, "highlights: 2"), "only the valid highlights")
     T.check(T.contains(md, "  - kindle"), "tag kindle")
     T.check(T.contains(md, "# Blackwater"), "h1")
-    T.check(T.contains(md, "**2 highlights**"), "conteggio")
-    T.check(T.contains(md, "## Capitolo I"), "capitolo 1")
-    T.check(T.contains(md, "## Capitolo II"), "capitolo 2")
-    T.check(T.contains(md, "> Prima frase."), "citazione")
-    T.check(T.contains(md, "- **p. 10** · 02/09/2026 · note: nota utente"), "meta con nota")
-    T.check(T.contains(md, "nota utente"), "nota presente")
-    T.check(not T.contains(md, "Segnalibro"), "segnalibro di pagina escluso")
-    T.check(not T.contains(md, "Cancellato"), "evidenziato cancellato escluso")
-    T.check(not T.contains(md, "cover"), "nessuna copertina")
+    T.check(T.contains(md, "**2 highlights**"), "count")
+    T.check(T.contains(md, "## Capitolo I"), "chapter 1")
+    T.check(T.contains(md, "## Capitolo II"), "chapter 2")
+    T.check(T.contains(md, "> Prima frase."), "quote")
+    T.check(T.contains(md, "- **p. 10** · 02/09/2026 · note: nota utente"), "meta with note")
+    T.check(T.contains(md, "nota utente"), "note present")
+    T.check(not T.contains(md, "Segnalibro"), "page bookmark excluded")
+    T.check(not T.contains(md, "Cancellato"), "deleted highlight excluded")
+    T.check(not T.contains(md, "cover"), "no cover")
     T.check(not T.contains(md, "![]("), "nessuna immagine")
 end
 
 T.check(Notification.last_text == "1 files exported",
-    "notifica di esportazione: " .. tostring(Notification.last_text))
+    "export notification: " .. tostring(Notification.last_text))
 T.check(lfs.attributes(DIR .. "/covers", "mode") ~= "directory",
-    "cartella covers non creata")
+    "covers folder not created")
 
 local index = T.readFile(INDEX_PATH)
-T.check(index ~= nil, "indice scritto")
+T.check(index ~= nil, "index written")
 if index then
     T.check(T.contains(index, "[[Michael McDowell - Blackwater|Blackwater]]"),
-        "wikilink nell'indice")
-    T.check(T.contains(index, "| 2 |"), "colonne indice (conteggio)")
-    T.check(T.contains(index, os.date("%d/%m/%Y")), "data di oggi nell'indice")
+        "wikilink in the index")
+    T.check(T.contains(index, "| 2 |"), "index columns (count)")
+    T.check(T.contains(index, os.date("%d/%m/%Y")), "today's date in the index")
 end
 
--- indice più voci dopo l'esportazione di tutti i libri
+-- index with more rows after exporting every book
 plugin:runExport(plugin:listBookFiles(), {})
 UIManager:runPending()
-T.check(#plugin:listBookFiles() == 3, "tre libri elencati (dim escluso)")
+T.check(#plugin:listBookFiles() == 3, "three books listed (dim excluded)")
 T.check(Notification.last_text == "3 files exported",
-    "esportazione multipla: " .. tostring(Notification.last_text))
+    "multi export: " .. tostring(Notification.last_text))
 
 index = T.readFile(INDEX_PATH)
 if index then
     T.check(T.contains(index, "[[N_A - LibroVecchio|LibroVecchio]]"),
-        "libro in formato .sdr vecchio nell'indice")
+        "old .sdr book in the index")
     T.check(T.contains(index, "[[Autore X - Senza Meta|Senza Meta]]"),
-        "titolo dal nome file quando manca il title")
+        "title from the file name when title is missing")
 end
 
 local legacy_md = T.readFile(DIR .. "/N_A - LibroVecchio.md")
-T.check(legacy_md ~= nil, "export del libro con .sdr vecchio")
+T.check(legacy_md ~= nil, "export of the book with the old .sdr")
 if legacy_md then
-    T.check(T.contains(legacy_md, "> Vecchio evidenziato"), "evidenziato da highlight legacy")
-    T.check(T.contains(legacy_md, "note: nota vecchia"), "nota da bookmarks legacy")
-    T.check(T.contains(legacy_md, "**p. 3**"), "pagina legacy")
+    T.check(T.contains(legacy_md, "> Vecchio evidenziato"), "highlight from a legacy .sdr")
+    T.check(T.contains(legacy_md, "note: nota vecchia"), "note from legacy bookmarks")
+    T.check(T.contains(legacy_md, "**p. 3**"), "legacy page")
 end
 
 local no_props_md = T.readFile(DIR .. "/Autore X - Senza Meta.md")
-T.check(no_props_md ~= nil, "export senza doc_props.title")
+T.check(no_props_md ~= nil, "export without doc_props.title")
 if no_props_md then
     T.check(T.contains(no_props_md, "title: \"Senza Meta\""),
-        "display_title ricavato dal nome file")
+        "display_title derived from the file name")
 end
 
 -- ------------------------------------------------ 3. only_updated/hash
 
 resetUpload()
 T.check(store.tomedown.exports ~= nil and store.tomedown.exports[FILE] ~= nil,
-    "record di export salvato")
+    "export record saved")
 local saved_hash = store.tomedown.exports and store.tomedown.exports[FILE]
     and store.tomedown.exports[FILE].hash
-T.check(saved_hash and #saved_hash == 32, "hash del libro (32 hex)")
+T.check(saved_hash and #saved_hash == 32, "book hash (32 hex)")
 
 plugin:runExport({ FILE }, { only_updated = true })
 UIManager:runPending()
 T.check(T.contains(Notification.last_text or "", "1 files unchanged, skipped"),
-    "nessuna modifica: " .. tostring(Notification.last_text))
+    "nothing changed: " .. tostring(Notification.last_text))
 
 local annotations = modernAnnotations()
 annotations[1].text = "Prima frase modificata."
@@ -323,36 +323,36 @@ plugin:runExport({ FILE }, { only_updated = true })
 UIManager:runPending()
 local updated = T.readFile(MD_PATH)
 T.check(updated ~= nil and T.contains(updated, "Prima frase modificata."),
-    "contenuto riesportato dopo la modifica")
+    "content re-exported after the change")
 T.check(T.contains(Notification.last_text or "", "1 files exported"),
-    "riesportazione: " .. tostring(Notification.last_text))
+    "re-export: " .. tostring(Notification.last_text))
 local new_hash = store.tomedown.exports[FILE].hash
-T.check(new_hash ~= saved_hash, "hash cambia con le nuove annotazioni")
+T.check(new_hash ~= saved_hash, "hash changes with the new annotations")
 
 BookList.registry[FILE].annotations = modernAnnotations()
 plugin:runExport({ FILE }, { only_updated = true })
 UIManager:runPending()
 T.check(T.contains(Notification.last_text or "", "1 files exported"),
-    "riesportata la versione ripristinata")
+    "the restored version re-exported")
 
--- ------------------------------------------------------- 4. md5 su file
+-- ------------------------------------------------------- 4. md5 on disk
 
 T.check(store.tomedown.exports[FILE].hash == saved_hash,
-    "hash tornato identico al precedente")
+    "hash back to the previous value")
 
 -- ------------------------------------------------------------ 5. menu
 
 local menu_items = {}
 plugin:addToMainMenu(menu_items)
-T.check(menu_items.tomedown ~= nil, "voce di menu registrata")
+T.check(menu_items.tomedown ~= nil, "menu entry registered")
 local sub = menu_items.tomedown.sub_item_table
-T.check(#sub == 6, "voci del menu principale: " .. #sub)
-T.check(sub[1].text == "Export current book", "voce 1")
-T.check(sub[2].text == "Only updated", "voce 2")
-T.check(sub[3].text == "Choose books…", "voce 3")
-T.check(sub[4].text == "All books with highlights", "voce 4")
-T.check(sub[5].text == "Reload everything to Koofr", "voce 5")
-T.check(sub[6].text == "Settings", "voce 6")
+T.check(#sub == 6, "main menu entries: " .. #sub)
+T.check(sub[1].text == "Export current book", "menu item 1")
+T.check(sub[2].text == "Only updated", "menu item 2")
+T.check(sub[3].text == "Choose books…", "menu item 3")
+T.check(sub[4].text == "All books with highlights", "menu item 4")
+T.check(sub[5].text == "Reload everything to Koofr", "menu item 5")
+T.check(sub[6].text == "Settings", "menu item 6")
 
 local cover_entry = false
 local function scanCover(items)
@@ -367,102 +367,102 @@ local function scanCover(items)
     end
 end
 scanCover(menu_items)
-T.check(not cover_entry, "nessuna voce di menu sulle copertine")
+T.check(not cover_entry, "no menu entry about covers")
 
 ui.document = { file = FILE }
-T.check(sub[1].enabled_func() == true, "esporta corrente abilitato col libro aperto")
+T.check(sub[1].enabled_func() == true, "export current enabled with the book open")
 ui.document = nil
 store.lastfile = FILE
-T.check(sub[1].enabled_func() == true, "esporta corrente abilitato con lastfile")
+T.check(sub[1].enabled_func() == true, "export current enabled via lastfile")
 store.lastfile = nil
-T.check(sub[1].enabled_func() == false, "esporta corrente disabilitato senza file")
+T.check(sub[1].enabled_func() == false, "export current disabled without a file")
 ui.document = { file = nil }
-T.check(sub[4].enabled_func() == true, "tutti i libri abilitato")
+T.check(sub[4].enabled_func() == true, "all books enabled")
 
 local settings = plugin:genSettingsMenu()
-T.check(#settings == 5, "voci di impostazioni: " .. #settings)
-T.check(settings[1].text == "Upload to Koofr", "voce upload")
-T.check(settings[2].text_func() == "Server and folder: not set", "server non impostato")
-T.check(T.contains(settings[3].text_func(), "Remote folder: not set"), "cartella remota non impostata")
-T.check(T.contains(settings[4].text_func(), "clipboard/tomedown"), "cartella locale di default")
-T.check(T.contains(settings[5].text, "00 - Index.md"), "voce indice col nome del file")
+T.check(#settings == 5, "settings entries: " .. #settings)
+T.check(settings[1].text == "Upload to Koofr", "upload entry")
+T.check(settings[2].text_func() == "Server and folder: not set", "server not set")
+T.check(T.contains(settings[3].text_func(), "Remote folder: not set"), "remote folder not set")
+T.check(T.contains(settings[4].text_func(), "clipboard/tomedown"), "default local folder")
+T.check(T.contains(settings[5].text, "00 - Index.md"), "index entry with the file name")
 
 settings[1].callback()
-T.check(store.tomedown.upload == false, "upload disattivato")
+T.check(store.tomedown.upload == false, "upload disabled")
 settings[1].callback()
-T.check(store.tomedown.upload == true, "upload riattivato")
+T.check(store.tomedown.upload == true, "upload re-enabled")
 settings[5].callback()
-T.check(store.tomedown.with_index == false, "indice disattivato")
+T.check(store.tomedown.with_index == false, "index disabled")
 settings[5].callback()
-T.check(store.tomedown.with_index == true, "indice riattivato")
+T.check(store.tomedown.with_index == true, "index re-enabled")
 
--- scelta del server dalla lista di Cloud storage
+-- server picked from the Cloud storage list
 plugin:chooseCloudFolder(nil)
-T.check(cloud_list_callback ~= nil, "lista cloud aperta")
+T.check(cloud_list_callback ~= nil, "cloud list opened")
 cloud_list_callback({ name = "Koofr", type = "webdav", url = "/Bookshelf/Kindle" })
-T.check(store.tomedown.server and store.tomedown.server.name == "Koofr", "server salvato")
+T.check(store.tomedown.server and store.tomedown.server.name == "Koofr", "server saved")
 T.check(settings[2].text_func() == "Server and folder: Koofr (webdav) → /Bookshelf/Kindle",
-    "testo server aggiornato: " .. settings[2].text_func())
-T.check(plugin:hasServer() == true, "hasServer vero con server e cloud")
+    "server text updated: " .. settings[2].text_func())
+T.check(plugin:hasServer() == true, "hasServer true with server and cloud")
 
--- dialogo cartella remota
+-- remote folder dialog
 plugin:editRemoteFolder(nil)
 local dialog = InputDialog.last
-T.check(dialog ~= nil and dialog.title == "Remote folder on Koofr", "dialogo remoto aperto")
+T.check(dialog ~= nil and dialog.title == "Remote folder on Koofr", "remote dialog opened")
 dialog.input_text = "  /Cartella mia  "
 dialog:simulateSave()
-T.check(store.tomedown.remote_folder == "/Cartella mia", "cartella remota salvata e ripulita")
-T.check(T.contains(settings[3].text_func(), "/Cartella mia"), "voce menu aggiornata")
+T.check(store.tomedown.remote_folder == "/Cartella mia", "remote folder saved and trimmed")
+T.check(T.contains(settings[3].text_func(), "/Cartella mia"), "menu entry updated")
 plugin:editRemoteFolder(nil)
 InputDialog.last.input_text = ""
 InputDialog.last:simulateSave()
-T.check(store.tomedown.remote_folder == "", "cartella remota azzerata")
+T.check(store.tomedown.remote_folder == "", "remote folder cleared")
 
--- dialogo cartella locale
+-- local folder dialog
 plugin:editLocalDir(nil)
 local local_dialog = InputDialog.last
-T.check(T.contains(local_dialog.input, "clipboard/tomedown"), "path di default nel dialogo")
+T.check(T.contains(local_dialog.input, "clipboard/tomedown"), "default path in the dialog")
 local_dialog.input_text = DATA .. "/out-customi"
 local_dialog:simulateSave()
-T.check(plugin:getLocalDir() == DATA .. "/out-customi", "cartella locale cambiata")
+T.check(plugin:getLocalDir() == DATA .. "/out-customi", "local folder changed")
 store.tomedown.local_dir = nil
-T.check(plugin:getLocalDir() == DIR, "cartella locale tornata al default")
+T.check(plugin:getLocalDir() == DIR, "local folder back to default")
 
--- menu di scelta dei libri
+-- book picker menu
 local picker = plugin:genPickerMenu()
-T.check(#picker == 5, "picker: 2 comandi + 3 libri (" .. #picker .. ")")
-T.check(T.contains(picker[1].text_func(), "Export selected (0)"), "nessun libro selezionato")
-T.check(picker[1].enabled_func() == false, "esporta selezionati disabilitato")
+T.check(#picker == 5, "picker: 2 commands + 3 books (" .. #picker .. ")")
+T.check(T.contains(picker[1].text_func(), "Export selected (0)"), "no book selected")
+T.check(picker[1].enabled_func() == false, "export selected disabled")
 for i = 3, #picker do
     local text = picker[i].text_func()
-    T.check(text:match("%(%d+%)$") ~= nil, "riga libro con conteggio: " .. text)
+    T.check(text:match("%(%d+%)$") ~= nil, "book row with count: " .. text)
     local checked = picker[i].checked_func()
-    T.check(checked == nil or checked == true, "stato selezione: " .. tostring(checked))
+    T.check(checked == nil or checked == true, "selection state: " .. tostring(checked))
 end
 
 store.tomedown.selected = { [FILE] = true }
 store.tomedown.upload = false
 picker = plugin:genPickerMenu()
-T.check(T.contains(picker[1].text_func(), "Export selected (1)"), "un libro selezionato")
-T.check(picker[1].enabled_func() == true, "esporta selezionati abilitato")
+T.check(T.contains(picker[1].text_func(), "Export selected (1)"), "one book selected")
+T.check(picker[1].enabled_func() == true, "export selected enabled")
 picker[1].callback(nil)
 UIManager:runPending()
 T.check(Notification.last_text == "1 files exported",
-    "esportazione dei selezionati: " .. tostring(Notification.last_text))
+    "export of the selected: " .. tostring(Notification.last_text))
 
 picker = plugin:genPickerMenu()
 picker[2].callback(nil)
-T.check(store.tomedown.selected[FILE] == nil, "deselezione totale")
+T.check(store.tomedown.selected[FILE] == nil, "deselect all")
 
 store = {}
 store.tomedown = {}
 T.check(plugin:genPickerMenu()[1].text_func() == "Export selected (0)",
-    "nessuna selezione dopo il reset")
+    "no selection after the reset")
 
--- ------------------------------------------------- 6. server in fallback
+-- ------------------------------------------------- 6. fallback servers
 
 local srv = plugin:getServer()
-T.check(srv == nil, "nessun server configurato")
+T.check(srv == nil, "no server configured")
 
 store.cloud_server_object = json.encode({
     name = "Legacy",
@@ -471,60 +471,60 @@ store.cloud_server_object = json.encode({
 })
 srv = plugin:getServer()
 T.check(srv ~= nil and srv.name == "Legacy" and srv.type == "webdav",
-    "server da cloud_server_object (JSON)")
+    "server from cloud_server_object (JSON)")
 
-store.cloud_server_object = "{ non è json"
-T.check(plugin:getServer() == nil, "JSON rotto non fa esplodere getServer")
+store.cloud_server_object = "{ not json"
+T.check(plugin:getServer() == nil, "broken JSON does not break getServer")
 
 store.cloud_server_object = nil
 store.annotation_sync = { sync_server = { name = "Sync", type = "webdav", address = "https://sync.example/dav" } }
 srv = plugin:getServer()
-T.check(srv ~= nil and srv.name == "Sync", "server da annotation_sync.sync_server")
+T.check(srv ~= nil and srv.name == "Sync", "server from annotation_sync.sync_server")
 
 store.annotation_sync_plugin = { sync_server = { name = "Plugin", type = "webdav", address = "https://p.example" } }
-T.check(plugin:getServer().name == "Plugin", "priorità a annotation_sync_plugin")
+T.check(plugin:getServer().name == "Plugin", "annotation_sync_plugin takes precedence")
 
 -- --------------------------------------------------------- 7. upload
 
 uploadSetup()
 plugin:runExport({ FILE }, {})
-T.check(#uploads == 1, "primo upload avviato subito: " .. #uploads)
-T.check(uploads[1].path == MD_PATH, "primo file = md del libro")
+T.check(#uploads == 1, "first upload started right away: " .. #uploads)
+T.check(uploads[1].path == MD_PATH, "first file = book md")
 T.check(InfoMessage.last_text == "Uploading 2 files to Koofr…",
-    "finestra di progresso: " .. tostring(InfoMessage.last_text))
+    "progress window: " .. tostring(InfoMessage.last_text))
 T.check(#UIManager.shown == 1 and UIManager.shown[1].text == InfoMessage.last_text,
-    "progresso ancora aperto durante la fase di upload")
+    "progress still open during the upload phase")
 UIManager:runPending()
-T.check(#uploads == 2, "caricati md e indice: " .. #uploads)
-T.check(uploads[2].path == INDEX_PATH, "secondo file = indice")
+T.check(#uploads == 2, "uploaded md and index: " .. #uploads)
+T.check(uploads[2].path == INDEX_PATH, "second file = index")
 T.check(uploads[1].url == "/Bookshelf/Kindle" and uploads[2].url == "/Bookshelf/Kindle",
-    "url della cartella Koofr")
+    "Koofr folder url")
 T.check(attempt_count[MD_PATH] == 1 and attempt_count[INDEX_PATH] == 1,
-    "un tentativo per file in condizioni normali")
+    "one attempt per file in normal conditions")
 T.check(T.contains(Notification.last_text or "", "Koofr: 2 files uploaded"),
-    "notifica upload: " .. tostring(Notification.last_text))
+    "upload notification: " .. tostring(Notification.last_text))
 local widget = onlyWidget()
 T.check(widget and widget.__widget == "Notification",
-    "solo la notifica finale rimane aperta")
+    "only the final notification stays open")
 
--- upload disattivato
+-- upload disabled
 uploadSetup()
 store.tomedown.upload = false
 plugin:runExport({ FILE }, {})
 UIManager:runPending()
-T.check(#uploads == 0, "nessun upload con upload=false")
+T.check(#uploads == 0, "no upload with upload=false")
 T.check(Notification.last_text == "1 files exported",
-    "notifica solo esportazione: " .. tostring(Notification.last_text))
+    "export-only notification: " .. tostring(Notification.last_text))
 
--- cartella remota esplicita
+-- explicit remote folder
 uploadSetup()
 store.tomedown.remote_folder = "/Cartella mia"
 plugin:runExport({ FILE }, {})
 UIManager:runPending()
 T.check(#uploads == 2 and uploads[1].url == "/Cartella mia",
-    "upload nella cartella scelta: " .. tostring(uploads[1] and uploads[1].url))
+    "upload into the chosen folder: " .. tostring(uploads[1] and uploads[1].url))
 
--- server senza "url" ma con "address" (come quelli di AnnotationSync)
+-- server without "url" but with "address" (like AnnotationSync's)
 store = {}
 store.tomedown = { upload = true }
 store.annotation_sync = {
@@ -533,61 +533,61 @@ store.annotation_sync = {
 resetUpload()
 plugin:runExport({ FILE }, {})
 UIManager:runPending()
-T.check(#uploads == 2, "upload col server ad address: " .. #uploads)
+T.check(#uploads == 2, "upload with an address-only server: " .. #uploads)
 T.check(uploads[1] and uploads[1].url == "https://webdav.koofr.net/dav/Bookshelf",
-    "usato address quando manca url: " .. tostring(uploads[1] and uploads[1].url))
+    "address used when url is missing: " .. tostring(uploads[1] and uploads[1].url))
 
 -- ------------------------------------------------------- 8. backoff
 
--- errore transitorio (500) sul primo tentativo, poi ok
+-- transient failure (500) on the first attempt, then ok
 uploadSetup()
 upload_script[MD_PATH] = { 500, 200 }
 plugin:runExport({ FILE }, {})
-T.check(#uploads == 1, "primo tentativo fallito registrato: " .. #uploads)
+T.check(#uploads == 1, "first failed attempt recorded: " .. #uploads)
 T.check(sameList(positives(), { 2 }),
-    "ritardo di retry programmato a 2s: " .. listStr(positives()))
-T.check(UIManager:pendingCount() == 1, "un retry in coda")
+    "retry delay scheduled at 2s: " .. listStr(positives()))
+T.check(UIManager:pendingCount() == 1, "one retry queued")
 UIManager:runPending()
-T.check(attempt_count[MD_PATH] == 2, "md ritentato una volta: " .. attempt_count[MD_PATH])
-T.check(attempt_count[INDEX_PATH] == 1, "indice non toccato dal guasto del md")
+T.check(attempt_count[MD_PATH] == 2, "md retried once: " .. attempt_count[MD_PATH])
+T.check(attempt_count[INDEX_PATH] == 1, "index untouched by the md failure")
 T.check(sameList(positives(), { 2 }), "backoff iniziale 2s, ottenuto " .. listStr(positives()))
 T.check(T.contains(Notification.last_text or "", "Koofr: 2 files uploaded"),
-    "recupero completo: " .. tostring(Notification.last_text))
+    "full recovery: " .. tostring(Notification.last_text))
 T.check(T.contains(table.concat(logger.history, "\n"), "retrying in"),
-    "retry tracciato nel log")
+    "retry logged")
 
--- guasto permanente: 3 tentativi e poi si arrende
+-- permanent failure: 3 attempts and it gives up
 uploadSetup()
 upload_script[MD_PATH] = { 500, 500, 500, 500 }
 upload_script[INDEX_PATH] = { 500, 500, 500, 500 }
 plugin:runExport({ FILE }, {})
 UIManager:runPending()
-T.check(#uploads == 6, "3 tentativi per ciascuno dei 2 file: " .. #uploads)
+T.check(#uploads == 6, "3 attempts for each of the 2 files: " .. #uploads)
 T.check(attempt_count[MD_PATH] == 3 and attempt_count[INDEX_PATH] == 3,
-    "massimo 3 tentativi per file")
+    "maximum 3 attempts per file")
 T.check(sameList(positives(), { 2, 4, 2, 4 }),
-    "backoff 2s/4s per ogni file, ottenuto " .. listStr(positives()))
-T.check(Notification.last_text == nil, "nessuna notifica di successo")
+    "backoff 2s/4s for every file, got " .. listStr(positives()))
+T.check(Notification.last_text == nil, "no success notification")
 local err_widget = onlyWidget()
-T.check(err_widget and err_widget.__widget == "InfoMessage", "finestra errori mostrata")
+T.check(err_widget and err_widget.__widget == "InfoMessage", "error window shown")
 T.check(err_widget and T.contains(err_widget.text, "Koofr: 0 uploaded, 2 errors"),
-    "esito con errori: " .. tostring(err_widget and err_widget.text))
+    "result with errors: " .. tostring(err_widget and err_widget.text))
 T.check(err_widget and T.contains(err_widget.text, "1 files exported"),
-    "l'esito include anche l'esportazione: " .. tostring(err_widget and err_widget.text))
+    "the result also includes the export: " .. tostring(err_widget and err_widget.text))
 
--- 4xx (cartella inesistente): nessun ritentativo
+-- 4xx (missing folder): no retry
 uploadSetup()
 upload_script[MD_PATH] = { 404 }
 upload_script[INDEX_PATH] = { 404 }
 plugin:runExport({ FILE }, {})
 UIManager:runPending()
-T.check(#uploads == 2, "404: un solo tentativo per file: " .. #uploads)
-T.check(#positives() == 0, "nessun ritardo sugli errori 4xx: " .. listStr(positives()))
+T.check(#uploads == 2, "404: one attempt per file only: " .. #uploads)
+T.check(#positives() == 0, "no delay on 4xx errors: " .. listStr(positives()))
 err_widget = onlyWidget()
 T.check(err_widget and T.contains(err_widget.text, "Koofr: 0 uploaded, 2 errors"),
-    "404 segnalato come errore definitivo")
+    "404 reported as a definitive failure")
 
--- errore di rete non numerico: ritentato
+-- non-numeric network error: retried
 uploadSetup()
 upload_script[MD_PATH] = function(n)
     if n < 3 then
@@ -597,28 +597,28 @@ upload_script[MD_PATH] = function(n)
 end
 plugin:runExport({ FILE }, {})
 UIManager:runPending()
-T.check(attempt_count[MD_PATH] == 3, "errore di rete ritentato: " .. tostring(attempt_count[MD_PATH]))
+T.check(attempt_count[MD_PATH] == 3, "network error retried: " .. tostring(attempt_count[MD_PATH]))
 T.check(sameList(positives(), { 2, 4 }),
-    "backoff anche senza codice numerico: " .. listStr(positives()))
+    "backoff without a numeric code too: " .. listStr(positives()))
 T.check(T.contains(Notification.last_text or "", "Koofr: 2 files uploaded"),
-    "recupero dopo gli errori di rete: " .. tostring(Notification.last_text))
+    "recovery after network errors: " .. tostring(Notification.last_text))
 
--- 429 (troppe richieste): transitorio
+-- 429 (too many requests): transient
 uploadSetup()
 upload_script[MD_PATH] = { 429, 200 }
 plugin:runExport({ FILE }, {})
 UIManager:runPending()
-T.check(attempt_count[MD_PATH] == 2, "429 ritentato: " .. tostring(attempt_count[MD_PATH]))
-T.check(sameList(positives(), { 2 }), "backoff sul 429: " .. listStr(positives()))
+T.check(attempt_count[MD_PATH] == 2, "429 retried: " .. tostring(attempt_count[MD_PATH]))
+T.check(sameList(positives(), { 2 }), "backoff on 429: " .. listStr(positives()))
 
--- codice di successo non nel range 2xx
+-- success code outside the 2xx range
 uploadSetup()
 upload_script[INDEX_PATH] = { 301, 301, 301, 301 }
 plugin:runExport({ FILE }, {})
 UIManager:runPending()
-T.check(attempt_count[INDEX_PATH] == 1, "301 non è un successo ma non è nemmeno transitorio: "
+T.check(attempt_count[INDEX_PATH] == 1, "301 is not a success, but not transient either: "
     .. tostring(attempt_count[INDEX_PATH]))
-T.check(#positives() == 0, "nessun ritardo sul 301: " .. listStr(positives()))
+T.check(#positives() == 0, "no delay on 301: " .. listStr(positives()))
 
 -- ------------------------------------------------- 9. Reload everything
 
@@ -626,41 +626,41 @@ uploadSetup()
 store.tomedown.upload = false
 cleanDir()
 plugin:runExport({ FILE }, {})
-T.check(#uploads == 0, "prima fase: solo export")
-T.check(T.fileExists(MD_PATH) and T.fileExists(INDEX_PATH), "file locali presenti")
+T.check(#uploads == 0, "first phase: export only")
+T.check(T.fileExists(MD_PATH) and T.fileExists(INDEX_PATH), "local files present")
 
--- una cartella di copertine residua non deve finire nell'upload
+-- a leftover covers folder must not end up in the upload
 os.execute('mkdir -p "' .. DIR .. '/covers" && printf x > "' .. DIR .. '/covers/copertina.jpg"')
 
 resetUpload()
 store.tomedown.upload = true
 plugin:reuploadAll(nil)
 UIManager:runPending()
-T.check(#uploads == 2, "ricaricati solo i .md: " .. #uploads)
-T.check(uploads[1].path == INDEX_PATH, "ordinato: indice per primo")
-T.check(uploads[2].path == MD_PATH, "ordinato: md del libro per secondo")
+T.check(#uploads == 2, "only the .md files re-uploaded: " .. #uploads)
+T.check(uploads[1].path == INDEX_PATH, "ordered: index first")
+T.check(uploads[2].path == MD_PATH, "ordered: book md second")
 T.check(Notification.last_text == "Koofr: 2 files uploaded",
-    "notifica reload: " .. tostring(Notification.last_text))
+    "reload notification: " .. tostring(Notification.last_text))
 T.rmrf(DIR .. "/covers")
 
 store = {}
 resetUpload()
 plugin:reuploadAll(nil)
 T.check(T.contains(InfoMessage.last_text or "", "Choose a Koofr server"),
-    "senza server: " .. tostring(InfoMessage.last_text))
+    "without server: " .. tostring(InfoMessage.last_text))
 
--- cartella locale vuota
+-- empty local folder
 store = {}
 store.tomedown = { server = SERVER, upload = true }
 resetUpload()
 cleanDir()
 plugin:reuploadAll(nil)
 UIManager:runPending()
-T.check(#uploads == 0, "nessun file da ricaricare")
+T.check(#uploads == 0, "no file to re-upload")
 T.check(Notification.last_text == "Nothing to upload, export something first.",
-    "notifica cartella vuota: " .. tostring(Notification.last_text))
+    "empty folder notification: " .. tostring(Notification.last_text))
 
--- ------------------------------------------- 10. nessuna copertina ovunque
+-- ------------------------------------------- 10. no cover anywhere
 
 local sources = { "main.lua", "tomedown_render.lua", "README.md" }
 for __, name in ipairs(sources) do
@@ -669,7 +669,7 @@ for __, name in ipairs(sources) do
         local lower = src:lower()
         T.check(not lower:find("buildcover") and not lower:find("cover_path")
             and not lower:find("covers/", 1, true),
-            name .. " non contiene più riferimenti alle copertine")
+            name .. " has no cover references left")
     end
 end
 

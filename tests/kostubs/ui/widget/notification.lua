@@ -1,4 +1,4 @@
--- stub di ui/widget/notification.lua: tiene traccia dell'ultima notifica
+-- stub of ui/widget/notification.lua: keeps track of the last notification
 local Notification = { last_text = nil }
 
 function Notification:new(o)

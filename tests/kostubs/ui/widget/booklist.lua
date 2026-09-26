@@ -1,4 +1,4 @@
--- stub di ui/widget/booklist.lua: registro finto dei libri già aperti
+-- stub of ui/widget/booklist.lua: fake registry of already opened books
 local BookList = { registry = {} }
 
 function BookList.setRegistry(t)

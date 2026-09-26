@@ -1,19 +1,19 @@
 --[[
-Traduzione del plugin.
+Plugin translations.
 
-KOReader NON carica in automatico le .po dei plugin (gettext del core usa solo
-l10n/<lang>/koreader.mo), quindi questo modulo legge lui stesso
-languages/<lang>.po in base alla lingua attiva di KOReader.
+KOReader does NOT load plugin .po files automatically (the core gettext only
+uses l10n/<lang>/koreader.mo), so this module reads languages/<lang>.po
+itself, based on KOReader's active language.
 
-Uso: local _ = require("tomedown_i18n")  poi  _("stringa inglese")
-Fuori da una lingua tradotta (inglese o nessuna lingua) ritorna il msgid.
+Usage: local _ = require("tomedown_i18n")  then  _("English string")
+Outside a translated language (English or no language) it returns the msgid.
 ]]
 
 local GetText = require("gettext")
 
 local tomedown_i18n = {}
 local catalog = {}
-local loaded_lang = false -- false = mai caricato, stringa = lingua già caricata
+local loaded_lang = false -- false = never loaded, string = language already loaded
 
 local function pluginDir()
     local src = debug.getinfo(1, "S").source
@@ -53,7 +53,7 @@ local function unescape(s)
     }))
 end
 
--- lettore minimale di .po: msgid/msgstr, righe "..." continue, commenti
+-- minimal .po reader: msgid/msgstr, continued "..." lines, comments
 local function loadPO(path)
     local f = io.open(path, "rb")
     if not f then return nil end

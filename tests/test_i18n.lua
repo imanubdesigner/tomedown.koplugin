@@ -1,6 +1,6 @@
 --[[--
-Test di tomedown_i18n.lua: caricamento del .po secondo la lingua attiva,
-fallback su msgid, cambio di lingua a caldo e integrazione con render.
+Tests for tomedown_i18n.lua: .po loading based on the active language,
+fallback to msgid, hot language switching and render integration.
 --]]
 local HERE = arg[0]:match("^(.*)/") or "."
 package.path = HERE .. "/?.lua;" .. package.path
@@ -13,51 +13,51 @@ local function setLang(lang)
     GetText.current_lang = lang
 end
 
--- 1. nessuna lingua: msgid inglese
+-- 1. no language: English msgid
 setLang(nil)
-T.check(i18n("Book index") == "Book index", "nessuna lingua -> msgid")
-T.check(i18n("No chapter") == "No chapter", "nessuna lingua, seconda stringa")
-T.check(i18n("stringa non presente") == "stringa non presente", "msgid sconosciuto invariato")
+T.check(i18n("Book index") == "Book index", "no language -> msgid")
+T.check(i18n("No chapter") == "No chapter", "no language, second string")
+T.check(i18n("stringa non presente") == "stringa non presente", "unknown msgid unchanged")
 
--- 2. inglese esplicito: nessun caricamento
+-- 2. explicit English: nothing loaded
 setLang("en")
-T.check(i18n("Book index") == "Book index", "lingua en -> msgid")
+T.check(i18n("Book index") == "Book index", "language en -> msgid")
 
--- 3. italiano: vengono le traduzioni
+-- 3. Italian: translations come through
 setLang("it")
 T.check(i18n("Book index") == "Indice dei libri", "it: Book index")
 T.check(i18n("No chapter") == "Senza capitolo", "it: No chapter")
-T.check(i18n("Export in progress…") == "Esportazione in corso…", "it: messaggio progresso")
-T.check(i18n("%1 files exported") == "%1 file esportati", "it: notifica con segnaposto")
-T.check(i18n("stringa non presente") == "stringa non presente", "it: fallback su msgid")
+T.check(i18n("Export in progress…") == "Esportazione in corso…", "it: progress message")
+T.check(i18n("%1 files exported") == "%1 file esportati", "it: notification with placeholder")
+T.check(i18n("stringa non presente") == "stringa non presente", "it: falls back to msgid")
 
--- 4. getter esplicito
-T.check(i18n.gettext("Book index") == "Indice dei libri", "gettext() come __call")
+-- 4. explicit getter
+T.check(i18n.gettext("Book index") == "Indice dei libri", "gettext() same as __call")
 
--- 5. variante regionale it_IT -> cade su it.po
+-- 5. regional variant it_IT -> falls back to it.po
 setLang("it_IT")
 T.check(i18n("Book index") == "Indice dei libri", "it_IT -> it.po")
 setLang("it-IT")
 T.check(i18n("Book index") == "Indice dei libri", "it-IT -> it.po")
 
--- 6. lingua senza file di traduzione: msgid
+-- 6. language without a translation file: msgid
 setLang("fr")
-T.check(i18n("Book index") == "Book index", "fr senza po -> msgid")
+T.check(i18n("Book index") == "Book index", "fr without po -> msgid")
 setLang("de")
-T.check(i18n("No chapter") == "No chapter", "de senza po -> msgid")
+T.check(i18n("No chapter") == "No chapter", "de without po -> msgid")
 
--- 7. stringa multiriga dell'indice
+-- 7. multi-line index string
 setLang("it")
 T.check(i18n("| Book | Author | Highlights | Last export |")
-    == "| Libro | Autore | Evidenziati | Ultimo export |", "it: header tabella")
+    == "| Libro | Autore | Evidenziati | Ultimo export |", "it: table header")
 
--- 8. la lingua cambia anche dopo il caricamento (reload)
+-- 8. the language changes even after loading (reload)
 setLang(nil)
-T.check(i18n("Book index") == "Book index", "tornato a nessuna lingua")
+T.check(i18n("Book index") == "Book index", "back to no language")
 setLang("it")
-T.check(i18n("Book index") == "Indice dei libri", "rientrato in italiano")
+T.check(i18n("Book index") == "Indice dei libri", "back in Italian")
 
--- 9. lingua letta da G_reader_settings quando GetText non la sa
+-- 9. language read from G_reader_settings when GetText does not know it
 setLang(nil)
 local saved_setting = nil
 G_reader_settings = G_reader_settings or {
@@ -69,10 +69,10 @@ G_reader_settings = G_reader_settings or {
     saveSetting = function() end,
 }
 saved_setting = "it"
-T.check(i18n("Book index") == "Indice dei libri", "lingua da G_reader_settings")
+T.check(i18n("Book index") == "Indice dei libri", "language from G_reader_settings")
 saved_setting = nil
 
--- 10. render usa le traduzioni a runtime
+-- 10. render uses the translations at runtime
 setLang("it")
 local render = require("tomedown_render")
 local md = render.buildBookMd({
@@ -80,30 +80,30 @@ local md = render.buildBookMd({
     count = 1,
     annotations = { { text = "X" } },
 })
-T.check(T.contains(md, "evidenziati"), "render traduce il tag highlights")
-T.check(T.contains(md, "**1 evidenziati**"), "render traduce il conteggio")
+T.check(T.contains(md, "evidenziati"), "render translates the highlights tag")
+T.check(T.contains(md, "**1 evidenziati**"), "render translates the count")
 
 local mixed = render.buildBookMd({
     title = "Libro",
     count = 2,
     annotations = { { text = "X", chapter = "Capitolo I" }, { text = "Y" } },
 }, { no_chapter_label = i18n("No chapter") })
-T.check(T.contains(mixed, "## Senza capitolo"), "etichetta capitolo tradotta")
+T.check(T.contains(mixed, "## Senza capitolo"), "chapter label translated")
 
 local index = render.buildIndexMd({
     { link = "B", title = "B", author = "A", count = 1, date = "01/01/2026" },
 }, { title = i18n("Book index") })
-T.check(T.contains(index, "# Indice dei libri"), "titolo indice tradotto")
+T.check(T.contains(index, "# Indice dei libri"), "index title translated")
 T.check(T.contains(index, "| Libro | Autore | Evidenziati | Ultimo export |"),
-    "header indice tradotto")
+    "index header translated")
 
 setLang("en")
-T.check(T.contains(render.buildIndexMd({}, {}), "# Book index"), "torna all'inglese")
+T.check(T.contains(render.buildIndexMd({}, {}), "# Book index"), "back to English")
 
--- 11. la stessa istanza di render vede il cambio di lingua (nessun caching)
+-- 11. the same render instance sees the language change (no caching)
 setLang("it")
 T.check(T.contains(render.buildBookMd({
     title = "L", count = 1, annotations = { { text = "X" } },
-}), "evidenziati"), "nessun caching del catalogo in render")
+}), "evidenziati"), "no catalog caching in render")
 
 T.finish("test_i18n")

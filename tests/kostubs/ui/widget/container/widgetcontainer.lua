@@ -1,4 +1,4 @@
--- stub di ui/widget/container/widgetcontainer.lua
+-- stub of ui/widget/container/widgetcontainer.lua
 local WidgetContainer = {}
 
 function WidgetContainer:extend(t)

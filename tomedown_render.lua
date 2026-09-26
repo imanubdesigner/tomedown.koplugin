@@ -1,8 +1,8 @@
 --[[
-Costruzione del testo Markdown per tomedown.koplugin.
+Markdown text building for tomedown.koplugin.
 
-Modulo quasi puro: dipende solo da tomedown_i18n (po del plugin), così può
-essere testato anche con un interpreter Lua standard.
+Nearly pure module: it only depends on tomedown_i18n (the plugin's po), so it
+can also be tested with a standard Lua interpreter.
 ]]
 
 local _ = require("tomedown_i18n")
@@ -32,7 +32,7 @@ function render.fmtDate(dt)
     return dt
 end
 
--- testo sicuro dentro un wikilink di Obsidian
+-- safe text inside an Obsidian wikilink
 function render.alias(s)
     s = tostring(s or "")
     s = s:gsub("[%[%]|#^]", " ")

@@ -1,5 +1,5 @@
--- stub di frontend/datastorage.lua: i test puntano a una cartella locale
--- (tests/kodata), ricavata dalla posizione di questo file
+-- stub of frontend/datastorage.lua: the tests point at a local folder
+-- (tests/kodata), derived from this file's location
 local HERE = debug.getinfo(1, "S").source:match("^@(.*)/") or "."
 local DataStorage = {
     data_dir = HERE .. "/../kodata",

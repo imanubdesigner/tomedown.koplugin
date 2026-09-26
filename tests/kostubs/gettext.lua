@@ -1,5 +1,5 @@
--- stub del gettext di KOReader: callabile con _("...") e con il campo
--- current_lang come il vero modulo (nil/"C" = nessuna traduzione).
+-- stub of KOReader's gettext: callable as _("...") and exposing
+-- current_lang like the real module (nil/"C" = no translation).
 local gettext = { current_lang = nil }
 setmetatable(gettext, {
     __call = function(_, s)

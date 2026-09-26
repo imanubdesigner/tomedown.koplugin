@@ -1,9 +1,9 @@
 --[[--
-md5 in puro Lua (RFC 1321): serve a main.lua per hashare i libri.
+Pure Lua md5 (RFC 1321): main.lua uses it to hash books.
 
-Usa gli operatori bitwise di Lua 5.3+ (la suite gira con `lua`).
-I vettori di prova sono verificati dentro test_main.lua contro le stringhe
-ufficiali, così un errore nell'implementazione viene subito fuori.
+Uses Lua 5.3+ bitwise operators (the suite runs with `lua`).
+The test vectors are checked inside test_main.lua against the official
+strings, so a mistake in the implementation shows up immediately.
 --]]
 
 local T = {

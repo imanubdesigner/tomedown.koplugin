@@ -1,9 +1,9 @@
 --[[--
-stub di ui/uimanager.lua.
+stub of ui/uimanager.lua.
 
-Punto importante per la patch di backoff: UIManager:scheduleIn NON blocca,
-registra solo la callback. I test la eseguono con runPending() e possono
-leggere i ritardi registrati (delay_log) per verificare il backoff 2s/4s.
+Key point of the backoff patch: UIManager:scheduleIn does NOT block, it only
+records the callback. The tests run it with runPending() and can read the
+recorded delays (delay_log) to check the 2s/4s backoff.
 --]]
 
 local UIManager = {
@@ -36,7 +36,7 @@ function UIManager:nextDelay()
     return self.delay_log[1]
 end
 
--- esegue tutte le callback in coda (in ordine di registrazione)
+-- runs every queued callback (in registration order)
 function UIManager:runPending()
     local guard = 0
     while #self.scheduled > 0 do

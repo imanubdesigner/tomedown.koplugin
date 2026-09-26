@@ -1,6 +1,6 @@
 --[[--
-json in puro Lua: main.lua usa json.decode su "cloud_server_object" e
-json.encode su "selected"/sync_server. Niente dipendenze esterne.
+Pure Lua json: main.lua uses json.decode on "cloud_server_object" and
+json.encode for "selected"/sync_server. No external dependencies.
 --]]
 
 local json = {}
@@ -35,7 +35,7 @@ local encode_value
 
 local function encode_table(t, depth)
     if depth > 32 then
-        error("json: tabella troppo profonda")
+        error("json: table too deep")
     end
     local parts = {}
     if is_array(t) then
@@ -67,14 +67,14 @@ encode_value = function(v, depth)
     elseif tv == "table" then
         return encode_table(v, depth)
     end
-    error("json: tipo non serializzabile " .. tv)
+    error("json: not serializable type " .. tv)
 end
 
 function json.encode(v)
     return encode_value(v, 0)
 end
 
--- parser ricorsivo a discesa
+-- recursive descent parser
 local function skip_ws(s, i)
     local _, j = s:find("^[ \t\r\n]*", i)
     return j + 1
@@ -105,7 +105,7 @@ local function decode_string(s, i)
             k = k + 1
         end
     end
-    error("json: stringa non chiusa")
+    error("json: unterminated string")
 end
 
 decode_value = function(s, i)
@@ -124,12 +124,12 @@ decode_value = function(s, i)
             local key
             i = skip_ws(s, i)
             if s:sub(i, i) ~= '"' then
-                error("json: attesa chiave a riga " .. i)
+                error("json: expected key at line " .. i)
             end
             key, i = decode_string(s, i)
             i = skip_ws(s, i)
             if s:sub(i, i) ~= ":" then
-                error("json: attesa ':' a riga " .. i)
+                error("json: expected ':' at line " .. i)
             end
             local value
             value, i = decode_value(s, i + 1)
@@ -141,7 +141,7 @@ decode_value = function(s, i)
             elseif sep == "}" then
                 return obj, i + 1
             else
-                error("json: attesa ',' o '}' a riga " .. i)
+                error("json: expected ',' or '}' at line " .. i)
             end
         end
     elseif c == "[" then
@@ -162,7 +162,7 @@ decode_value = function(s, i)
             elseif sep == "]" then
                 return arr, i + 1
             else
-                error("json: attesa ',' o ']' a riga " .. i)
+                error("json: expected ',' or ']' at line " .. i)
             end
         end
     elseif s:sub(i, i + 3) == "true" then
@@ -176,7 +176,7 @@ decode_value = function(s, i)
         if num and #num > 0 then
             return tonumber(num), i + #num
         end
-        error("json: token inatteso a " .. i .. " (" .. c .. ")")
+        error("json: unexpected token at " .. i .. " (" .. c .. ")")
     end
 end
 

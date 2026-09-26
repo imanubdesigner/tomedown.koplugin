@@ -1,2 +1,2 @@
--- stub di frontend/readhistory.lua: i test riempiono readhistory.hist
+-- stub of frontend/readhistory.lua: the tests fill readhistory.hist
 return { hist = {} }

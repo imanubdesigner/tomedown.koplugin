@@ -1,4 +1,4 @@
--- stub di frontend/util.lua: solo le funzioni usate da main.lua
+-- stub of frontend/util.lua: only the functions used by main.lua
 local util = {}
 
 function util.tableDeepCopy(t)
@@ -36,9 +36,9 @@ function util.writeToFile(data, filepath, force_flush, lua_dofile_ready, directo
     return true
 end
 
--- main.lua chiama getSafeFilename(name, nil, nil, -1): nessun limite e
--- nessuna gestione dell'estensione. Replica util.replaceAllInvalidChars di
--- KOReader: caratteri invalidi -> "_" e spazi/punti finali tolti.
+-- main.lua calls getSafeFilename(name, nil, nil, -1): no limit and no
+-- extension handling. Mirrors KOReader's util.replaceAllInvalidChars:
+-- invalid characters -> "_", trailing spaces and dots stripped.
 function util.getSafeFilename(str, path, limit, limit_ext)
     local name = tostring(str)
     name = name:gsub("[%c]", "_")

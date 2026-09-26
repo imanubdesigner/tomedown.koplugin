@@ -1,5 +1,5 @@
 # Italian translation for tomedown.koplugin (KOReader).
-# Sorgente: stringhe inglesi. Questa traduzione vale quando KOReader è in italiano.
+# Source: English strings. This translation applies when KOReader runs in Italian.
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"

@@ -1,12 +1,12 @@
 --[[
 tomedown.koplugin
 
-Esporta gli evidenziati (e le note) di ogni libro in un file Markdown
-per libro, con frontmatter e indice automatico, e li carica su
-Koofr (WebDAV) per leggerli poi in Obsidian con Remotely Save.
+Exports the highlights (and notes) of every book into a Markdown file
+per book, with frontmatter and an automatic index, and uploads them to
+Koofr (WebDAV) to read them later in Obsidian with Remotely Save.
 
-A differenza di "Export highlights and notes" (che produce un unico file
-combinato), qui ogni volume ha il suo `.md`.
+Unlike "Export highlights and notes" (which produces a single combined
+file), here every volume gets its own `.md`.
 ]]
 
 local BookInfo = require("apps/filemanager/filemanagerbookinfo")
@@ -33,16 +33,16 @@ local DEFAULT_LOCAL_SUBDIR = "clipboard/tomedown"
 local INDEX_FILENAME = "00 - Index.md"
 local FILENAME_TEMPLATE = "%A - %T"
 
--- retry upload: fino a 3 tentativi totali, attesa che raddoppia
--- ogni volta (2s, 4s), per assorbire blip di rete transitori senza
--- dover rilanciare "Reload everything to Koofr" a mano.
+-- upload retry: up to 3 attempts, wait doubling
+-- each time (2s, 4s), to absorb transient network blips without
+-- having to trigger "Reload everything to Koofr" by hand.
 local UPLOAD_MAX_ATTEMPTS = 3
-local UPLOAD_RETRY_BASE_DELAY = 2 -- secondi
+local UPLOAD_RETRY_BASE_DELAY = 2 -- seconds
 
--- ha senso ritentare solo i guasti transitori: errori di rete (codice
--- non numerico), risorse temporaneamente indisponibili (5xx), timeout e
--- troppi tentativi dal server. Le 4xx (credenziali errate, cartella
--- mancante) falliscono al primo colpo: ritentarle costa solo attesa.
+-- only transient failures are worth retrying: network errors (code
+-- not a number), temporarily unavailable resources (5xx), timeouts and
+-- too many requests from the server. 4xx (wrong credentials, missing
+-- folder) fail on the first shot: retrying them only wastes time.
 local function isTransient(code)
     if type(code) ~= "number" then
         return true
@@ -54,7 +54,7 @@ local MdBook = WidgetContainer:extend{
     name = "tomedown",
 }
 
--- impostazioni (tutto in G_reader_settings sotto una sola chiave)
+-- settings (everything in G_reader_settings under a single key)
 
 local function getSetting(key, default)
     local value = G_reader_settings:readSetting(SETTINGS_KEY, {})[key]
@@ -70,7 +70,7 @@ local function setSetting(key, value)
     G_reader_settings:saveSetting(SETTINGS_KEY, settings)
 end
 
--- utilità
+-- helpers
 
 local function pageLabel(item)
     local p = item.pageref
@@ -80,7 +80,7 @@ local function pageLabel(item)
     if p == nil or p == "" then
         p = item.pageno
     end
-    -- item.page è un xpointer, lo usiamo solo se è un numero di pagina
+    -- item.page is an xpointer, we use it only when it is a page number
     if p == nil or p == "" then
         if type(item.page) == "number" or tostring(item.page or ""):match("^%d+$") then
             p = item.page
@@ -120,15 +120,15 @@ function MdBook:getRemoteFolder()
     return server and server.url or ""
 end
 
--- server Koofr: prima quello scelto in "Impostazioni", poi in fallback
--- quello già usato da AnnotationSync, così chi ha già configurato Koofr su
--- KOReader non deve rifarlo.
+-- Koofr server: first the one chosen in "Settings", then the fallback
+-- already used by AnnotationSync, so whoever already set up Koofr on
+-- KOReader does not have to set it up again.
 function MdBook:getServer()
     local server = getSetting("server")
     if server and server.type then
         return server
     end
-    -- chiave legacy scritta da AnnotationSync (stringa JSON)
+    -- legacy key written by AnnotationSync (JSON string)
     local legacy = G_reader_settings:readSetting("cloud_server_object")
     if type(legacy) == "string" and legacy ~= "" then
         local ok, decoded = pcall(json.decode, legacy)
@@ -136,7 +136,7 @@ function MdBook:getServer()
             return decoded
         end
     end
-    -- impostazioni correnti di AnnotationSync (tabella "sync_server")
+    -- current AnnotationSync settings (the "sync_server" table)
     for __, key in ipairs({ "annotation_sync_plugin", "annotation_sync", "AnnotationSync" }) do
         local settings = G_reader_settings:readSetting(key)
         local sync_server = type(settings) == "table" and settings.sync_server or nil
@@ -165,7 +165,7 @@ function MdBook:showProgress(text)
     return info
 end
 
--- lettura delle annotazioni
+-- reading the annotations
 
 function MdBook:listBookFiles()
     local files = {}
@@ -178,8 +178,8 @@ function MdBook:listBookFiles()
     return files
 end
 
--- fallback per i file .sdr scritti da versioni vecchie di KOReader
--- (prima che le annotazioni venissero salvate nella tabella "annotations")
+-- fallback for .sdr files written by old KOReader versions
+-- (before annotations were saved in the "annotations" table)
 function MdBook:legacyAnnotations(ds)
     local highlights = ds:readSetting("highlight")
     if type(highlights) ~= "table" then
@@ -225,8 +225,8 @@ function MdBook:legacyAnnotations(ds)
     return items
 end
 
--- tiene solo gli evidenziati (drawer), scarta i segnalibri di pagina
--- e gli elementi cancellati, poi li ordina per pagina
+-- keeps only the highlights (drawer), drops page bookmarks
+-- and deleted entries, then sorts them by page
 function MdBook:cleanAnnotations(raw)
     local out = {}
     if type(raw) ~= "table" then
@@ -280,7 +280,7 @@ local function hashBook(title, author, annotations)
     return md5(table.concat(parts, "\n"))
 end
 
--- nome file identico a quello dell'exporter standard ("%A - %T")
+-- file name identical to the standard exporter's ("%A - %T")
 function MdBook:fileBase(file, props)
     local name
     local bookinfo = self.ui and self.ui.bookinfo
@@ -357,7 +357,7 @@ function MdBook:buildBooks(files)
     return books
 end
 
--- indice
+-- index
 
 function MdBook:buildIndexEntries(dir, export_records)
     local entries = {}
@@ -385,7 +385,7 @@ function MdBook:buildIndexEntries(dir, export_records)
     return entries
 end
 
--- upload su Koofr
+-- upload to Koofr
 
 function MdBook:cloudProvider(server)
     local cloud = self.ui and self.ui.cloudstorage
@@ -395,15 +395,15 @@ function MdBook:cloudProvider(server)
     return cloud.providers[server.type]
 end
 
--- upload tramite il provider (webdav/dropbox/ftp) invece che tramite
--- Cloud:uploadFile, che non esiste su tutte le versioni di KOReader.
+-- upload through the provider (webdav/dropbox/ftp) instead of via
+-- Cloud:uploadFile, which does not exist in every KOReader version.
 --
--- Ogni file viene ritentato fino a UPLOAD_MAX_ATTEMPTS volte, con
--- attesa a backoff esponenziale (UPLOAD_RETRY_BASE_DELAY * 2^(n-1))
--- tra un tentativo e il successivo, prima di essere segnato come
--- fallito definitivo. Assorbe i blip di rete transitori (WiFi che si
--- riconnette, DNS lento, ecc.) senza richiedere un "Reload everything
--- to Koofr" manuale ogni volta.
+-- Each file is retried up to UPLOAD_MAX_ATTEMPTS times, with an
+-- exponential backoff wait (UPLOAD_RETRY_BASE_DELAY * 2^(n-1))
+-- between one attempt and the next, before being marked as a
+-- permanent failure. It absorbs transient network blips (WiFi reconnecting,
+-- slow DNS, etc.) without needing a "Reload everything
+-- to Koofr" by hand every time.
 function MdBook:uploadPaths(server, paths, callback)
     local provider = self:cloudProvider(server)
     if not (provider and provider.uploadFile and provider.run) then
@@ -418,7 +418,7 @@ function MdBook:uploadPaths(server, paths, callback)
         if remote_folder and remote_folder ~= "" then
             srv.url = remote_folder
         end
-        -- i server presi da AnnotationSync hanno "address", non "url"
+        -- servers taken from AnnotationSync have "address", not "url"
         if not srv.url and srv.address then
             srv.url = srv.address
         end
@@ -466,7 +466,7 @@ function MdBook:uploadPaths(server, paths, callback)
     step()
 end
 
--- esportazione
+-- export
 
 function MdBook:runExport(files, opts)
     opts = opts or {}
@@ -534,8 +534,8 @@ function MdBook:runExport(files, opts)
 
     local server = self:getServer()
     if getSetting("upload", true) and server and #written > 0 then
-        -- resta aperto per tutta la fase di upload, compresi i ritentativi
-        -- con backoff: senza questo lo schermo resta muto per minuti
+        -- stays open for the whole upload phase, retries included
+        -- with backoff: without this the screen stays silent for minutes
         local upload_info = self:showProgress(T(_("Uploading %1 files to Koofr…"), #written))
         self:uploadPaths(server, written, function(ok_count, fail_count, failed)
             UIManager:close(upload_info)
@@ -627,7 +627,7 @@ function MdBook:reuploadAll(touchmenu)
     end)
 end
 
--- impostazioni / scelte
+-- settings / choices
 
 function MdBook:chooseCloudFolder(touchmenu)
     local cloud = self.ui and self.ui.cloudstorage

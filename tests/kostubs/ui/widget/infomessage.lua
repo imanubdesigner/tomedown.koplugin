@@ -1,4 +1,4 @@
--- stub di ui/widget/infomessage.lua: tiene traccia dell'ultimo testo mostrato
+-- stub of ui/widget/infomessage.lua: keeps track of the last text shown
 local InfoMessage = { last_text = nil }
 
 function InfoMessage:new(o)

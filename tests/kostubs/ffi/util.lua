@@ -1,7 +1,7 @@
--- stub di ffi/util.lua
+-- stub of ffi/util.lua
 local ffiUtil = {}
 
--- template("%1 di %2", a, b) -> "a di b" (sintassi KOReader)
+-- template("%1 of %2", a, b) -> "a of b" (KOReader syntax)
 function ffiUtil.template(fmt, ...)
     local args = { ... }
     return (tostring(fmt):gsub("%%(%d+)", function(n)
