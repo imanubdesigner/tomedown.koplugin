@@ -1,5 +1,3 @@
-# Tomedown
-
 <p align="center">
   <img src="assets/banner.svg" alt="tomedown — one Markdown file per book, straight into Obsidian" width="100%">
 </p>
