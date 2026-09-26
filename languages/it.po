@@ -1,0 +1,140 @@
+# Italian translation for tomedown.koplugin (KOReader).
+# Sorgente: stringhe inglesi. Questa traduzione vale quando KOReader è in italiano.
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: it\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Export in progress…"
+msgstr "Esportazione in corso…"
+
+msgid "No chapter"
+msgstr "Senza capitolo"
+
+msgid "Book index"
+msgstr "Indice dei libri"
+
+msgid "%1 files exported"
+msgstr "%1 file esportati"
+
+msgid "No files exported"
+msgstr "Nessun file esportato"
+
+msgid "%1 files unchanged, skipped"
+msgstr "%1 file invariati, saltati"
+
+msgid "Koofr: %1 uploaded, %2 errors"
+msgstr "Koofr: %1 caricati, %2 errori"
+
+msgid "Koofr: %1 files uploaded"
+msgstr "Koofr: %1 file caricati"
+
+msgid "Errors:"
+msgstr "Errori:"
+
+msgid "Choose a Koofr server in the settings first."
+msgstr "Scegli prima un server Koofr nelle impostazioni."
+
+msgid "Nothing to upload, export something first."
+msgstr "Nessun file da caricare, esporta prima qualcosa."
+
+msgid "Uploading %1 files to Koofr…"
+msgstr "Caricamento di %1 file su Koofr…"
+
+msgid "Koofr: %1/%2 files uploaded, %3 errors"
+msgstr "Koofr: %1/%2 file caricati, %3 errori"
+
+msgid "Enable the \"Cloud storage\" plugin to upload to Koofr."
+msgstr "Abilita il plugin \"Cloud storage\" per caricare su Koofr."
+
+msgid "Remote folder on Koofr"
+msgstr "Cartella remota su Koofr"
+
+msgid "leave empty to use the folder chosen in the browser"
+msgstr "lascia vuoto per usare la cartella scelta nel browser"
+
+msgid "Cancel"
+msgstr "Annulla"
+
+msgid "Save"
+msgstr "Salva"
+
+msgid "Local folder for exports"
+msgstr "Cartella locale delle esportazioni"
+
+msgid "path on the Kindle"
+msgstr "percorso sul Kindle"
+
+msgid "No books with highlights"
+msgstr "Nessun libro con evidenziati"
+
+msgid "Export selected (%1)"
+msgstr "Esporta selezionati (%1)"
+
+msgid "Deselect all"
+msgstr "Deseleziona tutto"
+
+msgid "Upload to Koofr"
+msgstr "Carica su Koofr"
+
+msgid "Server and folder: not set"
+msgstr "Server e cartella: non impostati"
+
+msgid "Server and folder: %1 → %2"
+msgstr "Server e cartella: %1 → %2"
+
+msgid "Server and folder: %1"
+msgstr "Server e cartella: %1"
+
+msgid "Remote folder: not set"
+msgstr "Cartella remota: non impostata"
+
+msgid "Remote folder: %1"
+msgstr "Cartella remota: %1"
+
+msgid "Local folder: %1"
+msgstr "Cartella locale: %1"
+
+msgid "Generate the index %1"
+msgstr "Genera l'indice %1"
+
+msgid "Export current book"
+msgstr "Esporta libro corrente"
+
+msgid "Only updated"
+msgstr "Solo aggiornati"
+
+msgid "Choose books…"
+msgstr "Scegli libri…"
+
+msgid "All books with highlights"
+msgstr "Tutti i libri con annotazioni"
+
+msgid "Reload everything to Koofr"
+msgstr "Ricarica tutto su Koofr"
+
+msgid "Settings"
+msgstr "Impostazioni"
+
+msgid ""
+"Exports each book's highlights into its own Markdown file,\n"
+"with frontmatter and an index, and uploads them to Koofr."
+msgstr ""
+"Esporta gli evidenziati di ogni libro in un file Markdown a parte,\n"
+"con frontmatter e indice, e li carica su Koofr."
+
+msgid "highlights"
+msgstr "evidenziati"
+
+msgid "note: "
+msgstr "nota: "
+
+msgid "index"
+msgstr "indice"
+
+msgid "No exported books with highlights."
+msgstr "Nessun libro con evidenziati esportati."
+
+msgid "| Book | Author | Highlights | Last export |"
+msgstr "| Libro | Autore | Evidenziati | Ultimo export |"

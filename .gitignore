@@ -1,0 +1,8 @@
+# generated test data (recreated by tests/run.sh on every run)
+tests/kodata/
+
+# install archives and device logs
+*.zip
+crash.log
+
+.DS_Store
