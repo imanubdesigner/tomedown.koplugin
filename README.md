@@ -29,19 +29,23 @@ every volume stays separate:
 ## Installation
 
 1. Plug the Kindle in via USB mass storage.
-2. Copy the `tomedown.koplugin` folder into:
+2. Get the plugin into `/mnt/us/koreader/plugins/`, either way:
+
+   **a. Release zip (easiest)** — download `tomedown.koplugin-v*.zip` from the
+   [Releases](https://github.com/imanubdesigner/tomedown.koplugin/releases)
+   page and unzip it *into* that folder: the zip already contains the
+   `tomedown.koplugin/` directory.
+
+   **b. From a clone of this repo** — copy the folder, leaving behind what
+   KOReader does not need (`tests/`, `assets/`, `README.md`, git files):
 
    ```
-   /mnt/us/koreader/plugins/
+   rsync -a --exclude tests --exclude assets --exclude README.md \
+         --exclude .git --exclude .github --exclude .gitignore \
+         tomedown.koplugin /mnt/us/koreader/plugins/
    ```
 
-   You can leave `tests/` behind — it is only needed to run the suite:
-
-   ```
-   rsync -a --exclude tests tomedown.koplugin /mnt/us/koreader/plugins/
-   ```
-
-   The result should look like:
+   Either way the result should look like:
 
    ```
    /mnt/us/koreader/plugins/tomedown.koplugin/main.lua
@@ -49,7 +53,7 @@ every volume stays separate:
    /mnt/us/koreader/plugins/tomedown.koplugin/tomedown_render.lua
    /mnt/us/koreader/plugins/tomedown.koplugin/_meta.lua
    /mnt/us/koreader/plugins/tomedown.koplugin/languages/it.po
-   /mnt/us/koreader/plugins/tomedown.koplugin/README.md
+   /mnt/us/koreader/plugins/tomedown.koplugin/LICENSE
    ```
 
 3. Unplug the Kindle and restart KOReader (or: ☰ menu → *Plugin management* →
