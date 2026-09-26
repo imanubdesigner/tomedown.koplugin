@@ -528,13 +528,13 @@ T.check(#uploads == 2 and uploads[1].url == "/Cartella mia",
 store = {}
 store.tomedown = { upload = true }
 store.annotation_sync = {
-    sync_server = { name = "Sync", type = "webdav", address = "https://webdav.koofr.net/dav/Bookshelf" },
+    sync_server = { name = "Sync", type = "webdav", address = "https://app.koofr.net/dav/Koofr/Bookshelf" },
 }
 resetUpload()
 plugin:runExport({ FILE }, {})
 UIManager:runPending()
 T.check(#uploads == 2, "upload with an address-only server: " .. #uploads)
-T.check(uploads[1] and uploads[1].url == "https://webdav.koofr.net/dav/Bookshelf",
+T.check(uploads[1] and uploads[1].url == "https://app.koofr.net/dav/Koofr/Bookshelf",
     "address used when url is missing: " .. tostring(uploads[1] and uploads[1].url))
 
 -- ------------------------------------------------------- 8. backoff

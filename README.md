@@ -1,5 +1,9 @@
 # Tomedown
 
+<p align="center">
+  <img src="assets/banner.svg" alt="tomedown — one Markdown file per book, straight into Obsidian" width="100%">
+</p>
+
 A KOReader plugin that exports the highlights of **each book into its own
 `.md` file**, with YAML frontmatter and an automatic index, and uploads them
 to **Koofr** so you can read them in Obsidian.
@@ -19,7 +23,8 @@ every volume stays separate:
 - KOReader with highlights in the modern format (old `.sdr` files, where
   highlights live in `highlight` + `bookmarks`, are supported too)
 - The **Cloud storage** plugin that ships with KOReader, with a WebDAV server
-  configured for Koofr: `https://webdav.koofr.net/dav`
+  configured for Koofr: `https://app.koofr.net/dav/Koofr`
+  (Koofr's documented WebDAV host — the plain `/dav/` root is not writable)
 - A Koofr account (the free plan is plenty)
 - In Obsidian: **Remotely Save** with a WebDAV server (free)
 
@@ -185,7 +190,7 @@ KOReader, nothing special has to be installed in Obsidian.
    password**, not the account one.
 2. In Obsidian install **Remotely Save** and configure:
    - type: **WebDAV**
-   - server: `https://webdav.koofr.net/dav`
+   - server: `https://app.koofr.net/dav/Koofr`
    - user: your Koofr account e-mail
    - password: the app password
    - **remote folder / base dir: `/Bookshelf`**
