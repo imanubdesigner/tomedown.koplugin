@@ -2,6 +2,14 @@
   <img src="assets/banner.svg" alt="tomedown — one Markdown file per book, straight into Obsidian" width="100%">
 </p>
 
+<p align="center">
+  <a href="https://github.com/imanubdesigner/tomedown.koplugin/releases/latest"><img src="https://img.shields.io/github/v/release/imanubdesigner/tomedown.koplugin?style=flat-square&color=7c3aed&labelColor=7c3aed&label=release" alt="Latest release"></a>
+  <a href="https://github.com/imanubdesigner/tomedown.koplugin/actions/workflows/test.yml"><img src="https://img.shields.io/github/actions/workflow/status/imanubdesigner/tomedown.koplugin/test.yml?style=flat-square&labelColor=7c3aed&label=tests" alt="Test status"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/imanubdesigner/tomedown.koplugin?style=flat-square&color=7c3aed&labelColor=7c3aed&label=license" alt="License"></a>
+  <img src="https://img.shields.io/badge/KOReader-compatible-7c3aed?style=flat-square&labelColor=7c3aed" alt="KOReader compatible">
+  <img src="https://img.shields.io/badge/Lua-5.1%20%2F%205.3-7c3aed?style=flat-square&labelColor=7c3aed" alt="Lua 5.1 / 5.3">
+</p>
+
 A KOReader plugin that exports the highlights of **each book into its own
 `.md` file**, with YAML frontmatter and an automatic index, and uploads them
 to **Koofr** so you can read them in Obsidian.
