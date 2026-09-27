@@ -5,9 +5,10 @@ Settings shows the installed version and a "Check for updates…" entry;
 with the optional background check enabled, a new release is noticed on
 its own (KOReader start and menu open, at most once an hour). When one
 is found the release notes of every newer release are shown together
-(the fixes, newest first) and the releases page can be opened in the
-browser: installing is still the zip from that page, so any installed
-version can jump to any newer one without migrations.
+(the fixes, newest first) with an "Update and restart" button that
+downloads the release zip, unpacks it over the plugin folder and asks
+to restart KOReader - any failure falls back to opening the releases
+page so the zip can be taken by hand.
 
 Everything goes through the GitHub releases API of this repository.
 The release LIST is fetched (not just the latest) so that someone on
@@ -98,6 +99,22 @@ end
 
 local function releaseTag(rel)
     return (tostring(rel.tag_name or ""):gsub("^v", ""))
+end
+
+--- Download URL of the release's zip asset, or nil (the releases page
+-- is the fallback when a release ships without one).
+local function releaseZip(rel)
+    if type(rel.assets) == "table" then
+        for __, asset in ipairs(rel.assets) do
+            if type(asset) == "table"
+                and type(asset.name) == "string"
+                and asset.name:match("%.zip$")
+                and type(asset.browser_download_url) == "string" then
+                return asset.browser_download_url
+            end
+        end
+    end
+    return nil
 end
 
 --- GET url and decode the JSON body, or nil.
@@ -203,14 +220,19 @@ local function stripMarkdown(text)
 end
 
 --- Releases newer than the installed version, newest first, skipping
--- drafts and prereleases; each entry keeps version and raw body.
+-- drafts and prereleases; each entry keeps version, raw body and the
+-- zip download URL of that release.
 local function collectNewer(releases, installed)
     local newer = {}
     for __, rel in ipairs(releases) do
         if type(rel) == "table" and not rel.draft and not rel.prerelease then
             local version = releaseTag(rel)
             if Update.isNewer(version, installed) then
-                newer[#newer + 1] = { version = version, body = rel.body }
+                newer[#newer + 1] = {
+                    version = version,
+                    body = rel.body,
+                    zip = releaseZip(rel),
+                }
             end
         end
     end
@@ -267,17 +289,16 @@ function Update.check()
                         end,
                     },
                     {
-                        text = _("Open releases page"),
+                        text = _("Update and restart"),
                         callback = function()
                             UIManager:close(viewer)
-                            if Device:canOpenLink() then
-                                Device:openLink(RELEASES_PAGE)
-                            else
-                                UIManager:show(InfoMessage:new{
-                                    text = RELEASES_PAGE,
-                                    timeout = 5,
-                                })
+                            local zip = newer[1].zip
+                            if not zip then
+                                Update.offerReleasesPage(
+                                    _("No download available for this release."))
+                                return
                             end
+                            Update.install(zip, newer[1].version)
                         end,
                     },
                 },
@@ -285,6 +306,193 @@ function Update.check()
             add_default_buttons = false,
         }
         UIManager:show(viewer)
+    end)
+end
+
+--- "Download failed." without the trailing dot, plus the reason in
+-- parentheses, so the message stays a stable msgid for the .po.
+local function withReason(label, reason)
+    if not reason then
+        return label
+    end
+    return (tostring(label):gsub("%.%s*$", "")) .. " (" .. tostring(reason) .. ")"
+end
+
+--- GET url and write the body to path, or nil, reason.
+-- LuaSocket first, curl as a fallback (mirrors httpGetJSON). Test seam:
+-- tests replace Update.httpDownload with a fake and never hit the net.
+function Update.httpDownload(url, path)
+    local ok_require, http, ltn12, socket, socketutil =
+        pcall(function()
+            return require("socket/http"),
+                   require("ltn12"),
+                   require("socket"),
+                   require("socketutil")
+        end)
+    local downloaded, reason = false, nil
+    if ok_require then
+        pcall(os.remove, path .. ".tmp")
+        local file = io.open(path .. ".tmp", "wb")
+        if file then
+            local ok_req, code, headers, status = pcall(function()
+                socketutil:set_timeout(socketutil.FILE_BLOCK_TIMEOUT, 300)
+                local sink = socketutil.file_sink
+                    and socketutil.file_sink(file)
+                    or ltn12.sink.file(file)
+                local c, h, st = socket.skip(1, http.request{
+                    url = url,
+                    method = "GET",
+                    headers = {
+                        ["User-Agent"] = "KOReader-Tomedown/"
+                            .. Update.getInstalledVersion(),
+                        ["Accept"] = "application/zip, application/octet-stream, */*",
+                    },
+                    sink = sink,
+                    redirect = true,
+                })
+                socketutil:reset_timeout()
+                return c, h, st
+            end)
+            file:close()
+            if not ok_req then
+                pcall(function()
+                    socketutil:reset_timeout()
+                end)
+                reason = _("the connection failed")
+            elseif code == socketutil.TIMEOUT_CODE
+                    or code == socketutil.SINK_TIMEOUT_CODE then
+                reason = _("the connection timed out")
+            elseif code == socketutil.SSL_HANDSHAKE_CODE then
+                reason = _("the secure connection failed")
+            elseif not headers then
+                reason = _("there was no response")
+            elseif tonumber(code) ~= 200 then
+                reason = status or ("HTTP " .. tostring(code))
+            else
+                downloaded = true
+            end
+            if downloaded and not os.rename(path .. ".tmp", path) then
+                -- same directory, so this only fails on a full/read-only disk
+                downloaded = false
+                reason = _("the file could not be saved")
+            end
+            if not downloaded then
+                pcall(os.remove, path .. ".tmp")
+            end
+        else
+            reason = _("the file could not be saved")
+        end
+    end
+    if not downloaded then
+        local ret = os.execute(string.format("curl -sfL -o %q %q", path, url))
+        downloaded = ret == 0 or ret == true
+        if not downloaded then
+            pcall(os.remove, path)
+            if not reason then
+                reason = _("the connection failed")
+            end
+        end
+    end
+    if downloaded then
+        return true
+    end
+    return false, reason
+end
+
+--- Unpack zip over dest, stripping the zip's single top-level folder
+-- (tomedown.koplugin/…) so files land inside the installed plugin dir.
+local function unpackStripRoot(zip_path, dest)
+    local ok_req, Archiver = pcall(require, "ffi/archiver")
+    if not (ok_req and Archiver and Archiver.Reader) then
+        return false, "archive extractor unavailable"
+    end
+    local arc = Archiver.Reader:new()
+    if not arc:open(zip_path) then
+        local err = arc.err
+        arc:close()
+        return false, err or "could not open archive"
+    end
+    local extract_err
+    local extracted = 0
+    for entry in arc:iterate() do
+        local rel = entry.path and entry.path:match("^[^/]+/(.+)$")
+        if rel and rel ~= "" then
+            if not arc:extractToPath(entry.path, dest .. "/" .. rel) then
+                extract_err = arc.err or "extract failed"
+                break
+            end
+            extracted = extracted + 1
+        end
+    end
+    arc:close()
+    if extract_err then
+        return false, extract_err
+    end
+    if extracted == 0 then
+        return false, "empty archive"
+    end
+    return true
+end
+Update._unpackStripRoot = unpackStripRoot
+
+--- Restart KOReader (seam: tests override Update.restartKOReader).
+function Update.restartKOReader()
+    UIManager:restartKOReader()
+end
+
+--- Install the release zip: gate, download into a cache dir, unpack it
+-- over this plugin's own folder, then ask to restart KOReader. Any
+-- failure falls back to the releases page (manual zip) or an error
+-- message - the old version keeps running either way.
+function Update.install(zip_url, new_version)
+    if Update.gateOnConnection(function()
+        Update.install(zip_url, new_version)
+    end) then
+        return
+    end
+    UIManager:show(InfoMessage:new{
+        text = _("Downloading update…"),
+        timeout = 1,
+    })
+    UIManager:scheduleIn(0.1, function()
+        local dest = pluginDir()
+        if not dest then
+            UIManager:show(InfoMessage:new{
+                text = T(_("Installation failed: %1"), "unknown plugin folder"),
+                timeout = 5,
+            })
+            return
+        end
+        local lfs = require("libs/libkoreader-lfs")
+        local cache_dir = require("datastorage"):getSettingsDir()
+            .. "/tomedown_cache"
+        if lfs.attributes(cache_dir, "mode") ~= "directory" then
+            lfs.mkdir(cache_dir)
+        end
+        local zip_path = cache_dir .. "/tomedown.koplugin.zip"
+        local ok_dl, reason = Update.httpDownload(zip_url, zip_path)
+        if not ok_dl then
+            pcall(os.remove, zip_path)
+            Update.offerReleasesPage(withReason(_("Download failed."), reason))
+            return
+        end
+        local ok, err = Update._unpackStripRoot(zip_path, dest)
+        pcall(os.remove, zip_path)
+        if not ok then
+            UIManager:show(InfoMessage:new{
+                text = T(_("Installation failed: %1"), tostring(err)),
+                timeout = 5,
+            })
+            return
+        end
+        UIManager:show(ConfirmBox:new{
+            text = T(_("Tomedown updated to v%1."), new_version)
+                .. "\n\n" .. _("Restart KOReader now?"),
+            ok_text = _("Restart"),
+            ok_callback = function()
+                Update.restartKOReader()
+            end,
+        })
     end)
 end
 

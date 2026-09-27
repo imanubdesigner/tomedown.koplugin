@@ -166,8 +166,44 @@ msgstr "Installata: %1\nUltima: %2"
 msgid "Close"
 msgstr "Chiudi"
 
-msgid "Open releases page"
-msgstr "Apri pagina delle release"
+msgid "Update and restart"
+msgstr "Aggiorna e riavvia"
+
+msgid "Downloading update…"
+msgstr "Download dell'aggiornamento…"
+
+msgid "No download available for this release."
+msgstr "Nessun download disponibile per questa release."
+
+msgid "Download failed."
+msgstr "Download non riuscito."
+
+msgid "the connection failed"
+msgstr "la connessione è fallita"
+
+msgid "the connection timed out"
+msgstr "la connessione è scaduta"
+
+msgid "the secure connection failed"
+msgstr "la connessione sicura è fallita"
+
+msgid "there was no response"
+msgstr "nessuna risposta"
+
+msgid "the file could not be saved"
+msgstr "impossibile salvare il file"
+
+msgid "Installation failed: %1"
+msgstr "Installazione non riuscita: %1"
+
+msgid "Tomedown updated to v%1."
+msgstr "Tomedown aggiornato alla v%1."
+
+msgid "Restart KOReader now?"
+msgstr "Riavviare KOReader adesso?"
+
+msgid "Restart"
+msgstr "Riavvia"
 
 msgid "Could not check for updates."
 msgstr "Impossibile controllare gli aggiornamenti."

@@ -2,8 +2,10 @@
 Tests for tomedown_update.lua and the update entries in Settings:
 version display, manual check (up to date / fixes shown / failure /
 offline gate), version jumps (0.2.0 -> 1.0), background check
-(throttle, Wi-Fi gate, notification) - all against a fake GitHub
-response, so nothing here touches the network.
+(throttle, Wi-Fi gate, notification) and the install flow
+("Update and restart": download, unpack over the plugin folder,
+restart prompt, fallbacks) - all against a fake GitHub response, so
+nothing here touches the network.
 --]]
 local HERE = arg[0]:match("^(.*)/") or "."
 package.path = HERE .. "/?.lua;" .. package.path
@@ -83,6 +85,30 @@ T.check(INSTALLED:match("^%d+%.%d+") ~= nil,
     "installed version from _meta.lua: " .. INSTALLED)
 T.check(Update.getAvailableVersion() == nil, "no update known yet")
 
+-- fake versions always newer than the installed one, whatever it is:
+-- PATCH < MINOR < MAJOR, all strictly above INSTALLED
+local function versionParts(v)
+    local p = {}
+    for x in tostring(v):gsub("^v", ""):gmatch("([^.]+)") do
+        p[#p + 1] = tonumber(x) or 0
+    end
+    return p
+end
+local function bumped(part)
+    local q = versionParts(INSTALLED)
+    for n = 1, 3 do
+        q[n] = q[n] or 0
+    end
+    q[part] = q[part] + 1
+    for n = part + 1, 3 do
+        q[n] = 0
+    end
+    return table.concat(q, ".")
+end
+local PATCH = bumped(3)
+local MINOR = bumped(2)
+local MAJOR = bumped(1)
+
 -- ------------------------------------------------------- 2. version jumps
 
 local cases = {
@@ -158,10 +184,10 @@ Update._resetState()
 fakeReleases({
     release("v9.9.9", "draft only", { draft = true }),
     release("v2.0.0-beta", "prerelease only", { prerelease = true }),
-    release("v1.0.0", "# Fixes\n- **bold** and `code` and *italic*"),
-    release("v0.3.1", "Fix B for issue #12"),
-    release("v0.3.0", "Fix A"),
-    release("v0.1.0", "old"),
+    release("v" .. MAJOR, "# Fixes\n- **bold** and `code` and *italic*"),
+    release("v" .. MINOR, "Fix A"),
+    release("v" .. PATCH, "Fix B for issue #12"),
+    release("v0.0.0", "old"),
 })
 Update.check()
 UIManager:runPending()
@@ -169,28 +195,35 @@ local viewer = TextViewer.last
 T.check(viewer ~= nil, "viewer shown")
 T.check(viewer.title == "Update available!", "viewer title: " .. tostring(viewer.title))
 T.check(T.contains(viewer.text, "Installed: v" .. INSTALLED), "installed line")
-T.check(T.contains(viewer.text, "Latest: v1.0.0"),
+T.check(T.contains(viewer.text, "Latest: v" .. MAJOR),
     "latest skips draft and prerelease")
 T.check(not T.contains(viewer.text, "9.9.9") and not T.contains(viewer.text, "beta"),
     "draft and prerelease absent: " .. tostring(viewer.text))
-T.check(T.contains(viewer.text, "v1.0.0") and T.contains(viewer.text, "v0.3.1")
-    and T.contains(viewer.text, "v0.3.0"), "header for every newer release")
+T.check(T.contains(viewer.text, "v" .. MAJOR) and T.contains(viewer.text, "v" .. PATCH)
+    and T.contains(viewer.text, "v" .. MINOR), "header for every newer release")
 T.check(T.contains(viewer.text, "Fix A") and T.contains(viewer.text, "Fix B")
     and T.contains(viewer.text, "Fixes"), "notes of every newer release")
 T.check(not T.contains(viewer.text, "**") and not T.contains(viewer.text, "`")
     and not T.contains(viewer.text, "# "), "markdown stripped: " .. tostring(viewer.text))
 T.check(T.contains(viewer.text, "issue #12"), "inline #12 kept: " .. tostring(viewer.text))
-T.check(Update.getAvailableVersion() == "1.0.0",
+T.check(Update.getAvailableVersion() == MAJOR,
     "cached available version: " .. tostring(Update.getAvailableVersion()))
 
 local version_row = plugin:genSettingsMenu()[6]
-T.check(T.contains(version_row.text_func(), "v1.0.0 available"),
+T.check(T.contains(version_row.text_func(), "v" .. MAJOR .. " available"),
     "version row shows the update: " .. version_row.text_func())
 
 local buttons = viewer.buttons_table[1]
-T.check(buttons[1].text == "Close" and buttons[2].text == "Open releases page",
+T.check(buttons[1].text == "Close" and buttons[2].text == "Update and restart",
     "viewer buttons")
+-- this fake release ships no zip asset: the button falls back to the
+-- releases page instead of installing
 buttons[2].callback()
+T.check(ConfirmBox.last ~= nil
+    and T.contains(ConfirmBox.last.text or "",
+        "No download available for this release."),
+    "no-zip fallback: " .. tostring(ConfirmBox.last and ConfirmBox.last.text))
+ConfirmBox.last.ok_callback()
 T.check(Device.links[1] == RELEASES_PAGE,
     "releases page opened: " .. tostring(Device.links[1]))
 local viewer_still_open = false
@@ -235,7 +268,7 @@ T.check(#urls == 1, "request once connected: " .. #urls)
 
 resetWidgets()
 Update._resetState()
-fakeReleases({ release("v1.0.0", "brand new") })
+fakeReleases({ release("v" .. MAJOR, "brand new") })
 NetworkMgr.wifi_on = false
 Update.checkBackground()
 T.check(#urls == 0 and UIManager:pendingCount() == 0,
@@ -246,9 +279,9 @@ Update.checkBackground()
 T.check(UIManager:pendingCount() == 1, "background check scheduled")
 UIManager:runPending()
 T.check(#urls == 1, "background fetched once: " .. #urls)
-T.check(Notification.last_text == "Tomedown update available: v1.0.0",
+T.check(Notification.last_text == "Tomedown update available: v" .. MAJOR,
     "notification: " .. tostring(Notification.last_text))
-T.check(Update.getAvailableVersion() == "1.0.0", "background caches the version")
+T.check(Update.getAvailableVersion() == MAJOR, "background caches the version")
 
 Update.checkBackground()
 T.check(#urls == 1, "throttled for the next hour")
@@ -265,7 +298,7 @@ T.check(Notification.last_text == nil, "silent when up to date")
 resetWidgets()
 Update._resetState()
 clearStore()
-fakeReleases({ release("v1.0.0", "") })
+fakeReleases({ release("v" .. MAJOR, "") })
 
 -- background off: starting KOReader and opening the menu do nothing
 MdBook:new { ui = ui }
@@ -285,7 +318,109 @@ T.check(UIManager.delay_log[2] == 0.1, "menu check is immediate")
 
 UIManager:runPending()
 T.check(#urls >= 1, "the scheduled check ran: " .. #urls)
-T.check(Notification.last_text == "Tomedown update available: v1.0.0",
+T.check(Notification.last_text == "Tomedown update available: v" .. MAJOR,
     "scheduled check notifies: " .. tostring(Notification.last_text))
+
+-- --------------------------------------- 10. install: update and restart
+
+local Archiver = require("ffi/archiver")
+local lfs = require("libs/libkoreader-lfs")
+local cache_dir = require("datastorage"):getSettingsDir() .. "/tomedown_cache"
+
+-- 10a. happy path: download the zip, unpack it over the plugin folder,
+-- ask for the restart, restart on confirm
+resetWidgets()
+Update._resetState()
+Archiver.reset()
+NetworkMgr.connected = true
+fakeReleases({
+    release("v" .. MAJOR, "# New\n- auto update", {
+        assets = {
+            {
+                name = "tomedown.koplugin-v" .. MAJOR .. ".zip",
+                browser_download_url = "https://github.com/example/dl.zip",
+            },
+        },
+    }),
+})
+Update.check()
+UIManager:runPending()
+viewer = TextViewer.last
+buttons = viewer.buttons_table[1]
+
+local downloads = {}
+Update.httpDownload = function(url, path)
+    downloads[#downloads + 1] = { url = url, path = path }
+    return true
+end
+Archiver.entries = {
+    "tomedown.koplugin/",
+    "tomedown.koplugin/main.lua",
+    "tomedown.koplugin/_meta.lua",
+    "tomedown.koplugin/languages/it.po",
+    "tomedown.koplugin/tomedown_update.lua",
+}
+buttons[2].callback()
+UIManager:runPending()
+T.check(#downloads == 1
+    and downloads[1].url == "https://github.com/example/dl.zip",
+    "zip fetched from the release asset: "
+        .. tostring(downloads[1] and downloads[1].url))
+T.check(downloads[1].path:find("tomedown_cache/tomedown.koplugin.zip", 1, true)
+        ~= nil,
+    "zip lands in the cache dir: " .. tostring(downloads[1].path))
+T.check(#Archiver.extracted == 4,
+    "bare root folder skipped, 4 files extracted: " .. #Archiver.extracted)
+local first = Archiver.extracted[1]
+T.check(first.src == "tomedown.koplugin/main.lua"
+        and first.dest == T.plugin .. "/main.lua",
+    "root folder stripped: " .. first.src .. " -> " .. tostring(first.dest))
+T.check(not T.fileExists(cache_dir .. "/tomedown.koplugin.zip"),
+    "zip removed after unpacking")
+T.check(ConfirmBox.last ~= nil
+        and T.contains(ConfirmBox.last.text, "Tomedown updated to v" .. MAJOR)
+        and T.contains(ConfirmBox.last.text, "Restart KOReader now?"),
+    "restart prompt: " .. tostring(ConfirmBox.last and ConfirmBox.last.text))
+T.check(ConfirmBox.last.ok_text == "Restart", "restart button label")
+T.check(UIManager.restarted == 0, "no restart before the prompt is confirmed")
+ConfirmBox.last.ok_callback()
+T.check(UIManager.restarted == 1, "restart requested")
+
+-- 10b. download failure: reason attached, releases page offered
+resetWidgets()
+Update._resetState()
+Update.httpDownload = function()
+    return false, "the connection timed out"
+end
+Update.install("https://example/nope.zip", "1.0.0")
+UIManager:runPending()
+T.check(ConfirmBox.last ~= nil
+        and T.contains(ConfirmBox.last.text,
+            "Download failed (the connection timed out)"),
+    "download failure with reason: "
+        .. tostring(ConfirmBox.last and ConfirmBox.last.text))
+T.check(UIManager.restarted == 0, "no restart after a failed download")
+ConfirmBox.last.ok_callback()
+T.check(Device.links[1] == RELEASES_PAGE,
+    "releases page opened after the download failure")
+
+-- 10c. unpack failure: message with the reason, no restart prompt
+resetWidgets()
+Update._resetState()
+Archiver.reset()
+Archiver.entries = { "tomedown.koplugin/main.lua" }
+Archiver.extract_fails = true
+Update.httpDownload = function()
+    return true
+end
+Update.install("https://example/x.zip", "1.0.0")
+UIManager:runPending()
+T.check(T.contains(InfoMessage.last_text or "",
+        "Installation failed: extract failed"),
+    "unpack failure message: " .. tostring(InfoMessage.last_text))
+T.check(ConfirmBox.last == nil, "no restart prompt on unpack failure")
+T.check(UIManager.restarted == 0, "no restart after a failed unpack")
+Archiver.reset()
+T.rmrf(cache_dir)
 
 T.finish("test_update")

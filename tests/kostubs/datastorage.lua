@@ -13,6 +13,10 @@ function DataStorage:getDataDir()
     return self.data_dir
 end
 
+function DataStorage:getSettingsDir()
+    return self.data_dir
+end
+
 function DataStorage:insertDataDir(path)
     return self.data_dir .. "/" .. path
 end

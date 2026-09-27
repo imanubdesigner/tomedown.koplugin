@@ -85,7 +85,7 @@ every volume stays separate:
 | *Local folder* | defaults to `clipboard/tomedown` inside KOReader's data folder |
 | *Generate the index 00 - Index.md* | table with internal links, author, highlight count and last export date |
 | *Version* | the installed version, read from `_meta.lua` |
-| *Check for updates…* | asks GitHub for newer releases and shows their notes |
+| *Check for updates…* | asks GitHub for newer releases, shows their notes and can install the update right away (**Update and restart**) |
 | *Check for updates in background* | off by default: when enabled, a quiet check runs when KOReader starts and when the menu opens (at most once an hour) and notifies you of a new release |
 
 Everything is stored in KOReader's settings, so it applies to all books.
@@ -109,9 +109,12 @@ reach Obsidian.
 *Check for updates…* compares the installed version with the releases
 on GitHub and shows the notes of **every** release newer than yours, so
 someone updating from 0.2.0 to 1.0 reads the fixes of 0.3.0, 0.3.1 and
-1.0 in one window. Installing stays manual: take the zip from the
-release page and replace the plugin folder (see *Installation*) — that
-works from any older version.
+1.0 in one window. Tap **Update and restart** and the new version is
+installed for you: the release zip is downloaded from the release page,
+unpacked over the plugin folder and KOReader asks to restart. If the
+download or the unpacking fails, the releases page opens instead so the
+zip can be taken by hand (see *Installation*) — that works from any
+older version.
 
 When you publish a release, bump `version` in `_meta.lua` to the tag
 without the `v`.

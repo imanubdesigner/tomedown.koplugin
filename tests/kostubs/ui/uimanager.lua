@@ -10,6 +10,7 @@ local UIManager = {
     shown = {},
     scheduled = {},
     delay_log = {},
+    restarted = 0,
 }
 
 function UIManager:show(widget)
@@ -57,6 +58,12 @@ function UIManager:reset()
     self.shown = {}
     self.scheduled = {}
     self.delay_log = {}
+    self.restarted = 0
+end
+
+-- real KOReader quits with magic code 85; the stub only counts calls
+function UIManager:restartKOReader()
+    self.restarted = self.restarted + 1
 end
 
 return UIManager
