@@ -423,4 +423,37 @@ T.check(UIManager.restarted == 0, "no restart after a failed unpack")
 Archiver.reset()
 T.rmrf(cache_dir)
 
+-- ------------------------------- 11. errors inside scheduled actions
+-- an error escaping the scheduler kills the whole reader on device
+-- (crash.log: "attempt to use a closed file" in httpDownload took
+-- KOReader down mid-update): every scheduled body must report instead
+
+resetWidgets()
+Update._resetState()
+NetworkMgr.connected = true
+Update.httpGetJSON = function()
+    error("boom-check")
+end
+Update.check()
+local check_survived = pcall(UIManager.runPending, UIManager)
+T.check(check_survived, "errors in the check body are caught")
+T.check(ConfirmBox.last ~= nil
+        and T.contains(ConfirmBox.last.text or "", "Could not check for updates."),
+    "check failure reported: "
+        .. tostring(ConfirmBox.last and ConfirmBox.last.text))
+
+resetWidgets()
+Update._resetState()
+Update.httpDownload = function()
+    error("boom-download")
+end
+Update.install("https://example/x.zip", "1.0.0")
+local install_survived = pcall(UIManager.runPending, UIManager)
+T.check(install_survived, "errors in the install body are caught")
+T.check(T.contains(InfoMessage.last_text or "", "Installation failed:")
+        and T.contains(InfoMessage.last_text, "boom-download"),
+    "install failure reported: " .. tostring(InfoMessage.last_text))
+T.check(UIManager.restarted == 0, "no restart after an unexpected error")
+T.rmrf(cache_dir)
+
 T.finish("test_update")

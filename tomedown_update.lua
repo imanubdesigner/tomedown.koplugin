@@ -241,6 +241,65 @@ end
 
 --- Manual check from Settings: Wi-Fi gate, fetch, then either an
 -- "up to date" notice or the TextViewer with all the fixes.
+--- Body of the scheduled manual check, kept separate so the caller can
+-- run it behind pcall (see Update.check).
+local function checkBody()
+    local installed = Update.getInstalledVersion()
+    local releases = Update.httpGetJSON(RELEASES_URL)
+    last_bg_check = os.time()
+    if type(releases) ~= "table" or #releases == 0 then
+        Update.offerReleasesPage(_("Could not check for updates."))
+        return
+    end
+    local newer = collectNewer(releases, installed)
+    if #newer == 0 then
+        cached_version = nil
+        UIManager:show(InfoMessage:new{
+            text = T(_("Tomedown is up to date. Current version: %1"),
+                "v" .. installed),
+            timeout = 3,
+        })
+        return
+    end
+    cached_version = newer[1].version
+    local notes = {}
+    for __, rel in ipairs(newer) do
+        notes[#notes + 1] = "v" .. rel.version .. "\n" .. stripMarkdown(rel.body or "")
+    end
+    local viewer
+    viewer = TextViewer:new{
+        title = _("Update available!"),
+        text = T(_("Installed: %1\nLatest: %2"), "v" .. installed,
+            "v" .. cached_version)
+            .. "\n\n" .. table.concat(notes, "\n\n"),
+        buttons_table = {
+            {
+                {
+                    text = _("Close"),
+                    callback = function()
+                        UIManager:close(viewer)
+                    end,
+                },
+                {
+                    text = _("Update and restart"),
+                    callback = function()
+                        UIManager:close(viewer)
+                        local zip = newer[1].zip
+                        if not zip then
+                            Update.offerReleasesPage(
+                                _("No download available for this release."))
+                            return
+                        end
+                        Update.install(zip, newer[1].version)
+                    end,
+                },
+            },
+        },
+        add_default_buttons = false,
+    }
+    UIManager:show(viewer)
+end
+
 function Update.check()
     if Update.gateOnConnection(function()
         Update.check()
@@ -252,60 +311,12 @@ function Update.check()
         timeout = 1,
     })
     UIManager:scheduleIn(0.1, function()
-        local installed = Update.getInstalledVersion()
-        local releases = Update.httpGetJSON(RELEASES_URL)
-        last_bg_check = os.time()
-        if type(releases) ~= "table" or #releases == 0 then
+        -- safety net: an unhandled error here would kill the whole
+        -- reader (it runs in the scheduler, not behind our own pcall)
+        local ok_run = pcall(checkBody)
+        if not ok_run then
             Update.offerReleasesPage(_("Could not check for updates."))
-            return
         end
-        local newer = collectNewer(releases, installed)
-        if #newer == 0 then
-            cached_version = nil
-            UIManager:show(InfoMessage:new{
-                text = T(_("Tomedown is up to date. Current version: %1"),
-                    "v" .. installed),
-                timeout = 3,
-            })
-            return
-        end
-        cached_version = newer[1].version
-        local notes = {}
-        for __, rel in ipairs(newer) do
-            notes[#notes + 1] = "v" .. rel.version .. "\n" .. stripMarkdown(rel.body or "")
-        end
-        local viewer
-        viewer = TextViewer:new{
-            title = _("Update available!"),
-            text = T(_("Installed: %1\nLatest: %2"), "v" .. installed,
-                "v" .. cached_version)
-                .. "\n\n" .. table.concat(notes, "\n\n"),
-            buttons_table = {
-                {
-                    {
-                        text = _("Close"),
-                        callback = function()
-                            UIManager:close(viewer)
-                        end,
-                    },
-                    {
-                        text = _("Update and restart"),
-                        callback = function()
-                            UIManager:close(viewer)
-                            local zip = newer[1].zip
-                            if not zip then
-                                Update.offerReleasesPage(
-                                    _("No download available for this release."))
-                                return
-                            end
-                            Update.install(zip, newer[1].version)
-                        end,
-                    },
-                },
-            },
-            add_default_buttons = false,
-        }
-        UIManager:show(viewer)
     end)
 end
 
@@ -353,7 +364,10 @@ function Update.httpDownload(url, path)
                 socketutil:reset_timeout()
                 return c, h, st
             end)
-            file:close()
+            -- socketutil.file_sink closes the handle itself (on completion
+            -- or sink timeout), so a bare file:close() can raise "attempt
+            -- to use a closed file" and take the whole reader down
+            pcall(file.close, file)
             if not ok_req then
                 pcall(function()
                     socketutil:reset_timeout()
@@ -440,6 +454,49 @@ function Update.restartKOReader()
     UIManager:restartKOReader()
 end
 
+--- Body of the scheduled install step, kept separate so the caller can
+-- run it behind pcall (see Update.install).
+local function installBody(zip_url, new_version)
+    local dest = pluginDir()
+    if not dest then
+        UIManager:show(InfoMessage:new{
+            text = T(_("Installation failed: %1"), "unknown plugin folder"),
+            timeout = 5,
+        })
+        return
+    end
+    local lfs = require("libs/libkoreader-lfs")
+    local cache_dir = require("datastorage"):getSettingsDir()
+        .. "/tomedown_cache"
+    if lfs.attributes(cache_dir, "mode") ~= "directory" then
+        lfs.mkdir(cache_dir)
+    end
+    local zip_path = cache_dir .. "/tomedown.koplugin.zip"
+    local ok_dl, reason = Update.httpDownload(zip_url, zip_path)
+    if not ok_dl then
+        pcall(os.remove, zip_path)
+        Update.offerReleasesPage(withReason(_("Download failed."), reason))
+        return
+    end
+    local ok, err = Update._unpackStripRoot(zip_path, dest)
+    pcall(os.remove, zip_path)
+    if not ok then
+        UIManager:show(InfoMessage:new{
+            text = T(_("Installation failed: %1"), tostring(err)),
+            timeout = 5,
+        })
+        return
+    end
+    UIManager:show(ConfirmBox:new{
+        text = T(_("Tomedown updated to v%1."), new_version)
+            .. "\n\n" .. _("Restart KOReader now?"),
+        ok_text = _("Restart"),
+        ok_callback = function()
+            Update.restartKOReader()
+        end,
+    })
+end
+
 --- Install the release zip: gate, download into a cache dir, unpack it
 -- over this plugin's own folder, then ask to restart KOReader. Any
 -- failure falls back to the releases page (manual zip) or an error
@@ -455,44 +512,16 @@ function Update.install(zip_url, new_version)
         timeout = 1,
     })
     UIManager:scheduleIn(0.1, function()
-        local dest = pluginDir()
-        if not dest then
+        -- safety net: an unexpected error inside a scheduled action
+        -- propagates to the top level and kills the whole reader, so
+        -- everything here runs behind pcall and reports instead
+        local ok_run, run_err = pcall(installBody, zip_url, new_version)
+        if not ok_run then
             UIManager:show(InfoMessage:new{
-                text = T(_("Installation failed: %1"), "unknown plugin folder"),
+                text = T(_("Installation failed: %1"), tostring(run_err)),
                 timeout = 5,
             })
-            return
         end
-        local lfs = require("libs/libkoreader-lfs")
-        local cache_dir = require("datastorage"):getSettingsDir()
-            .. "/tomedown_cache"
-        if lfs.attributes(cache_dir, "mode") ~= "directory" then
-            lfs.mkdir(cache_dir)
-        end
-        local zip_path = cache_dir .. "/tomedown.koplugin.zip"
-        local ok_dl, reason = Update.httpDownload(zip_url, zip_path)
-        if not ok_dl then
-            pcall(os.remove, zip_path)
-            Update.offerReleasesPage(withReason(_("Download failed."), reason))
-            return
-        end
-        local ok, err = Update._unpackStripRoot(zip_path, dest)
-        pcall(os.remove, zip_path)
-        if not ok then
-            UIManager:show(InfoMessage:new{
-                text = T(_("Installation failed: %1"), tostring(err)),
-                timeout = 5,
-            })
-            return
-        end
-        UIManager:show(ConfirmBox:new{
-            text = T(_("Tomedown updated to v%1."), new_version)
-                .. "\n\n" .. _("Restart KOReader now?"),
-            ok_text = _("Restart"),
-            ok_callback = function()
-                Update.restartKOReader()
-            end,
-        })
     end)
 end
 
@@ -516,20 +545,24 @@ function Update.checkBackground()
     last_bg_check = now
     UIManager:scheduleIn(0.1, function()
         bg_in_flight = false
-        local installed = Update.getInstalledVersion()
-        local releases = Update.httpGetJSON(RELEASES_URL)
-        if type(releases) ~= "table" then
-            return
-        end
-        local newer = collectNewer(releases, installed)
-        if #newer == 0 then
-            cached_version = nil
-            return
-        end
-        cached_version = newer[1].version
-        UIManager:show(Notification:new{
-            text = T(_("Tomedown update available: v%1"), cached_version),
-        })
+        -- safety net, silent: the background check must never take the
+        -- reader down for a transient error
+        pcall(function()
+            local installed = Update.getInstalledVersion()
+            local releases = Update.httpGetJSON(RELEASES_URL)
+            if type(releases) ~= "table" then
+                return
+            end
+            local newer = collectNewer(releases, installed)
+            if #newer == 0 then
+                cached_version = nil
+                return
+            end
+            cached_version = newer[1].version
+            UIManager:show(Notification:new{
+                text = T(_("Tomedown update available: v%1"), cached_version),
+            })
+        end)
     end)
 end
 
