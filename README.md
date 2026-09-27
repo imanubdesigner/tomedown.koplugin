@@ -3,11 +3,16 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/imanubdesigner/tomedown.koplugin/releases/latest"><img src="https://img.shields.io/github/v/release/imanubdesigner/tomedown.koplugin?style=flat-square&color=7c3aed&labelColor=7c3aed&label=release" alt="Latest release"></a>
-  <a href="https://github.com/imanubdesigner/tomedown.koplugin/actions/workflows/test.yml"><img src="https://img.shields.io/github/actions/workflow/status/imanubdesigner/tomedown.koplugin/test.yml?style=flat-square&labelColor=7c3aed&label=tests" alt="Test status"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/imanubdesigner/tomedown.koplugin?style=flat-square&color=7c3aed&labelColor=7c3aed&label=license" alt="License"></a>
-  <img src="https://img.shields.io/badge/KOReader-compatible-7c3aed?style=flat-square&labelColor=7c3aed" alt="KOReader compatible">
-  <img src="https://img.shields.io/badge/Lua-5.1%20%2F%205.3-7c3aed?style=flat-square&labelColor=7c3aed" alt="Lua 5.1 / 5.3">
+  <img src="https://img.shields.io/badge/KOReader-171717?style=for-the-badge&logo=koreader&logoColor=white" alt="KOReader">
+  <img src="https://img.shields.io/badge/Obsidian-171717?style=for-the-badge&logo=obsidian&logoColor=white" alt="Obsidian">
+  <img src="https://img.shields.io/badge/Markdown-171717?style=for-the-badge&logo=markdown&logoColor=white" alt="Markdown">
+  <img src="https://img.shields.io/badge/Lua-171717?style=for-the-badge&logo=lua&logoColor=white" alt="Lua">
+</p>
+
+<p align="center">
+  <a href="https://github.com/imanubdesigner/tomedown.koplugin/releases/latest"><img src="https://img.shields.io/github/v/release/imanubdesigner/tomedown.koplugin?style=for-the-badge&color=171717&labelColor=171717&logo=github&logoColor=white" alt="Latest release"></a>
+  <a href="https://github.com/imanubdesigner/tomedown.koplugin/actions/workflows/test.yml"><img src="https://img.shields.io/github/actions/workflow/status/imanubdesigner/tomedown.koplugin/test.yml?style=for-the-badge&labelColor=171717&logo=githubactions&logoColor=white&label=tests" alt="Test status"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/imanubdesigner/tomedown.koplugin?style=for-the-badge&color=171717&labelColor=171717" alt="License"></a>
 </p>
 
 A KOReader plugin that exports the highlights of **each book into its own
