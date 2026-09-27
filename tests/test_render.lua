@@ -34,6 +34,11 @@ T.check(T.contains(md, "exported: 2026-09-26"), "frontmatter exported")
 T.check(T.contains(md, "highlights: 2"), "frontmatter highlights")
 T.check(T.contains(md, "  - kindle"), "tag kindle")
 T.check(T.contains(md, "  - highlights"), "tag highlights")
+T.check(not T.contains(md, "series:"), "no series line when absent")
+T.check(not T.contains(md, "language:"), "no language line when absent")
+T.check(not T.contains(md, "pages:"), "no pages line when absent")
+T.check(not T.contains(md, "status:"), "no status line when absent")
+T.check(not T.contains(md, "progress:"), "no progress line when absent")
 T.check(T.contains(md, "# Blackwater"), "h1 with the title")
 T.check(T.contains(md, "*Michael McDowell*"), "author in italics")
 T.check(T.contains(md, "**2 highlights**"), "highlight count")
@@ -98,6 +103,96 @@ local escaped = render.buildBookMd({
 })
 T.check(T.contains(escaped, 'title: "Dice \\"ciao\\" alla fine"'), "quotes and newline in the title")
 T.check(T.contains(escaped, 'author: "A\\\\B"'), "backslash in the author")
+
+-- ---------------------------------------------------------- rich frontmatter
+local rich = render.buildBookMd({
+    title = "Blackwater",
+    author = "Michael McDowell",
+    series = "Blackwater",
+    series_index = 3,
+    language = "it",
+    pages = 1140,
+    exported = "2026-09-26",
+    count = 2,
+    status = "reading",
+    progress = "96%",
+    keywords = { "horror", "gothic-fiction" },
+    annotations = { { text = "Riga.", page = "1" } },
+})
+T.check(T.contains(rich, 'series: "Blackwater"'), "frontmatter series")
+T.check(T.contains(rich, "series_index: 3"), "series_index as a number, unquoted")
+T.check(T.contains(rich, 'language: "it"'), "frontmatter language")
+T.check(T.contains(rich, "pages: 1140"), "frontmatter pages")
+T.check(T.contains(rich, 'status: "reading"'), "frontmatter status")
+T.check(T.contains(rich, 'progress: "96%"'), "frontmatter progress")
+local fm = rich:match("^%-%-%-\n(.-)\n%-%-%-\n")
+local seq = {
+    "title:", "author:", "series:", "series_index:", "language:", "pages:",
+    "exported:", "highlights:", "status:", "progress:", "tags:",
+}
+local last, order_ok = 0, fm ~= nil
+for __, key in ipairs(seq) do
+    local pos = fm and fm:find(key, 1, true)
+    if not pos or pos < last then
+        order_ok = false
+    end
+    last = pos or last
+end
+T.check(order_ok, "frontmatter keys in the documented order")
+local t1 = rich:find("  - kindle", 1, true)
+local t2 = rich:find("  - highlights", 1, true)
+local t3 = rich:find("  - horror", 1, true)
+local t4 = rich:find("  - gothic-fiction", 1, true)
+T.check(t1 and t2 and t3 and t4 and t1 < t2 and t2 < t3 and t3 < t4,
+    "tags: kindle, highlights, then the book keywords")
+
+local idxBook = render.buildBookMd({
+    title = "T",
+    series = "S",
+    series_index = "1.5",
+    annotations = {},
+})
+T.check(T.contains(idxBook, 'series_index: "1.5"'), "string series_index is quoted")
+T.check(not T.contains(idxBook, "status:"), "status still absent without data")
+
+local weird = render.buildBookMd({
+    title = "T",
+    keywords = { "Sci-Fi & Fantasy" },
+    annotations = {},
+})
+T.check(T.contains(weird, '  - "Sci-Fi & Fantasy"'),
+    "a keyword needing quotes gets them")
+
+-- ------------------------------------------------------------ page bookmarks
+local bmBook = render.buildBookMd({
+    title = "T",
+    count = 1,
+    annotations = { { text = "Evidenziato", page = "1" } },
+    bookmarks = {
+        { text = "Nota segnalibro", page = "5", date = "01/09/2026" },
+        { page = "7", date = "02/09/2026" },
+    },
+})
+T.check(T.contains(bmBook, "## Page bookmarks"), "bookmarks heading")
+T.check(T.contains(bmBook, "> Nota segnalibro"), "bookmark note quoted")
+T.check(T.contains(bmBook, "- **p. 5** · 01/09/2026"), "bookmark meta row")
+T.check(T.contains(bmBook, "- **p. 7** · 02/09/2026"), "bookmark without note: meta only")
+T.check(T.contains(bmBook, "**1 highlights**"), "highlight count kept")
+local iHl = bmBook:find("> Evidenziato", 1, true)
+local iSect = bmBook:find("## Page bookmarks", 1, true)
+T.check(iHl and iSect and iHl < iSect, "the section comes after the highlights")
+local quoted = select(2, bmBook:gsub("> ", ""))
+T.check(quoted == 2, "only the highlight and the bookmark note are quoted: " .. quoted)
+
+local onlyBookmarks = render.buildBookMd({
+    title = "Solo bm",
+    count = 0,
+    annotations = {},
+    bookmarks = { { page = "1", date = "01/01/2026" } },
+})
+T.check(not T.contains(onlyBookmarks, "**0 highlights**"), "no zero count line")
+T.check(T.contains(onlyBookmarks, "## Page bookmarks"), "bookmark-only book gets the section")
+T.check(not T.contains(md, "Page bookmarks"), "no section without bookmarks")
 
 -- ---------------------------------------------------------------- index
 local index = render.buildIndexMd({}, {})

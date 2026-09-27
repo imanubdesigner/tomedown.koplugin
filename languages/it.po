@@ -216,3 +216,9 @@ msgstr "Apri"
 
 msgid "Tomedown update available: v%1"
 msgstr "Aggiornamento Tomedown disponibile: v%1"
+
+msgid "Include page bookmarks"
+msgstr "Includi segnalibri di pagina"
+
+msgid "Page bookmarks"
+msgstr "Segnalibri di pagina"

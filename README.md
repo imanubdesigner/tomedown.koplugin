@@ -84,6 +84,7 @@ every volume stays separate:
 | *Remote folder…* | only if you want to override the folder chosen above (e.g. `/Bookshelf/Kindle`) |
 | *Local folder* | defaults to `clipboard/tomedown` inside KOReader's data folder |
 | *Generate the index 00 - Index.md* | table with internal links, author, highlight count and last export date |
+| *Include page bookmarks* | off by default: adds a `## Page bookmarks` section (bookmarked page + note) after the highlights |
 | *Version* | the installed version, read from `_meta.lua` |
 | *Check for updates…* | asks GitHub for newer releases, shows their notes and can install the update right away (**Update and restart**) |
 | *Check for updates in background* | off by default: when enabled, a quiet check runs when KOReader starts and when the menu opens (at most once an hour) and notifies you of a new release |
@@ -177,16 +178,24 @@ tomedown: upload failed (attempt 1 of 3), retrying in 2 s: <path> 500
 
 ```markdown
 ---
-title: "Blackwater: The Complete Saga"
+title: "Blackwater"
 author: "Michael McDowell"
+series: "Blackwater"
+series_index: 1
+language: "it"
+pages: 1140
 exported: 2026-09-26
 highlights: 150
+status: "complete"
+progress: "96%"
 tags:
   - kindle
   - highlights
+  - horror
+  - gothic-fiction
 ---
 
-# Blackwater: The Complete Saga
+# Blackwater
 
 *Michael McDowell*
 
@@ -202,10 +211,22 @@ tags:
 > Another highlight.
 
 - **p. 12** · 03/09/2026
+
+## Page bookmarks
+
+> Check the epilogue again
+
+- **p. 120** · 04/09/2026
 ```
 
-- **only highlights** are exported: page bookmarks (notes without a
-  highlight) and deleted annotations are left out
+- the frontmatter keeps what KOReader knows about the book: `series` and
+  `series_index`, `language`, `pages`, the reading `status`
+  (`reading` / `abandoned` / `complete`), `progress` and the book's
+  keywords appended to `tags`; a field KOReader does not know (ISBN, for
+  instance) is simply not there, and unknown fields are omitted
+- **only highlights** are exported by default: page bookmarks and deleted
+  annotations are left out — tick *Include page bookmarks* in Settings to
+  get the `## Page bookmarks` section shown above
 - the file name matches KOReader's standard exporter (`Author - Title`), so
   it does not clash with exports you already made
 - the page is the stable page number (`pageref`) when available, otherwise
@@ -213,7 +234,7 @@ tags:
 - the index uses Obsidian's internal links:
 
   ```markdown
-  | [[Michael McDowell - Blackwater_ The Complete Saga|Blackwater: The Complete Saga]] | Michael McDowell | 150 | 26/09/2026 |
+  | [[Michael McDowell - Blackwater|Blackwater]] | Michael McDowell | 150 | 26/09/2026 |
   ```
 
 The sample above is what an English KOReader produces; with an Italian
@@ -264,8 +285,8 @@ texts. On English (or when no translation exists) the original msgid is
 used.
 
 The text inside the `.md` files is translated too (titles,
-`No chapter`, `N highlights`, `note:`, `Book index`, table headers), so your
-exported notes follow KOReader's language.
+`No chapter`, `N highlights`, `note:`, `Page bookmarks`, `Book index`, table
+headers), so your exported notes follow KOReader's language.
 
 To fix or add a translation: edit `languages/it.po` (msgid = English source,
 msgstr = Italian) and restart KOReader. It is standard gettext: for another

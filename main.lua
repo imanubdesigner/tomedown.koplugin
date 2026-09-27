@@ -262,12 +262,82 @@ function MdBook:cleanAnnotations(raw)
     return out
 end
 
-local function hashBook(title, author, annotations)
+-- keeps the page bookmarks (page, without pos0/pos1), drops deleted
+-- entries and auto-generated notes, then sorts them by page
+function MdBook:cleanBookmarks(raw)
+    local out = {}
+    if type(raw) ~= "table" then
+        return out
+    end
+    for __, item in ipairs(raw) do
+        if type(item) == "table" and not item.deleted
+            and item.page ~= nil and not (item.pos0 and item.pos1) then
+            local note = trim(item.note) or trim(item.text)
+            if note and note:match("^@ %d%d%d%d%-%d%d%-%d%d %d%d:%d%d:%d%d$") then
+                note = nil
+            end
+            local datetime = item.datetime_updated or item.datetime
+            out[#out + 1] = {
+                text = note,
+                page = pageLabel(item),
+                date = render.fmtDate(datetime),
+                sort_page = tonumber(item.pageno) or 0,
+                sort_time = tostring(datetime or ""),
+            }
+        end
+    end
+    table.sort(out, function(a, b)
+        if a.sort_page ~= b.sort_page then
+            return a.sort_page < b.sort_page
+        end
+        if a.sort_time ~= b.sort_time then
+            return a.sort_time < b.sort_time
+        end
+        return tostring(a.text or "") < tostring(b.text or "")
+    end)
+    return out
+end
+
+-- keywords may be a string ("horror, gothic"), a table, or absent
+local function parseKeywords(keywords)
+    local out = {}
+    local function add(v)
+        if type(v) == "string" or type(v) == "number" then
+            local s = tostring(v):gsub("^%s+", ""):gsub("%s+$", "")
+            if s ~= "" then
+                out[#out + 1] = s
+            end
+        end
+    end
+    if type(keywords) == "table" then
+        for __, v in ipairs(keywords) do
+            add(v)
+        end
+    elseif type(keywords) == "string" then
+        for part in keywords:gmatch("[^,\n]+") do
+            add(part)
+        end
+    end
+    local seen, deduped = {}, {}
+    for __, s in ipairs(out) do
+        local key = s:lower()
+        if not seen[key] then
+            seen[key] = true
+            deduped[#deduped + 1] = s
+        end
+    end
+    return deduped
+end
+
+local function hashBook(title, author, annotations, meta, bookmarks)
     local parts = {
         "title:" .. tostring(title or ""),
         "author:" .. tostring(author or ""),
         "count:" .. tostring(#annotations),
     }
+    if meta and meta ~= "" then
+        parts[#parts + 1] = "meta:" .. meta
+    end
     for __, a in ipairs(annotations) do
         parts[#parts + 1] = table.concat({
             tostring(a.sort_page or 0),
@@ -276,6 +346,14 @@ local function hashBook(title, author, annotations)
             tostring(a.chapter or ""),
             a.text,
             tostring(a.note or ""),
+        }, "\31")
+    end
+    for __, b in ipairs(bookmarks or {}) do
+        parts[#parts + 1] = "bm:" .. table.concat({
+            tostring(b.sort_page or 0),
+            tostring(b.sort_time or ""),
+            tostring(b.page or ""),
+            tostring(b.text or ""),
         }, "\31")
     end
     return md5(table.concat(parts, "\n"))
@@ -313,20 +391,70 @@ function MdBook:buildBook(file, live_annotations)
                 raw = self:legacyAnnotations(ds)
             end
             local annotations = self:cleanAnnotations(raw)
-            if #annotations > 0 then
+            local bookmarks = getSetting("include_bookmarks", false)
+                and self:cleanBookmarks(raw) or {}
+            if #annotations > 0 or #bookmarks > 0 then
                 local props = BookInfo.extendProps(ds:readSetting("doc_props"), file)
                 local title = props.display_title or file
                 local author = props.authors
                 local base = self:fileBase(file, props)
+                local info = BookList.getBookInfo(file)
+                local status = info and info.status
+                if status ~= "reading" and status ~= "abandoned" and status ~= "complete" then
+                    status = nil
+                end
+                local progress = ds:readSetting("percent_finished")
+                if type(progress) == "number" then
+                    if progress > 1 then
+                        progress = progress / 100
+                    end
+                    progress = math.floor(progress * 100 + 0.5) .. "%"
+                else
+                    progress = nil
+                end
+                local pages = info and info.pages
+                if type(pages) ~= "number" or pages <= 0 then
+                    pages = nil
+                end
+                local series = props.series
+                if type(series) ~= "string" or series == "" then
+                    series = nil
+                end
+                local series_index = props.series_index
+                if series_index ~= nil and tostring(series_index) == "" then
+                    series_index = nil
+                end
+                local language = props.language
+                if type(language) ~= "string" or language == "" then
+                    language = nil
+                end
+                local keywords = parseKeywords(props.keywords)
+                local meta = table.concat({
+                    tostring(series or ""),
+                    tostring(series_index or ""),
+                    tostring(language or ""),
+                    tostring(pages or ""),
+                    tostring(status or ""),
+                    tostring(progress or ""),
+                    table.concat(keywords, "\31"),
+                }, "\31")
                 book = {
                     file = file,
                     title = title,
                     author = author,
                     base = base,
+                    series = series,
+                    series_index = series_index,
+                    language = language,
+                    pages = pages,
+                    status = status,
+                    progress = progress,
+                    keywords = keywords,
                     count = #annotations,
                     annotations = annotations,
+                    bookmarks = bookmarks,
                     exported = os.date("%Y-%m-%d"),
-                    hash = hashBook(title, author, annotations),
+                    hash = hashBook(title, author, annotations, meta, bookmarks),
                 }
             end
         end
@@ -869,6 +997,16 @@ function MdBook:genSettingsMenu()
             check_callback_updates_menu = true,
             callback = function()
                 setSetting("with_index", not getSetting("with_index", true))
+            end,
+        },
+        {
+            text = _("Include page bookmarks"),
+            checked_func = function()
+                return getSetting("include_bookmarks", false)
+            end,
+            check_callback_updates_menu = true,
+            callback = function()
+                setSetting("include_bookmarks", not getSetting("include_bookmarks", false))
             end,
             separator = true,
         },

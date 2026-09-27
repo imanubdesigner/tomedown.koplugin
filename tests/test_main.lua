@@ -92,6 +92,7 @@ local FILE = "/mnt/us/Bookshelf/Blackwater.epub"
 local FILE2 = "/mnt/us/Bookshelf/LibroVecchio.epub"
 local FILE3 = "/mnt/us/Bookshelf/Senza Meta.epub"
 local FILE_DIM = "/mnt/us/Bookshelf/Dim.epub"
+local FILE4 = "/mnt/us/Bookshelf/SoloBookmark.epub"
 local BASE = "Michael McDowell - Blackwater"
 local MD_PATH = DIR .. "/" .. BASE .. ".md"
 local INDEX_PATH = DIR .. "/00 - Index.md"
@@ -113,8 +114,13 @@ local function modernAnnotations()
             datetime = "2026-09-03 11:30:00",
             chapter = "Capitolo II",
         },
-        -- page bookmark (no drawer): excluded
-        { text = "Segnalibro di pagina", pageno = 5, datetime = "2026-09-01 09:00:00" },
+        -- page bookmark (page, no pos0/pos1): excluded from the highlights
+        {
+            page = "epubxfi(000000000000000500000)",
+            pageno = 5,
+            datetime = "2026-09-01 09:00:00",
+            note = "Segnalibro di pagina",
+        },
         -- deleted highlight: excluded
         {
             drawer = "underline",
@@ -340,6 +346,52 @@ T.check(T.contains(Notification.last_text or "", "1 files exported"),
 T.check(store.tomedown.exports[FILE].hash == saved_hash,
     "hash back to the previous value")
 
+-- ------------------------------------ 4b. rich frontmatter from doc settings
+local rec = BookList.registry[FILE]
+rec.doc_props = {
+    title = "Blackwater",
+    authors = "Michael McDowell",
+    series = "Blackwater",
+    series_index = 4,
+    language = "it",
+    keywords = "horror, gothic-fiction",
+}
+rec.doc_pages = 300
+rec.percent_finished = 0.956
+rec.summary = { status = "complete" }
+
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+local richMd = T.readFile(MD_PATH)
+T.check(richMd ~= nil, "re-export with the new metadata")
+if richMd then
+    T.check(T.contains(richMd, 'series: "Blackwater"'), "series from doc_props")
+    T.check(T.contains(richMd, "series_index: 4"), "series_index as a number")
+    T.check(T.contains(richMd, 'language: "it"'), "language from doc_props")
+    T.check(T.contains(richMd, "pages: 300"), "pages from doc settings")
+    T.check(T.contains(richMd, 'status: "complete"'), "status from summary")
+    T.check(T.contains(richMd, 'progress: "96%"'), "progress rounded from percent_finished")
+    T.check(T.contains(richMd, "  - horror"), "keyword tag")
+    T.check(T.contains(richMd, "  - gothic-fiction"), "second keyword tag")
+    local iSeries = richMd:find("series:", 1, true)
+    local iIndex = richMd:find("series_index:", 1, true)
+    local iLang = richMd:find('language:', 1, true)
+    T.check(iSeries and iIndex and iLang and iSeries < iIndex and iIndex < iLang,
+        "series, series_index, language in order")
+end
+T.check(store.tomedown.exports[FILE].hash ~= saved_hash,
+    "hash changes with the new metadata")
+
+-- a progress change alone re-exports the book (only updated)
+rec.percent_finished = 0.5
+plugin:runExport({ FILE }, { only_updated = true })
+UIManager:runPending()
+T.check(T.contains(Notification.last_text or "", "1 files exported"),
+    "progress change picked up by only updated: " .. tostring(Notification.last_text))
+local newProgressMd = T.readFile(MD_PATH)
+T.check(newProgressMd and T.contains(newProgressMd, 'progress: "50%"'),
+    "new progress value in the frontmatter")
+
 -- ------------------------------------------------------------ 5. menu
 
 local menu_items = {}
@@ -380,12 +432,14 @@ ui.document = { file = nil }
 T.check(sub[4].enabled_func() == true, "all books enabled")
 
 local settings = plugin:genSettingsMenu()
-T.check(#settings == 8, "settings entries: " .. #settings)
+T.check(#settings == 9, "settings entries: " .. #settings)
 T.check(settings[1].text == "Upload to Koofr", "upload entry")
 T.check(settings[2].text_func() == "Server and folder: not set", "server not set")
 T.check(T.contains(settings[3].text_func(), "Remote folder: not set"), "remote folder not set")
 T.check(T.contains(settings[4].text_func(), "clipboard/tomedown"), "default local folder")
 T.check(T.contains(settings[5].text, "00 - Index.md"), "index entry with the file name")
+T.check(settings[6].text == "Include page bookmarks", "page bookmarks entry")
+T.check(settings[6].checked_func() == false, "page bookmarks off by default")
 
 settings[1].callback()
 T.check(store.tomedown.upload == false, "upload disabled")
@@ -395,6 +449,10 @@ settings[5].callback()
 T.check(store.tomedown.with_index == false, "index disabled")
 settings[5].callback()
 T.check(store.tomedown.with_index == true, "index re-enabled")
+settings[6].callback()
+T.check(store.tomedown.include_bookmarks == true, "page bookmarks enabled")
+settings[6].callback()
+T.check(store.tomedown.include_bookmarks == false, "page bookmarks disabled")
 
 -- server picked from the Cloud storage list
 plugin:chooseCloudFolder(nil)
@@ -458,6 +516,52 @@ store = {}
 store.tomedown = {}
 T.check(plugin:genPickerMenu()[1].text_func() == "Export selected (0)",
     "no selection after the reset")
+
+-- ----------------------------------------------- 5b. page bookmarks
+
+settings[6].callback() -- enable "Include page bookmarks"
+T.check(store.tomedown.include_bookmarks == true, "page bookmarks enabled for the export")
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+local bmMd = T.readFile(MD_PATH)
+T.check(bmMd ~= nil, "export with page bookmarks")
+if bmMd then
+    T.check(T.contains(bmMd, "## Page bookmarks"), "bookmarks section")
+    T.check(T.contains(bmMd, "> Segnalibro di pagina"), "bookmark note quoted")
+    T.check(T.contains(bmMd, "- **p. 5** · 01/09/2026"), "bookmark meta row")
+    T.check(T.contains(bmMd, "highlights: 2"), "highlight count unchanged")
+    local iBm = bmMd:find("## Page bookmarks", 1, true)
+    local iLast = bmMd:find("> Seconda riga.", 1, true)
+    T.check(iBm and iLast and iLast < iBm, "the section comes after the highlights")
+end
+
+-- a book with only a bookmark is exported too
+BookList.registry[FILE4] = {
+    annotations = {
+        { page = "epubxfi(000000000000000300000)", pageno = 3,
+            datetime = "2026-09-02 08:00:00", note = "Solo un segnalibro" },
+    },
+    doc_props = { title = "SoloBookmark", authors = "Autore B" },
+}
+plugin:runExport({ FILE4 }, {})
+UIManager:runPending()
+local onlyBmMd = T.readFile(DIR .. "/Autore B - SoloBookmark.md")
+T.check(onlyBmMd ~= nil, "bookmark-only book exported")
+if onlyBmMd then
+    T.check(T.contains(onlyBmMd, "highlights: 0"), "frontmatter count zero")
+    T.check(not T.contains(onlyBmMd, "**0 highlights**"), "no zero count line in the body")
+    T.check(T.contains(onlyBmMd, "## Page bookmarks"), "bookmark-only section")
+    T.check(T.contains(onlyBmMd, "> Solo un segnalibro"), "bookmark-only quote")
+end
+
+-- disabled again: the section disappears
+settings[6].callback()
+T.check(store.tomedown.include_bookmarks == false, "page bookmarks disabled again")
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+local bmOffMd = T.readFile(MD_PATH)
+T.check(bmOffMd ~= nil and not T.contains(bmOffMd, "## Page bookmarks"),
+    "bookmarks section removed when disabled")
 
 -- ------------------------------------------------- 6. fallback servers
 

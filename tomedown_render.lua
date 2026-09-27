@@ -20,6 +20,15 @@ local function yamlQuote(s)
     return '"' .. s .. '"'
 end
 
+-- list item: plain when YAML-safe, quoted otherwise
+local function yamlListItem(s)
+    s = tostring(s)
+    if s:match("^[%w][%w%s%-_%.']*$") then
+        return s
+    end
+    return yamlQuote(s)
+end
+
 -- "2026-09-26 10:11:12" -> "26/09/2026"
 function render.fmtDate(dt)
     if type(dt) ~= "string" then
@@ -60,10 +69,14 @@ end
 --[[
 book = {
     title, author, exported, count,
+    series, series_index, language, pages,     -- optional frontmatter
+    status, progress,                          -- optional frontmatter
+    keywords = { ... },                        -- optional, appended to tags
     annotations = {
         { text, note, chapter, page, date },
         ...
     },
+    bookmarks = { { text, page, date }, ... }, -- optional page bookmarks
 }
 opts = { no_chapter_label = _("No chapter") }
 ]]
@@ -79,11 +92,36 @@ function render.buildBookMd(book, opts)
     add("---")
     add("title: " .. yamlQuote(book.title))
     add("author: " .. yamlQuote(book.author))
+    if book.series then
+        add("series: " .. yamlQuote(book.series))
+    end
+    if book.series_index ~= nil and tostring(book.series_index) ~= "" then
+        if type(book.series_index) == "number" then
+            add("series_index: " .. tostring(book.series_index))
+        else
+            add("series_index: " .. yamlQuote(book.series_index))
+        end
+    end
+    if book.language then
+        add("language: " .. yamlQuote(book.language))
+    end
+    if book.pages ~= nil then
+        add("pages: " .. tostring(book.pages))
+    end
     add("exported: " .. (book.exported or os.date("%Y-%m-%d")))
     add("highlights: " .. tostring(count))
+    if book.status then
+        add("status: " .. yamlQuote(book.status))
+    end
+    if book.progress then
+        add("progress: " .. yamlQuote(book.progress))
+    end
     add("tags:")
     add("  - kindle")
     add("  - " .. _("highlights"))
+    for __, kw in ipairs(book.keywords or {}) do
+        add("  - " .. yamlListItem(kw))
+    end
     add("---")
     add("")
 
@@ -93,7 +131,9 @@ function render.buildBookMd(book, opts)
         add("*" .. tostring(book.author) .. "*")
         add("")
     end
-    add("**" .. tostring(count) .. " " .. _("highlights") .. "**")
+    if count > 0 then
+        add("**" .. tostring(count) .. " " .. _("highlights") .. "**")
+    end
 
     local with_chapters = hasAnyChapter(annotations)
     local current_chapter = nil
@@ -130,6 +170,33 @@ function render.buildBookMd(book, opts)
             meta[1] = "…"
         end
         add("- " .. table.concat(meta, " · "))
+    end
+
+    local bookmarks = book.bookmarks or {}
+    if #bookmarks > 0 then
+        add("")
+        add("## " .. _("Page bookmarks"))
+        for __, b in ipairs(bookmarks) do
+            add("")
+            if b.text and tostring(b.text) ~= "" then
+                local btext = tostring(b.text):gsub("\r\n", "\n"):gsub("\r", "\n")
+                for line in (btext .. "\n"):gmatch("(.-)\n") do
+                    add("> " .. line)
+                end
+                add("")
+            end
+            local bmeta = {}
+            if b.page and tostring(b.page) ~= "" then
+                bmeta[#bmeta + 1] = "**p. " .. tostring(b.page) .. "**"
+            end
+            if b.date and tostring(b.date) ~= "" then
+                bmeta[#bmeta + 1] = tostring(b.date)
+            end
+            if #bmeta == 0 then
+                bmeta[1] = "…"
+            end
+            add("- " .. table.concat(bmeta, " · "))
+        end
     end
 
     return table.concat(out, "\n") .. "\n"
