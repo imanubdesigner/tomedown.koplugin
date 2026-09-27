@@ -138,3 +138,45 @@ msgstr "Nessun libro con evidenziati esportati."
 
 msgid "| Book | Author | Highlights | Last export |"
 msgstr "| Libro | Autore | Evidenziati | Ultimo export |"
+
+msgid "Version %1"
+msgstr "Versione %1"
+
+msgid "Version %1 — v%2 available"
+msgstr "Versione %1 — v%2 disponibile"
+
+msgid "Check for updates…"
+msgstr "Controlla aggiornamenti…"
+
+msgid "Check for updates in background"
+msgstr "Controlla aggiornamenti in background"
+
+msgid "Checking for updates…"
+msgstr "Controllo aggiornamenti…"
+
+msgid "Tomedown is up to date. Current version: %1"
+msgstr "Tomedown è aggiornato. Versione corrente: %1"
+
+msgid "Update available!"
+msgstr "Aggiornamento disponibile!"
+
+msgid "Installed: %1\nLatest: %2"
+msgstr "Installata: %1\nUltima: %2"
+
+msgid "Close"
+msgstr "Chiudi"
+
+msgid "Open releases page"
+msgstr "Apri pagina delle release"
+
+msgid "Could not check for updates."
+msgstr "Impossibile controllare gli aggiornamenti."
+
+msgid "Open the releases page in a browser?"
+msgstr "Aprire la pagina delle release in un browser?"
+
+msgid "Open"
+msgstr "Apri"
+
+msgid "Tomedown update available: v%1"
+msgstr "Aggiornamento Tomedown disponibile: v%1"

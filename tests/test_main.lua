@@ -380,7 +380,7 @@ ui.document = { file = nil }
 T.check(sub[4].enabled_func() == true, "all books enabled")
 
 local settings = plugin:genSettingsMenu()
-T.check(#settings == 5, "settings entries: " .. #settings)
+T.check(#settings == 8, "settings entries: " .. #settings)
 T.check(settings[1].text == "Upload to Koofr", "upload entry")
 T.check(settings[2].text_func() == "Server and folder: not set", "server not set")
 T.check(T.contains(settings[3].text_func(), "Remote folder: not set"), "remote folder not set")

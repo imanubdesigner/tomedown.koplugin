@@ -27,6 +27,7 @@ local lfs = require("libs/libkoreader-lfs")
 local T = ffiUtil.template
 local _ = require("tomedown_i18n")
 local render = require("tomedown_render")
+local Update = require("tomedown_update")
 
 local SETTINGS_KEY = "tomedown"
 local DEFAULT_LOCAL_SUBDIR = "clipboard/tomedown"
@@ -869,15 +870,54 @@ function MdBook:genSettingsMenu()
             callback = function()
                 setSetting("with_index", not getSetting("with_index", true))
             end,
+            separator = true,
+        },
+        {
+            text_func = function()
+                local version = Update.getInstalledVersion()
+                local latest = Update.getAvailableVersion()
+                if latest then
+                    return T(_("Version %1 — v%2 available"), version, latest)
+                end
+                return T(_("Version %1"), version)
+            end,
+        },
+        {
+            text = _("Check for updates…"),
+            callback = function()
+                Update.check()
+            end,
+        },
+        {
+            text = _("Check for updates in background"),
+            checked_func = function()
+                return getSetting("update_check", false)
+            end,
+            check_callback_updates_menu = true,
+            callback = function()
+                setSetting("update_check", not getSetting("update_check", false))
+            end,
         },
     }
 end
 
 function MdBook:init()
     self.ui.menu:registerToMainMenu(self)
+    if getSetting("update_check", false) then
+        -- quiet check shortly after KOReader starts; the same check also
+        -- runs when the menu is opened (both throttled to once an hour)
+        UIManager:scheduleIn(10, function()
+            Update.checkBackground()
+        end)
+    end
 end
 
 function MdBook:addToMainMenu(menu_items)
+    if getSetting("update_check", false) then
+        UIManager:scheduleIn(0.1, function()
+            Update.checkBackground()
+        end)
+    end
     menu_items.tomedown = {
         text = "Tomedown",
         sub_item_table = {

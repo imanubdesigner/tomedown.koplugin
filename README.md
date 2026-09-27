@@ -84,6 +84,9 @@ every volume stays separate:
 | *Remote folder…* | only if you want to override the folder chosen above (e.g. `/Bookshelf/Kindle`) |
 | *Local folder* | defaults to `clipboard/tomedown` inside KOReader's data folder |
 | *Generate the index 00 - Index.md* | table with internal links, author, highlight count and last export date |
+| *Version* | the installed version, read from `_meta.lua` |
+| *Check for updates…* | asks GitHub for newer releases and shows their notes |
+| *Check for updates in background* | off by default: when enabled, a quiet check runs when KOReader starts and when the menu opens (at most once an hour) and notifies you of a new release |
 
 Everything is stored in KOReader's settings, so it applies to all books.
 
@@ -100,6 +103,23 @@ type the correct path: it applies to this plugin only.
 Tip: keep the `.md` files in a folder where AnnotationSync's JSONs do not
 land, or add `*.json` to Remotely Save's *Ignore list* so only the notes
 reach Obsidian.
+
+### Updates
+
+*Check for updates…* compares the installed version with the releases
+on GitHub and shows the notes of **every** release newer than yours, so
+someone updating from 0.2.0 to 1.0 reads the fixes of 0.3.0, 0.3.1 and
+1.0 in one window. Installing stays manual: take the zip from the
+release page and replace the plugin folder (see *Installation*) — that
+works from any older version.
+
+When you publish a release, bump `version` in `_meta.lua` to the tag
+without the `v`.
+
+The updater is built to keep working from old installs: repository and
+API URL never change, tags stay `vX.Y.Z`, release zips keep the
+`tomedown.koplugin/` top-level folder, and settings keys are never
+renamed.
 
 ## Usage
 

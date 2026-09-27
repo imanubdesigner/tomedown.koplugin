@@ -6,7 +6,7 @@ local HERE = arg[0]:match("^(.*)/") or "."
 package.path = HERE .. "/?.lua;" .. package.path
 local T = require("common")
 
-local SOURCES = { "main.lua", "tomedown_render.lua", "_meta.lua" }
+local SOURCES = { "main.lua", "tomedown_render.lua", "tomedown_update.lua", "_meta.lua" }
 local PO = T.plugin .. "/languages/it.po"
 
 -- extracts the strings passed to _( ... ), handling escapes
@@ -189,8 +189,8 @@ T.check(#order - 1 == (function()
     return n
 end)(), "po and source entry counts match")
 
--- the two modules that require tomedown_i18n declare it
-for __, name in ipairs({ "main.lua", "tomedown_render.lua" }) do
+-- the modules that require tomedown_i18n declare it
+for __, name in ipairs({ "main.lua", "tomedown_render.lua", "tomedown_update.lua" }) do
     T.check(T.contains(T.readFile(T.plugin .. "/" .. name), 'require("tomedown_i18n")'),
         name .. " requires tomedown_i18n")
 end

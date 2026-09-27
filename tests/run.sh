@@ -36,6 +36,8 @@ echo "=== test_i18n"
 "$LUA" test_i18n.lua
 echo "=== test_main"
 "$LUA" test_main.lua
+echo "=== test_update"
+"$LUA" test_update.lua
 
 if command -v luac5.1 >/dev/null 2>&1; then
     echo "=== syntax check (luac5.1, the interpreter that runs on the Kindle)"
