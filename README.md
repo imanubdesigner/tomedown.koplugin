@@ -39,6 +39,10 @@ every volume stays separate:
 - A Koofr account (the free plan is plenty)
 - In Obsidian: **Remotely Save** with a WebDAV server (free)
 
+<p align="center">
+  <img src="assets/graphic-scheme.png" alt="How Tomedown works: highlights and bookmarks in KOReader become one Markdown file per book, uploaded to Koofr via WebDAV and synced to Obsidian with Remotely Save" width="100%">
+</p>
+
 ## Installation
 
 1. Plug the Kindle in via USB mass storage.
