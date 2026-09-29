@@ -811,40 +811,21 @@ function MdBook:editRemoteFolder(touchmenu)
 end
 
 function MdBook:editLocalDir(touchmenu)
-    local dialog
-    dialog = InputDialog:new{
+    local PathChooser = require("ui/widget/pathchooser")
+    UIManager:show(PathChooser:new{
         title = _("Local folder for exports"),
-        input = self:getLocalDir(),
-        hint = _("path on the Kindle"),
-        buttons = {
-            {
-                {
-                    text = _("Cancel"),
-                    id = "close",
-                    callback = function()
-                        UIManager:close(dialog)
-                    end,
-                },
-            },
-            {
-                {
-                    text = _("Save"),
-                    callback = function()
-                        local value = dialog:getInputText() or ""
-                        value = value:gsub("^%s+", ""):gsub("%s+$", "")
-                        if value ~= "" then
-                            setSetting("local_dir", value)
-                        end
-                        UIManager:close(dialog)
-                        if touchmenu and touchmenu.updateItems then
-                            touchmenu:updateItems()
-                        end
-                    end,
-                },
-            },
-        },
-    }
-    UIManager:show(dialog)
+        path = self:getLocalDir(),
+        select_directory = true,
+        select_file = false,
+        show_files = false,
+        onConfirm = function(folder)
+            folder = (folder == "/") and "/" or folder:gsub("/+$", "")
+            setSetting("local_dir", folder)
+            if touchmenu and touchmenu.updateItems then
+                touchmenu:updateItems()
+            end
+        end,
+    })
 end
 
 -- menu

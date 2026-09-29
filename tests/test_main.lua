@@ -36,6 +36,7 @@ local UIManager = require("ui/uimanager")
 local InfoMessage = require("ui/widget/infomessage")
 local Notification = require("ui/widget/notification")
 local InputDialog = require("ui/widget/inputdialog")
+local PathChooser = require("ui/widget/pathchooser")
 local lfs = require("libs/libkoreader-lfs")
 local json = require("json")
 local md5 = require("ffi/sha2").md5
@@ -477,13 +478,24 @@ InputDialog.last.input_text = ""
 InputDialog.last:simulateSave()
 T.check(store.tomedown.remote_folder == "", "remote folder cleared")
 
--- local folder dialog
+-- local folder picker (KOReader PathChooser: long-press a folder to choose it)
 plugin:editLocalDir(nil)
-local local_dialog = InputDialog.last
-T.check(T.contains(local_dialog.input, "clipboard/tomedown"), "default path in the dialog")
-local_dialog.input_text = DATA .. "/out-customi"
-local_dialog:simulateSave()
+local chooser = PathChooser.last
+T.check(chooser ~= nil, "path chooser opened")
+T.check(chooser.title == "Local folder for exports",
+    "chooser title: " .. tostring(chooser and chooser.title))
+T.check(chooser.select_directory == true and chooser.select_file == false
+    and chooser.show_files == false, "folder-only chooser")
+T.check(T.contains(chooser.path, "clipboard/tomedown"),
+    "default path as start: " .. tostring(chooser and chooser.path))
+plugin:editLocalDir(nil)
+T.check(plugin:getLocalDir() == DIR, "unchanged when closed without choosing")
+PathChooser.last.onConfirm(DATA .. "/out-customi/")
 T.check(plugin:getLocalDir() == DATA .. "/out-customi", "local folder changed")
+plugin:editLocalDir(nil)
+T.check(plugin:getLocalDir() == DATA .. "/out-customi", "reopen without choosing keeps the value")
+PathChooser.last.onConfirm("/")
+T.check(plugin:getLocalDir() == "/", "root folder kept as-is")
 store.tomedown.local_dir = nil
 T.check(plugin:getLocalDir() == DIR, "local folder back to default")
 

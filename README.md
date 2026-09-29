@@ -95,7 +95,7 @@ first export and optional Remotely Save in Obsidian — is in
 | *Upload to cloud* | leave it ticked (it is by default); any WebDAV/Dropbox/FTP server works |
 | *Server and folder…* | opens the Cloud storage browser: pick your server (the examples use Koofr), then navigate to the final folder (e.g. `Bookshelf/Kindle`) and tap **Choose** |
 | *Remote folder…* | only if you want to override the folder chosen above (e.g. `/Bookshelf/Kindle`) |
-| *Local folder* | defaults to `clipboard/tomedown` inside KOReader's data folder |
+| *Local folder* | defaults to `clipboard/tomedown` inside KOReader's data folder; tap it to browse with KOReader's folder picker (long-press a folder to choose it) |
 | *Generate the index 00 - Index.md* | table with internal links, author, highlight count and last export date |
 | *Include page bookmarks* | off by default: adds a `## Page bookmarks` section (bookmarked page + note) after the highlights |
 | *Version* | the installed version, read from `_meta.lua` |

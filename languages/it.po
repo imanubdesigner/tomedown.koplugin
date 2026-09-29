@@ -63,9 +63,6 @@ msgstr "Salva"
 msgid "Local folder for exports"
 msgstr "Cartella locale delle esportazioni"
 
-msgid "path on the Kindle"
-msgstr "percorso sul Kindle"
-
 msgid "No books with highlights"
 msgstr "Nessun libro con evidenziati"
 
