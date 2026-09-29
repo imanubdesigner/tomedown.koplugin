@@ -117,8 +117,8 @@ msgstr "Ricarica tutto su Koofr"
 msgid "Settings"
 msgstr "Impostazioni"
 
-msgid "Found %1 books in your reading history. Export their highlights now?"
-msgstr "Trovati %1 libri nella cronologia di lettura. Esportare le evidenziazioni adesso?"
+msgid "Found %1 books in your KOReader reading history. Export their highlights now?"
+msgstr "Trovati %1 libri nella cronologia di lettura di KOReader. Esportare le evidenziazioni adesso?"
 
 msgid "Export"
 msgstr "Esporta"

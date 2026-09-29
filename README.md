@@ -141,7 +141,7 @@ renamed.
 - **Settings** — see above.
 
 On a fresh install, the first time you open the menu, Tomedown offers to
-import your whole reading history in one tap (*Export* / *Not now* — the
+import your whole KOReader reading history in one tap (*Export* / *Not now* — the
 offer is made only once; the menu entry stays available anyway).
 
 After every export, if *Upload to Koofr* is on, the `.md` files and the index

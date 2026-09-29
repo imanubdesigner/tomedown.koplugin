@@ -794,7 +794,7 @@ plugin:addToMainMenu({})
 UIManager:runPending()
 T.check(ConfirmBox.last ~= nil, "first-run prompt shown")
 T.check(ConfirmBox.last and T.contains(ConfirmBox.last.text or "",
-    "Found " .. nbooks .. " books"),
+    "Found " .. nbooks .. " books in your KOReader reading history"),
     "prompt counts the history: " .. tostring(ConfirmBox.last and ConfirmBox.last.text))
 T.check(ConfirmBox.last.ok_text == "Export", "ok button")
 T.check(ConfirmBox.last.cancel_text == "Not now", "cancel button")

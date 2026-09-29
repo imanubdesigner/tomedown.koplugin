@@ -1070,7 +1070,7 @@ function MdBook:maybePromptLibraryImport()
     -- deferred so the ConfirmBox lands on top of the just-opened menu
     UIManager:scheduleIn(0.1, function()
         UIManager:show(ConfirmBox:new{
-            text = T(_("Found %1 books in your reading history. Export their highlights now?"), #files),
+            text = T(_("Found %1 books in your KOReader reading history. Export their highlights now?"), #files),
             ok_text = _("Export"),
             cancel_text = _("Not now"),
             ok_callback = function()
