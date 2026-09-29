@@ -24,32 +24,32 @@ msgstr "Nessun file esportato"
 msgid "%1 files unchanged, skipped"
 msgstr "%1 file invariati, saltati"
 
-msgid "Koofr: %1 uploaded, %2 errors"
-msgstr "Koofr: %1 caricati, %2 errori"
+msgid "Cloud: %1 uploaded, %2 errors"
+msgstr "Cloud: %1 caricati, %2 errori"
 
-msgid "Koofr: %1 files uploaded"
-msgstr "Koofr: %1 file caricati"
+msgid "Cloud: %1 files uploaded"
+msgstr "Cloud: %1 file caricati"
 
 msgid "Errors:"
 msgstr "Errori:"
 
-msgid "Choose a Koofr server in the settings first."
-msgstr "Scegli prima un server Koofr nelle impostazioni."
+msgid "Choose a cloud server in the settings first."
+msgstr "Scegli prima un server cloud nelle impostazioni."
 
 msgid "Nothing to upload, export something first."
 msgstr "Nessun file da caricare, esporta prima qualcosa."
 
-msgid "Uploading %1 files to Koofr…"
-msgstr "Caricamento di %1 file su Koofr…"
+msgid "Uploading %1 files to the cloud…"
+msgstr "Caricamento di %1 file sul cloud…"
 
-msgid "Koofr: %1/%2 files uploaded, %3 errors"
-msgstr "Koofr: %1/%2 file caricati, %3 errori"
+msgid "Cloud: %1/%2 files uploaded, %3 errors"
+msgstr "Cloud: %1/%2 file caricati, %3 errori"
 
-msgid "Enable the \"Cloud storage\" plugin to upload to Koofr."
-msgstr "Abilita il plugin \"Cloud storage\" per caricare su Koofr."
+msgid "Enable the \"Cloud storage\" plugin to upload to the cloud."
+msgstr "Abilita il plugin \"Cloud storage\" per caricare sul cloud."
 
-msgid "Remote folder on Koofr"
-msgstr "Cartella remota su Koofr"
+msgid "Remote folder on the server"
+msgstr "Cartella remota sul server"
 
 msgid "leave empty to use the folder chosen in the browser"
 msgstr "lascia vuoto per usare la cartella scelta nel browser"
@@ -75,8 +75,8 @@ msgstr "Esporta selezionati (%1)"
 msgid "Deselect all"
 msgstr "Deseleziona tutto"
 
-msgid "Upload to Koofr"
-msgstr "Carica su Koofr"
+msgid "Upload to cloud"
+msgstr "Carica su cloud"
 
 msgid "Server and folder: not set"
 msgstr "Server e cartella: non impostati"
@@ -111,8 +111,8 @@ msgstr "Scegli libri…"
 msgid "Import all books from history"
 msgstr "Importa tutti i libri dalla cronologia"
 
-msgid "Reload everything to Koofr"
-msgstr "Ricarica tutto su Koofr"
+msgid "Reload everything to the cloud"
+msgstr "Ricarica tutto sul cloud"
 
 msgid "Settings"
 msgstr "Impostazioni"
@@ -128,10 +128,10 @@ msgstr "Non ora"
 
 msgid ""
 "Exports each book's highlights into its own Markdown file,\n"
-"with frontmatter and an index, and uploads them to Koofr."
+"with frontmatter and an index, and uploads them to your cloud."
 msgstr ""
 "Esporta gli evidenziati di ogni libro in un file Markdown a parte,\n"
-"con frontmatter e indice, e li carica su Koofr."
+"con frontmatter e indice, e li carica sul tuo cloud."
 
 msgid "highlights"
 msgstr "evidenziati"

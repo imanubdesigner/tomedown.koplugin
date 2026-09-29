@@ -3,7 +3,8 @@ tomedown.koplugin
 
 Exports the highlights (and notes) of every book into a Markdown file
 per book, with frontmatter and an automatic index, and uploads them to
-Koofr (WebDAV) to read them later in Obsidian with Remotely Save.
+a cloud (WebDAV, Dropbox, FTP) to read them later in Obsidian or in any
+Markdown app.
 
 Unlike "Export highlights and notes" (which produces a single combined
 file), here every volume gets its own `.md`.
@@ -37,7 +38,7 @@ local FILENAME_TEMPLATE = "%A - %T"
 
 -- upload retry: up to 3 attempts, wait doubling
 -- each time (2s, 4s), to absorb transient network blips without
--- having to trigger "Reload everything to Koofr" by hand.
+-- having to trigger "Reload everything to the cloud" by hand.
 local UPLOAD_MAX_ATTEMPTS = 3
 local UPLOAD_RETRY_BASE_DELAY = 2 -- seconds
 
@@ -515,7 +516,7 @@ function MdBook:buildIndexEntries(dir, export_records)
     return entries
 end
 
--- upload to Koofr
+-- upload to the cloud
 
 function MdBook:cloudProvider(server)
     local cloud = self.ui and self.ui.cloudstorage
@@ -533,7 +534,7 @@ end
 -- between one attempt and the next, before being marked as a
 -- permanent failure. It absorbs transient network blips (WiFi reconnecting,
 -- slow DNS, etc.) without needing a "Reload everything
--- to Koofr" by hand every time.
+-- to the cloud" by hand every time.
 function MdBook:uploadPaths(server, paths, callback)
     local provider = self:cloudProvider(server)
     if not (provider and provider.uploadFile and provider.run) then
@@ -666,7 +667,7 @@ function MdBook:runExport(files, opts)
     if getSetting("upload", true) and server and #written > 0 then
         -- stays open for the whole upload phase, retries included
         -- with backoff: without this the screen stays silent for minutes
-        local upload_info = self:showProgress(T(_("Uploading %1 files to Koofr…"), #written))
+        local upload_info = self:showProgress(T(_("Uploading %1 files to the cloud…"), #written))
         self:uploadPaths(server, written, function(ok_count, fail_count, failed)
             UIManager:close(upload_info)
             self:showResult(exported, skipped, errors, ok_count, fail_count)
@@ -688,9 +689,9 @@ function MdBook:showResult(exported, skipped, errors, uploaded, upload_failed)
     end
     if uploaded then
         if upload_failed > 0 then
-            lines[#lines + 1] = T(_("Koofr: %1 uploaded, %2 errors"), uploaded, upload_failed)
+            lines[#lines + 1] = T(_("Cloud: %1 uploaded, %2 errors"), uploaded, upload_failed)
         else
-            lines[#lines + 1] = T(_("Koofr: %1 files uploaded"), uploaded)
+            lines[#lines + 1] = T(_("Cloud: %1 files uploaded"), uploaded)
         end
     end
     if #errors > 0 then
@@ -713,7 +714,7 @@ function MdBook:reuploadAll(touchmenu)
     end
     local server = self:getServer()
     if not server then
-        UIManager:show(InfoMessage:new{ text = _("Choose a Koofr server in the settings first.") })
+        UIManager:show(InfoMessage:new{ text = _("Choose a cloud server in the settings first.") })
         return
     end
     local dir = self:getLocalDir()
@@ -741,16 +742,16 @@ function MdBook:reuploadAll(touchmenu)
     end
 
     table.sort(paths)
-    local info = self:showProgress(T(_("Uploading %1 files to Koofr…"), #paths))
+    local info = self:showProgress(T(_("Uploading %1 files to the cloud…"), #paths))
     self:uploadPaths(server, paths, function(ok_count, fail_count)
         UIManager:close(info)
         if fail_count > 0 then
             UIManager:show(InfoMessage:new{
-                text = T(_("Koofr: %1/%2 files uploaded, %3 errors"), ok_count, #paths, fail_count),
+                text = T(_("Cloud: %1/%2 files uploaded, %3 errors"), ok_count, #paths, fail_count),
             })
         else
             UIManager:show(Notification:new{
-                text = T(_("Koofr: %1 files uploaded"), ok_count),
+                text = T(_("Cloud: %1 files uploaded"), ok_count),
                 timeout = 3,
             })
         end
@@ -763,7 +764,7 @@ function MdBook:chooseCloudFolder(touchmenu)
     local cloud = self.ui and self.ui.cloudstorage
     if not cloud then
         UIManager:show(InfoMessage:new{
-            text = _("Enable the \"Cloud storage\" plugin to upload to Koofr."),
+            text = _("Enable the \"Cloud storage\" plugin to upload to the cloud."),
         })
         return
     end
@@ -778,7 +779,7 @@ end
 function MdBook:editRemoteFolder(touchmenu)
     local dialog
     dialog = InputDialog:new{
-        title = _("Remote folder on Koofr"),
+        title = _("Remote folder on the server"),
         input = getSetting("remote_folder", ""),
         hint = _("leave empty to use the folder chosen in the browser"),
         buttons = {
@@ -938,7 +939,7 @@ end
 function MdBook:genSettingsMenu()
     return {
         {
-            text = _("Upload to Koofr"),
+            text = _("Upload to cloud"),
             enabled_func = function()
                 return self:hasServer()
             end,
@@ -1143,7 +1144,7 @@ function MdBook:addToMainMenu(menu_items)
                 separator = true,
             },
             {
-                text = _("Reload everything to Koofr"),
+                text = _("Reload everything to the cloud"),
                 enabled_func = function()
                     return self:hasServer()
                 end,

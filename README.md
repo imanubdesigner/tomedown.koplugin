@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/banner.svg" alt="tomedown — one Markdown file per book, straight into Obsidian" width="100%">
+  <img src="assets/banner.svg" alt="tomedown — one Markdown file per book, straight into your notes" width="100%">
 </p>
 
 <p align="center">
@@ -16,8 +16,13 @@
 </p>
 
 A KOReader plugin that exports the highlights of **each book into its own
-`.md` file**, with YAML frontmatter and an automatic index, and uploads them
-to **Koofr** so you can read them in Obsidian.
+`.md` file**, with YAML frontmatter and an automatic index. Everything is
+written to a folder on the device first (`clipboard/tomedown`, changeable);
+uploading to **your cloud** — any WebDAV server, or Dropbox/FTP — is an
+option, and so is reading the notes in Obsidian.
+
+The examples in this repo use **Koofr**: its free plan gives you 10 GB,
+more than enough for a whole library of `.md` files.
 
 Unlike *Export highlights and notes* (which produces a single combined file),
 every volume stays separate:
@@ -33,16 +38,19 @@ every volume stays separate:
 
 - KOReader with highlights in the modern format (old `.sdr` files, where
   highlights live in `highlight` + `bookmarks`, are supported too)
-- The **Cloud storage** plugin that ships with KOReader, with a WebDAV server
-  configured for Koofr: `https://app.koofr.net/dav/Koofr`
-  (Koofr's documented WebDAV host — the plain `/dav/` root is not writable)
-- A Koofr account (the free plan is plenty)
-- In Obsidian: **Remotely Save** with a WebDAV server (free)
+- The **Cloud storage** plugin that ships with KOReader, with any server it
+  supports (WebDAV, Dropbox, FTP). The examples use Koofr's WebDAV:
+  `https://app.koofr.net/dav/Koofr`
+  (Koofr's documented WebDAV host — the plain `/dav/` root is not writable).
+  **No cloud at all?** The local export works anyway
+- Optional, to read the notes in Obsidian: **Remotely Save** with a WebDAV
+  server (free) — any other Markdown app works too
 
 ## Installation
 
-A full walkthrough — Koofr account, app password, first export and
-Remotely Save in Obsidian — is in [TUTORIAL.md](TUTORIAL.md).
+A full walkthrough — cloud account and app password (Koofr as the example),
+first export and optional Remotely Save in Obsidian — is in
+[TUTORIAL.md](TUTORIAL.md).
 
 1. Plug the Kindle in via USB mass storage.
 2. Get the plugin into `/mnt/us/koreader/plugins/`, either way:
@@ -84,8 +92,8 @@ Remotely Save in Obsidian — is in [TUTORIAL.md](TUTORIAL.md).
 
 | Entry | What to do |
 |---|---|
-| *Upload to Koofr* | leave it ticked (it is by default) |
-| *Server and folder…* | opens the Cloud storage browser: pick your Koofr server, then navigate to the final folder (e.g. `Bookshelf/Kindle`) and tap **Choose** |
+| *Upload to cloud* | leave it ticked (it is by default); any WebDAV/Dropbox/FTP server works |
+| *Server and folder…* | opens the Cloud storage browser: pick your server (the examples use Koofr), then navigate to the final folder (e.g. `Bookshelf/Kindle`) and tap **Choose** |
 | *Remote folder…* | only if you want to override the folder chosen above (e.g. `/Bookshelf/Kindle`) |
 | *Local folder* | defaults to `clipboard/tomedown` inside KOReader's data folder |
 | *Generate the index 00 - Index.md* | table with internal links, author, highlight count and last export date |
@@ -98,7 +106,7 @@ Everything is stored in KOReader's settings, so it applies to all books.
 
 ### If you already use AnnotationSync
 
-The Koofr server is **inherited automatically** from the one AnnotationSync
+The cloud server is **inherited automatically** from the one AnnotationSync
 already saved in KOReader (`Cloud settings`): *Server and folder…* shows
 exactly that. If it is the right folder, you do not have to touch anything.
 
@@ -143,21 +151,21 @@ renamed.
   just those.
 - **Import all books from history** — exports everything found in KOReader's
   reading history.
-- **Reload everything to Koofr** — re-uploads every file already in the local
-  folder (use it after a failed upload).
+- **Reload everything to the cloud** — re-uploads every file already in the
+  local folder (use it after a failed upload).
 - **Settings** — see above.
 
 On a fresh install, the first time you open the menu, Tomedown offers to
 import your whole KOReader reading history in one tap (*Export* / *Not now* — the
 offer is made only once; the menu entry stays available anyway).
 
-After every export, if *Upload to Koofr* is on, the `.md` files and the index
+After every export, if *Upload to cloud* is on, the `.md` files and the index
 are uploaded to the chosen server automatically. No image folder is created:
 only `*.md` files are uploaded (books + `00 - Index.md`).
 
 ### Upload retries
 
-While uploading, an *Uploading N files to Koofr…* message stays on screen
+While uploading, an *Uploading N files to the cloud…* message stays on screen
 (including the wait times), and each file is tried **up to 3 times** with
 exponential backoff:
 
@@ -177,9 +185,9 @@ Only **transient** failures are retried:
 the file fails immediately, because retrying would only cost waiting.
 
 If a file still fails after the 3 attempts, a window shows
-`Koofr: X uploaded, Y errors` and everything else continues: the files stay in
+`Cloud: X uploaded, Y errors` and everything else continues: the files stay in
 the local folder, so you can fix the problem and use **Reload everything to
-Koofr**. The attempts are also logged:
+the cloud**. The attempts are also logged:
 
 ```
 tomedown: upload failed (attempt 1 of 3), retrying in 2 s: <path> 500
@@ -242,7 +250,8 @@ tags:
   it does not clash with exports you already made
 - the page is the stable page number (`pageref`) when available, otherwise
   the running page number
-- the index uses Obsidian's internal links:
+- the index uses wiki links (`[[…]]`), opened natively by Obsidian and by
+  most Markdown apps:
 
   ```markdown
   | [[Michael McDowell - Blackwater|Blackwater]] | Michael McDowell | 150 | 26/09/2026 |
@@ -251,10 +260,14 @@ tags:
 The sample above is what an English KOReader produces; with an Italian
 interface the same text comes out translated (see *Languages*).
 
-## Obsidian
+## Obsidian (optional)
 
-Only **Remotely Save** needs configuring here: the Tomedown plugin lives on
-KOReader, nothing special has to be installed in Obsidian.
+Obsidian is just one way to read the notes: the files are plain Markdown,
+so any editor, reader or wiki works. If you do use Obsidian, only
+**Remotely Save** needs configuring here: the Tomedown plugin lives on
+KOReader, nothing special has to be installed in Obsidian. The steps below
+use Koofr (this README's example cloud); with any other WebDAV server —
+Nextcloud, ownCloud, a NAS… — substitute its address and credentials.
 
 1. On Koofr create an app (Security → Applications) and copy the **app
    password**, not the account one.
@@ -274,13 +287,13 @@ a clickable table and every title opens that book's file.
 ## Notes and limitations
 
 - The `.md` files are **rewritten on every export**: treat them as read-only
-  in Obsidian, otherwise your edits disappear next time.
+  in your editor, otherwise your edits disappear next time.
 - The plugin **never touches** AnnotationSync's files (`<md5>.json`,
   `settings_sync.json`): it only reads the `.sdr` folders.
 - Uploads go through KOReader's *Cloud storage* plugin: if it is not active,
-  the local export still works, only the Koofr part is skipped.
+  the local export still works, only the upload is skipped.
 - If an upload fails (missing remote folder, no connection), the files stay
-  in the local folder: fix it and use **Reload everything to Koofr**.
+  in the local folder: fix it and use **Reload everything to the cloud**.
 
 ## Languages (English / Italian)
 

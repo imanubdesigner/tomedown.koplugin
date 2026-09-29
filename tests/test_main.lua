@@ -404,7 +404,7 @@ T.check(sub[1].text == "Export current book", "menu item 1")
 T.check(sub[2].text == "Only updated", "menu item 2")
 T.check(sub[3].text == "Choose books…", "menu item 3")
 T.check(sub[4].text == "Import all books from history", "menu item 4")
-T.check(sub[5].text == "Reload everything to Koofr", "menu item 5")
+T.check(sub[5].text == "Reload everything to the cloud", "menu item 5")
 T.check(sub[6].text == "Settings", "menu item 6")
 
 local cover_entry = false
@@ -434,7 +434,7 @@ T.check(sub[4].enabled_func() == true, "all books enabled")
 
 local settings = plugin:genSettingsMenu()
 T.check(#settings == 9, "settings entries: " .. #settings)
-T.check(settings[1].text == "Upload to Koofr", "upload entry")
+T.check(settings[1].text == "Upload to cloud", "upload entry")
 T.check(settings[2].text_func() == "Server and folder: not set", "server not set")
 T.check(T.contains(settings[3].text_func(), "Remote folder: not set"), "remote folder not set")
 T.check(T.contains(settings[4].text_func(), "clipboard/tomedown"), "default local folder")
@@ -467,7 +467,7 @@ T.check(plugin:hasServer() == true, "hasServer true with server and cloud")
 -- remote folder dialog
 plugin:editRemoteFolder(nil)
 local dialog = InputDialog.last
-T.check(dialog ~= nil and dialog.title == "Remote folder on Koofr", "remote dialog opened")
+T.check(dialog ~= nil and dialog.title == "Remote folder on the server", "remote dialog opened")
 dialog.input_text = "  /Cartella mia  "
 dialog:simulateSave()
 T.check(store.tomedown.remote_folder == "/Cartella mia", "remote folder saved and trimmed")
@@ -595,7 +595,7 @@ uploadSetup()
 plugin:runExport({ FILE }, {})
 T.check(#uploads == 1, "first upload started right away: " .. #uploads)
 T.check(uploads[1].path == MD_PATH, "first file = book md")
-T.check(InfoMessage.last_text == "Uploading 2 files to Koofr…",
+T.check(InfoMessage.last_text == "Uploading 2 files to the cloud…",
     "progress window: " .. tostring(InfoMessage.last_text))
 T.check(#UIManager.shown == 1 and UIManager.shown[1].text == InfoMessage.last_text,
     "progress still open during the upload phase")
@@ -606,7 +606,7 @@ T.check(uploads[1].url == "/Bookshelf/Kindle" and uploads[2].url == "/Bookshelf/
     "Koofr folder url")
 T.check(attempt_count[MD_PATH] == 1 and attempt_count[INDEX_PATH] == 1,
     "one attempt per file in normal conditions")
-T.check(T.contains(Notification.last_text or "", "Koofr: 2 files uploaded"),
+T.check(T.contains(Notification.last_text or "", "Cloud: 2 files uploaded"),
     "upload notification: " .. tostring(Notification.last_text))
 local widget = onlyWidget()
 T.check(widget and widget.__widget == "Notification",
@@ -656,7 +656,7 @@ UIManager:runPending()
 T.check(attempt_count[MD_PATH] == 2, "md retried once: " .. attempt_count[MD_PATH])
 T.check(attempt_count[INDEX_PATH] == 1, "index untouched by the md failure")
 T.check(sameList(positives(), { 2 }), "backoff iniziale 2s, ottenuto " .. listStr(positives()))
-T.check(T.contains(Notification.last_text or "", "Koofr: 2 files uploaded"),
+T.check(T.contains(Notification.last_text or "", "Cloud: 2 files uploaded"),
     "full recovery: " .. tostring(Notification.last_text))
 T.check(T.contains(table.concat(logger.history, "\n"), "retrying in"),
     "retry logged")
@@ -675,7 +675,7 @@ T.check(sameList(positives(), { 2, 4, 2, 4 }),
 T.check(Notification.last_text == nil, "no success notification")
 local err_widget = onlyWidget()
 T.check(err_widget and err_widget.__widget == "InfoMessage", "error window shown")
-T.check(err_widget and T.contains(err_widget.text, "Koofr: 0 uploaded, 2 errors"),
+T.check(err_widget and T.contains(err_widget.text, "Cloud: 0 uploaded, 2 errors"),
     "result with errors: " .. tostring(err_widget and err_widget.text))
 T.check(err_widget and T.contains(err_widget.text, "1 files exported"),
     "the result also includes the export: " .. tostring(err_widget and err_widget.text))
@@ -689,7 +689,7 @@ UIManager:runPending()
 T.check(#uploads == 2, "404: one attempt per file only: " .. #uploads)
 T.check(#positives() == 0, "no delay on 4xx errors: " .. listStr(positives()))
 err_widget = onlyWidget()
-T.check(err_widget and T.contains(err_widget.text, "Koofr: 0 uploaded, 2 errors"),
+T.check(err_widget and T.contains(err_widget.text, "Cloud: 0 uploaded, 2 errors"),
     "404 reported as a definitive failure")
 
 -- non-numeric network error: retried
@@ -705,7 +705,7 @@ UIManager:runPending()
 T.check(attempt_count[MD_PATH] == 3, "network error retried: " .. tostring(attempt_count[MD_PATH]))
 T.check(sameList(positives(), { 2, 4 }),
     "backoff without a numeric code too: " .. listStr(positives()))
-T.check(T.contains(Notification.last_text or "", "Koofr: 2 files uploaded"),
+T.check(T.contains(Notification.last_text or "", "Cloud: 2 files uploaded"),
     "recovery after network errors: " .. tostring(Notification.last_text))
 
 -- 429 (too many requests): transient
@@ -744,14 +744,14 @@ UIManager:runPending()
 T.check(#uploads == 2, "only the .md files re-uploaded: " .. #uploads)
 T.check(uploads[1].path == INDEX_PATH, "ordered: index first")
 T.check(uploads[2].path == MD_PATH, "ordered: book md second")
-T.check(Notification.last_text == "Koofr: 2 files uploaded",
+T.check(Notification.last_text == "Cloud: 2 files uploaded",
     "reload notification: " .. tostring(Notification.last_text))
 T.rmrf(DIR .. "/covers")
 
 store = {}
 resetUpload()
 plugin:reuploadAll(nil)
-T.check(T.contains(InfoMessage.last_text or "", "Choose a Koofr server"),
+T.check(T.contains(InfoMessage.last_text or "", "Choose a cloud server"),
     "without server: " .. tostring(InfoMessage.last_text))
 
 -- empty local folder
