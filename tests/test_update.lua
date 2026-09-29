@@ -204,8 +204,11 @@ T.check(T.contains(viewer.text, "v" .. MAJOR) and T.contains(viewer.text, "v" ..
     and T.contains(viewer.text, "v" .. MINOR), "header for every newer release")
 T.check(T.contains(viewer.text, "Fix A") and T.contains(viewer.text, "Fix B")
     and T.contains(viewer.text, "Fixes"), "notes of every newer release")
-T.check(not T.contains(viewer.text, "**") and not T.contains(viewer.text, "`")
-    and not T.contains(viewer.text, "# "), "markdown stripped: " .. tostring(viewer.text))
+T.check(viewer.text_format == "md",
+    "notes rendered as markdown: " .. tostring(viewer.text_format))
+T.check(T.contains(viewer.text, "**bold**") and T.contains(viewer.text, "# Fixes")
+    and T.contains(viewer.text, "`code`"),
+    "markdown kept for rendering: " .. tostring(viewer.text))
 T.check(T.contains(viewer.text, "issue #12"), "inline #12 kept: " .. tostring(viewer.text))
 T.check(Update.getAvailableVersion() == MAJOR,
     "cached available version: " .. tostring(Update.getAvailableVersion()))
@@ -234,6 +237,23 @@ for __, widget in ipairs(UIManager.shown) do
     end
 end
 T.check(not viewer_still_open, "viewer closed")
+
+-- a KOReader whose TextViewer cannot render markdown gets the plain,
+-- stripped notes (what every version showed before)
+local saved_formats = TextViewer.html_text_formats
+TextViewer.html_text_formats = nil
+resetWidgets()
+Update._resetState()
+Update.check()
+UIManager:runPending()
+local plain = TextViewer.last
+T.check(plain ~= nil, "fallback viewer shown")
+T.check(plain.text_format == nil,
+    "fallback stays plain text: " .. tostring(plain.text_format))
+T.check(not T.contains(plain.text, "**") and not T.contains(plain.text, "# "),
+    "fallback strips markdown: " .. tostring(plain.text))
+T.check(T.contains(plain.text, "Fix A"), "fallback keeps the notes")
+TextViewer.html_text_formats = saved_formats
 
 -- ------------------------------------------------ 6. manual check: failure
 

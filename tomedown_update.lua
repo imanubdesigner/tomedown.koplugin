@@ -219,6 +219,20 @@ local function stripMarkdown(text)
     return (text:gsub("^%s+", ""):gsub("%s+$", ""))
 end
 
+--- Whether this KOReader's TextViewer can render Markdown natively
+--- (text_format = "md" converts the notes to HTML, so bold, headings
+--- and lists are shown formatted instead of as raw markers). Older
+--- versions fall back to the plain, stripped text above.
+local function canRenderMarkdown()
+    if type(TextViewer.html_text_formats) ~= "table"
+        or not TextViewer.html_text_formats.md then
+        return false
+    end
+    local ok, Converter = pcall(require, "apps/filemanager/filemanagerconverter")
+    return ok and type(Converter) == "table"
+        and type(Converter.mdToHtml) == "function"
+end
+
 --- Releases newer than the installed version, newest first, skipping
 -- drafts and prereleases; each entry keeps version, raw body and the
 -- zip download URL of that release.
@@ -262,9 +276,14 @@ local function checkBody()
         return
     end
     cached_version = newer[1].version
+    local as_md = canRenderMarkdown()
     local notes = {}
     for __, rel in ipairs(newer) do
-        notes[#notes + 1] = "v" .. rel.version .. "\n" .. stripMarkdown(rel.body or "")
+        if as_md then
+            notes[#notes + 1] = "## v" .. rel.version .. "\n\n" .. (rel.body or "")
+        else
+            notes[#notes + 1] = "v" .. rel.version .. "\n" .. stripMarkdown(rel.body or "")
+        end
     end
     local viewer
     viewer = TextViewer:new{
@@ -272,6 +291,7 @@ local function checkBody()
         text = T(_("Installed: %1\nLatest: %2"), "v" .. installed,
             "v" .. cached_version)
             .. "\n\n" .. table.concat(notes, "\n\n"),
+        text_format = as_md and "md" or nil,
         buttons_table = {
             {
                 {

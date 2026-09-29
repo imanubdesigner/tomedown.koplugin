@@ -110,7 +110,9 @@ reach Obsidian.
 *Check for updates…* compares the installed version with the releases
 on GitHub and shows the notes of **every** release newer than yours, so
 someone updating from 0.2.0 to 1.0 reads the fixes of 0.3.0, 0.3.1 and
-1.0 in one window. Tap **Update and restart** and the new version is
+1.0 in one window. When your KOReader renders Markdown, the notes keep
+their formatting (bold, headings, lists); older versions get them as
+plain text. Tap **Update and restart** and the new version is
 installed for you: the release zip is downloaded from the release page,
 unpacked over the plugin folder and KOReader asks to restart. If the
 download or the unpacking fails, the releases page opens instead so the
