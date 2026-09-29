@@ -41,6 +41,9 @@ every volume stays separate:
 
 ## Installation
 
+A full walkthrough — Koofr account, app password, first export and
+Remotely Save in Obsidian — is in [TUTORIAL.md](TUTORIAL.md).
+
 1. Plug the Kindle in via USB mass storage.
 2. Get the plugin into `/mnt/us/koreader/plugins/`, either way:
 
@@ -50,11 +53,13 @@ every volume stays separate:
    `tomedown.koplugin/` directory.
 
    **b. From a clone of this repo** — copy the folder, leaving behind what
-   KOReader does not need (`tests/`, `assets/`, `README.md`, git files):
+   KOReader does not need (`tests/`, `assets/`, `README.md`, `TUTORIAL.md`,
+   git files):
 
    ```
    rsync -a --exclude tests --exclude assets --exclude README.md \
-         --exclude .git --exclude .github --exclude .gitignore \
+         --exclude TUTORIAL.md --exclude .git --exclude .github \
+         --exclude .gitignore \
          tomedown.koplugin /mnt/us/koreader/plugins/
    ```
 
