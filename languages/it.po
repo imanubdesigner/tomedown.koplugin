@@ -108,14 +108,23 @@ msgstr "Solo aggiornati"
 msgid "Choose books…"
 msgstr "Scegli libri…"
 
-msgid "All books with highlights"
-msgstr "Tutti i libri con annotazioni"
+msgid "Import all books from history"
+msgstr "Importa tutti i libri dalla cronologia"
 
 msgid "Reload everything to Koofr"
 msgstr "Ricarica tutto su Koofr"
 
 msgid "Settings"
 msgstr "Impostazioni"
+
+msgid "Found %1 books in your reading history. Export their highlights now?"
+msgstr "Trovati %1 libri nella cronologia di lettura. Esportare le evidenziazioni adesso?"
+
+msgid "Export"
+msgstr "Esporta"
+
+msgid "Not now"
+msgstr "Non ora"
 
 msgid ""
 "Exports each book's highlights into its own Markdown file,\n"

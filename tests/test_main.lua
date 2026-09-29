@@ -30,6 +30,7 @@ G_reader_settings = {
 local GetText = require("gettext")
 local DataStorage = require("datastorage")
 local BookList = require("ui/widget/booklist")
+local ConfirmBox = require("ui/widget/confirmbox")
 local readhistory = require("readhistory")
 local UIManager = require("ui/uimanager")
 local InfoMessage = require("ui/widget/infomessage")
@@ -402,7 +403,7 @@ T.check(#sub == 6, "main menu entries: " .. #sub)
 T.check(sub[1].text == "Export current book", "menu item 1")
 T.check(sub[2].text == "Only updated", "menu item 2")
 T.check(sub[3].text == "Choose books…", "menu item 3")
-T.check(sub[4].text == "All books with highlights", "menu item 4")
+T.check(sub[4].text == "Import all books from history", "menu item 4")
 T.check(sub[5].text == "Reload everything to Koofr", "menu item 5")
 T.check(sub[6].text == "Settings", "menu item 6")
 
@@ -776,5 +777,73 @@ for __, name in ipairs(sources) do
             name .. " has no cover references left")
     end
 end
+
+-- --------------------------------------- 11. first-run import prompt
+
+local hist = readhistory.hist
+local nbooks = #plugin:listBookFiles()
+T.check(nbooks == 3, "history books for the prompt: " .. nbooks)
+
+store.tomedown.upload = false
+store.tomedown.exports = nil
+store.tomedown.import_prompt_done = nil
+ConfirmBox.last = nil
+
+-- fresh install: first menu build offers the import
+plugin:addToMainMenu({})
+UIManager:runPending()
+T.check(ConfirmBox.last ~= nil, "first-run prompt shown")
+T.check(ConfirmBox.last and T.contains(ConfirmBox.last.text or "",
+    "Found " .. nbooks .. " books"),
+    "prompt counts the history: " .. tostring(ConfirmBox.last and ConfirmBox.last.text))
+T.check(ConfirmBox.last.ok_text == "Export", "ok button")
+T.check(ConfirmBox.last.cancel_text == "Not now", "cancel button")
+
+-- "Not now": nothing exported, never asked again
+ConfirmBox.last.cancel_callback()
+T.check(store.tomedown.exports == nil, "cancel exports nothing")
+T.check(store.tomedown.import_prompt_done == true, "cancel sets the flag")
+ConfirmBox.last = nil
+plugin:addToMainMenu({})
+UIManager:runPending()
+T.check(ConfirmBox.last == nil, "prompt not repeated after cancel")
+
+-- "Export": writes every book of the history in one tap
+store.tomedown.import_prompt_done = nil
+plugin:addToMainMenu({})
+UIManager:runPending()
+T.check(ConfirmBox.last ~= nil, "prompt returns while still unanswered")
+ConfirmBox.last.ok_callback()
+UIManager:runPending()
+T.check(store.tomedown.exports ~= nil
+    and store.tomedown.exports[FILE] ~= nil
+    and store.tomedown.exports[FILE2] ~= nil
+    and store.tomedown.exports[FILE3] ~= nil,
+    "all history books exported")
+T.check(T.contains(Notification.last_text or "", nbooks .. " files exported"),
+    "export notification: " .. tostring(Notification.last_text))
+T.check(store.tomedown.import_prompt_done == true, "flag set after export")
+T.check(T.fileExists(MD_PATH), "book md written by the prompt")
+ConfirmBox.last = nil
+plugin:addToMainMenu({})
+UIManager:runPending()
+T.check(ConfirmBox.last == nil, "prompt gone once exported")
+
+-- flag lost but the library is already exported: still no prompt
+store.tomedown.import_prompt_done = nil
+plugin:addToMainMenu({})
+UIManager:runPending()
+T.check(ConfirmBox.last == nil, "no prompt for an already exported library")
+
+-- empty history: nothing to offer
+store.tomedown.import_prompt_done = nil
+store.tomedown.exports = nil
+readhistory.hist = {}
+ConfirmBox.last = nil
+plugin:addToMainMenu({})
+UIManager:runPending()
+T.check(ConfirmBox.last == nil, "no prompt without history")
+readhistory.hist = hist
+store.tomedown.import_prompt_done = nil
 
 T.finish("test_main")

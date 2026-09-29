@@ -11,6 +11,7 @@ file), here every volume gets its own `.md`.
 
 local BookInfo = require("apps/filemanager/filemanagerbookinfo")
 local BookList = require("ui/widget/booklist")
+local ConfirmBox = require("ui/widget/confirmbox")
 local DataStorage = require("datastorage")
 local InfoMessage = require("ui/widget/infomessage")
 local InputDialog = require("ui/widget/inputdialog")
@@ -1050,12 +1051,46 @@ function MdBook:init()
     end
 end
 
+-- first-run onboarding: offer to import the whole reading history
+-- in one tap. Runs when the menu is first built (KOReader calls
+-- addToMainMenu lazily on the first menu open of a session), so the
+-- reader is already interacting with the UI. The prompt appears once
+-- in a lifetime: both "Export" and "Not now" set the flag.
+function MdBook:maybePromptLibraryImport()
+    if getSetting("import_prompt_done", false) then
+        return
+    end
+    if next(getSetting("exports", {})) ~= nil then
+        return
+    end
+    local files = self:listBookFiles()
+    if #files == 0 then
+        return
+    end
+    -- deferred so the ConfirmBox lands on top of the just-opened menu
+    UIManager:scheduleIn(0.1, function()
+        UIManager:show(ConfirmBox:new{
+            text = T(_("Found %1 books in your reading history. Export their highlights now?"), #files),
+            ok_text = _("Export"),
+            cancel_text = _("Not now"),
+            ok_callback = function()
+                setSetting("import_prompt_done", true)
+                self:runExport(files, {})
+            end,
+            cancel_callback = function()
+                setSetting("import_prompt_done", true)
+            end,
+        })
+    end)
+end
+
 function MdBook:addToMainMenu(menu_items)
     if getSetting("update_check", false) then
         UIManager:scheduleIn(0.1, function()
             Update.checkBackground()
         end)
     end
+    self:maybePromptLibraryImport()
     menu_items.tomedown = {
         text = "Tomedown",
         sub_item_table = {
@@ -1095,7 +1130,7 @@ function MdBook:addToMainMenu(menu_items)
                 end,
             },
             {
-                text = _("All books with highlights"),
+                text = _("Import all books from history"),
                 enabled_func = function()
                     return #self:listBookFiles() > 0
                 end,

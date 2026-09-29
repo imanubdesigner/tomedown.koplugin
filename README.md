@@ -134,11 +134,15 @@ renamed.
   the last export (per-book hash).
 - **Choose books…** — a list with checkboxes: tick the volumes and export
   just those.
-- **All books with highlights** — exports everything found in KOReader's
+- **Import all books from history** — exports everything found in KOReader's
   reading history.
 - **Reload everything to Koofr** — re-uploads every file already in the local
   folder (use it after a failed upload).
 - **Settings** — see above.
+
+On a fresh install, the first time you open the menu, Tomedown offers to
+import your whole reading history in one tap (*Export* / *Not now* — the
+offer is made only once; the menu entry stays available anyway).
 
 After every export, if *Upload to Koofr* is on, the `.md` files and the index
 are uploaded to the chosen server automatically. No image folder is created:
