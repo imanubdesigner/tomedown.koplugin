@@ -18,6 +18,9 @@ msgstr "Indice dei libri"
 msgid "%1 files exported"
 msgstr "%1 file esportati"
 
+msgid "%1 files exported — upload when online"
+msgstr "%1 file esportati — verranno caricati al prossimo collegamento"
+
 msgid "No files exported"
 msgstr "Nessun file esportato"
 
@@ -225,6 +228,9 @@ msgstr "Aggiornamento Tomedown disponibile: v%1"
 
 msgid "Include page bookmarks"
 msgstr "Includi segnalibri di pagina"
+
+msgid "Auto-export on close"
+msgstr "Esportazione automatica alla chiusura"
 
 msgid "Page bookmarks"
 msgstr "Segnalibri di pagina"

@@ -99,6 +99,7 @@ first export and optional Remotely Save in Obsidian — is in
 | *Local folder* | defaults to `clipboard/tomedown` inside KOReader's data folder; tap it to browse with KOReader's folder picker (long-press a folder to choose it) |
 | *Generate the index 00 - Index.md* | table with internal links, author, highlight count and last export date |
 | *Include page bookmarks* | off by default: adds a `## Page bookmarks` section (bookmarked page + note) after the highlights |
+| *Auto-export on close* | off by default: exports the book when you close it, and again before the device suspends (silently, no network then) |
 | *Version* | the installed version, read from `_meta.lua` |
 | *Check for updates…* | asks GitHub for newer releases, shows their notes and can install the update right away (**Update and restart**) |
 | *Check for updates in background* | off by default: when enabled, a quiet check runs when KOReader starts and when the menu opens (at most once an hour) and notifies you of a new release |
@@ -163,6 +164,20 @@ offer is made only once; the menu entry stays available anyway).
 After every export, if *Upload to cloud* is on, the `.md` files and the index
 are uploaded to the chosen server automatically. No image folder is created:
 only `*.md` files are uploaded (books + `00 - Index.md`).
+
+### Auto-export and offline reading
+
+With *Auto-export on close* enabled, closing a book exports it on the spot;
+suspending the device does the same right before sleep — silently, without
+any widget and without touching the network.
+
+No connection? The export still happens locally and the files wait in a
+pending list. As soon as KOReader comes back online (the connection event
+is enough — no prompt, no dialog), **only those pending files** are
+uploaded: books already in the cloud and unchanged are never re-sent, and
+a book whose highlights changed since its last upload is uploaded again,
+overwriting the old copy. Failed uploads stay pending and are retried on
+the next connection.
 
 ### Upload retries
 

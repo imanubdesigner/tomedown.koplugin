@@ -16,6 +16,7 @@ local ConfirmBox = require("ui/widget/confirmbox")
 local DataStorage = require("datastorage")
 local InfoMessage = require("ui/widget/infomessage")
 local InputDialog = require("ui/widget/inputdialog")
+local NetworkMgr = require("ui/network/manager")
 local Notification = require("ui/widget/notification")
 local UIManager = require("ui/uimanager")
 local WidgetContainer = require("ui/widget/container/widgetcontainer")
@@ -599,15 +600,59 @@ end
 
 -- export
 
+-- files written locally but not yet in the cloud (offline export, upload
+-- failure, export during suspend): remembered across restarts so that the
+-- next connection can upload only those
+function MdBook:markPendingUploads(paths)
+    local pending = getSetting("pending_uploads", {})
+    local changed = false
+    for __, path in ipairs(paths) do
+        if not pending[path] then
+            pending[path] = true
+            changed = true
+        end
+    end
+    if changed then
+        setSetting("pending_uploads", pending)
+        if G_reader_settings.flush then
+            G_reader_settings:flush()
+        end
+    end
+end
+
+function MdBook:clearPendingUploads(paths)
+    local pending = getSetting("pending_uploads", {})
+    local changed = false
+    for __, path in ipairs(paths) do
+        if pending[path] then
+            pending[path] = nil
+            changed = true
+        end
+    end
+    if changed then
+        setSetting("pending_uploads", pending)
+    end
+end
+
 function MdBook:runExport(files, opts)
     opts = opts or {}
+    if opts.auto then
+        -- close and suspend only export what changed since last time
+        opts.only_updated = true
+    end
+    -- suspend: write locally and stay completely silent (no widgets, no
+    -- network: the device is about to sleep)
+    local silent = opts.auto == "suspend"
     self.book_cache = {}
 
     local dir = self:getLocalDir()
     util.makePath(dir)
     local with_index = getSetting("with_index", true)
 
-    local info = self:showProgress(opts.progress_text or _("Export in progress…"))
+    local info
+    if not silent then
+        info = self:showProgress(opts.progress_text or _("Export in progress…"))
+    end
 
     local export_records = getSetting("exports", {})
     local written, errors = {}, {}
@@ -661,26 +706,63 @@ function MdBook:runExport(files, opts)
     end
 
     setSetting("exports", export_records)
-    UIManager:close(info)
+    if info then
+        UIManager:close(info)
+    end
+
+    local function report(uploaded, upload_failed, offline_pending)
+        if silent then
+            return
+        end
+        -- auto close of a book without new highlights: no message at all
+        if opts.auto == "close" and exported == 0 and #errors == 0 then
+            return
+        end
+        self:showResult(exported, skipped, errors, uploaded, upload_failed, offline_pending)
+    end
 
     local server = self:getServer()
     if getSetting("upload", true) and server and #written > 0 then
-        -- stays open for the whole upload phase, retries included
-        -- with backoff: without this the screen stays silent for minutes
-        local upload_info = self:showProgress(T(_("Uploading %1 files to the cloud…"), #written))
-        self:uploadPaths(server, written, function(ok_count, fail_count, failed)
-            UIManager:close(upload_info)
-            self:showResult(exported, skipped, errors, ok_count, fail_count)
-        end)
+        if silent or not NetworkMgr:isConnected() then
+            -- no network work now: queue for the next connection
+            self:markPendingUploads(written)
+            report(nil, nil, true)
+        else
+            -- stays open for the whole upload phase, retries included
+            -- with backoff: without this the screen stays silent for minutes
+            local upload_info = self:showProgress(T(_("Uploading %1 files to the cloud…"), #written))
+            self:uploadPaths(server, written, function(ok_count, fail_count, failed)
+                UIManager:close(upload_info)
+                if #failed > 0 then
+                    self:markPendingUploads(failed)
+                end
+                local failed_set = {}
+                for __, path in ipairs(failed) do
+                    failed_set[path] = true
+                end
+                local ok_paths = {}
+                for __, path in ipairs(written) do
+                    if not failed_set[path] then
+                        ok_paths[#ok_paths + 1] = path
+                    end
+                end
+                self:clearPendingUploads(ok_paths)
+                report(ok_count, fail_count, false)
+            end)
+        end
     else
-        self:showResult(exported, skipped, errors, nil, nil)
+        report(nil, nil, false)
     end
 end
 
-function MdBook:showResult(exported, skipped, errors, uploaded, upload_failed)
+function MdBook:showResult(exported, skipped, errors, uploaded, upload_failed, offline_pending)
     local lines = {}
     if exported > 0 then
-        lines[#lines + 1] = T(_("%1 files exported"), exported)
+        if offline_pending then
+            lines[#lines + 1] = T(_("%1 files exported — upload when online"), exported)
+        else
+            lines[#lines + 1] = T(_("%1 files exported"), exported)
+        end
     else
         lines[#lines + 1] = _("No files exported")
     end
@@ -706,6 +788,85 @@ function MdBook:showResult(exported, skipped, errors, uploaded, upload_failed)
             timeout = 3,
         })
     end
+end
+
+-- pending uploads: flushed when the connection comes back (NetworkConnected),
+-- when KOReader wakes up and at plugin start, so an export made offline finds
+-- the network at the next opportunity without any prompt
+
+function MdBook:schedulePendingFlush()
+    if self._flush_scheduled or self._flushing then
+        return
+    end
+    if not getSetting("upload", true) then
+        return
+    end
+    if next(getSetting("pending_uploads", {})) == nil then
+        return
+    end
+    if not NetworkMgr:isConnected() then
+        return
+    end
+    self._flush_scheduled = true
+    UIManager:scheduleIn(1, function()
+        self._flush_scheduled = false
+        self:flushPendingUploads()
+    end)
+end
+
+function MdBook:flushPendingUploads()
+    if self._flushing or not getSetting("upload", true) then
+        return
+    end
+    local pending = getSetting("pending_uploads", {})
+    local paths = {}
+    for path in pairs(pending) do
+        if lfs.attributes(path, "mode") == "file" then
+            paths[#paths + 1] = path
+        else
+            -- the file was deleted locally: nothing to upload
+            pending[path] = nil
+        end
+    end
+    if #paths == 0 then
+        setSetting("pending_uploads", pending)
+        return
+    end
+    if not NetworkMgr:isConnected() then
+        return
+    end
+    local server = self:getServer()
+    if not server then
+        return
+    end
+    table.sort(paths)
+    self._flushing = true
+    local upload_info = self:showProgress(T(_("Uploading %1 files to the cloud…"), #paths))
+    self:uploadPaths(server, paths, function(ok_count, fail_count, failed)
+        UIManager:close(upload_info)
+        self._flushing = false
+        local failed_set = {}
+        for __, path in ipairs(failed) do
+            failed_set[path] = true
+        end
+        local ok_paths = {}
+        for __, path in ipairs(paths) do
+            if not failed_set[path] then
+                ok_paths[#ok_paths + 1] = path
+            end
+        end
+        self:clearPendingUploads(ok_paths)
+        if fail_count > 0 then
+            UIManager:show(InfoMessage:new{
+                text = T(_("Cloud: %1 uploaded, %2 errors"), ok_count, fail_count),
+            })
+        else
+            UIManager:show(Notification:new{
+                text = T(_("Cloud: %1 files uploaded"), ok_count),
+                timeout = 3,
+            })
+        end
+    end)
 end
 
 function MdBook:reuploadAll(touchmenu)
@@ -991,6 +1152,16 @@ function MdBook:genSettingsMenu()
             callback = function()
                 setSetting("include_bookmarks", not getSetting("include_bookmarks", false))
             end,
+        },
+        {
+            text = _("Auto-export on close"),
+            checked_func = function()
+                return getSetting("auto_export", false)
+            end,
+            check_callback_updates_menu = true,
+            callback = function()
+                setSetting("auto_export", not getSetting("auto_export", false))
+            end,
             separator = true,
         },
         {
@@ -1024,6 +1195,18 @@ end
 
 function MdBook:init()
     self.ui.menu:registerToMainMenu(self)
+    -- ensure the plugin is in the UI event chain (same guard as
+    -- AnnotationSync), so onCloseDocument/onSuspend/... reach it
+    local found = false
+    for _, child in ipairs(self.ui) do
+        if child == self then
+            found = true
+            break
+        end
+    end
+    if not found then
+        table.insert(self.ui, self)
+    end
     if getSetting("update_check", false) then
         -- quiet check shortly after KOReader starts; the same check also
         -- runs when the menu is opened (both throttled to once an hour)
@@ -1031,6 +1214,47 @@ function MdBook:init()
             Update.checkBackground()
         end)
     end
+    -- pending uploads from an offline export: catch up right away if the
+    -- network is already up (no NetworkConnected event will fire then)
+    self:schedulePendingFlush()
+end
+
+-- auto-export (Settings → Auto-export on close, off by default)
+
+function MdBook:onCloseDocument()
+    if not getSetting("auto_export", false) then
+        return
+    end
+    local doc = self.ui and self.ui.document
+    local path = doc and doc.file
+    if not path then
+        return
+    end
+    -- let the reader finish closing (and flush the .sdr) first
+    UIManager:scheduleIn(1, function()
+        self:runExport({ path }, { auto = "close" })
+    end)
+end
+
+function MdBook:onSuspend()
+    if not getSetting("auto_export", false) then
+        return
+    end
+    local doc = self.ui and self.ui.document
+    local path = doc and doc.file
+    if not path then
+        return
+    end
+    -- synchronous and silent: no widget, no network right before sleep
+    self:runExport({ path }, { auto = "suspend" })
+end
+
+function MdBook:onResume()
+    self:schedulePendingFlush()
+end
+
+function MdBook:onNetworkConnected()
+    self:schedulePendingFlush()
 end
 
 -- first-run onboarding: offer to import the whole reading history

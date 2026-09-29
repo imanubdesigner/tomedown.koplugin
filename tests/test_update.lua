@@ -144,20 +144,21 @@ resetWidgets()
 fakeReleases({})
 
 local settings = plugin:genSettingsMenu()
-T.check(#settings == 9, "settings entries: " .. #settings)
+T.check(#settings == 10, "settings entries: " .. #settings)
 T.check(settings[6].text == "Include page bookmarks", "page bookmarks row")
-T.check(settings[7].text_func() == "Version " .. INSTALLED,
-    "version row: " .. settings[7].text_func())
-T.check(settings[8].text == "Check for updates…", "check row")
-T.check(settings[9].text == "Check for updates in background",
+T.check(settings[7].text == "Auto-export on close", "auto-export row")
+T.check(settings[8].text_func() == "Version " .. INSTALLED,
+    "version row: " .. settings[8].text_func())
+T.check(settings[9].text == "Check for updates…", "check row")
+T.check(settings[10].text == "Check for updates in background",
     "background toggle row")
-T.check(settings[9].checked_func() == false, "background check off by default")
+T.check(settings[10].checked_func() == false, "background check off by default")
 
-settings[9].callback()
+settings[10].callback()
 T.check(store.tomedown and store.tomedown.update_check == true,
     "background check toggled on")
-T.check(settings[9].checked_func() == true, "toggle reflects the setting")
-settings[9].callback()
+T.check(settings[10].checked_func() == true, "toggle reflects the setting")
+settings[10].callback()
 T.check(store.tomedown.update_check == false, "background check toggled off")
 
 -- ------------------------------------------- 4. manual check: up to date
@@ -213,7 +214,7 @@ T.check(T.contains(viewer.text, "issue #12"), "inline #12 kept: " .. tostring(vi
 T.check(Update.getAvailableVersion() == MAJOR,
     "cached available version: " .. tostring(Update.getAvailableVersion()))
 
-local version_row = plugin:genSettingsMenu()[7]
+local version_row = plugin:genSettingsMenu()[8]
 T.check(T.contains(version_row.text_func(), "v" .. MAJOR .. " available"),
     "version row shows the update: " .. version_row.text_func())
 

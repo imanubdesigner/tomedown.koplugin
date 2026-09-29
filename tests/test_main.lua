@@ -37,6 +37,7 @@ local InfoMessage = require("ui/widget/infomessage")
 local Notification = require("ui/widget/notification")
 local InputDialog = require("ui/widget/inputdialog")
 local PathChooser = require("ui/widget/pathchooser")
+local NetworkMgr = require("ui/network/manager")
 local lfs = require("libs/libkoreader-lfs")
 local json = require("json")
 local md5 = require("ffi/sha2").md5
@@ -434,7 +435,7 @@ ui.document = { file = nil }
 T.check(sub[4].enabled_func() == true, "all books enabled")
 
 local settings = plugin:genSettingsMenu()
-T.check(#settings == 9, "settings entries: " .. #settings)
+T.check(#settings == 10, "settings entries: " .. #settings)
 T.check(settings[1].text == "Upload to cloud", "upload entry")
 T.check(settings[2].text_func() == "Server and folder: not set", "server not set")
 T.check(T.contains(settings[3].text_func(), "Remote folder: not set"), "remote folder not set")
@@ -442,6 +443,8 @@ T.check(T.contains(settings[4].text_func(), "clipboard/tomedown"), "default loca
 T.check(T.contains(settings[5].text, "00 - Index.md"), "index entry with the file name")
 T.check(settings[6].text == "Include page bookmarks", "page bookmarks entry")
 T.check(settings[6].checked_func() == false, "page bookmarks off by default")
+T.check(settings[7].text == "Auto-export on close", "auto-export entry")
+T.check(settings[7].checked_func() == false, "auto-export off by default")
 
 settings[1].callback()
 T.check(store.tomedown.upload == false, "upload disabled")
@@ -857,5 +860,141 @@ UIManager:runPending()
 T.check(ConfirmBox.last == nil, "no prompt without history")
 readhistory.hist = hist
 store.tomedown.import_prompt_done = nil
+
+-- ------------------------------------- 12. auto-export and pending uploads
+
+NetworkMgr.connected = true
+
+-- toggle off (default): the close does nothing at all
+uploadSetup()
+ui.document = { file = FILE }
+plugin:onCloseDocument()
+T.check(UIManager:pendingCount() == 0, "toggle off: close schedules nothing")
+T.check(#uploads == 0 and Notification.last_text == nil,
+    "toggle off: nothing exported or notified")
+ui.document = nil
+
+-- toggle on: the close exports after 1s and uploads right away
+settings[7].callback()
+T.check(settings[7].checked_func() == true, "auto-export toggled on")
+uploadSetup()
+settings[7].callback() -- uploadSetup wiped the setting
+ui.document = { file = FILE }
+plugin:onCloseDocument()
+T.check(UIManager:pendingCount() == 1, "toggle on: close schedules the export")
+T.check(UIManager.delay_log[1] == 1, "export runs 1s after the close: "
+    .. tostring(UIManager.delay_log[1]))
+UIManager:runPending()
+T.check(#uploads == 2, "online close: book and index uploaded: " .. #uploads)
+T.check(T.contains(Notification.last_text or "", "Cloud: 2 files uploaded"),
+    "online close notification: " .. tostring(Notification.last_text))
+T.check(next(store.tomedown.pending_uploads or {}) == nil,
+    "online close: nothing left pending")
+ui.document = nil
+
+-- same book, no new highlights: no message, no upload
+resetUpload()
+plugin:onCloseDocument()
+UIManager:runPending()
+T.check(Notification.last_text == nil, "unchanged book: no notification")
+T.check(#uploads == 0, "unchanged book: no upload")
+ui.document = nil
+
+-- offline close: exported locally, queued, the network is not touched
+uploadSetup()
+settings[7].callback()
+NetworkMgr.connected = false
+ui.document = { file = FILE }
+plugin:onCloseDocument()
+UIManager:runPending()
+T.check(#uploads == 0, "offline close: no upload attempted")
+T.check(store.tomedown.pending_uploads[MD_PATH] == true
+    and store.tomedown.pending_uploads[INDEX_PATH] == true,
+    "offline close: book and index pending")
+T.check(T.contains(Notification.last_text or "", "upload when online"),
+    "offline close notification: " .. tostring(Notification.last_text))
+ui.document = nil
+
+-- the connection comes back: only the pending files go up
+NetworkMgr.connected = true
+plugin:onNetworkConnected()
+T.check(UIManager:pendingCount() == 1, "reconnect schedules the flush")
+T.check(UIManager.delay_log[#UIManager.delay_log] == 1,
+    "flush runs 1s after the connection")
+UIManager:runPending()
+T.check(#uploads == 2, "reconnect: pending files uploaded: " .. #uploads)
+T.check(T.contains(Notification.last_text or "", "Cloud: 2 files uploaded"),
+    "reconnect notification: " .. tostring(Notification.last_text))
+T.check(next(store.tomedown.pending_uploads or {}) == nil,
+    "reconnect: pending list cleared")
+
+-- reconnect with nothing to do: no flush at all
+plugin:onNetworkConnected()
+T.check(UIManager:pendingCount() == 0, "reconnect without pending: nothing scheduled")
+
+-- a failed upload stays pending, the next connection retries it
+uploadSetup()
+upload_script[MD_PATH] = { 500, 500, 500, 500 }
+upload_script[INDEX_PATH] = { 500, 500, 500, 500 }
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+T.check(store.tomedown.pending_uploads[MD_PATH] == true,
+    "failed upload stays pending (book)")
+T.check(store.tomedown.pending_uploads[INDEX_PATH] == true,
+    "failed upload stays pending (index)")
+resetUpload()
+plugin:onNetworkConnected()
+UIManager:runPending()
+T.check(#uploads == 2, "retry after reconnect: uploaded once each: " .. #uploads)
+T.check(next(store.tomedown.pending_uploads or {}) == nil,
+    "retry clears the pending list")
+
+-- suspend: local only and totally silent, even with the network up
+uploadSetup()
+settings[7].callback()
+ui.document = { file = FILE }
+plugin:onSuspend()
+T.check(UIManager:pendingCount() == 0, "suspend schedules nothing")
+T.check(#uploads == 0, "suspend does not upload")
+T.check(Notification.last_text == nil and #UIManager.shown == 0,
+    "suspend export is silent")
+T.check(store.tomedown.pending_uploads[MD_PATH] == true,
+    "suspend export queued for the next connection")
+ui.document = nil
+
+-- toggle off again: suspend does not fire
+uploadSetup()
+ui.document = { file = FILE }
+plugin:onSuspend()
+T.check(#uploads == 0 and Notification.last_text == nil
+    and store.tomedown.pending_uploads == nil, "toggle off: suspend does nothing")
+ui.document = nil
+
+-- wake up with pending uploads and the network already on
+uploadSetup()
+store.tomedown.pending_uploads = { [MD_PATH] = true }
+plugin:onResume()
+T.check(UIManager:pendingCount() == 1, "resume schedules the pending flush")
+UIManager:runPending()
+T.check(#uploads == 1, "resume flush uploads the pending file: " .. #uploads)
+T.check(next(store.tomedown.pending_uploads or {}) == nil,
+    "resume flush clears pending")
+
+-- pending file deleted locally: dropped, nothing to upload
+uploadSetup()
+store.tomedown.pending_uploads = { [DIR .. "/ghost.md"] = true }
+plugin:flushPendingUploads()
+T.check(next(store.tomedown.pending_uploads or {}) == nil,
+    "missing file dropped from pending")
+T.check(#uploads == 0, "no upload for missing files")
+
+-- the plugin sits in the UI event chain (events reach it)
+local in_chain = false
+for __, child in ipairs(ui) do
+    if child == plugin then
+        in_chain = true
+    end
+end
+T.check(in_chain, "plugin registered in the UI event chain")
 
 T.finish("test_main")
