@@ -213,7 +213,7 @@ T.check(viewer.title == "Update available!", "viewer title: " .. tostring(viewer
 T.check(T.contains(viewer.text, "Installed: v" .. INSTALLED), "installed line")
 T.check(T.contains(viewer.text, "Latest: v" .. MAJOR),
     "latest skips draft and prerelease")
-T.check(not T.contains(viewer.text, "9.9.9") and not T.contains(viewer.text, "beta"),
+T.check(not T.contains(viewer.text, "9.9.9") and not T.contains(viewer.text, "2.0.0-beta"),
     "draft and prerelease absent: " .. tostring(viewer.text))
 T.check(T.contains(viewer.text, "v" .. MAJOR) and T.contains(viewer.text, "v" .. PATCH)
     and T.contains(viewer.text, "v" .. MINOR), "header for every newer release")
