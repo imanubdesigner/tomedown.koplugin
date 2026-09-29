@@ -345,6 +345,17 @@ tomedown.koplugin/
 └── README.md
 ```
 
+## Support
+
+If Tomedown saves your reading, buy it a coffee — the next features are
+brewed with it.
+
+<p align="center">
+  <a href="https://ko-fi.com/imanubdesigner">
+    <img src="https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-171717?style=for-the-badge&logo=ko-fi&logoColor=white" alt="Buy me a coffee on Ko-fi">
+  </a>
+</p>
+
 ## License
 
 GNU Affero General Public License v3.0 — see [LICENSE](LICENSE).
