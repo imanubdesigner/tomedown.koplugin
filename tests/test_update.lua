@@ -122,6 +122,14 @@ local cases = {
     { "1.0.0", "0.2.0", true },
     { "v0.5.0", "0.1.0", true },
     { "0.1.0", "0.2.0", false },
+    { "0.4.0", "0.4.0-beta.1", true },
+    { "0.4.0-beta.1", "0.4.0", false },
+    { "0.4.0-beta.2", "0.4.0-beta.1", true },
+    { "0.4.0-beta.1", "0.4.0-beta.2", false },
+    { "0.5.0-beta.1", "0.4.0", true },
+    { "0.4.0-beta", "0.4.0", false },
+    { "0.4.0", "0.4.0-beta", true },
+    { "1.2.4-beta", "1.2.4", false },
 }
 for __, c in ipairs(cases) do
     T.check(Update.isNewer(c[1], c[2]) == c[3],
@@ -144,7 +152,7 @@ resetWidgets()
 fakeReleases({})
 
 local settings = plugin:genSettingsMenu()
-T.check(#settings == 10, "settings entries: " .. #settings)
+T.check(#settings == 11, "settings entries: " .. #settings)
 T.check(settings[6].text == "Include page bookmarks", "page bookmarks row")
 T.check(settings[7].text == "Auto-export on close", "auto-export row")
 T.check(settings[8].text_func() == "Version " .. INSTALLED,
@@ -153,6 +161,8 @@ T.check(settings[9].text == "Check for updates…", "check row")
 T.check(settings[10].text == "Check for updates in background",
     "background toggle row")
 T.check(settings[10].checked_func() == false, "background check off by default")
+T.check(settings[11].text == "Beta Releases", "beta releases row")
+T.check(settings[11].checked_func() == false, "beta releases off by default")
 
 settings[10].callback()
 T.check(store.tomedown and store.tomedown.update_check == true,
@@ -160,6 +170,10 @@ T.check(store.tomedown and store.tomedown.update_check == true,
 T.check(settings[10].checked_func() == true, "toggle reflects the setting")
 settings[10].callback()
 T.check(store.tomedown.update_check == false, "background check toggled off")
+settings[11].callback()
+T.check(store.tomedown.beta_releases == true, "beta releases toggled on")
+settings[11].callback()
+T.check(store.tomedown.beta_releases == false, "beta releases toggled off")
 
 -- ------------------------------------------- 4. manual check: up to date
 
@@ -477,5 +491,68 @@ T.check(T.contains(InfoMessage.last_text or "", "Installation failed:")
     "install failure reported: " .. tostring(InfoMessage.last_text))
 T.check(UIManager.restarted == 0, "no restart after an unexpected error")
 T.rmrf(cache_dir)
+
+-- --------------------------------------------- 12. Beta Releases toggle
+
+resetWidgets()
+Update._resetState()
+NetworkMgr.connected = true
+settings = plugin:genSettingsMenu()
+T.check(#settings == 11, "settings entries with the beta row: " .. #settings)
+T.check(settings[11].text == "Beta Releases", "beta releases row")
+T.check(settings[11].checked_func() == false, "beta releases off by default")
+
+-- toggle on: prereleases are offered, the stable release stays the latest
+settings[11].callback()
+T.check(store.tomedown.beta_releases == true, "beta releases toggled on")
+fakeReleases({
+    release("v1.0.0", "stable 1.0.0"),
+    release("v1.0.0-beta.1", "beta 1.0.0-beta.1", { prerelease = true }),
+})
+Update.check()
+UIManager:runPending()
+local beta_viewer = TextViewer.last
+T.check(beta_viewer ~= nil, "viewer shown with betas enabled")
+T.check(T.contains(beta_viewer and beta_viewer.text or "", "Latest: v1.0.0"),
+    "stable release is the latest: " .. tostring(beta_viewer and beta_viewer.text))
+T.check(T.contains(beta_viewer and beta_viewer.text or "", "beta 1.0.0-beta.1"),
+    "beta notes offered with the toggle on")
+T.check(Update.getAvailableVersion() == "1.0.0", "cache holds the stable version")
+
+-- toggling clears the cached version right away
+settings[11].callback()
+T.check(store.tomedown.beta_releases == false, "beta releases off again")
+T.check(Update.getAvailableVersion() == nil, "toggle clears the cached version")
+
+-- the same releases with the toggle off: the prerelease is skipped
+fakeReleases({
+    release("v1.0.0", "stable 1.0.0"),
+    release("v1.0.0-beta.1", "beta 1.0.0-beta.1", { prerelease = true }),
+})
+Update.check()
+UIManager:runPending()
+beta_viewer = TextViewer.last
+T.check(beta_viewer ~= nil, "viewer shown for the stable release")
+T.check(not T.contains(beta_viewer and beta_viewer.text or "", "beta 1.0.0"),
+    "prerelease skipped with the toggle off: "
+        .. tostring(beta_viewer and beta_viewer.text))
+
+-- a beta install is offered the final release of the same version,
+-- even with the toggle off
+resetWidgets()
+Update._resetState()
+local real_installed = Update.getInstalledVersion
+Update.getInstalledVersion = function()
+    return "0.4.0-beta.1"
+end
+fakeReleases({ release("v0.4.0", "the final release") })
+Update.check()
+UIManager:runPending()
+local promo = TextViewer.last
+T.check(promo ~= nil, "stable release offered to a beta install")
+T.check(promo and T.contains(promo.text or "", "Latest: v0.4.0"),
+    "latest is the final release: " .. tostring(promo and promo.text))
+Update.getInstalledVersion = real_installed
+Update._resetState()
 
 T.finish("test_update")

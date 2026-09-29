@@ -234,3 +234,6 @@ msgstr "Esportazione automatica alla chiusura"
 
 msgid "Page bookmarks"
 msgstr "Segnalibri di pagina"
+
+msgid "Beta Releases"
+msgstr "Beta Releases"

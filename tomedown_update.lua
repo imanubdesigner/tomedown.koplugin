@@ -19,7 +19,7 @@ GitHub's default page of 30.
 Compatibility rules for future versions (so the updater keeps working
 from every old install):
   - repository and API URL never change;
-  - tags are always vX.Y.Z;
+  - tags are always vX.Y.Z, prereleases vX.Y.Z-beta.N;
   - release zips keep the tomedown.koplugin/ top-level folder;
   - settings keys are never renamed (add a migration instead).
 ]]
@@ -73,18 +73,31 @@ function Update.getAvailableVersion()
     return cached_version
 end
 
+--- Numeric parts of a tag plus its prerelease counter: "v0.4.0-beta.1"
+-- parses to {0, 4, 0} and 1, a plain "0.4.0" to {0, 4, 0} and no
+-- counter ("-beta" with no number counts as 0).
 local function parseVersion(version)
+    local text = tostring(version):gsub("^v", "")
+    local base = text:match("^([^%-]+)") or text
+    local prerelease
+    if base ~= text then
+        prerelease = tonumber(text:sub(#base + 2):match("(%d+)$")) or 0
+    end
     local parts = {}
-    for part in tostring(version):gsub("^v", ""):gmatch("([^.]+)") do
+    for part in base:gmatch("([^.]+)") do
         parts[#parts + 1] = tonumber(part) or 0
     end
-    return parts
+    return parts, prerelease
 end
 
 --- Numeric per-part comparison, missing parts count as 0, so jumps of
--- any size work: 1.0 > 0.3.1, 1.0.0 == 1.0, 0.10.0 > 0.9.0.
+-- any size work: 1.0 > 0.3.1, 1.0.0 == 1.0, 0.10.0 > 0.9.0. On a full
+-- tie the stable release wins over its own prerelease (0.4.0 >
+-- 0.4.0-beta.1) and a higher counter wins between prereleases
+-- (beta.2 > beta.1), so a beta tester is always offered the release.
 function Update.isNewer(candidate, installed)
-    local a, b = parseVersion(candidate), parseVersion(installed)
+    local a, ra = parseVersion(candidate)
+    local b, rb = parseVersion(installed)
     for i = 1, math.max(#a, #b) do
         local x, y = a[i] or 0, b[i] or 0
         if x > y then
@@ -93,6 +106,15 @@ function Update.isNewer(candidate, installed)
         if x < y then
             return false
         end
+    end
+    if ra and not rb then
+        return false
+    end
+    if rb and not ra then
+        return true
+    end
+    if ra and rb then
+        return ra > rb
     end
     return false
 end
@@ -233,13 +255,24 @@ local function canRenderMarkdown()
         and type(Converter.mdToHtml) == "function"
 end
 
+--- The "Beta Releases" Settings toggle (default off): with it on, the
+-- prereleases are offered too. Reads the same settings key as main.lua.
+local function betaEnabled()
+    local settings = G_reader_settings
+        and G_reader_settings:readSetting("tomedown", {})
+    return settings and settings.beta_releases == true
+end
+
 --- Releases newer than the installed version, newest first, skipping
--- drafts and prereleases; each entry keeps version, raw body and the
--- zip download URL of that release.
+-- drafts and - unless the Beta Releases toggle is on - prereleases;
+-- each entry keeps version, raw body and the zip download URL of that
+-- release.
 local function collectNewer(releases, installed)
     local newer = {}
+    local beta = betaEnabled()
     for __, rel in ipairs(releases) do
-        if type(rel) == "table" and not rel.draft and not rel.prerelease then
+        if type(rel) == "table" and not rel.draft
+                and (beta or not rel.prerelease) then
             local version = releaseTag(rel)
             if Update.isNewer(version, installed) then
                 newer[#newer + 1] = {
@@ -592,6 +625,14 @@ function Update._resetState()
     cached_version = nil
     last_bg_check = nil
     bg_in_flight = false
+end
+
+--- Forget the cached "newer version" and the background throttle, so a
+-- Settings change (the Beta Releases toggle) is picked up by the next
+-- check instead of up to an hour later.
+function Update.clearAvailableCache()
+    cached_version = nil
+    last_bg_check = nil
 end
 
 return Update

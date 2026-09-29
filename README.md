@@ -103,6 +103,7 @@ first export and optional Remotely Save in Obsidian — is in
 | *Version* | the installed version, read from `_meta.lua` |
 | *Check for updates…* | asks GitHub for newer releases, shows their notes and can install the update right away (**Update and restart**) |
 | *Check for updates in background* | off by default: when enabled, a quiet check runs when KOReader starts and when the menu opens (at most once an hour) and notifies you of a new release |
+| *Beta Releases* | off by default: also offers prereleases (tags like `0.4.0-beta.1`) from *Check for updates…* and the background check |
 
 Everything is stored in KOReader's settings, so it applies to all books.
 
@@ -134,13 +135,19 @@ download or the unpacking fails, the releases page opens instead so the
 zip can be taken by hand (see *Installation*) — that works from any
 older version.
 
+Tick **Beta Releases** to be offered prereleases too (tags like
+`0.4.0-beta.1`) — the way to try a new feature before its final
+release; untick it to go back to stable releases only. A beta install
+always sees the final release of the same version even with the box
+unticked: checking for updates from `0.4.0-beta.1` offers `0.4.0`.
+
 When you publish a release, bump `version` in `_meta.lua` to the tag
 without the `v`.
 
 The updater is built to keep working from old installs: repository and
-API URL never change, tags stay `vX.Y.Z`, release zips keep the
-`tomedown.koplugin/` top-level folder, and settings keys are never
-renamed.
+API URL never change, tags stay `vX.Y.Z` (prereleases `vX.Y.Z-beta.N`),
+release zips keep the `tomedown.koplugin/` top-level folder, and
+settings keys are never renamed.
 
 ## Usage
 

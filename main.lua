@@ -1190,6 +1190,17 @@ function MdBook:genSettingsMenu()
                 setSetting("update_check", not getSetting("update_check", false))
             end,
         },
+        {
+            text = _("Beta Releases"),
+            checked_func = function()
+                return getSetting("beta_releases", false)
+            end,
+            check_callback_updates_menu = true,
+            callback = function()
+                setSetting("beta_releases", not getSetting("beta_releases", false))
+                Update.clearAvailableCache()
+            end,
+        },
     }
 end
 

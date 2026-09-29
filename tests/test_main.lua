@@ -435,7 +435,7 @@ ui.document = { file = nil }
 T.check(sub[4].enabled_func() == true, "all books enabled")
 
 local settings = plugin:genSettingsMenu()
-T.check(#settings == 10, "settings entries: " .. #settings)
+T.check(#settings == 11, "settings entries: " .. #settings)
 T.check(settings[1].text == "Upload to cloud", "upload entry")
 T.check(settings[2].text_func() == "Server and folder: not set", "server not set")
 T.check(T.contains(settings[3].text_func(), "Remote folder: not set"), "remote folder not set")
@@ -445,6 +445,8 @@ T.check(settings[6].text == "Include page bookmarks", "page bookmarks entry")
 T.check(settings[6].checked_func() == false, "page bookmarks off by default")
 T.check(settings[7].text == "Auto-export on close", "auto-export entry")
 T.check(settings[7].checked_func() == false, "auto-export off by default")
+T.check(settings[11].text == "Beta Releases", "beta releases entry")
+T.check(settings[11].checked_func() == false, "beta releases off by default")
 
 settings[1].callback()
 T.check(store.tomedown.upload == false, "upload disabled")
@@ -458,6 +460,10 @@ settings[6].callback()
 T.check(store.tomedown.include_bookmarks == true, "page bookmarks enabled")
 settings[6].callback()
 T.check(store.tomedown.include_bookmarks == false, "page bookmarks disabled")
+settings[11].callback()
+T.check(store.tomedown.beta_releases == true, "beta releases enabled")
+settings[11].callback()
+T.check(store.tomedown.beta_releases == false, "beta releases disabled")
 
 -- server picked from the Cloud storage list
 plugin:chooseCloudFolder(nil)
