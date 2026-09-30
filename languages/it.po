@@ -148,17 +148,80 @@ msgstr "Nessun libro con evidenziati esportati."
 msgid "| Book | Author | Highlights | Last export |"
 msgstr "| Libro | Autore | Evidenziati | Ultimo export |"
 
-msgid "Version %1"
-msgstr "Versione %1"
+msgid "Update available: v%1 → v%2"
+msgstr "Aggiornamento disponibile: v%1 → v%2"
 
-msgid "Version %1 — v%2 available"
-msgstr "Versione %1 — v%2 disponibile"
+msgid "Check for updates (v%1)"
+msgstr "Controlla aggiornamenti (v%1)"
 
-msgid "Check for updates…"
-msgstr "Controlla aggiornamenti…"
+msgid "View changelog"
+msgstr "Vedi changelog"
+
+msgid "Changelog (%1 of %2)"
+msgstr "Changelog (%1 di %2)"
+
+msgid "Older"
+msgstr "Precedente"
+
+msgid "Newer"
+msgstr "Successivo"
+
+msgid "Refresh"
+msgstr "Aggiorna"
+
+msgid "(no notes for this release)"
+msgstr "(nessuna nota per questa release)"
+
+msgid "Fetching changelog..."
+msgstr "Recupero changelog..."
+
+msgid "Could not fetch the changelog."
+msgstr "Impossibile recuperare il changelog."
 
 msgid "Check for updates in background"
 msgstr "Controlla aggiornamenti in background"
+
+msgid "Reset to latest stable release"
+msgstr "Ripristina all'ultima release stabile"
+
+msgid "This will install the latest stable release of Tomedown, then restart KOReader. Continue?"
+msgstr "Questo installerà l'ultima release stabile di Tomedown e riavvierà KOReader. Continuare?"
+
+msgid "Reset"
+msgstr "Ripristina"
+
+msgid "Could not fetch latest release."
+msgstr "Impossibile recuperare l'ultima release."
+
+msgid "Latest release has no downloadable zip."
+msgstr "L'ultima release non ha uno zip scaricabile."
+
+msgid "Installed: v%1 (%2)"
+msgstr "Installato: v%1 (%2)"
+
+msgid "Beta"
+msgstr "Beta"
+
+msgid "Release"
+msgstr "Release"
+
+msgid "Cloud"
+msgstr "Cloud"
+
+msgid "Markdown files"
+msgstr "File Markdown"
+
+msgid "Updates"
+msgstr "Aggiornamenti"
+
+msgid "About"
+msgstr "Informazioni"
+
+msgid "About Tomedown"
+msgstr "Informazioni su Tomedown"
+
+msgid "Link copied to clipboard"
+msgstr "Link copiato negli appunti"
 
 msgid "Checking for updates…"
 msgstr "Controllo aggiornamenti…"

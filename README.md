@@ -89,21 +89,38 @@ first export and optional Remotely Save in Obsidian — is in
 
 ## Configuration (one-off)
 
-☰ menu → **Tomedown** → **Settings**:
+☰ menu → **Tomedown** → **Settings**, in four groups:
+
+**Cloud**
 
 | Entry | What to do |
 |---|---|
 | *Upload to cloud* | any WebDAV/Dropbox/FTP server works; on by default for installs that have already exported, off on a fresh install |
 | *Server and folder…* | opens the Cloud storage browser: pick your server (the examples use Koofr), then navigate to the final folder (e.g. `Bookshelf/Kindle`) and tap **Choose** |
 | *Remote folder…* | only if you want to override the folder chosen above (e.g. `/Bookshelf/Kindle`) |
+| *Auto-export on close* | off by default: exports the book when you close it, and again before the device suspends (silently, no network then) |
+
+**Markdown files**
+
+| Entry | What to do |
+|---|---|
 | *Local folder* | defaults to `clipboard/tomedown` inside KOReader's data folder; tap it to browse with KOReader's folder picker (long-press a folder to choose it) |
 | *Generate the index 00 - Index.md* | table with internal links, author, highlight count and last export date |
 | *Include page bookmarks* | off by default: adds a `## Page bookmarks` section (bookmarked page + note) after the highlights |
-| *Auto-export on close* | off by default: exports the book when you close it, and again before the device suspends (silently, no network then) |
-| *Version* | the installed version, read from `_meta.lua` |
-| *Check for updates…* | asks GitHub for newer releases, shows their notes and can install the update right away (**Update and restart**) |
+
+**Updates**
+
+| Entry | What to do |
+|---|---|
+| *Check for updates (vX)* | the row doubles as the version display: it asks GitHub for newer releases, shows their notes and can install the update right away (**Update and restart**) |
+| *View changelog* | pages through the notes of every release on GitHub, newest first; the list is cached when a check runs, so the viewer also works offline, and **Refresh** fetches it again |
 | *Check for updates in background* | off by default: when enabled, a quiet check runs when KOReader starts and when the menu opens (at most once an hour) and notifies you of a new release |
-| *Beta Releases* | off by default: also offers prereleases (tags like `0.4.0-beta.1`) from *Check for updates…* and the background check |
+| *Beta Releases* | off by default: also offers prereleases (tags like `0.4.0-beta.1`) from *Check for updates* and the background check |
+| *Reset to latest stable release* | installs the newest stable release even when your install is a beta newer than it — the way back from a beta; it also unticks *Beta Releases* so the beta is not offered again |
+| *Installed: vX (Release/Beta)* | the installed version as a plain label |
+
+**About** — the installed version, the description of the plugin and the
+links to GitHub and to Ko-fi.
 
 Everything is stored in KOReader's settings, so it applies to all books.
 
@@ -126,7 +143,7 @@ reach Obsidian.
 
 ### Updates
 
-*Check for updates…* compares the installed version with the releases
+*Check for updates (vX)* compares the installed version with the releases
 on GitHub and shows the notes of **every** release newer than yours, so
 someone updating from 0.2.0 to 1.0 reads the fixes of 0.3.0, 0.3.1 and
 1.0 in one window. When your KOReader renders Markdown, the notes keep
@@ -143,6 +160,18 @@ Tick **Beta Releases** to be offered prereleases too (tags like
 release; untick it to go back to stable releases only. A beta install
 always sees the final release of the same version even with the box
 unticked: checking for updates from `0.4.0-beta.1` offers `0.4.0`.
+
+**View changelog** pages through the notes of every release GitHub
+knows (newest first, up to 25 of them). The list is saved whenever a
+check runs, so the viewer also works without a connection, and
+**Refresh** fetches it again. With *Beta Releases* ticked the
+prereleases are listed too.
+
+**Reset to latest stable release** is the way back from a beta: it
+installs the newest stable release even when your beta install is
+newer than it (the check only ever offers *newer* versions). Confirm,
+and it also unticks *Beta Releases* so the same beta is not offered
+again on the next check.
 
 When you publish a release, bump `version` in `_meta.lua` to the tag
 without the `v`.

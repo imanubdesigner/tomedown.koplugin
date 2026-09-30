@@ -14,10 +14,12 @@ local BookInfo = require("apps/filemanager/filemanagerbookinfo")
 local BookList = require("ui/widget/booklist")
 local ConfirmBox = require("ui/widget/confirmbox")
 local DataStorage = require("datastorage")
+local Device = require("device")
 local InfoMessage = require("ui/widget/infomessage")
 local InputDialog = require("ui/widget/inputdialog")
 local NetworkMgr = require("ui/network/manager")
 local Notification = require("ui/widget/notification")
+local TextViewer = require("ui/widget/textviewer")
 local UIManager = require("ui/uimanager")
 local WidgetContainer = require("ui/widget/container/widgetcontainer")
 local logger = require("logger")
@@ -1078,8 +1080,11 @@ function MdBook:genPickerMenu()
     return items
 end
 
+--- Settings: four groups (the structure Bookshelf uses) plus the About
+-- row at the end. Every setting keeps its own row; the checkable ones
+-- keep their keep_menu_open so KOReader refreshes the tick in place.
 function MdBook:genSettingsMenu()
-    return {
+    local cloud = {
         {
             text = _("Upload to cloud"),
             enabled_func = function()
@@ -1123,8 +1128,19 @@ function MdBook:genSettingsMenu()
             callback = function(touchmenu)
                 self:editRemoteFolder(touchmenu)
             end,
-            separator = true,
         },
+        {
+            text = _("Auto-export on close"),
+            checked_func = function()
+                return getSetting("auto_export", false)
+            end,
+            keep_menu_open = true,
+            callback = function()
+                setSetting("auto_export", not getSetting("auto_export", false))
+            end,
+        },
+    }
+    local files = {
         {
             text_func = function()
                 return T(_("Local folder: %1"), self:getLocalDir())
@@ -1153,32 +1169,27 @@ function MdBook:genSettingsMenu()
                 setSetting("include_bookmarks", not getSetting("include_bookmarks", false))
             end,
         },
-        {
-            text = _("Auto-export on close"),
-            checked_func = function()
-                return getSetting("auto_export", false)
-            end,
-            keep_menu_open = true,
-            callback = function()
-                setSetting("auto_export", not getSetting("auto_export", false))
-            end,
-            separator = true,
-        },
+    }
+    local updates = {
         {
             text_func = function()
-                local version = Update.getInstalledVersion()
-                local latest = Update.getAvailableVersion()
-                if latest then
-                    return T(_("Version %1 — v%2 available"), version, latest)
+                local current = Update.getInstalledVersion()
+                local available = Update.getAvailableVersion()
+                if available then
+                    return T(_("Update available: v%1 → v%2"), current, available)
                 end
-                return T(_("Version %1"), version)
+                return T(_("Check for updates (v%1)"), current)
             end,
-        },
-        {
-            text = _("Check for updates…"),
             callback = function()
                 Update.check()
             end,
+        },
+        {
+            text = _("View changelog"),
+            callback = function()
+                Update.showChangelog()
+            end,
+            separator = true,
         },
         {
             text = _("Check for updates in background"),
@@ -1200,8 +1211,99 @@ function MdBook:genSettingsMenu()
                 setSetting("beta_releases", not getSetting("beta_releases", false))
                 Update.clearAvailableCache()
             end,
+            separator = true,
+        },
+        {
+            text = _("Reset to latest stable release"),
+            callback = function()
+                Update.resetToStable()
+            end,
+        },
+        {
+            text_func = function()
+                local current = Update.getInstalledVersion()
+                local kind = current:find("-", 1, true)
+                    and _("Beta") or _("Release")
+                return T(_("Installed: v%1 (%2)"), current, kind)
+            end,
+            enabled = false,
         },
     }
+    return {
+        { text = _("Cloud"), sub_item_table = cloud },
+        { text = _("Markdown files"), sub_item_table = files },
+        { text = _("Updates"), sub_item_table = updates, separator = true },
+        { text = _("About"), callback = function()
+            self:showAbout()
+        end },
+    }
+end
+
+--- About: installed version, the description from _meta.lua and the
+-- project links - the Bookshelf popup's content, in the viewer every
+-- other updater dialog already uses.
+function MdBook:showAbout()
+    local version = Update.getInstalledVersion()
+    local description = ""
+    local src = debug.getinfo(1, "S").source
+    if src:sub(1, 1) == "@" then
+        local dir = src:sub(2):match("^(.*)/[^/]+$")
+        if dir then
+            local ok, meta = pcall(dofile, dir .. "/_meta.lua")
+            if ok and type(meta) == "table" and meta.description then
+                description = meta.description
+            end
+        end
+    end
+    local GITHUB_URL = "https://github.com/imanubdesigner/tomedown.koplugin"
+    local GITHUB_DISPLAY = "github.com/imanubdesigner/tomedown.koplugin"
+    local KOFI_URL = "https://ko-fi.com/imanubdesigner"
+    local KOFI_DISPLAY = "ko-fi.com/imanubdesigner"
+    -- Device:openLink where it exists (SDL/Android); on the e-reader
+    -- the URL goes to the clipboard instead, which is what can be
+    -- followed from there
+    local function openLink(url)
+        if Device.openLink then
+            local ok_call, ret = pcall(function() return Device:openLink(url) end)
+            if ok_call and ret then
+                return
+            end
+        end
+        if Device.input and Device.input.setClipboardText then
+            pcall(function() Device.input.setClipboardText(url) end)
+            UIManager:show(Notification:new{
+                text = _("Link copied to clipboard"),
+            })
+        end
+    end
+    local viewer
+    viewer = TextViewer:new{
+        title = _("About Tomedown"),
+        text = "v" .. version .. "\n\n" .. description
+            .. "\n\n" .. GITHUB_DISPLAY .. "\n" .. KOFI_DISPLAY,
+        buttons_table = {
+            {
+                {
+                    text = "GitHub",
+                    callback = function() openLink(GITHUB_URL) end,
+                },
+                {
+                    text = "Ko-fi",
+                    callback = function() openLink(KOFI_URL) end,
+                },
+            },
+            {
+                {
+                    text = _("Close"),
+                    callback = function()
+                        UIManager:close(viewer)
+                    end,
+                },
+            },
+        },
+        add_default_buttons = false,
+    }
+    UIManager:show(viewer)
 end
 
 --- One-time default for "Upload to cloud": a fresh install starts with

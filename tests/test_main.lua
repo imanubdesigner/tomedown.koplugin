@@ -38,6 +38,8 @@ local Notification = require("ui/widget/notification")
 local InputDialog = require("ui/widget/inputdialog")
 local PathChooser = require("ui/widget/pathchooser")
 local NetworkMgr = require("ui/network/manager")
+local TextViewer = require("ui/widget/textviewer")
+local Update = require("tomedown_update")
 local lfs = require("libs/libkoreader-lfs")
 local json = require("json")
 local md5 = require("ffi/sha2").md5
@@ -435,45 +437,81 @@ ui.document = { file = nil }
 T.check(sub[4].enabled_func() == true, "all books enabled")
 
 local settings = plugin:genSettingsMenu()
-T.check(#settings == 11, "settings entries: " .. #settings)
-T.check(settings[1].text == "Upload to cloud", "upload entry")
-T.check(settings[2].text_func() == "Server and folder: not set", "server not set")
-T.check(T.contains(settings[3].text_func(), "Remote folder: not set"), "remote folder not set")
-T.check(T.contains(settings[4].text_func(), "clipboard/tomedown"), "default local folder")
-T.check(T.contains(settings[5].text, "00 - Index.md"), "index entry with the file name")
-T.check(settings[6].text == "Include page bookmarks", "page bookmarks entry")
-T.check(settings[6].checked_func() == false, "page bookmarks off by default")
-T.check(settings[7].text == "Auto-export on close", "auto-export entry")
-T.check(settings[7].checked_func() == false, "auto-export off by default")
-T.check(settings[11].text == "Beta Releases", "beta releases entry")
-T.check(settings[11].checked_func() == false, "beta releases off by default")
+T.check(#settings == 4, "settings groups: " .. #settings)
+T.check(settings[1].text == "Cloud", "cloud group")
+T.check(settings[2].text == "Markdown files", "markdown files group")
+T.check(settings[3].text == "Updates", "updates group")
+T.check(settings[3].separator == true, "separator before About")
+T.check(settings[4].text == "About", "about entry")
+T.check(type(settings[4].callback) == "function", "about opens a dialog")
+local cloud = settings[1].sub_item_table
+local files = settings[2].sub_item_table
+local updates = settings[3].sub_item_table
+T.check(#cloud == 4, "cloud rows: " .. #cloud)
+T.check(#files == 3, "markdown files rows: " .. #files)
+T.check(#updates == 6, "updates rows: " .. #updates)
+T.check(cloud[1].text == "Upload to cloud", "upload entry")
+T.check(cloud[2].text_func() == "Server and folder: not set", "server not set")
+T.check(T.contains(cloud[3].text_func(), "Remote folder: not set"), "remote folder not set")
+T.check(cloud[4].text == "Auto-export on close", "auto-export entry")
+T.check(cloud[4].checked_func() == false, "auto-export off by default")
+T.check(T.contains(files[1].text_func(), "clipboard/tomedown"), "default local folder")
+T.check(T.contains(files[2].text, "00 - Index.md"), "index entry with the file name")
+T.check(files[3].text == "Include page bookmarks", "page bookmarks entry")
+T.check(files[3].checked_func() == false, "page bookmarks off by default")
+T.check(updates[1].text_func() == "Check for updates (v"
+        .. Update.getInstalledVersion() .. ")",
+    "check row carries the installed version: " .. updates[1].text_func())
+T.check(updates[2].text == "View changelog", "changelog entry")
+T.check(updates[2].separator == true, "separator after the changelog entry")
+T.check(updates[3].text == "Check for updates in background", "background entry")
+T.check(updates[4].text == "Beta Releases", "beta releases entry")
+T.check(updates[4].checked_func() == false, "beta releases off by default")
+T.check(updates[4].separator == true, "separator after the beta toggle")
+T.check(updates[5].text == "Reset to latest stable release", "reset entry")
+local installed_version = Update.getInstalledVersion()
+T.check(updates[6].text_func() == "Installed: v" .. installed_version
+        .. (installed_version:find("-", 1, true) and " (Beta)" or " (Release)"),
+    "installed row: " .. updates[6].text_func())
+T.check(updates[6].enabled == false, "installed row is a plain label")
 
 -- checkable rows must keep the menu open so KOReader refreshes them
-for i, row in ipairs(settings) do
-    if row.checked_func then
-        T.check(row.keep_menu_open == true,
-            "checkable settings row " .. i .. " keeps the menu open")
+for _, group in ipairs({ cloud, files, updates }) do
+    for i, row in ipairs(group) do
+        if row.checked_func then
+            T.check(row.keep_menu_open == true,
+                "checkable settings row " .. i .. " keeps the menu open")
+        end
     end
 end
+-- the About row opens the info dialog
+settings[4].callback()
+T.check(TextViewer.last ~= nil, "about dialog shown")
+T.check(T.contains(TextViewer.last.text or "", "v" .. installed_version),
+    "about shows the version")
+T.check(T.contains(TextViewer.last.text or "", "Exports each book"),
+    "about shows the description")
+TextViewer.last = nil
+
 local main_src = T.readFile(T.plugin .. "/main.lua") or ""
 T.check(not main_src:find("check_callback_updates_menu", 1, true),
     "no check_callback_updates_menu (it opts out of the menu refresh)")
 
-settings[1].callback()
+cloud[1].callback()
 T.check(store.tomedown.upload == true, "upload enabled from the default off")
-settings[1].callback()
+cloud[1].callback()
 T.check(store.tomedown.upload == false, "upload disabled again")
-settings[5].callback()
+files[2].callback()
 T.check(store.tomedown.with_index == false, "index disabled")
-settings[5].callback()
+files[2].callback()
 T.check(store.tomedown.with_index == true, "index re-enabled")
-settings[6].callback()
+files[3].callback()
 T.check(store.tomedown.include_bookmarks == true, "page bookmarks enabled")
-settings[6].callback()
+files[3].callback()
 T.check(store.tomedown.include_bookmarks == false, "page bookmarks disabled")
-settings[11].callback()
+updates[4].callback()
 T.check(store.tomedown.beta_releases == true, "beta releases enabled")
-settings[11].callback()
+updates[4].callback()
 T.check(store.tomedown.beta_releases == false, "beta releases disabled")
 
 -- server picked from the Cloud storage list
@@ -481,8 +519,8 @@ plugin:chooseCloudFolder(nil)
 T.check(cloud_list_callback ~= nil, "cloud list opened")
 cloud_list_callback({ name = "Koofr", type = "webdav", url = "/Bookshelf/Kindle" })
 T.check(store.tomedown.server and store.tomedown.server.name == "Koofr", "server saved")
-T.check(settings[2].text_func() == "Server and folder: Koofr (webdav) → /Bookshelf/Kindle",
-    "server text updated: " .. settings[2].text_func())
+T.check(cloud[2].text_func() == "Server and folder: Koofr (webdav) → /Bookshelf/Kindle",
+    "server text updated: " .. cloud[2].text_func())
 T.check(plugin:hasServer() == true, "hasServer true with server and cloud")
 
 -- remote folder dialog
@@ -492,7 +530,7 @@ T.check(dialog ~= nil and dialog.title == "Remote folder on the server", "remote
 dialog.input_text = "  /Cartella mia  "
 dialog:simulateSave()
 T.check(store.tomedown.remote_folder == "/Cartella mia", "remote folder saved and trimmed")
-T.check(T.contains(settings[3].text_func(), "/Cartella mia"), "menu entry updated")
+T.check(T.contains(cloud[3].text_func(), "/Cartella mia"), "menu entry updated")
 plugin:editRemoteFolder(nil)
 InputDialog.last.input_text = ""
 InputDialog.last:simulateSave()
@@ -552,7 +590,7 @@ T.check(plugin:genPickerMenu()[1].text_func() == "Export selected (0)",
 
 -- ----------------------------------------------- 5b. page bookmarks
 
-settings[6].callback() -- enable "Include page bookmarks"
+files[3].callback() -- enable "Include page bookmarks"
 T.check(store.tomedown.include_bookmarks == true, "page bookmarks enabled for the export")
 plugin:runExport({ FILE }, {})
 UIManager:runPending()
@@ -588,7 +626,7 @@ if onlyBmMd then
 end
 
 -- disabled again: the section disappears
-settings[6].callback()
+files[3].callback()
 T.check(store.tomedown.include_bookmarks == false, "page bookmarks disabled again")
 plugin:runExport({ FILE }, {})
 UIManager:runPending()
@@ -892,10 +930,10 @@ T.check(#uploads == 0 and Notification.last_text == nil,
 ui.document = nil
 
 -- toggle on: the close exports after 1s and uploads right away
-settings[7].callback()
-T.check(settings[7].checked_func() == true, "auto-export toggled on")
+cloud[4].callback()
+T.check(cloud[4].checked_func() == true, "auto-export toggled on")
 uploadSetup()
-settings[7].callback() -- uploadSetup wiped the setting
+cloud[4].callback() -- uploadSetup wiped the setting
 ui.document = { file = FILE }
 plugin:onCloseDocument()
 T.check(UIManager:pendingCount() == 1, "toggle on: close schedules the export")
@@ -919,7 +957,7 @@ ui.document = nil
 
 -- offline close: exported locally, queued, the network is not touched
 uploadSetup()
-settings[7].callback()
+cloud[4].callback()
 NetworkMgr.connected = false
 ui.document = { file = FILE }
 plugin:onCloseDocument()
@@ -968,7 +1006,7 @@ T.check(next(store.tomedown.pending_uploads or {}) == nil,
 
 -- suspend: local only and totally silent, even with the network up
 uploadSetup()
-settings[7].callback()
+cloud[4].callback()
 ui.document = { file = FILE }
 plugin:onSuspend()
 T.check(UIManager:pendingCount() == 0, "suspend schedules nothing")

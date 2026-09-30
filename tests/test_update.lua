@@ -152,27 +152,30 @@ resetWidgets()
 fakeReleases({})
 
 local settings = plugin:genSettingsMenu()
-T.check(#settings == 11, "settings entries: " .. #settings)
-T.check(settings[6].text == "Include page bookmarks", "page bookmarks row")
-T.check(settings[7].text == "Auto-export on close", "auto-export row")
-T.check(settings[8].text_func() == "Version " .. INSTALLED,
-    "version row: " .. settings[8].text_func())
-T.check(settings[9].text == "Check for updates…", "check row")
-T.check(settings[10].text == "Check for updates in background",
+T.check(#settings == 4, "settings groups: " .. #settings)
+local cloud = settings[1].sub_item_table
+local files = settings[2].sub_item_table
+local updates = settings[3].sub_item_table
+T.check(files[3].text == "Include page bookmarks", "page bookmarks row")
+T.check(cloud[4].text == "Auto-export on close", "auto-export row")
+T.check(updates[1].text_func() == "Check for updates (v" .. INSTALLED .. ")",
+    "check row: " .. updates[1].text_func())
+T.check(updates[2].text == "View changelog", "changelog row")
+T.check(updates[3].text == "Check for updates in background",
     "background toggle row")
-T.check(settings[10].checked_func() == false, "background check off by default")
-T.check(settings[11].text == "Beta Releases", "beta releases row")
-T.check(settings[11].checked_func() == false, "beta releases off by default")
+T.check(updates[3].checked_func() == false, "background check off by default")
+T.check(updates[4].text == "Beta Releases", "beta releases row")
+T.check(updates[4].checked_func() == false, "beta releases off by default")
 
-settings[10].callback()
+updates[3].callback()
 T.check(store.tomedown and store.tomedown.update_check == true,
     "background check toggled on")
-T.check(settings[10].checked_func() == true, "toggle reflects the setting")
-settings[10].callback()
+T.check(updates[3].checked_func() == true, "toggle reflects the setting")
+updates[3].callback()
 T.check(store.tomedown.update_check == false, "background check toggled off")
-settings[11].callback()
+updates[4].callback()
 T.check(store.tomedown.beta_releases == true, "beta releases toggled on")
-settings[11].callback()
+updates[4].callback()
 T.check(store.tomedown.beta_releases == false, "beta releases toggled off")
 
 -- ------------------------------------------- 4. manual check: up to date
@@ -228,9 +231,10 @@ T.check(T.contains(viewer.text, "issue #12"), "inline #12 kept: " .. tostring(vi
 T.check(Update.getAvailableVersion() == MAJOR,
     "cached available version: " .. tostring(Update.getAvailableVersion()))
 
-local version_row = plugin:genSettingsMenu()[8]
-T.check(T.contains(version_row.text_func(), "v" .. MAJOR .. " available"),
-    "version row shows the update: " .. version_row.text_func())
+local check_row = plugin:genSettingsMenu()[3].sub_item_table[1]
+T.check(check_row.text_func() == "Update available: v" .. INSTALLED
+        .. " → v" .. MAJOR,
+    "check row shows the update: " .. check_row.text_func())
 
 local buttons = viewer.buttons_table[1]
 T.check(buttons[1].text == "Close" and buttons[2].text == "Update and restart",
@@ -498,12 +502,13 @@ resetWidgets()
 Update._resetState()
 NetworkMgr.connected = true
 settings = plugin:genSettingsMenu()
-T.check(#settings == 11, "settings entries with the beta row: " .. #settings)
-T.check(settings[11].text == "Beta Releases", "beta releases row")
-T.check(settings[11].checked_func() == false, "beta releases off by default")
+T.check(#settings == 4, "settings groups with the beta row: " .. #settings)
+updates = settings[3].sub_item_table
+T.check(updates[4].text == "Beta Releases", "beta releases row")
+T.check(updates[4].checked_func() == false, "beta releases off by default")
 
 -- toggle on: prereleases are offered, the stable release stays the latest
-settings[11].callback()
+updates[4].callback()
 T.check(store.tomedown.beta_releases == true, "beta releases toggled on")
 fakeReleases({
     release("v1.0.0", "stable 1.0.0"),
@@ -520,7 +525,7 @@ T.check(T.contains(beta_viewer and beta_viewer.text or "", "beta 1.0.0-beta.1"),
 T.check(Update.getAvailableVersion() == "1.0.0", "cache holds the stable version")
 
 -- toggling clears the cached version right away
-settings[11].callback()
+updates[4].callback()
 T.check(store.tomedown.beta_releases == false, "beta releases off again")
 T.check(Update.getAvailableVersion() == nil, "toggle clears the cached version")
 
@@ -554,5 +559,114 @@ T.check(promo and T.contains(promo.text or "", "Latest: v0.4.0"),
     "latest is the final release: " .. tostring(promo and promo.text))
 Update.getInstalledVersion = real_installed
 Update._resetState()
+
+-- --------------------------- 13. changelog viewer + reset to stable
+
+resetWidgets()
+Update._resetState()
+NetworkMgr.connected = true
+fakeReleases({
+    release("v9.9.0", "## newest\n- **bold**"),
+    release("v9.8.0", "older notes"),
+    release("v9.7.0-beta.1", "beta notes", { prerelease = true }),
+})
+Update.check()
+UIManager:runPending()
+local rels = G_reader_settings:readSetting("tomedown_changelog")
+T.check(rels and #rels == 2, "changelog seeded, prerelease skipped: "
+    .. tostring(rels and #rels))
+
+-- the viewer opens from the cache, without touching the network
+local before = #urls
+Update.showChangelog()
+T.check(TextViewer.last ~= nil, "changelog viewer shown")
+T.check(TextViewer.last.title == "Changelog (1 of 2)",
+    "changelog title: " .. tostring(TextViewer.last and TextViewer.last.title))
+T.check(T.contains(TextViewer.last.text or "", "v9.9.0"), "newest entry first")
+T.check(#urls == before, "cache hit: no fetch")
+
+-- page to the older release and back
+local older = TextViewer.last.buttons_table[1][1]
+T.check(older.enabled == true, "Older enabled on the newest entry")
+older.callback()
+T.check(TextViewer.last.title == "Changelog (2 of 2)",
+    "paged to the older release: " .. tostring(TextViewer.last.title))
+T.check(T.contains(TextViewer.last.text or "", "older notes"), "second entry text")
+local newer = TextViewer.last.buttons_table[1][2]
+T.check(newer.enabled == true, "Newer enabled back")
+newer.callback()
+T.check(TextViewer.last.title == "Changelog (1 of 2)",
+    "back to the newest entry")
+
+-- Refresh goes to the network
+local refresh = TextViewer.last.buttons_table[2][1]
+refresh.callback()
+UIManager:runPending()
+T.check(#urls == before + 1, "refresh fetches: " .. #urls)
+T.check(TextViewer.last ~= nil
+        and TextViewer.last.title == "Changelog (1 of 2)",
+    "refresh returns to the newest entry")
+
+-- the beta toggle owns the cache: it goes with the update cache
+Update.clearAvailableCache()
+T.check(G_reader_settings:readSetting("tomedown_changelog") == nil,
+    "clearAvailableCache drops the changelog too")
+
+-- reset: the newest stable is offered even when a beta install is newer
+resetWidgets()
+Update._resetState()
+NetworkMgr.connected = true
+store.tomedown = store.tomedown or {}
+store.tomedown.beta_releases = true
+fakeReleases({
+    release("v" .. INSTALLED, "the beta itself", { prerelease = true }),
+    release("v0.1.0", "old stable", {
+        assets = { {
+            name = "tomedown.zip",
+            browser_download_url = "https://example/stable.zip",
+        } },
+    }),
+})
+Update.resetToStable()
+local reset_confirm = ConfirmBox.last
+T.check(reset_confirm ~= nil
+        and T.contains(reset_confirm.text or "", "latest stable release"),
+    "reset asks first: " .. tostring(reset_confirm and reset_confirm.text))
+T.check(reset_confirm.ok_text == "Reset", "reset button label")
+local reset_downloads = {}
+Update.httpDownload = function(url)
+    reset_downloads[#reset_downloads + 1] = url
+    return true
+end
+Archiver.entries = {
+    "tomedown.koplugin/",
+    "tomedown.koplugin/main.lua",
+}
+reset_confirm.ok_callback()
+UIManager:runPending()
+T.check(store.tomedown.beta_releases == false, "reset leaves the beta channel")
+T.check(#reset_downloads == 1
+        and reset_downloads[1] == "https://example/stable.zip",
+    "stable zip downloaded: " .. tostring(reset_downloads[1]))
+T.check(ConfirmBox.last ~= nil
+        and T.contains(ConfirmBox.last.text or "",
+            "Tomedown updated to v0.1.0"),
+    "restart prompt after the reset: "
+        .. tostring(ConfirmBox.last and ConfirmBox.last.text))
+T.rmrf(cache_dir)
+
+-- already on the latest stable: nothing to install
+resetWidgets()
+Update._resetState()
+NetworkMgr.connected = true
+fakeReleases({ release("v" .. INSTALLED, "not marked as a prerelease") })
+Update.resetToStable()
+T.check(ConfirmBox.last ~= nil, "reset asks first even when up to date")
+ConfirmBox.last.ok_callback()
+UIManager:runPending()
+T.check(T.contains(InfoMessage.last_text or "", "up to date"),
+    "already on the latest stable: " .. tostring(InfoMessage.last_text))
+T.check(not T.contains(ConfirmBox.last and ConfirmBox.last.text or "",
+        "Tomedown updated"), "no install from an up-to-date reset")
 
 T.finish("test_update")
