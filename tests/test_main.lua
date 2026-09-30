@@ -460,9 +460,9 @@ T.check(not main_src:find("check_callback_updates_menu", 1, true),
     "no check_callback_updates_menu (it opts out of the menu refresh)")
 
 settings[1].callback()
-T.check(store.tomedown.upload == false, "upload disabled")
+T.check(store.tomedown.upload == true, "upload enabled from the default off")
 settings[1].callback()
-T.check(store.tomedown.upload == true, "upload re-enabled")
+T.check(store.tomedown.upload == false, "upload disabled again")
 settings[5].callback()
 T.check(store.tomedown.with_index == false, "index disabled")
 settings[5].callback()
@@ -1013,5 +1013,20 @@ for __, child in ipairs(ui) do
     end
 end
 T.check(in_chain, "plugin registered in the UI event chain")
+
+-- --------------------------------------- 13. upload default and migration
+
+store.tomedown = { exports = { ["/x.md"] = "h" } }
+plugin:migrateDefaults()
+T.check(store.tomedown.upload == true,
+    "install that already exported keeps upload on")
+
+store.tomedown = { exports = { ["/x.md"] = "h" }, upload = false }
+plugin:migrateDefaults()
+T.check(store.tomedown.upload == false, "explicit upload off is respected")
+
+store.tomedown = { server = SERVER }
+plugin:migrateDefaults()
+T.check(store.tomedown.upload == nil, "fresh install starts with upload off")
 
 T.finish("test_main")

@@ -722,7 +722,7 @@ function MdBook:runExport(files, opts)
     end
 
     local server = self:getServer()
-    if getSetting("upload", true) and server and #written > 0 then
+    if getSetting("upload", false) and server and #written > 0 then
         if silent or not NetworkMgr:isConnected() then
             -- no network work now: queue for the next connection
             self:markPendingUploads(written)
@@ -798,7 +798,7 @@ function MdBook:schedulePendingFlush()
     if self._flush_scheduled or self._flushing then
         return
     end
-    if not getSetting("upload", true) then
+    if not getSetting("upload", false) then
         return
     end
     if next(getSetting("pending_uploads", {})) == nil then
@@ -815,7 +815,7 @@ function MdBook:schedulePendingFlush()
 end
 
 function MdBook:flushPendingUploads()
-    if self._flushing or not getSetting("upload", true) then
+    if self._flushing or not getSetting("upload", false) then
         return
     end
     local pending = getSetting("pending_uploads", {})
@@ -1086,11 +1086,11 @@ function MdBook:genSettingsMenu()
                 return self:hasServer()
             end,
             checked_func = function()
-                return self:hasServer() and getSetting("upload", true)
+                return self:hasServer() and getSetting("upload", false)
             end,
             keep_menu_open = true,
             callback = function()
-                setSetting("upload", not getSetting("upload", true))
+                setSetting("upload", not getSetting("upload", false))
             end,
         },
         {
@@ -1204,6 +1204,18 @@ function MdBook:genSettingsMenu()
     }
 end
 
+--- One-time default for "Upload to cloud": a fresh install starts with
+-- it off (local-first), while anyone who has already exported keeps the
+-- old behaviour (on) unless they had explicitly chosen otherwise.
+function MdBook:migrateDefaults()
+    local settings = G_reader_settings:readSetting(SETTINGS_KEY)
+    if type(settings) == "table" and settings.upload == nil
+            and settings.exports ~= nil then
+        settings.upload = true
+        G_reader_settings:saveSetting(SETTINGS_KEY, settings)
+    end
+end
+
 function MdBook:init()
     self.ui.menu:registerToMainMenu(self)
     -- ensure the plugin is in the UI event chain (same guard as
@@ -1218,6 +1230,8 @@ function MdBook:init()
     if not found then
         table.insert(self.ui, self)
     end
+    -- before anything reads the upload default (the pending flush below)
+    self:migrateDefaults()
     if getSetting("update_check", false) then
         -- quiet check shortly after KOReader starts; the same check also
         -- runs when the menu is opened (both throttled to once an hour)

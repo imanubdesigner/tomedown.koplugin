@@ -93,7 +93,7 @@ first export and optional Remotely Save in Obsidian — is in
 
 | Entry | What to do |
 |---|---|
-| *Upload to cloud* | leave it ticked (it is by default); any WebDAV/Dropbox/FTP server works |
+| *Upload to cloud* | any WebDAV/Dropbox/FTP server works; on by default for installs that have already exported, off on a fresh install |
 | *Server and folder…* | opens the Cloud storage browser: pick your server (the examples use Koofr), then navigate to the final folder (e.g. `Bookshelf/Kindle`) and tap **Choose** |
 | *Remote folder…* | only if you want to override the folder chosen above (e.g. `/Bookshelf/Kindle`) |
 | *Local folder* | defaults to `clipboard/tomedown` inside KOReader's data folder; tap it to browse with KOReader's folder picker (long-press a folder to choose it) |
@@ -112,6 +112,9 @@ Everything is stored in KOReader's settings, so it applies to all books.
 The cloud server is **inherited automatically** from the one AnnotationSync
 already saved in KOReader (`Cloud settings`): *Server and folder…* shows
 exactly that. If it is the right folder, you do not have to touch anything.
+On a fresh install *Upload to cloud* starts off — tick it once you are
+ready to send the `.md` files (installs that have already exported keep
+it ticked).
 
 If AnnotationSync uploads its `.json` files somewhere other than where you
 want the `.md` files (say `/Bookshelf/Kindle`), set **Remote folder…** and
