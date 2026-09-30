@@ -651,7 +651,10 @@ function MdBook:runExport(files, opts)
     local with_index = getSetting("with_index", true)
 
     local info
-    if not silent then
+    if not silent and opts.auto ~= "close" then
+        -- auto close: one book straight from the .sdr, the export is
+        -- milliseconds - the widget would only flash one more e-ink
+        -- refresh between the close and the result notification
         info = self:showProgress(opts.progress_text or _("Export in progress…"))
     end
 
@@ -711,7 +714,10 @@ function MdBook:runExport(files, opts)
         UIManager:close(info)
     end
 
-    local function report(uploaded, upload_failed, offline_pending)
+    -- two separate results: the local export is reported right away,
+    -- so a reader who never enables the cloud does not wait for an
+    -- upload phase that does not exist for them
+    local function reportExport(offline_pending)
         if silent then
             return
         end
@@ -719,44 +725,59 @@ function MdBook:runExport(files, opts)
         if opts.auto == "close" and exported == 0 and #errors == 0 then
             return
         end
-        self:showResult(exported, skipped, errors, uploaded, upload_failed, offline_pending)
+        self:showResult(exported, skipped, errors, offline_pending)
+    end
+    local function reportUpload(uploaded, upload_failed)
+        if upload_failed > 0 then
+            UIManager:show(InfoMessage:new{
+                text = T(_("Cloud: %1 uploaded, %2 errors"), uploaded, upload_failed),
+            })
+            return
+        end
+        UIManager:show(Notification:new{
+            text = T(_("Cloud: %1 files uploaded"), uploaded),
+            timeout = 3,
+        })
     end
 
     local server = self:getServer()
-    if getSetting("upload", false) and server and #written > 0 then
-        if silent or not NetworkMgr:isConnected() then
-            -- no network work now: queue for the next connection
-            self:markPendingUploads(written)
-            report(nil, nil, true)
-        else
-            -- stays open for the whole upload phase, retries included
-            -- with backoff: without this the screen stays silent for minutes
-            local upload_info = self:showProgress(T(_("Uploading %1 files to the cloud…"), #written))
-            self:uploadPaths(server, written, function(ok_count, fail_count, failed)
-                UIManager:close(upload_info)
-                if #failed > 0 then
-                    self:markPendingUploads(failed)
+    local has_upload = getSetting("upload", false) and server and #written > 0
+    local queued = has_upload and (silent or not NetworkMgr:isConnected())
+    if queued then
+        -- no network work now: queue for the next connection
+        self:markPendingUploads(written)
+    end
+    reportExport(queued)
+
+    if has_upload and not queued then
+        -- stays open for the whole upload phase, retries included
+        -- with backoff: without this the screen stays silent for minutes
+        local upload_info = self:showProgress(T(_("Uploading %1 files to the cloud…"), #written))
+        self:uploadPaths(server, written, function(ok_count, fail_count, failed)
+            UIManager:close(upload_info)
+            if #failed > 0 then
+                self:markPendingUploads(failed)
+            end
+            local failed_set = {}
+            for __, path in ipairs(failed) do
+                failed_set[path] = true
+            end
+            local ok_paths = {}
+            for __, path in ipairs(written) do
+                if not failed_set[path] then
+                    ok_paths[#ok_paths + 1] = path
                 end
-                local failed_set = {}
-                for __, path in ipairs(failed) do
-                    failed_set[path] = true
-                end
-                local ok_paths = {}
-                for __, path in ipairs(written) do
-                    if not failed_set[path] then
-                        ok_paths[#ok_paths + 1] = path
-                    end
-                end
-                self:clearPendingUploads(ok_paths)
-                report(ok_count, fail_count, false)
-            end)
-        end
-    else
-        report(nil, nil, false)
+            end
+            self:clearPendingUploads(ok_paths)
+            reportUpload(ok_count, fail_count)
+        end)
     end
 end
 
-function MdBook:showResult(exported, skipped, errors, uploaded, upload_failed, offline_pending)
+--- The local outcome: a toast right after the export finishes, an
+-- InfoMessage (stays on screen) when something went wrong. The cloud
+-- reports separately, in reportUpload's own notification.
+function MdBook:showResult(exported, skipped, errors, offline_pending)
     local lines = {}
     if exported > 0 then
         if offline_pending then
@@ -770,25 +791,15 @@ function MdBook:showResult(exported, skipped, errors, uploaded, upload_failed, o
     if skipped > 0 then
         lines[#lines + 1] = T(_("%1 files unchanged, skipped"), skipped)
     end
-    if uploaded then
-        if upload_failed > 0 then
-            lines[#lines + 1] = T(_("Cloud: %1 uploaded, %2 errors"), uploaded, upload_failed)
-        else
-            lines[#lines + 1] = T(_("Cloud: %1 files uploaded"), uploaded)
-        end
-    end
     if #errors > 0 then
         lines[#lines + 1] = _("Errors:") .. "\n" .. table.concat(errors, "\n")
-    end
-
-    if #errors > 0 or (uploaded and upload_failed > 0) then
         UIManager:show(InfoMessage:new{ text = table.concat(lines, "\n") })
-    else
-        UIManager:show(Notification:new{
-            text = table.concat(lines, " · "),
-            timeout = 3,
-        })
+        return
     end
+    UIManager:show(Notification:new{
+        text = table.concat(lines, " · "),
+        timeout = 3,
+    })
 end
 
 -- pending uploads: flushed when the connection comes back (NetworkConnected),

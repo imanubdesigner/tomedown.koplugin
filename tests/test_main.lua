@@ -184,6 +184,7 @@ local function resetUpload()
     uploads, attempt_count, upload_script = {}, {}, {}
     UIManager:reset()
     Notification.last_text = nil
+    Notification.log = {}
     InfoMessage.last_text = nil
     logger.reset()
 end
@@ -692,8 +693,9 @@ T.check(#uploads == 1, "first upload started right away: " .. #uploads)
 T.check(uploads[1].path == MD_PATH, "first file = book md")
 T.check(InfoMessage.last_text == "Uploading 2 files to the cloud…",
     "progress window: " .. tostring(InfoMessage.last_text))
-T.check(#UIManager.shown == 1 and UIManager.shown[1].text == InfoMessage.last_text,
-    "progress still open during the upload phase")
+T.check(#UIManager.shown == 2
+        and UIManager.shown[#UIManager.shown].text == InfoMessage.last_text,
+    "export toast + upload progress during the upload phase")
 UIManager:runPending()
 T.check(#uploads == 2, "uploaded md and index: " .. #uploads)
 T.check(uploads[2].path == INDEX_PATH, "second file = index")
@@ -703,9 +705,11 @@ T.check(attempt_count[MD_PATH] == 1 and attempt_count[INDEX_PATH] == 1,
     "one attempt per file in normal conditions")
 T.check(T.contains(Notification.last_text or "", "Cloud: 2 files uploaded"),
     "upload notification: " .. tostring(Notification.last_text))
-local widget = onlyWidget()
-T.check(widget and widget.__widget == "Notification",
-    "only the final notification stays open")
+local final = UIManager.shown[#UIManager.shown]
+T.check(final and final.__widget == "Notification"
+        and T.contains(final.text or "", "Cloud: 2 files uploaded"),
+    "the upload result is the last notification: "
+        .. tostring(final and final.text))
 
 -- upload disabled
 uploadSetup()
@@ -767,13 +771,12 @@ T.check(attempt_count[MD_PATH] == 3 and attempt_count[INDEX_PATH] == 3,
     "maximum 3 attempts per file")
 T.check(sameList(positives(), { 2, 4, 2, 4 }),
     "backoff 2s/4s for every file, got " .. listStr(positives()))
-T.check(Notification.last_text == nil, "no success notification")
-local err_widget = onlyWidget()
+T.check(Notification.last_text == "1 files exported",
+    "the export is reported on its own: " .. tostring(Notification.last_text))
+local err_widget = UIManager.shown[#UIManager.shown]
 T.check(err_widget and err_widget.__widget == "InfoMessage", "error window shown")
 T.check(err_widget and T.contains(err_widget.text, "Cloud: 0 uploaded, 2 errors"),
-    "result with errors: " .. tostring(err_widget and err_widget.text))
-T.check(err_widget and T.contains(err_widget.text, "1 files exported"),
-    "the result also includes the export: " .. tostring(err_widget and err_widget.text))
+    "upload failures in their own window: " .. tostring(err_widget and err_widget.text))
 
 -- 4xx (missing folder): no retry
 uploadSetup()
@@ -783,7 +786,7 @@ plugin:runExport({ FILE }, {})
 UIManager:runPending()
 T.check(#uploads == 2, "404: one attempt per file only: " .. #uploads)
 T.check(#positives() == 0, "no delay on 4xx errors: " .. listStr(positives()))
-err_widget = onlyWidget()
+err_widget = UIManager.shown[#UIManager.shown]
 T.check(err_widget and T.contains(err_widget.text, "Cloud: 0 uploaded, 2 errors"),
     "404 reported as a definitive failure")
 
@@ -968,8 +971,32 @@ UIManager:runPending()
 T.check(#uploads == 2, "online close: book and index uploaded: " .. #uploads)
 T.check(T.contains(Notification.last_text or "", "Cloud: 2 files uploaded"),
     "online close notification: " .. tostring(Notification.last_text))
+T.check(#Notification.log == 2,
+    "online close: two separate notifications: " .. #Notification.log)
+T.check(Notification.log[1] ~= nil
+        and Notification.log[1]:find("1 files exported", 1, true) ~= nil
+        and Notification.log[1]:find("Cloud", 1, true) == nil,
+    "online close: the export never waits for the cloud: "
+        .. tostring(Notification.log[1]))
+T.check(Notification.log[2] ~= nil
+        and Notification.log[2]:find("Cloud: 2 files uploaded", 1, true) ~= nil,
+    "online close: the upload reported after: " .. tostring(Notification.log[2]))
 T.check(next(store.tomedown.pending_uploads or {}) == nil,
     "online close: nothing left pending")
+ui.document = nil
+
+-- without the cloud at all: one notification, right after the export
+uploadSetup()
+store.tomedown.upload = false
+sub[1].callback() -- uploadSetup wiped the auto-export setting too
+ui.document = { file = FILE }
+plugin:onCloseDocument()
+UIManager:runPending()
+T.check(#uploads == 0, "cloud off: no upload attempted")
+T.check(#Notification.log == 1, "cloud off: one notification: " .. #Notification.log)
+T.check(Notification.log[1] ~= nil
+        and Notification.log[1]:find("1 files exported", 1, true) ~= nil,
+    "cloud off: the export result on its own: " .. tostring(Notification.log[1]))
 ui.document = nil
 
 -- same book, no new highlights: no message, no upload
