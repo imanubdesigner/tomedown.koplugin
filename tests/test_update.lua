@@ -179,7 +179,7 @@ T.check(updates[3].text == "Check for updates in background",
     "background toggle row")
 T.check(updates[3].checked_func() == false, "background check off by default")
 T.check(updates[4].text == "Developer updates", "developer updates row")
-local developer = updates[4].sub_item_table
+local developer = updates[4].sub_item_table_func()
 T.check(developer[1].text == "Beta Releases", "beta releases row")
 T.check(developer[1].checked_func() == false, "beta releases off by default")
 
@@ -516,6 +516,10 @@ T.check(UIManager.restarted == 0, "no restart after an unexpected error")
 T.rmrf(cache_dir)
 
 -- --------------------------------------------- 12. Beta Releases toggle
+-- Two channels: the Updates check stays release-only whatever the
+-- toggle says; the beta check lives in Developer updates and its row
+-- only exists while the toggle is on - it appears in the open submenu
+-- the moment the box is ticked.
 
 resetWidgets()
 Update._resetState()
@@ -523,30 +527,63 @@ NetworkMgr.connected = true
 settings = plugin:genSettingsMenu()
 T.check(#settings == 3, "settings groups with the beta row: " .. #settings)
 updates = settings[3].sub_item_table
-developer = updates[4].sub_item_table
+developer = updates[4].sub_item_table_func()
 T.check(developer[1].text == "Beta Releases", "beta releases row")
 T.check(developer[1].checked_func() == false, "beta releases off by default")
+T.check(#developer == 3, "no beta check while the toggle is off: " .. #developer)
 
--- toggle on: prereleases are offered, the stable release stays the latest
-developer[1].callback()
+-- toggle on: the check row appears in the open submenu at once
+local fake_menu = { item_table = developer }
+developer[1].callback(fake_menu)
 T.check(store.tomedown.beta_releases == true, "beta releases toggled on")
+T.check(#developer == 4, "beta check row shown: " .. #developer)
+T.check(developer[2].text == "Check for updates", "beta check entry")
+T.check(developer[2].separator == true, "separator before the reset row")
+T.check(developer[1].separator ~= true, "no separator under the toggle")
+
 fakeReleases({
     release("v1.0.0", "stable 1.0.0"),
     release("v1.0.0-beta.1", "beta 1.0.0-beta.1", { prerelease = true }),
 })
+
+-- the Updates check is release-only even with the toggle on
 Update.check()
 UIManager:runPending()
 local beta_viewer = TextViewer.last
-T.check(beta_viewer ~= nil, "viewer shown with betas enabled")
+T.check(beta_viewer ~= nil, "viewer shown for the release check")
 T.check(T.contains(beta_viewer and beta_viewer.text or "", "Latest: v1.0.0"),
     "stable release is the latest: " .. tostring(beta_viewer and beta_viewer.text))
-T.check(T.contains(beta_viewer and beta_viewer.text or "", "beta 1.0.0-beta.1"),
-    "beta notes offered with the toggle on")
+T.check(not T.contains(beta_viewer and beta_viewer.text or "",
+        "beta 1.0.0-beta.1"),
+    "release check skips prereleases with the toggle on: "
+        .. tostring(beta_viewer and beta_viewer.text))
 T.check(Update.getAvailableVersion() == "1.0.0", "cache holds the stable version")
 
--- toggling clears the cached version right away
-developer[1].callback()
+-- the beta check offers them and never touches the release cache
+Update.clearAvailableCache()
+Update.check(true)
+UIManager:runPending()
+beta_viewer = TextViewer.last
+T.check(beta_viewer ~= nil
+        and T.contains(beta_viewer.text or "", "beta 1.0.0-beta.1"),
+    "beta check offers the prerelease: "
+        .. tostring(beta_viewer and beta_viewer.text))
+T.check(T.contains(beta_viewer and beta_viewer.text or "", "Latest: v1.0.0"),
+    "stable release stays the latest in the beta check too")
+T.check(Update.getAvailableVersion() == nil,
+    "beta check does not touch the release cache")
+
+-- one more release check: the cache the Updates row shows comes back
+Update.check()
+UIManager:runPending()
+T.check(Update.getAvailableVersion() == "1.0.0",
+    "release check caches the stable version again")
+
+-- toggle off: the row hides in place and the cached version goes away
+developer[1].callback(fake_menu)
 T.check(store.tomedown.beta_releases == false, "beta releases off again")
+T.check(#developer == 3, "beta check hidden again: " .. #developer)
+T.check(developer[1].separator == true, "separator back under the toggle")
 T.check(Update.getAvailableVersion() == nil, "toggle clears the cached version")
 
 -- the same releases with the toggle off: the prerelease is skipped

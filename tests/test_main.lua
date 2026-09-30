@@ -470,19 +470,36 @@ T.check(updates[2].text == "View changelog", "changelog entry")
 T.check(updates[2].separator == true, "separator after the changelog entry")
 T.check(updates[3].text == "Check for updates in background", "background entry")
 T.check(updates[4].text == "Developer updates", "developer updates entry")
-local developer = updates[4].sub_item_table
-T.check(#developer == 4, "developer rows: " .. #developer)
+local developer = updates[4].sub_item_table_func()
+T.check(#developer == 3, "beta check hidden by default: " .. #developer)
 T.check(developer[1].text == "Beta Releases", "beta releases entry")
 T.check(developer[1].checked_func() == false, "beta releases off by default")
-T.check(developer[1].separator == true, "separator after the beta toggle")
-T.check(developer[2].text == "Check for updates", "developer check entry")
-T.check(developer[3].text == "\xEE\xB6\x8F  Reset to latest stable release",
+T.check(developer[1].separator == true, "separator under the beta toggle")
+T.check(developer[2].text == "\xEE\xB6\x8F  Reset to latest stable release",
     "reset entry with the bomb icon")
 local installed_version = Update.getInstalledVersion()
-T.check(developer[4].text_func() == "Installed: v" .. installed_version
+T.check(developer[3].text_func() == "Installed: v" .. installed_version
         .. (installed_version:find("-", 1, true) and " (Beta)" or " (Release)"),
-    "installed row: " .. developer[4].text_func())
-T.check(developer[4].enabled == false, "installed row is a plain label")
+    "installed row: " .. developer[3].text_func())
+T.check(developer[3].enabled == false, "installed row is a plain label")
+
+-- ticking Beta Releases reveals the check in the open submenu at once
+-- (the callback receives the TouchMenu, whose item_table is this very
+-- table; it is rebuilt in place and redrawn by KOReader)
+local fake_menu = { item_table = developer }
+developer[1].callback(fake_menu)
+T.check(store.tomedown.beta_releases == true, "beta releases toggled on")
+T.check(#developer == 4, "beta check shown after ticking: " .. #developer)
+T.check(developer[2].text == "Check for updates", "beta check entry")
+T.check(developer[2].separator == true,
+    "separator between the beta check and the reset")
+T.check(developer[1].separator ~= true, "no separator under the toggle")
+T.check(developer[2].callback ~= nil, "beta check row is tappable")
+-- unticking hides it again, in the same open menu
+developer[1].callback(fake_menu)
+T.check(store.tomedown.beta_releases == false, "beta releases off again")
+T.check(#developer == 3, "beta check hidden again: " .. #developer)
+T.check(developer[1].separator == true, "separator back under the toggle")
 
 -- checkable rows must keep the menu open so KOReader refreshes them
 for _, group in ipairs({ sub, cloud, files, updates, developer }) do

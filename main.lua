@@ -1192,36 +1192,60 @@ function MdBook:genSettingsMenu()
         },
     }
     -- Developer updates: everything that is not meant for daily use,
-    -- in its own submenu. Beta Releases first (the switch), then the
-    -- check that applies it, the way back to stable and the installed
-    -- version as a plain grey label
-    local developer = {
-        {
-            text = _("Beta Releases"),
-            checked_func = function()
-                return getSetting("beta_releases", false)
-            end,
-            keep_menu_open = true,
-            callback = function()
-                setSetting("beta_releases", not getSetting("beta_releases", false))
-                Update.clearAvailableCache()
-            end,
-            separator = true,
-        },
-        {
-            text = _("Check for updates"),
-            callback = function()
-                Update.check()
-            end,
-        },
-        {
+    -- in its own submenu. Beta Releases first; while it is ticked a
+    -- beta "Check for updates" sits right below it, then a separator,
+    -- the way back to stable and the installed version as a plain
+    -- grey label. The row list is rebuilt whenever the submenu opens
+    -- and in place when the toggle flips (TouchMenu redraws the table
+    -- after the callback), so the beta check appears at once.
+    local developer_table
+    local function developerItems()
+        local beta_on = getSetting("beta_releases", false)
+        local items = {
+            {
+                text = _("Beta Releases"),
+                checked_func = function()
+                    return getSetting("beta_releases", false)
+                end,
+                keep_menu_open = true,
+                callback = function(touch_menu)
+                    setSetting("beta_releases",
+                        not getSetting("beta_releases", false))
+                    Update.clearAvailableCache()
+                    -- the submenu that is open IS this table: rebuild
+                    -- it in place so the check row shows up or goes
+                    -- away without leaving the menu
+                    if touch_menu
+                            and touch_menu.item_table == developer_table then
+                        local fresh = developerItems()
+                        for i = #developer_table, 1, -1 do
+                            developer_table[i] = nil
+                        end
+                        for _, item in ipairs(fresh) do
+                            developer_table[#developer_table + 1] = item
+                        end
+                    end
+                end,
+                separator = not beta_on,
+            },
+        }
+        if beta_on then
+            items[#items + 1] = {
+                text = _("Check for updates"),
+                callback = function()
+                    Update.check(true)
+                end,
+                separator = true,
+            }
+        end
+        items[#items + 1] = {
             -- the cartoon bomb (U+ED8F): the reset blows the beta up
             text = withIcon("\xEE\xB6\x8F", _("Reset to latest stable release")),
             callback = function()
                 Update.resetToStable()
             end,
-        },
-        {
+        }
+        items[#items + 1] = {
             text_func = function()
                 local current = Update.getInstalledVersion()
                 local kind = current:find("-", 1, true)
@@ -1229,8 +1253,9 @@ function MdBook:genSettingsMenu()
                 return T(_("Installed: v%1 (%2)"), current, kind)
             end,
             enabled = false,
-        },
-    }
+        }
+        return items
+    end
     local updates = {
         {
             text_func = function()
@@ -1264,7 +1289,10 @@ function MdBook:genSettingsMenu()
         },
         {
             text = _("Developer updates"),
-            sub_item_table = developer,
+            sub_item_table_func = function()
+                developer_table = developerItems()
+                return developer_table
+            end,
         },
     }
     return {

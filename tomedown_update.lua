@@ -2,9 +2,11 @@
 Update check for tomedown.
 
 Settings groups this under "Updates": a check row that doubles as the
-installed-version display, a changelog viewer, the optional background
-check, the Beta Releases toggle and a reset to the latest stable
-release. With the background check enabled, a new release is noticed on
+installed-version display (stable releases only), a changelog viewer,
+the optional background check (also stable-only) and a submenu with
+everything for beta testers - the Beta Releases toggle with its own
+beta check, and a reset to the latest stable release. With the
+background check enabled, a new release is noticed on
 its own (KOReader start and menu open, at most once an hour). When one
 is found the release notes of every newer release are shown together
 (the fixes, newest first) with an "Update and restart" button that
@@ -266,15 +268,17 @@ local function betaEnabled()
 end
 
 --- Releases newer than the installed version, newest first, skipping
--- drafts and - unless the Beta Releases toggle is on - prereleases;
--- each entry keeps version, raw body and the zip download URL of that
--- release.
-local function collectNewer(releases, installed)
+-- drafts and - unless include_beta is set - prereleases; each entry
+-- keeps version, raw body and the zip download URL of that release.
+-- The channel is the caller's choice: the Updates check and the
+-- background check never pass it (they stay on stable releases), the
+-- beta check in Developer updates always does - its row only exists
+-- while the Beta Releases toggle is on.
+local function collectNewer(releases, installed, include_beta)
     local newer = {}
-    local beta = betaEnabled()
     for __, rel in ipairs(releases) do
         if type(rel) == "table" and not rel.draft
-                and (beta or not rel.prerelease) then
+                and (include_beta or not rel.prerelease) then
             local version = releaseTag(rel)
             if Update.isNewer(version, installed) then
                 newer[#newer + 1] = {
@@ -468,11 +472,12 @@ function Update.showChangelog()
     changelogFetchShow()
 end
 
---- Manual check from Settings: Wi-Fi gate, fetch, then either an
--- "up to date" notice or the TextViewer with all the fixes.
 --- Body of the scheduled manual check, kept separate so the caller can
--- run it behind pcall (see Update.check).
-local function checkBody()
+-- run it behind pcall (see Update.check). include_beta switches to the
+-- beta channel; only the release channel writes cached_version, the
+-- cache the Updates row displays, so a beta check can never make that
+-- row promise something its own check would not find.
+local function checkBody(include_beta)
     local installed = Update.getInstalledVersion()
     local releases = Update.httpGetJSON(RELEASES_URL)
     last_bg_check = os.time()
@@ -481,9 +486,11 @@ local function checkBody()
         return
     end
     changelogSeed(releases)
-    local newer = collectNewer(releases, installed)
+    local newer = collectNewer(releases, installed, include_beta)
     if #newer == 0 then
-        cached_version = nil
+        if not include_beta then
+            cached_version = nil
+        end
         UIManager:show(InfoMessage:new{
             text = T(_("Tomedown is up to date. Current version: %1"),
                 "v" .. installed),
@@ -491,7 +498,10 @@ local function checkBody()
         })
         return
     end
-    cached_version = newer[1].version
+    local latest = newer[1].version
+    if not include_beta then
+        cached_version = latest
+    end
     local as_md = canRenderMarkdown()
     local notes = {}
     for __, rel in ipairs(newer) do
@@ -506,7 +516,7 @@ local function checkBody()
     viewer = TextViewer:new{
         title = _("Update available!"),
         text = T(_("Installed: %1\nLatest: %2"), "v" .. installed,
-            "v" .. cached_version)
+            "v" .. latest)
             .. "\n\n" .. table.concat(notes, "\n\n"),
         text_format = as_md and "md" or nil,
         buttons_table = {
@@ -537,9 +547,13 @@ local function checkBody()
     UIManager:show(viewer)
 end
 
-function Update.check()
+--- Manual check: Wi-Fi gate, fetch, then either an "up to date"
+-- notice or the TextViewer with all the fixes. include_beta checks the
+-- beta channel (prereleases included) - only the "Check for updates"
+-- row in Developer updates passes it; the Updates row never does.
+function Update.check(include_beta)
     if Update.gateOnConnection(function()
-        Update.check()
+        Update.check(include_beta)
     end) then
         return
     end
@@ -550,7 +564,7 @@ function Update.check()
     UIManager:scheduleIn(0.1, function()
         -- safety net: an unhandled error here would kill the whole
         -- reader (it runs in the scheduler, not behind our own pcall)
-        local ok_run = pcall(checkBody)
+        local ok_run = pcall(checkBody, include_beta)
         if not ok_run then
             Update.offerReleasesPage(_("Could not check for updates."))
         end
@@ -849,7 +863,9 @@ end
 --- Background check: opt-in (the caller checks the setting), at most
 -- once an hour, only with Wi-Fi already on, and quiet unless a newer
 -- release exists - then a notification, with the fixes one tap away in
--- Settings.
+-- Settings. Release channel only: its notification and its cached
+-- version must always match what the Updates row's own check finds;
+-- prereleases are the manual, opt-in check in Developer updates.
 function Update.checkBackground()
     if bg_in_flight then
         return
@@ -875,7 +891,7 @@ function Update.checkBackground()
                 return
             end
             changelogSeed(releases)
-            local newer = collectNewer(releases, installed)
+            local newer = collectNewer(releases, installed, false)
             if #newer == 0 then
                 cached_version = nil
                 return
