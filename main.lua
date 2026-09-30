@@ -19,7 +19,6 @@ local InfoMessage = require("ui/widget/infomessage")
 local InputDialog = require("ui/widget/inputdialog")
 local NetworkMgr = require("ui/network/manager")
 local Notification = require("ui/widget/notification")
-local TextViewer = require("ui/widget/textviewer")
 local UIManager = require("ui/uimanager")
 local WidgetContainer = require("ui/widget/container/widgetcontainer")
 local logger = require("logger")
@@ -1089,9 +1088,10 @@ local function withIcon(glyph, text)
     return glyph .. "  " .. text
 end
 
---- Settings: four groups (the structure Bookshelf uses) plus the About
--- row at the end. Every setting keeps its own row; the checkable ones
--- keep their keep_menu_open so KOReader refreshes the tick in place.
+--- Settings: three groups (the structure Bookshelf uses). About lives
+-- in the main menu right under Settings. Every setting keeps its own
+-- row; the checkable ones keep their keep_menu_open so KOReader
+-- refreshes the tick in place.
 function MdBook:genSettingsMenu()
     local cloud = {
         {
@@ -1136,16 +1136,6 @@ function MdBook:genSettingsMenu()
             end,
             callback = function(touchmenu)
                 self:editRemoteFolder(touchmenu)
-            end,
-        },
-        {
-            text = _("Auto-export on close"),
-            checked_func = function()
-                return getSetting("auto_export", false)
-            end,
-            keep_menu_open = true,
-            callback = function()
-                setSetting("auto_export", not getSetting("auto_export", false))
             end,
         },
     }
@@ -1223,7 +1213,8 @@ function MdBook:genSettingsMenu()
             separator = true,
         },
         {
-            text = _("Reset to latest stable release"),
+            -- the cartoon bomb (U+ED8F): the reset blows the beta up
+            text = withIcon("\xEE\xB6\x8F", _("Reset to latest stable release")),
             callback = function()
                 Update.resetToStable()
             end,
@@ -1244,78 +1235,170 @@ function MdBook:genSettingsMenu()
         { text = withIcon("\xEF\x83\xB6", _("Markdown files")), -- file-text
             sub_item_table = files },
         { text = withIcon("\xEE\xB6\xAE", _("Updates")), -- update
-            sub_item_table = updates, separator = true },
-        { text = _("About"), callback = function()
-            self:showAbout()
-        end },
+            sub_item_table = updates },
     }
 end
 
---- About: installed version, the description from _meta.lua and the
--- project links - the Bookshelf popup's content, in the viewer every
--- other updater dialog already uses.
+--- About: the popup Bookshelf shows - the logo, the installed version,
+-- the description from _meta.lua and the tappable GitHub URL, centred
+-- on the screen. No buttons; tapping outside the frame (or Back) closes
+-- it. The logo lives in assets/ (SVG or PNG) and is only shown when
+-- the file is there, so a copy of the plugin without it still shows
+-- the rest.
 function MdBook:showAbout()
+    local src = debug.getinfo(1, "S").source
+    local plugin_dir
+    if src:sub(1, 1) == "@" then
+        plugin_dir = src:sub(2):match("^(.*)/[^/]+$")
+    end
     local version = Update.getInstalledVersion()
     local description = ""
-    local src = debug.getinfo(1, "S").source
-    if src:sub(1, 1) == "@" then
-        local dir = src:sub(2):match("^(.*)/[^/]+$")
-        if dir then
-            local ok, meta = pcall(dofile, dir .. "/_meta.lua")
-            if ok and type(meta) == "table" and meta.description then
-                description = meta.description
+    if plugin_dir then
+        local ok, meta = pcall(dofile, plugin_dir .. "/_meta.lua")
+        if ok and type(meta) == "table" and meta.description then
+            description = meta.description
+        end
+    end
+
+    -- Hard-coded English URL; not translatable. Display form drops the
+    -- https:// prefix; the full URL with the scheme is what
+    -- Device:openLink and the clipboard receive on tap.
+    local GITHUB_URL_DISPLAY = "github.com/imanubdesigner/tomedown.koplugin"
+    local GITHUB_URL = "https://github.com/imanubdesigner/tomedown.koplugin"
+
+    local Screen = Device.screen
+    local Font = require("ui/font")
+    local Geom = require("ui/geometry")
+    local Size = require("ui/size")
+    local Blitbuffer = require("ffi/blitbuffer")
+    local FrameContainer = require("ui/widget/container/framecontainer")
+    local CenterContainer = require("ui/widget/container/centercontainer")
+    local MovableContainer = require("ui/widget/container/movablecontainer")
+    local InputContainer = require("ui/widget/container/inputcontainer")
+    local VerticalGroup = require("ui/widget/verticalgroup")
+    local VerticalSpan = require("ui/widget/verticalspan")
+    local TextBoxWidget = require("ui/widget/textboxwidget")
+    local TextWidget = require("ui/widget/textwidget")
+    local Button = require("ui/widget/button")
+    local GestureRange = require("ui/gesturerange")
+
+    local sw, sh = Screen:getWidth(), Screen:getHeight()
+    -- Frame target: ~80% of width on phone-sized portraits, capped so
+    -- it doesn't sprawl on landscape / tablet sizes
+    local frame_w = math.min(math.floor(sw * 0.8), Screen:scaleBySize(420))
+    local FRAME_PAD = Screen:scaleBySize(24)
+    local content_w = frame_w - FRAME_PAD * 2
+
+    local column = VerticalGroup:new{ align = "center" }
+
+    -- Logo at the top, centred: SVG preferred (scales to any density),
+    -- PNG as a fallback. alpha=true so a transparent background stays
+    -- transparent instead of rendering as opaque black
+    if plugin_dir then
+        local ok_lfs, lfs = pcall(require, "libs/libkoreader-lfs")
+        if ok_lfs and lfs and lfs.attributes then
+            for __, name in ipairs({ "logo.svg", "logo.png" }) do
+                local path = plugin_dir .. "/assets/" .. name
+                if lfs.attributes(path) then
+                    local ImageWidget = require("ui/widget/imagewidget")
+                    column[#column + 1] = ImageWidget:new{
+                        file = path,
+                        width = math.min(content_w, Screen:scaleBySize(220)),
+                        scale_factor = 0,
+                        alpha = true,
+                    }
+                    column[#column + 1] = VerticalSpan:new{
+                        width = Size.padding.default,
+                    }
+                    break
+                end
             end
         end
     end
-    local GITHUB_URL = "https://github.com/imanubdesigner/tomedown.koplugin"
-    local GITHUB_DISPLAY = "github.com/imanubdesigner/tomedown.koplugin"
-    local KOFI_URL = "https://ko-fi.com/imanubdesigner"
-    local KOFI_DISPLAY = "ko-fi.com/imanubdesigner"
-    -- Device:openLink where it exists (SDL/Android); on the e-reader
-    -- the URL goes to the clipboard instead, which is what can be
-    -- followed from there
-    local function openLink(url)
+
+    -- Version-only line: the logo carries the name, the digits stand
+    -- alone; sourced live from _meta.lua
+    column[#column + 1] = TextWidget:new{
+        text = "v" .. version,
+        face = Font:getFace("cfont", 16),
+    }
+    column[#column + 1] = VerticalSpan:new{ width = Size.padding.large }
+    column[#column + 1] = TextBoxWidget:new{
+        text = description,
+        face = Font:getFace("cfont", 16),
+        width = content_w,
+        alignment = "center",
+    }
+    column[#column + 1] = VerticalSpan:new{ width = Size.padding.large }
+    -- Tappable URL: Device:openLink where it exists (SDL/Android); on
+    -- the e-reader the URL goes to KOReader's internal clipboard with
+    -- a brief Notification instead (no browser to open)
+    local function open_github()
+        local ok = false
         if Device.openLink then
-            local ok_call, ret = pcall(function() return Device:openLink(url) end)
+            local ok_call, ret = pcall(function() return Device:openLink(GITHUB_URL) end)
             if ok_call and ret then
-                return
+                ok = true
             end
         end
-        if Device.input and Device.input.setClipboardText then
-            pcall(function() Device.input.setClipboardText(url) end)
+        if not ok and Device.input and Device.input.setClipboardText then
+            pcall(function() Device.input.setClipboardText(GITHUB_URL) end)
             UIManager:show(Notification:new{
                 text = _("Link copied to clipboard"),
             })
         end
     end
-    local viewer
-    viewer = TextViewer:new{
-        title = _("About Tomedown"),
-        text = "v" .. version .. "\n\n" .. description
-            .. "\n\n" .. GITHUB_DISPLAY .. "\n" .. KOFI_DISPLAY,
-        buttons_table = {
-            {
-                {
-                    text = "GitHub",
-                    callback = function() openLink(GITHUB_URL) end,
-                },
-                {
-                    text = "Ko-fi",
-                    callback = function() openLink(KOFI_URL) end,
-                },
-            },
-            {
-                {
-                    text = _("Close"),
-                    callback = function()
-                        UIManager:close(viewer)
-                    end,
-                },
-            },
-        },
-        add_default_buttons = false,
+    column[#column + 1] = Button:new{
+        text = GITHUB_URL_DISPLAY,
+        bordersize = 0,
+        padding = 0,
+        margin = 0,
+        text_font_face = "cfont",
+        text_font_size = 14,
+        callback = open_github,
     }
-    UIManager:show(viewer)
+
+    local frame = FrameContainer:new{
+        radius = Size.radius.window,
+        padding = FRAME_PAD,
+        padding_top = math.floor(FRAME_PAD * 0.5),
+        margin = 0,
+        background = Blitbuffer.COLOR_WHITE,
+        column,
+    }
+
+    local dialog
+    dialog = InputContainer:new{
+        align = "center",
+        dimen = Geom:new{ x = 0, y = 0, w = sw, h = sh },
+        CenterContainer:new{
+            dimen = Geom:new{ w = sw, h = sh },
+            MovableContainer:new{ frame },
+        },
+    }
+    if Device:isTouchDevice() then
+        dialog.ges_events = {
+            TapClose = { GestureRange:new{
+                ges = "tap",
+                range = Geom:new{ x = 0, y = 0, w = sw, h = sh },
+            } },
+        }
+        dialog.onTapClose = function(self_d, _arg, ges_ev)
+            if not frame.dimen or ges_ev.pos:notIntersectWith(frame.dimen) then
+                UIManager:close(self_d)
+            end
+            return true
+        end
+    end
+    if Device:hasKeys() then
+        dialog.key_events = { Close = { { Device.input.group.Back } } }
+        dialog.onClose = function(self_d)
+            UIManager:close(self_d)
+            return true
+        end
+    end
+
+    UIManager:show(dialog)
 end
 
 --- One-time default for "Upload to cloud": a fresh install starts with
@@ -1358,7 +1441,7 @@ function MdBook:init()
     self:schedulePendingFlush()
 end
 
--- auto-export (Settings → Auto-export on close, off by default)
+-- auto-export (first row of the Tomedown menu, off by default)
 
 function MdBook:onCloseDocument()
     if not getSetting("auto_export", false) then
@@ -1440,6 +1523,17 @@ function MdBook:addToMainMenu(menu_items)
         text = "Tomedown",
         sub_item_table = {
             {
+                text = _("Auto-export on close"),
+                checked_func = function()
+                    return getSetting("auto_export", false)
+                end,
+                keep_menu_open = true,
+                callback = function()
+                    setSetting("auto_export",
+                        not getSetting("auto_export", false))
+                end,
+            },
+            {
                 text = _("Export current book"),
                 enabled_func = function()
                     local file = self:getCurrentFile()
@@ -1500,6 +1594,13 @@ function MdBook:addToMainMenu(menu_items)
                 text = _("Settings"),
                 sub_item_table_func = function()
                     return self:genSettingsMenu()
+                end,
+                separator = true,
+            },
+            {
+                text = _("About"),
+                callback = function()
+                    self:showAbout()
                 end,
             },
         },

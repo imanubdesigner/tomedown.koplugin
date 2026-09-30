@@ -109,6 +109,19 @@ local PATCH = bumped(3)
 local MINOR = bumped(2)
 local MAJOR = bumped(1)
 
+--- how often needle occurs in s, counted without overlaps
+local function countTimes(s, needle)
+    local n, from = 0, 1
+    while true do
+        local i = s:find(needle, from, true)
+        if not i then
+            return n
+        end
+        n = n + 1
+        from = i + #needle
+    end
+end
+
 -- ------------------------------------------------------- 2. version jumps
 
 local cases = {
@@ -152,12 +165,13 @@ resetWidgets()
 fakeReleases({})
 
 local settings = plugin:genSettingsMenu()
-T.check(#settings == 4, "settings groups: " .. #settings)
+T.check(#settings == 3, "settings groups: " .. #settings)
 local cloud = settings[1].sub_item_table
 local files = settings[2].sub_item_table
 local updates = settings[3].sub_item_table
 T.check(files[3].text == "Include page bookmarks", "page bookmarks row")
-T.check(cloud[4].text == "Auto-export on close", "auto-export row")
+-- Auto-export lives in the main menu now (test_main checks the row)
+T.check(#cloud == 3, "cloud rows: " .. #cloud)
 T.check(updates[1].text_func() == "Check for updates (v" .. INSTALLED .. ")",
     "check row: " .. updates[1].text_func())
 T.check(updates[2].text == "View changelog", "changelog row")
@@ -203,7 +217,8 @@ Update._resetState()
 fakeReleases({
     release("v9.9.9", "draft only", { draft = true }),
     release("v2.0.0-beta", "prerelease only", { prerelease = true }),
-    release("v" .. MAJOR, "# Fixes\n- **bold** and `code` and *italic*"),
+    release("v" .. MAJOR,
+        "## v" .. MAJOR .. "\n\n# Fixes\n- **bold** and `code` and *italic*"),
     release("v" .. MINOR, "Fix A"),
     release("v" .. PATCH, "Fix B for issue #12"),
     release("v0.0.0", "old"),
@@ -227,6 +242,8 @@ T.check(viewer.text_format == "md",
 T.check(T.contains(viewer.text, "**bold**") and T.contains(viewer.text, "# Fixes")
     and T.contains(viewer.text, "`code`"),
     "markdown kept for rendering: " .. tostring(viewer.text))
+T.check(countTimes(viewer.text, "## v" .. MAJOR) == 1,
+    "the release's own version heading is not shown twice")
 T.check(T.contains(viewer.text, "issue #12"), "inline #12 kept: " .. tostring(viewer.text))
 T.check(Update.getAvailableVersion() == MAJOR,
     "cached available version: " .. tostring(Update.getAvailableVersion()))
@@ -502,7 +519,7 @@ resetWidgets()
 Update._resetState()
 NetworkMgr.connected = true
 settings = plugin:genSettingsMenu()
-T.check(#settings == 4, "settings groups with the beta row: " .. #settings)
+T.check(#settings == 3, "settings groups with the beta row: " .. #settings)
 updates = settings[3].sub_item_table
 T.check(updates[4].text == "Beta Releases", "beta releases row")
 T.check(updates[4].checked_func() == false, "beta releases off by default")
@@ -566,7 +583,8 @@ resetWidgets()
 Update._resetState()
 NetworkMgr.connected = true
 fakeReleases({
-    release("v9.9.0", "## newest\n- **bold**"),
+    release("v9.9.0", "## v9.9.0\n- **bold**",
+        { published_at = "2026-01-15T10:00:00Z" }),
     release("v9.8.0", "older notes"),
     release("v9.7.0-beta.1", "beta notes", { prerelease = true }),
 })
@@ -583,6 +601,12 @@ T.check(TextViewer.last ~= nil, "changelog viewer shown")
 T.check(TextViewer.last.title == "Changelog (1 of 2)",
     "changelog title: " .. tostring(TextViewer.last and TextViewer.last.title))
 T.check(T.contains(TextViewer.last.text or "", "v9.9.0"), "newest entry first")
+T.check(not T.contains(TextViewer.last.text or "", "2026-01-15"),
+    "no date in the changelog headline")
+T.check(countTimes(TextViewer.last.text or "", "## v9.9.0") == 1,
+    "the body's version heading is stripped, not duplicated")
+T.check(T.contains(TextViewer.last.text or "", "- **bold**"),
+    "the notes under the heading are kept")
 T.check(#urls == before, "cache hit: no fetch")
 
 -- page to the older release and back

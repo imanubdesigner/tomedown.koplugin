@@ -89,7 +89,7 @@ first export and optional Remotely Save in Obsidian — is in
 
 ## Configuration (one-off)
 
-☰ menu → **Tomedown** → **Settings**, in four groups:
+☰ menu → **Tomedown** → **Settings**, in three groups:
 
 **Cloud**
 
@@ -98,7 +98,6 @@ first export and optional Remotely Save in Obsidian — is in
 | *Upload to cloud* | any WebDAV/Dropbox/FTP server works; on by default for installs that have already exported, off on a fresh install |
 | *Server and folder…* | opens the Cloud storage browser: pick your server (the examples use Koofr), then navigate to the final folder (e.g. `Bookshelf/Kindle`) and tap **Choose** |
 | *Remote folder…* | only if you want to override the folder chosen above (e.g. `/Bookshelf/Kindle`) |
-| *Auto-export on close* | off by default: exports the book when you close it, and again before the device suspends (silently, no network then) |
 
 **Markdown files**
 
@@ -118,9 +117,6 @@ first export and optional Remotely Save in Obsidian — is in
 | *Beta Releases* | off by default: also offers prereleases (tags like `0.4.0-beta.1`) from *Check for updates* and the background check |
 | *Reset to latest stable release* | installs the newest stable release even when your install is a beta newer than it — the way back from a beta; it also unticks *Beta Releases* so the beta is not offered again |
 | *Installed: vX (Release/Beta)* | the installed version as a plain label |
-
-**About** — the installed version, the description of the plugin and the
-links to GitHub and to Ko-fi.
 
 Everything is stored in KOReader's settings, so it applies to all books.
 
@@ -185,6 +181,8 @@ settings keys are never renamed.
 
 ☰ menu → **Tomedown**:
 
+- **Auto-export on close** — off by default: exports the book when you close it,
+  and again before the device suspends (silently, no network then).
 - **Export current book** — only the open book.
 - **Only updated** — exports only the books whose highlights changed since
   the last export (per-book hash).
@@ -195,6 +193,8 @@ settings keys are never renamed.
 - **Reload everything to the cloud** — re-uploads every file already in the
   local folder (use it after a failed upload).
 - **Settings** — see above.
+- **About** — a popup with the logo, the installed version, the description
+  and the GitHub link (tap the link to open it or copy it).
 
 On a fresh install, the first time you open the menu, Tomedown offers to
 import your whole KOReader reading history in one tap (*Export* / *Not now* — the

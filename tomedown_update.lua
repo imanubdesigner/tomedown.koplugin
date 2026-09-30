@@ -297,6 +297,27 @@ local CHANGELOG_KEY = "tomedown_changelog"
 local CHANGELOG_MAX = 25
 local CHANGELOG_BODY_MAX = 8 * 1024
 
+--- GitHub's release bodies open with a "## vX.Y.Z" heading that just
+-- repeats the headline we already print; drop it (and the blank lines
+-- under it) so the version never shows up twice. Anything else is left
+-- untouched.
+local function stripLeadingTag(body, tag)
+    body = tostring(body or "")
+    local line, rest = body:match("^(.-)\r?\n(.*)$")
+    if not line then
+        line, rest = body, nil
+    end
+    local heading = line:match("^#+%s*(.-)%s*$")
+    if not heading then
+        return body
+    end
+    local wanted = tostring(tag or ""):gsub("^v", "")
+    if heading:gsub("^v", "") == wanted then
+        return rest and (rest:gsub("^%s*\n", "")) or ""
+    end
+    return body
+end
+
 --- Fold a releases list into the persisted cache. Drafts are always
 -- dropped; prereleases only while the Beta Releases toggle is on, so
 -- the changelog shows exactly what this install would be offered.
@@ -316,8 +337,6 @@ local function changelogSeed(releases)
                 seen[tag] = true
                 out[#out + 1] = {
                     tag = tag,
-                    date = type(rel.published_at) == "string"
-                        and rel.published_at:sub(1, 10) or nil,
                     body = tostring(rel.body or ""):sub(1, CHANGELOG_BODY_MAX),
                 }
                 if #out >= CHANGELOG_MAX then
@@ -348,11 +367,11 @@ local changelogFetchShow
 local function changelogShow(rels, idx)
     local as_md = canRenderMarkdown()
     local rel = rels[idx]
+    -- the tag alone as the headline (no date: it was noise), and the
+    -- body's own "## vX.Y.Z" heading dropped so the version is not
+    -- repeated right under the headline
     local head = "v" .. (tostring(rel.tag or ""):gsub("^v", ""))
-    if rel.date then
-        head = head .. "  (" .. rel.date .. ")"
-    end
-    local body = tostring(rel.body or "")
+    local body = stripLeadingTag(rel.body, rel.tag)
     if not as_md then
         body = stripMarkdown(body)
     end
@@ -476,10 +495,11 @@ local function checkBody()
     local as_md = canRenderMarkdown()
     local notes = {}
     for __, rel in ipairs(newer) do
+        local body = stripLeadingTag(rel.body, rel.version)
         if as_md then
-            notes[#notes + 1] = "## v" .. rel.version .. "\n\n" .. (rel.body or "")
+            notes[#notes + 1] = "## v" .. rel.version .. "\n\n" .. body
         else
-            notes[#notes + 1] = "v" .. rel.version .. "\n" .. stripMarkdown(rel.body or "")
+            notes[#notes + 1] = "v" .. rel.version .. "\n" .. stripMarkdown(body)
         end
     end
     local viewer

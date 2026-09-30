@@ -217,9 +217,6 @@ msgstr "Aggiornamenti"
 msgid "About"
 msgstr "Informazioni"
 
-msgid "About Tomedown"
-msgstr "Informazioni su Tomedown"
-
 msgid "Link copied to clipboard"
 msgstr "Link copiato negli appunti"
 

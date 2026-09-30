@@ -38,7 +38,9 @@ local Notification = require("ui/widget/notification")
 local InputDialog = require("ui/widget/inputdialog")
 local PathChooser = require("ui/widget/pathchooser")
 local NetworkMgr = require("ui/network/manager")
-local TextViewer = require("ui/widget/textviewer")
+local TextWidget = require("ui/widget/textwidget")
+local TextBoxWidget = require("ui/widget/textboxwidget")
+local Button = require("ui/widget/button")
 local Update = require("tomedown_update")
 local lfs = require("libs/libkoreader-lfs")
 local json = require("json")
@@ -403,13 +405,16 @@ local menu_items = {}
 plugin:addToMainMenu(menu_items)
 T.check(menu_items.tomedown ~= nil, "menu entry registered")
 local sub = menu_items.tomedown.sub_item_table
-T.check(#sub == 6, "main menu entries: " .. #sub)
-T.check(sub[1].text == "Export current book", "menu item 1")
-T.check(sub[2].text == "Only updated", "menu item 2")
-T.check(sub[3].text == "Choose books…", "menu item 3")
-T.check(sub[4].text == "Import all books from history", "menu item 4")
-T.check(sub[5].text == "Reload everything to the cloud", "menu item 5")
-T.check(sub[6].text == "Settings", "menu item 6")
+T.check(#sub == 8, "main menu entries: " .. #sub)
+T.check(sub[1].text == "Auto-export on close", "menu item 1")
+T.check(sub[2].text == "Export current book", "menu item 2")
+T.check(sub[3].text == "Only updated", "menu item 3")
+T.check(sub[4].text == "Choose books…", "menu item 4")
+T.check(sub[5].text == "Import all books from history", "menu item 5")
+T.check(sub[6].text == "Reload everything to the cloud", "menu item 6")
+T.check(sub[7].text == "Settings", "menu item 7")
+T.check(sub[7].separator == true, "separator before About")
+T.check(sub[8].text == "About", "menu item 8")
 
 local cover_entry = false
 local function scanCover(items)
@@ -427,35 +432,31 @@ scanCover(menu_items)
 T.check(not cover_entry, "no menu entry about covers")
 
 ui.document = { file = FILE }
-T.check(sub[1].enabled_func() == true, "export current enabled with the book open")
+T.check(sub[2].enabled_func() == true, "export current enabled with the book open")
 ui.document = nil
 store.lastfile = FILE
-T.check(sub[1].enabled_func() == true, "export current enabled via lastfile")
+T.check(sub[2].enabled_func() == true, "export current enabled via lastfile")
 store.lastfile = nil
-T.check(sub[1].enabled_func() == false, "export current disabled without a file")
+T.check(sub[2].enabled_func() == false, "export current disabled without a file")
 ui.document = { file = nil }
-T.check(sub[4].enabled_func() == true, "all books enabled")
+T.check(sub[5].enabled_func() == true, "all books enabled")
+T.check(sub[1].checked_func() == false, "auto-export off by default")
 
 local settings = plugin:genSettingsMenu()
-T.check(#settings == 4, "settings groups: " .. #settings)
+T.check(#settings == 3, "settings groups: " .. #settings)
 T.check(settings[1].text == "\xEE\xB4\xBE  Cloud", "cloud group with icon")
 T.check(settings[2].text == "\xEF\x83\xB6  Markdown files",
     "markdown files group with icon")
 T.check(settings[3].text == "\xEE\xB6\xAE  Updates", "updates group with icon")
-T.check(settings[3].separator == true, "separator before About")
-T.check(settings[4].text == "About", "about entry")
-T.check(type(settings[4].callback) == "function", "about opens a dialog")
 local cloud = settings[1].sub_item_table
 local files = settings[2].sub_item_table
 local updates = settings[3].sub_item_table
-T.check(#cloud == 4, "cloud rows: " .. #cloud)
+T.check(#cloud == 3, "cloud rows: " .. #cloud)
 T.check(#files == 3, "markdown files rows: " .. #files)
 T.check(#updates == 6, "updates rows: " .. #updates)
 T.check(cloud[1].text == "Upload to cloud", "upload entry")
 T.check(cloud[2].text_func() == "Server and folder: not set", "server not set")
 T.check(T.contains(cloud[3].text_func(), "Remote folder: not set"), "remote folder not set")
-T.check(cloud[4].text == "Auto-export on close", "auto-export entry")
-T.check(cloud[4].checked_func() == false, "auto-export off by default")
 T.check(T.contains(files[1].text_func(), "clipboard/tomedown"), "default local folder")
 T.check(T.contains(files[2].text, "00 - Index.md"), "index entry with the file name")
 T.check(files[3].text == "Include page bookmarks", "page bookmarks entry")
@@ -469,7 +470,8 @@ T.check(updates[3].text == "Check for updates in background", "background entry"
 T.check(updates[4].text == "Beta Releases", "beta releases entry")
 T.check(updates[4].checked_func() == false, "beta releases off by default")
 T.check(updates[4].separator == true, "separator after the beta toggle")
-T.check(updates[5].text == "Reset to latest stable release", "reset entry")
+T.check(updates[5].text == "\xEE\xB6\x8F  Reset to latest stable release",
+    "reset entry with the bomb icon")
 local installed_version = Update.getInstalledVersion()
 T.check(updates[6].text_func() == "Installed: v" .. installed_version
         .. (installed_version:find("-", 1, true) and " (Beta)" or " (Release)"),
@@ -477,7 +479,7 @@ T.check(updates[6].text_func() == "Installed: v" .. installed_version
 T.check(updates[6].enabled == false, "installed row is a plain label")
 
 -- checkable rows must keep the menu open so KOReader refreshes them
-for _, group in ipairs({ cloud, files, updates }) do
+for _, group in ipairs({ sub, cloud, files, updates }) do
     for i, row in ipairs(group) do
         if row.checked_func then
             T.check(row.keep_menu_open == true,
@@ -485,14 +487,22 @@ for _, group in ipairs({ cloud, files, updates }) do
         end
     end
 end
--- the About row opens the info dialog
-settings[4].callback()
-T.check(TextViewer.last ~= nil, "about dialog shown")
-T.check(T.contains(TextViewer.last.text or "", "v" .. installed_version),
+-- the About row opens the Bookshelf-style popup
+local shown_before = #UIManager.shown
+sub[8].callback()
+T.check(#UIManager.shown == shown_before + 1, "about popup shown")
+local dialog = UIManager.shown[#UIManager.shown]
+T.check(dialog ~= nil and dialog.__widget == "InputContainer",
+    "about is a framed popup: " .. tostring(dialog and dialog.__widget))
+T.check(TextWidget.last ~= nil
+        and TextWidget.last.text == "v" .. installed_version,
     "about shows the version")
-T.check(T.contains(TextViewer.last.text or "", "Exports each book"),
-    "about shows the description")
-TextViewer.last = nil
+T.check(T.contains(TextBoxWidget.last and TextBoxWidget.last.text or "",
+    "Exports each book"), "about shows the description")
+T.check(Button.last ~= nil
+        and Button.last.text == "github.com/imanubdesigner/tomedown.koplugin",
+    "about shows the GitHub URL")
+UIManager:close(dialog)
 
 local main_src = T.readFile(T.plugin .. "/main.lua") or ""
 T.check(not main_src:find("check_callback_updates_menu", 1, true),
@@ -931,10 +941,10 @@ T.check(#uploads == 0 and Notification.last_text == nil,
 ui.document = nil
 
 -- toggle on: the close exports after 1s and uploads right away
-cloud[4].callback()
-T.check(cloud[4].checked_func() == true, "auto-export toggled on")
+sub[1].callback()
+T.check(sub[1].checked_func() == true, "auto-export toggled on")
 uploadSetup()
-cloud[4].callback() -- uploadSetup wiped the setting
+sub[1].callback() -- uploadSetup wiped the setting
 ui.document = { file = FILE }
 plugin:onCloseDocument()
 T.check(UIManager:pendingCount() == 1, "toggle on: close schedules the export")
@@ -958,7 +968,7 @@ ui.document = nil
 
 -- offline close: exported locally, queued, the network is not touched
 uploadSetup()
-cloud[4].callback()
+sub[1].callback()
 NetworkMgr.connected = false
 ui.document = { file = FILE }
 plugin:onCloseDocument()
@@ -1007,7 +1017,7 @@ T.check(next(store.tomedown.pending_uploads or {}) == nil,
 
 -- suspend: local only and totally silent, even with the network up
 uploadSetup()
-cloud[4].callback()
+sub[1].callback()
 ui.document = { file = FILE }
 plugin:onSuspend()
 T.check(UIManager:pendingCount() == 0, "suspend schedules nothing")
