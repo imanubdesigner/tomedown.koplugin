@@ -1080,6 +1080,15 @@ function MdBook:genPickerMenu()
     return items
 end
 
+--- Label of a group row: a Nerd Font glyph from the symbols font KOReader
+-- already ships, two spaces, then the label. The glyph stays outside the
+-- translated string, so .po files never see it. The code points are in
+-- the Private Use Area on purpose (anything else risks missing glyphs in
+-- other fonts) - the same rule Bookshelf's menus follow.
+local function withIcon(glyph, text)
+    return glyph .. "  " .. text
+end
+
 --- Settings: four groups (the structure Bookshelf uses) plus the About
 -- row at the end. Every setting keeps its own row; the checkable ones
 -- keep their keep_menu_open so KOReader refreshes the tick in place.
@@ -1230,9 +1239,12 @@ function MdBook:genSettingsMenu()
         },
     }
     return {
-        { text = _("Cloud"), sub_item_table = cloud },
-        { text = _("Markdown files"), sub_item_table = files },
-        { text = _("Updates"), sub_item_table = updates, separator = true },
+        { text = withIcon("\xEE\xB4\xBE", _("Cloud")), -- cloud-sync
+            sub_item_table = cloud },
+        { text = withIcon("\xEF\x83\xB6", _("Markdown files")), -- file-text
+            sub_item_table = files },
+        { text = withIcon("\xEE\xB6\xAE", _("Updates")), -- update
+            sub_item_table = updates, separator = true },
         { text = _("About"), callback = function()
             self:showAbout()
         end },

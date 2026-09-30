@@ -438,9 +438,10 @@ T.check(sub[4].enabled_func() == true, "all books enabled")
 
 local settings = plugin:genSettingsMenu()
 T.check(#settings == 4, "settings groups: " .. #settings)
-T.check(settings[1].text == "Cloud", "cloud group")
-T.check(settings[2].text == "Markdown files", "markdown files group")
-T.check(settings[3].text == "Updates", "updates group")
+T.check(settings[1].text == "\xEE\xB4\xBE  Cloud", "cloud group with icon")
+T.check(settings[2].text == "\xEF\x83\xB6  Markdown files",
+    "markdown files group with icon")
+T.check(settings[3].text == "\xEE\xB6\xAE  Updates", "updates group with icon")
 T.check(settings[3].separator == true, "separator before About")
 T.check(settings[4].text == "About", "about entry")
 T.check(type(settings[4].callback) == "function", "about opens a dialog")
