@@ -37,6 +37,12 @@ local InfoMessage = require("ui/widget/infomessage")
 local Notification = require("ui/widget/notification")
 local InputDialog = require("ui/widget/inputdialog")
 local PathChooser = require("ui/widget/pathchooser")
+local NetworkMgr = require("ui/network/manager")
+local TextWidget = require("ui/widget/textwidget")
+local TextBoxWidget = require("ui/widget/textboxwidget")
+local Button = require("ui/widget/button")
+local ImageWidget = require("ui/widget/imagewidget")
+local Update = require("tomedown_update")
 local lfs = require("libs/libkoreader-lfs")
 local json = require("json")
 local md5 = require("ffi/sha2").md5
@@ -178,6 +184,7 @@ local function resetUpload()
     uploads, attempt_count, upload_script = {}, {}, {}
     UIManager:reset()
     Notification.last_text = nil
+    Notification.log = {}
     InfoMessage.last_text = nil
     logger.reset()
 end
@@ -265,7 +272,7 @@ if md then
     T.check(not T.contains(md, "![]("), "nessuna immagine")
 end
 
-T.check(Notification.last_text == "1 files exported",
+T.check(Notification.last_text == "1 files exported locally",
     "export notification: " .. tostring(Notification.last_text))
 T.check(lfs.attributes(DIR .. "/covers", "mode") ~= "directory",
     "covers folder not created")
@@ -283,7 +290,7 @@ end
 plugin:runExport(plugin:listBookFiles(), {})
 UIManager:runPending()
 T.check(#plugin:listBookFiles() == 3, "three books listed (dim excluded)")
-T.check(Notification.last_text == "3 files exported",
+T.check(Notification.last_text == "3 files exported locally",
     "multi export: " .. tostring(Notification.last_text))
 
 index = T.readFile(INDEX_PATH)
@@ -400,13 +407,15 @@ local menu_items = {}
 plugin:addToMainMenu(menu_items)
 T.check(menu_items.tomedown ~= nil, "menu entry registered")
 local sub = menu_items.tomedown.sub_item_table
-T.check(#sub == 6, "main menu entries: " .. #sub)
-T.check(sub[1].text == "Export current book", "menu item 1")
-T.check(sub[2].text == "Only updated", "menu item 2")
-T.check(sub[3].text == "Choose books…", "menu item 3")
-T.check(sub[4].text == "Import all books from history", "menu item 4")
-T.check(sub[5].text == "Reload everything to the cloud", "menu item 5")
-T.check(sub[6].text == "Settings", "menu item 6")
+T.check(#sub == 7, "main menu entries: " .. #sub)
+T.check(sub[1].text == "\xEE\x89\xBC  Export current book", "menu item 1")
+T.check(sub[2].text == "\xEE\xA4\xB5  Export only what changed", "menu item 2")
+T.check(sub[3].text == "\xEE\xB9\x94  Choose books…", "menu item 3")
+T.check(sub[4].text == "\xEE\xA7\x99  Import all books from history", "menu item 4")
+T.check(sub[5].text == "\xEE\xB4\xBE  Reload everything to the cloud", "menu item 5")
+T.check(sub[6].text == "\xEF\x80\x93  Settings", "menu item 6 with the cog")
+T.check(sub[6].separator == true, "separator before About")
+T.check(sub[7].text == "\xEE\xA7\xBC  About", "menu item 7")
 
 local cover_entry = false
 local function scanCover(items)
@@ -434,35 +443,129 @@ ui.document = { file = nil }
 T.check(sub[4].enabled_func() == true, "all books enabled")
 
 local settings = plugin:genSettingsMenu()
-T.check(#settings == 9, "settings entries: " .. #settings)
-T.check(settings[1].text == "Upload to cloud", "upload entry")
-T.check(settings[2].text_func() == "Server and folder: not set", "server not set")
-T.check(T.contains(settings[3].text_func(), "Remote folder: not set"), "remote folder not set")
-T.check(T.contains(settings[4].text_func(), "clipboard/tomedown"), "default local folder")
-T.check(T.contains(settings[5].text, "00 - Index.md"), "index entry with the file name")
-T.check(settings[6].text == "Include page bookmarks", "page bookmarks entry")
-T.check(settings[6].checked_func() == false, "page bookmarks off by default")
+T.check(#settings == 3, "settings groups: " .. #settings)
+T.check(settings[1].text == "\xEE\xB4\xBE  Cloud", "cloud group with icon")
+T.check(settings[2].text == "\xEF\x83\xB6  Markdown files",
+    "markdown files group with icon")
+T.check(settings[3].text == "\xEE\xB6\xAE  Updates", "updates group with icon")
+local cloud = settings[1].sub_item_table
+local files = settings[2].sub_item_table
+local updates = settings[3].sub_item_table
+T.check(#cloud == 3, "cloud rows: " .. #cloud)
+T.check(#files == 4, "markdown files rows: " .. #files)
+T.check(#updates == 4, "updates rows: " .. #updates)
+T.check(cloud[1].text == "Upload to cloud", "upload entry")
+T.check(cloud[2].text_func() == "Server and folder: not set", "server not set")
+T.check(T.contains(cloud[3].text_func(), "Remote folder: not set"), "remote folder not set")
+T.check(T.contains(files[1].text_func(), "clipboard/tomedown"), "default local folder")
+T.check(T.contains(files[2].text, "00 - Index.md"), "index entry with the file name")
+T.check(files[3].text == "Include page bookmarks", "page bookmarks entry")
+T.check(files[3].checked_func() == false, "page bookmarks off by default")
+T.check(files[3].separator == true, "separator before the auto-export toggle")
+T.check(files[4].text == "Auto-export on close",
+    "auto-export lives in Markdown files")
+T.check(files[4].checked_func() == false, "auto-export off by default")
+T.check(updates[1].text_func() == "Check for updates (v"
+        .. Update.getInstalledVersion() .. ")",
+    "check row carries the installed version: " .. updates[1].text_func())
+T.check(updates[2].text == "View changelog", "changelog entry")
+T.check(updates[2].separator == true, "separator after the changelog entry")
+T.check(updates[3].text == "Check for updates in background", "background entry")
+T.check(updates[4].text == "Developer updates", "developer updates entry")
+local developer = updates[4].sub_item_table_func()
+T.check(#developer == 3, "beta check hidden by default: " .. #developer)
+T.check(developer[1].text == "Beta Releases", "beta releases entry")
+T.check(developer[1].checked_func() == false, "beta releases off by default")
+T.check(developer[1].separator == true, "separator under the beta toggle")
+T.check(developer[2].text == "\xEE\xB6\x8F  Reset to latest stable release",
+    "reset entry with the bomb icon")
+local installed_version = Update.getInstalledVersion()
+T.check(developer[3].text_func() == "Installed: v" .. installed_version
+        .. (installed_version:find("-", 1, true) and " (Beta)" or " (Release)"),
+    "installed row: " .. developer[3].text_func())
+T.check(developer[3].enabled == false, "installed row is a plain label")
 
-settings[1].callback()
-T.check(store.tomedown.upload == false, "upload disabled")
-settings[1].callback()
-T.check(store.tomedown.upload == true, "upload re-enabled")
-settings[5].callback()
+-- ticking Beta Releases reveals the check in the open submenu at once
+-- (the callback receives the TouchMenu, whose item_table is this very
+-- table; it is rebuilt in place and redrawn by KOReader)
+local fake_menu = { item_table = developer }
+developer[1].callback(fake_menu)
+T.check(store.tomedown.beta_releases == true, "beta releases toggled on")
+T.check(#developer == 4, "beta check shown after ticking: " .. #developer)
+T.check(developer[2].text == "Check for updates", "beta check entry")
+T.check(developer[2].separator == true,
+    "separator between the beta check and the reset")
+T.check(developer[1].separator ~= true, "no separator under the toggle")
+T.check(developer[2].callback ~= nil, "beta check row is tappable")
+-- unticking hides it again, in the same open menu
+developer[1].callback(fake_menu)
+T.check(store.tomedown.beta_releases == false, "beta releases off again")
+T.check(#developer == 3, "beta check hidden again: " .. #developer)
+T.check(developer[1].separator == true, "separator back under the toggle")
+
+-- checkable rows must keep the menu open so KOReader refreshes them
+for _, group in ipairs({ sub, cloud, files, updates, developer }) do
+    for i, row in ipairs(group) do
+        if row.checked_func then
+            T.check(row.keep_menu_open == true,
+                "checkable settings row " .. i .. " keeps the menu open")
+        end
+    end
+end
+-- the About row opens the Bookshelf-style popup
+local shown_before = #UIManager.shown
+sub[7].callback()
+T.check(#UIManager.shown == shown_before + 1, "about popup shown")
+local dialog = UIManager.shown[#UIManager.shown]
+T.check(dialog ~= nil and dialog.__widget == "InputContainer",
+    "about is a framed popup: " .. tostring(dialog and dialog.__widget))
+T.check(TextWidget.last ~= nil
+        and TextWidget.last.text == "v" .. installed_version,
+    "about shows the version")
+T.check(T.contains(TextBoxWidget.last and TextBoxWidget.last.text or "",
+    "Exports each book"), "about shows the description")
+T.check(Button.last ~= nil
+        and Button.last.text == "github.com/imanubdesigner/tomedown.koplugin",
+    "about shows the GitHub URL")
+-- the logo ships with the plugin and keeps its own ratio (viewBox)
+T.check(ImageWidget.last ~= nil
+        and (ImageWidget.last.file or ""):find("assets/logo.svg", 1, true) ~= nil,
+    "about shows the logo: " .. tostring(ImageWidget.last and ImageWidget.last.file))
+T.check(ImageWidget.last ~= nil and (ImageWidget.last.height or 0) > 0
+        and ImageWidget.last.height < ImageWidget.last.width,
+    "logo box follows the file ratio: "
+        .. tostring(ImageWidget.last and ImageWidget.last.width)
+        .. "x" .. tostring(ImageWidget.last and ImageWidget.last.height))
+UIManager:close(dialog)
+
+local main_src = T.readFile(T.plugin .. "/main.lua") or ""
+T.check(not main_src:find("check_callback_updates_menu", 1, true),
+    "no check_callback_updates_menu (it opts out of the menu refresh)")
+
+cloud[1].callback()
+T.check(store.tomedown.upload == true, "upload enabled from the default off")
+cloud[1].callback()
+T.check(store.tomedown.upload == false, "upload disabled again")
+files[2].callback()
 T.check(store.tomedown.with_index == false, "index disabled")
-settings[5].callback()
+files[2].callback()
 T.check(store.tomedown.with_index == true, "index re-enabled")
-settings[6].callback()
+files[3].callback()
 T.check(store.tomedown.include_bookmarks == true, "page bookmarks enabled")
-settings[6].callback()
+files[3].callback()
 T.check(store.tomedown.include_bookmarks == false, "page bookmarks disabled")
+developer[1].callback()
+T.check(store.tomedown.beta_releases == true, "beta releases enabled")
+developer[1].callback()
+T.check(store.tomedown.beta_releases == false, "beta releases disabled")
 
 -- server picked from the Cloud storage list
 plugin:chooseCloudFolder(nil)
 T.check(cloud_list_callback ~= nil, "cloud list opened")
 cloud_list_callback({ name = "Koofr", type = "webdav", url = "/Bookshelf/Kindle" })
 T.check(store.tomedown.server and store.tomedown.server.name == "Koofr", "server saved")
-T.check(settings[2].text_func() == "Server and folder: Koofr (webdav) → /Bookshelf/Kindle",
-    "server text updated: " .. settings[2].text_func())
+T.check(cloud[2].text_func() == "Server and folder: Koofr (webdav) → /Bookshelf/Kindle",
+    "server text updated: " .. cloud[2].text_func())
 T.check(plugin:hasServer() == true, "hasServer true with server and cloud")
 
 -- remote folder dialog
@@ -472,7 +575,7 @@ T.check(dialog ~= nil and dialog.title == "Remote folder on the server", "remote
 dialog.input_text = "  /Cartella mia  "
 dialog:simulateSave()
 T.check(store.tomedown.remote_folder == "/Cartella mia", "remote folder saved and trimmed")
-T.check(T.contains(settings[3].text_func(), "/Cartella mia"), "menu entry updated")
+T.check(T.contains(cloud[3].text_func(), "/Cartella mia"), "menu entry updated")
 plugin:editRemoteFolder(nil)
 InputDialog.last.input_text = ""
 InputDialog.last:simulateSave()
@@ -518,7 +621,7 @@ T.check(T.contains(picker[1].text_func(), "Export selected (1)"), "one book sele
 T.check(picker[1].enabled_func() == true, "export selected enabled")
 picker[1].callback(nil)
 UIManager:runPending()
-T.check(Notification.last_text == "1 files exported",
+T.check(Notification.last_text == "1 files exported locally",
     "export of the selected: " .. tostring(Notification.last_text))
 
 picker = plugin:genPickerMenu()
@@ -532,7 +635,7 @@ T.check(plugin:genPickerMenu()[1].text_func() == "Export selected (0)",
 
 -- ----------------------------------------------- 5b. page bookmarks
 
-settings[6].callback() -- enable "Include page bookmarks"
+files[3].callback() -- enable "Include page bookmarks"
 T.check(store.tomedown.include_bookmarks == true, "page bookmarks enabled for the export")
 plugin:runExport({ FILE }, {})
 UIManager:runPending()
@@ -568,7 +671,7 @@ if onlyBmMd then
 end
 
 -- disabled again: the section disappears
-settings[6].callback()
+files[3].callback()
 T.check(store.tomedown.include_bookmarks == false, "page bookmarks disabled again")
 plugin:runExport({ FILE }, {})
 UIManager:runPending()
@@ -609,8 +712,9 @@ T.check(#uploads == 1, "first upload started right away: " .. #uploads)
 T.check(uploads[1].path == MD_PATH, "first file = book md")
 T.check(InfoMessage.last_text == "Uploading 2 files to the cloud…",
     "progress window: " .. tostring(InfoMessage.last_text))
-T.check(#UIManager.shown == 1 and UIManager.shown[1].text == InfoMessage.last_text,
-    "progress still open during the upload phase")
+T.check(#UIManager.shown == 2
+        and UIManager.shown[#UIManager.shown].text == InfoMessage.last_text,
+    "export toast + upload progress during the upload phase")
 UIManager:runPending()
 T.check(#uploads == 2, "uploaded md and index: " .. #uploads)
 T.check(uploads[2].path == INDEX_PATH, "second file = index")
@@ -620,9 +724,11 @@ T.check(attempt_count[MD_PATH] == 1 and attempt_count[INDEX_PATH] == 1,
     "one attempt per file in normal conditions")
 T.check(T.contains(Notification.last_text or "", "Cloud: 2 files uploaded"),
     "upload notification: " .. tostring(Notification.last_text))
-local widget = onlyWidget()
-T.check(widget and widget.__widget == "Notification",
-    "only the final notification stays open")
+local final = UIManager.shown[#UIManager.shown]
+T.check(final and final.__widget == "Notification"
+        and T.contains(final.text or "", "Cloud: 2 files uploaded"),
+    "the upload result is the last notification: "
+        .. tostring(final and final.text))
 
 -- upload disabled
 uploadSetup()
@@ -630,7 +736,7 @@ store.tomedown.upload = false
 plugin:runExport({ FILE }, {})
 UIManager:runPending()
 T.check(#uploads == 0, "no upload with upload=false")
-T.check(Notification.last_text == "1 files exported",
+T.check(Notification.last_text == "1 files exported locally",
     "export-only notification: " .. tostring(Notification.last_text))
 
 -- explicit remote folder
@@ -684,13 +790,12 @@ T.check(attempt_count[MD_PATH] == 3 and attempt_count[INDEX_PATH] == 3,
     "maximum 3 attempts per file")
 T.check(sameList(positives(), { 2, 4, 2, 4 }),
     "backoff 2s/4s for every file, got " .. listStr(positives()))
-T.check(Notification.last_text == nil, "no success notification")
-local err_widget = onlyWidget()
+T.check(Notification.last_text == "1 files exported locally",
+    "the export is reported on its own: " .. tostring(Notification.last_text))
+local err_widget = UIManager.shown[#UIManager.shown]
 T.check(err_widget and err_widget.__widget == "InfoMessage", "error window shown")
 T.check(err_widget and T.contains(err_widget.text, "Cloud: 0 uploaded, 2 errors"),
-    "result with errors: " .. tostring(err_widget and err_widget.text))
-T.check(err_widget and T.contains(err_widget.text, "1 files exported"),
-    "the result also includes the export: " .. tostring(err_widget and err_widget.text))
+    "upload failures in their own window: " .. tostring(err_widget and err_widget.text))
 
 -- 4xx (missing folder): no retry
 uploadSetup()
@@ -700,7 +805,7 @@ plugin:runExport({ FILE }, {})
 UIManager:runPending()
 T.check(#uploads == 2, "404: one attempt per file only: " .. #uploads)
 T.check(#positives() == 0, "no delay on 4xx errors: " .. listStr(positives()))
-err_widget = onlyWidget()
+err_widget = UIManager.shown[#UIManager.shown]
 T.check(err_widget and T.contains(err_widget.text, "Cloud: 0 uploaded, 2 errors"),
     "404 reported as a definitive failure")
 
@@ -857,5 +962,180 @@ UIManager:runPending()
 T.check(ConfirmBox.last == nil, "no prompt without history")
 readhistory.hist = hist
 store.tomedown.import_prompt_done = nil
+
+-- ------------------------------------- 12. auto-export and pending uploads
+
+NetworkMgr.connected = true
+
+-- toggle off (default): the close does nothing at all
+uploadSetup()
+ui.document = { file = FILE }
+plugin:onCloseDocument()
+T.check(UIManager:pendingCount() == 0, "toggle off: close schedules nothing")
+T.check(#uploads == 0 and Notification.last_text == nil,
+    "toggle off: nothing exported or notified")
+ui.document = nil
+
+-- toggle on: the close exports after 1s and uploads right away
+files[4].callback()
+T.check(files[4].checked_func() == true, "auto-export toggled on")
+uploadSetup()
+files[4].callback() -- uploadSetup wiped the setting
+ui.document = { file = FILE }
+plugin:onCloseDocument()
+T.check(UIManager:pendingCount() == 1, "toggle on: close schedules the export")
+T.check(UIManager.delay_log[1] == 1, "export runs 1s after the close: "
+    .. tostring(UIManager.delay_log[1]))
+UIManager:runPending()
+T.check(#uploads == 2, "online close: book and index uploaded: " .. #uploads)
+T.check(T.contains(Notification.last_text or "", "Cloud: 2 files uploaded"),
+    "online close notification: " .. tostring(Notification.last_text))
+T.check(#Notification.log == 2,
+    "online close: two separate notifications: " .. #Notification.log)
+T.check(Notification.log[1] ~= nil
+        and Notification.log[1]:find("1 files exported", 1, true) ~= nil
+        and Notification.log[1]:find("Cloud", 1, true) == nil,
+    "online close: the export never waits for the cloud: "
+        .. tostring(Notification.log[1]))
+T.check(Notification.log[2] ~= nil
+        and Notification.log[2]:find("Cloud: 2 files uploaded", 1, true) ~= nil,
+    "online close: the upload reported after: " .. tostring(Notification.log[2]))
+T.check(next(store.tomedown.pending_uploads or {}) == nil,
+    "online close: nothing left pending")
+ui.document = nil
+
+-- without the cloud at all: one notification, right after the export
+uploadSetup()
+store.tomedown.upload = false
+files[4].callback() -- uploadSetup wiped the auto-export setting too
+ui.document = { file = FILE }
+plugin:onCloseDocument()
+UIManager:runPending()
+T.check(#uploads == 0, "cloud off: no upload attempted")
+T.check(#Notification.log == 1, "cloud off: one notification: " .. #Notification.log)
+T.check(Notification.log[1] ~= nil
+        and Notification.log[1]:find("1 files exported", 1, true) ~= nil,
+    "cloud off: the export result on its own: " .. tostring(Notification.log[1]))
+ui.document = nil
+
+-- same book, no new highlights: no message, no upload
+resetUpload()
+plugin:onCloseDocument()
+UIManager:runPending()
+T.check(Notification.last_text == nil, "unchanged book: no notification")
+T.check(#uploads == 0, "unchanged book: no upload")
+ui.document = nil
+
+-- offline close: exported locally, queued, the network is not touched
+uploadSetup()
+files[4].callback()
+NetworkMgr.connected = false
+ui.document = { file = FILE }
+plugin:onCloseDocument()
+UIManager:runPending()
+T.check(#uploads == 0, "offline close: no upload attempted")
+T.check(store.tomedown.pending_uploads[MD_PATH] == true
+    and store.tomedown.pending_uploads[INDEX_PATH] == true,
+    "offline close: book and index pending")
+T.check(T.contains(Notification.last_text or "", "upload when online"),
+    "offline close notification: " .. tostring(Notification.last_text))
+ui.document = nil
+
+-- the connection comes back: only the pending files go up
+NetworkMgr.connected = true
+plugin:onNetworkConnected()
+T.check(UIManager:pendingCount() == 1, "reconnect schedules the flush")
+T.check(UIManager.delay_log[#UIManager.delay_log] == 1,
+    "flush runs 1s after the connection")
+UIManager:runPending()
+T.check(#uploads == 2, "reconnect: pending files uploaded: " .. #uploads)
+T.check(T.contains(Notification.last_text or "", "Cloud: 2 files uploaded"),
+    "reconnect notification: " .. tostring(Notification.last_text))
+T.check(next(store.tomedown.pending_uploads or {}) == nil,
+    "reconnect: pending list cleared")
+
+-- reconnect with nothing to do: no flush at all
+plugin:onNetworkConnected()
+T.check(UIManager:pendingCount() == 0, "reconnect without pending: nothing scheduled")
+
+-- a failed upload stays pending, the next connection retries it
+uploadSetup()
+upload_script[MD_PATH] = { 500, 500, 500, 500 }
+upload_script[INDEX_PATH] = { 500, 500, 500, 500 }
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+T.check(store.tomedown.pending_uploads[MD_PATH] == true,
+    "failed upload stays pending (book)")
+T.check(store.tomedown.pending_uploads[INDEX_PATH] == true,
+    "failed upload stays pending (index)")
+resetUpload()
+plugin:onNetworkConnected()
+UIManager:runPending()
+T.check(#uploads == 2, "retry after reconnect: uploaded once each: " .. #uploads)
+T.check(next(store.tomedown.pending_uploads or {}) == nil,
+    "retry clears the pending list")
+
+-- suspend: local only and totally silent, even with the network up
+uploadSetup()
+files[4].callback()
+ui.document = { file = FILE }
+plugin:onSuspend()
+T.check(UIManager:pendingCount() == 0, "suspend schedules nothing")
+T.check(#uploads == 0, "suspend does not upload")
+T.check(Notification.last_text == nil and #UIManager.shown == 0,
+    "suspend export is silent")
+T.check(store.tomedown.pending_uploads[MD_PATH] == true,
+    "suspend export queued for the next connection")
+ui.document = nil
+
+-- toggle off again: suspend does not fire
+uploadSetup()
+ui.document = { file = FILE }
+plugin:onSuspend()
+T.check(#uploads == 0 and Notification.last_text == nil
+    and store.tomedown.pending_uploads == nil, "toggle off: suspend does nothing")
+ui.document = nil
+
+-- wake up with pending uploads and the network already on
+uploadSetup()
+store.tomedown.pending_uploads = { [MD_PATH] = true }
+plugin:onResume()
+T.check(UIManager:pendingCount() == 1, "resume schedules the pending flush")
+UIManager:runPending()
+T.check(#uploads == 1, "resume flush uploads the pending file: " .. #uploads)
+T.check(next(store.tomedown.pending_uploads or {}) == nil,
+    "resume flush clears pending")
+
+-- pending file deleted locally: dropped, nothing to upload
+uploadSetup()
+store.tomedown.pending_uploads = { [DIR .. "/ghost.md"] = true }
+plugin:flushPendingUploads()
+T.check(next(store.tomedown.pending_uploads or {}) == nil,
+    "missing file dropped from pending")
+T.check(#uploads == 0, "no upload for missing files")
+
+-- the plugin sits in the UI event chain (events reach it)
+local in_chain = false
+for __, child in ipairs(ui) do
+    if child == plugin then
+        in_chain = true
+    end
+end
+T.check(in_chain, "plugin registered in the UI event chain")
+
+-- --------------------------------------- 13. upload default and migration
+
+store.tomedown = { exports = { ["/x.md"] = "h" } }
+plugin:migrateDefaults()
+T.check(store.tomedown.upload == true,
+    "install that already exported keeps upload on")
+
+store.tomedown = { exports = { ["/x.md"] = "h" }, upload = false }
+plugin:migrateDefaults()
+T.check(store.tomedown.upload == false, "explicit upload off is respected")
+
+store.tomedown = { server = SERVER }
+plugin:migrateDefaults()
+T.check(store.tomedown.upload == nil, "fresh install starts with upload off")
 
 T.finish("test_main")

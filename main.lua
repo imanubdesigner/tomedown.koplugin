@@ -14,12 +14,15 @@ local BookInfo = require("apps/filemanager/filemanagerbookinfo")
 local BookList = require("ui/widget/booklist")
 local ConfirmBox = require("ui/widget/confirmbox")
 local DataStorage = require("datastorage")
+local Device = require("device")
 local InfoMessage = require("ui/widget/infomessage")
 local InputDialog = require("ui/widget/inputdialog")
+local NetworkMgr = require("ui/network/manager")
 local Notification = require("ui/widget/notification")
 local UIManager = require("ui/uimanager")
 local WidgetContainer = require("ui/widget/container/widgetcontainer")
 local logger = require("logger")
+local time = require("ui/time")
 local util = require("util")
 local ffiUtil = require("ffi/util")
 local md5 = require("ffi/sha2").md5
@@ -599,15 +602,63 @@ end
 
 -- export
 
+-- files written locally but not yet in the cloud (offline export, upload
+-- failure, export during suspend): remembered across restarts so that the
+-- next connection can upload only those
+function MdBook:markPendingUploads(paths)
+    local pending = getSetting("pending_uploads", {})
+    local changed = false
+    for __, path in ipairs(paths) do
+        if not pending[path] then
+            pending[path] = true
+            changed = true
+        end
+    end
+    if changed then
+        setSetting("pending_uploads", pending)
+        if G_reader_settings.flush then
+            G_reader_settings:flush()
+        end
+    end
+end
+
+function MdBook:clearPendingUploads(paths)
+    local pending = getSetting("pending_uploads", {})
+    local changed = false
+    for __, path in ipairs(paths) do
+        if pending[path] then
+            pending[path] = nil
+            changed = true
+        end
+    end
+    if changed then
+        setSetting("pending_uploads", pending)
+    end
+end
+
 function MdBook:runExport(files, opts)
     opts = opts or {}
+    if opts.auto then
+        -- close and suspend only export what changed since last time
+        opts.only_updated = true
+    end
+    -- suspend: write locally and stay completely silent (no widgets, no
+    -- network: the device is about to sleep)
+    local silent = opts.auto == "suspend"
     self.book_cache = {}
+    local t0 = time.now()
 
     local dir = self:getLocalDir()
     util.makePath(dir)
     local with_index = getSetting("with_index", true)
 
-    local info = self:showProgress(opts.progress_text or _("Export in progress…"))
+    local info
+    if not silent and opts.auto ~= "close" then
+        -- auto close: one book straight from the .sdr, the export is
+        -- milliseconds - the widget would only flash one more e-ink
+        -- refresh between the close and the result notification
+        info = self:showProgress(opts.progress_text or _("Export in progress…"))
+    end
 
     local export_records = getSetting("exports", {})
     local written, errors = {}, {}
@@ -646,6 +697,8 @@ function MdBook:runExport(files, opts)
             end
         end
     end
+    local ms_books = time.to_ms(time.since(t0))
+    local t1 = time.now()
 
     if with_index then
         local index_path = dir .. "/" .. INDEX_FILENAME
@@ -659,53 +712,184 @@ function MdBook:runExport(files, opts)
             end
         end
     end
+    local ms_index = time.to_ms(time.since(t1))
 
     setSetting("exports", export_records)
-    UIManager:close(info)
+    if info then
+        UIManager:close(info)
+    end
+    local ms_total = time.to_ms(time.since(t0))
+    logger.info(string.format(
+        "tomedown: export done: exported=%d skipped=%d errors=%d"
+        .. " books=%dms index=%dms rest=%dms total=%dms",
+        exported, skipped, #errors, ms_books, ms_index,
+        ms_total - ms_books - ms_index, ms_total))
+
+    -- two separate results: the local export is reported right away,
+    -- so a reader who never enables the cloud does not wait for an
+    -- upload phase that does not exist for them
+    local function reportExport(offline_pending)
+        if silent then
+            return
+        end
+        -- auto close of a book without new highlights: no message at all
+        if opts.auto == "close" and exported == 0 and #errors == 0 then
+            return
+        end
+        self:showResult(exported, skipped, errors, offline_pending)
+    end
+    local function reportUpload(uploaded, upload_failed)
+        if upload_failed > 0 then
+            UIManager:show(InfoMessage:new{
+                text = T(_("Cloud: %1 uploaded, %2 errors"), uploaded, upload_failed),
+            })
+            return
+        end
+        UIManager:show(Notification:new{
+            text = T(_("Cloud: %1 files uploaded"), uploaded),
+            timeout = 3,
+        })
+    end
 
     local server = self:getServer()
-    if getSetting("upload", true) and server and #written > 0 then
+    local has_upload = getSetting("upload", false) and server and #written > 0
+    local queued = has_upload and (silent or not NetworkMgr:isConnected())
+    if queued then
+        -- no network work now: queue for the next connection
+        self:markPendingUploads(written)
+    end
+    reportExport(queued)
+
+    if has_upload and not queued then
         -- stays open for the whole upload phase, retries included
         -- with backoff: without this the screen stays silent for minutes
         local upload_info = self:showProgress(T(_("Uploading %1 files to the cloud…"), #written))
         self:uploadPaths(server, written, function(ok_count, fail_count, failed)
             UIManager:close(upload_info)
-            self:showResult(exported, skipped, errors, ok_count, fail_count)
+            if #failed > 0 then
+                self:markPendingUploads(failed)
+            end
+            local failed_set = {}
+            for __, path in ipairs(failed) do
+                failed_set[path] = true
+            end
+            local ok_paths = {}
+            for __, path in ipairs(written) do
+                if not failed_set[path] then
+                    ok_paths[#ok_paths + 1] = path
+                end
+            end
+            self:clearPendingUploads(ok_paths)
+            reportUpload(ok_count, fail_count)
         end)
-    else
-        self:showResult(exported, skipped, errors, nil, nil)
     end
 end
 
-function MdBook:showResult(exported, skipped, errors, uploaded, upload_failed)
+--- The local outcome: a toast right after the export finishes, an
+-- InfoMessage (stays on screen) when something went wrong. The cloud
+-- reports separately, in reportUpload's own notification.
+function MdBook:showResult(exported, skipped, errors, offline_pending)
     local lines = {}
     if exported > 0 then
-        lines[#lines + 1] = T(_("%1 files exported"), exported)
+        if offline_pending then
+            lines[#lines + 1] = T(_("%1 files exported — upload when online"), exported)
+        else
+            lines[#lines + 1] = T(_("%1 files exported locally"), exported)
+        end
     else
         lines[#lines + 1] = _("No files exported")
     end
     if skipped > 0 then
         lines[#lines + 1] = T(_("%1 files unchanged, skipped"), skipped)
     end
-    if uploaded then
-        if upload_failed > 0 then
-            lines[#lines + 1] = T(_("Cloud: %1 uploaded, %2 errors"), uploaded, upload_failed)
-        else
-            lines[#lines + 1] = T(_("Cloud: %1 files uploaded"), uploaded)
-        end
-    end
     if #errors > 0 then
         lines[#lines + 1] = _("Errors:") .. "\n" .. table.concat(errors, "\n")
-    end
-
-    if #errors > 0 or (uploaded and upload_failed > 0) then
         UIManager:show(InfoMessage:new{ text = table.concat(lines, "\n") })
-    else
-        UIManager:show(Notification:new{
-            text = table.concat(lines, " · "),
-            timeout = 3,
-        })
+        return
     end
+    UIManager:show(Notification:new{
+        text = table.concat(lines, " · "),
+        timeout = 3,
+    })
+end
+
+-- pending uploads: flushed when the connection comes back (NetworkConnected),
+-- when KOReader wakes up and at plugin start, so an export made offline finds
+-- the network at the next opportunity without any prompt
+
+function MdBook:schedulePendingFlush()
+    if self._flush_scheduled or self._flushing then
+        return
+    end
+    if not getSetting("upload", false) then
+        return
+    end
+    if next(getSetting("pending_uploads", {})) == nil then
+        return
+    end
+    if not NetworkMgr:isConnected() then
+        return
+    end
+    self._flush_scheduled = true
+    UIManager:scheduleIn(1, function()
+        self._flush_scheduled = false
+        self:flushPendingUploads()
+    end)
+end
+
+function MdBook:flushPendingUploads()
+    if self._flushing or not getSetting("upload", false) then
+        return
+    end
+    local pending = getSetting("pending_uploads", {})
+    local paths = {}
+    for path in pairs(pending) do
+        if lfs.attributes(path, "mode") == "file" then
+            paths[#paths + 1] = path
+        else
+            -- the file was deleted locally: nothing to upload
+            pending[path] = nil
+        end
+    end
+    if #paths == 0 then
+        setSetting("pending_uploads", pending)
+        return
+    end
+    if not NetworkMgr:isConnected() then
+        return
+    end
+    local server = self:getServer()
+    if not server then
+        return
+    end
+    table.sort(paths)
+    self._flushing = true
+    local upload_info = self:showProgress(T(_("Uploading %1 files to the cloud…"), #paths))
+    self:uploadPaths(server, paths, function(ok_count, fail_count, failed)
+        UIManager:close(upload_info)
+        self._flushing = false
+        local failed_set = {}
+        for __, path in ipairs(failed) do
+            failed_set[path] = true
+        end
+        local ok_paths = {}
+        for __, path in ipairs(paths) do
+            if not failed_set[path] then
+                ok_paths[#ok_paths + 1] = path
+            end
+        end
+        self:clearPendingUploads(ok_paths)
+        if fail_count > 0 then
+            UIManager:show(InfoMessage:new{
+                text = T(_("Cloud: %1 uploaded, %2 errors"), ok_count, fail_count),
+            })
+        else
+            UIManager:show(Notification:new{
+                text = T(_("Cloud: %1 files uploaded"), ok_count),
+                timeout = 3,
+            })
+        end
+    end)
 end
 
 function MdBook:reuploadAll(touchmenu)
@@ -903,7 +1087,7 @@ function MdBook:genPickerMenu()
             checked_func = function()
                 return selected[book.file] or nil
             end,
-            check_callback_updates_menu = true,
+            keep_menu_open = true,
             callback = function()
                 if selected[book.file] then
                     selected[book.file] = nil
@@ -917,19 +1101,32 @@ function MdBook:genPickerMenu()
     return items
 end
 
+--- Label of a group row: a Nerd Font glyph from the symbols font KOReader
+-- already ships, two spaces, then the label. The glyph stays outside the
+-- translated string, so .po files never see it. The code points are in
+-- the Private Use Area on purpose (anything else risks missing glyphs in
+-- other fonts) - the same rule Bookshelf's menus follow.
+local function withIcon(glyph, text)
+    return glyph .. "  " .. text
+end
+
+--- Settings: three groups (the structure Bookshelf uses). About lives
+-- in the main menu right under Settings. Every setting keeps its own
+-- row; the checkable ones keep their keep_menu_open so KOReader
+-- refreshes the tick in place.
 function MdBook:genSettingsMenu()
-    return {
+    local cloud = {
         {
             text = _("Upload to cloud"),
             enabled_func = function()
                 return self:hasServer()
             end,
             checked_func = function()
-                return self:hasServer() and getSetting("upload", true)
+                return self:hasServer() and getSetting("upload", false)
             end,
-            check_callback_updates_menu = true,
+            keep_menu_open = true,
             callback = function()
-                setSetting("upload", not getSetting("upload", true))
+                setSetting("upload", not getSetting("upload", false))
             end,
         },
         {
@@ -962,8 +1159,9 @@ function MdBook:genSettingsMenu()
             callback = function(touchmenu)
                 self:editRemoteFolder(touchmenu)
             end,
-            separator = true,
         },
+    }
+    local files = {
         {
             text_func = function()
                 return T(_("Local folder: %1"), self:getLocalDir())
@@ -977,7 +1175,7 @@ function MdBook:genSettingsMenu()
             checked_func = function()
                 return getSetting("with_index", true)
             end,
-            check_callback_updates_menu = true,
+            keep_menu_open = true,
             callback = function()
                 setSetting("with_index", not getSetting("with_index", true))
             end,
@@ -987,43 +1185,360 @@ function MdBook:genSettingsMenu()
             checked_func = function()
                 return getSetting("include_bookmarks", false)
             end,
-            check_callback_updates_menu = true,
+            keep_menu_open = true,
             callback = function()
                 setSetting("include_bookmarks", not getSetting("include_bookmarks", false))
             end,
             separator = true,
         },
         {
-            text_func = function()
-                local version = Update.getInstalledVersion()
-                local latest = Update.getAvailableVersion()
-                if latest then
-                    return T(_("Version %1 — v%2 available"), version, latest)
-                end
-                return T(_("Version %1"), version)
+            -- a behaviour toggle, not a file option: kept apart by the
+            -- separator, no icon (the inside of Settings stays text-only)
+            text = _("Auto-export on close"),
+            checked_func = function()
+                return getSetting("auto_export", false)
+            end,
+            keep_menu_open = true,
+            callback = function()
+                setSetting("auto_export",
+                    not getSetting("auto_export", false))
             end,
         },
+    }
+    -- Developer updates: everything that is not meant for daily use,
+    -- in its own submenu. Beta Releases first; while it is ticked a
+    -- beta "Check for updates" sits right below it, then a separator,
+    -- the way back to stable and the installed version as a plain
+    -- grey label. The row list is rebuilt whenever the submenu opens
+    -- and in place when the toggle flips (TouchMenu redraws the table
+    -- after the callback), so the beta check appears at once.
+    local developer_table
+    local function developerItems()
+        local beta_on = getSetting("beta_releases", false)
+        local items = {
+            {
+                text = _("Beta Releases"),
+                checked_func = function()
+                    return getSetting("beta_releases", false)
+                end,
+                keep_menu_open = true,
+                callback = function(touch_menu)
+                    setSetting("beta_releases",
+                        not getSetting("beta_releases", false))
+                    Update.clearAvailableCache()
+                    -- the submenu that is open IS this table: rebuild
+                    -- it in place so the check row shows up or goes
+                    -- away without leaving the menu
+                    if touch_menu
+                            and touch_menu.item_table == developer_table then
+                        local fresh = developerItems()
+                        for i = #developer_table, 1, -1 do
+                            developer_table[i] = nil
+                        end
+                        for _, item in ipairs(fresh) do
+                            developer_table[#developer_table + 1] = item
+                        end
+                    end
+                end,
+                separator = not beta_on,
+            },
+        }
+        if beta_on then
+            items[#items + 1] = {
+                text = _("Check for updates"),
+                callback = function()
+                    Update.check(true)
+                end,
+                separator = true,
+            }
+        end
+        items[#items + 1] = {
+            -- the cartoon bomb (U+ED8F): the reset blows the beta up
+            text = withIcon("\xEE\xB6\x8F", _("Reset to latest stable release")),
+            callback = function()
+                Update.resetToStable()
+            end,
+        }
+        items[#items + 1] = {
+            text_func = function()
+                local current = Update.getInstalledVersion()
+                local kind = current:find("-", 1, true)
+                    and _("Beta") or _("Release")
+                return T(_("Installed: v%1 (%2)"), current, kind)
+            end,
+            enabled = false,
+        }
+        return items
+    end
+    local updates = {
         {
-            text = _("Check for updates…"),
+            text_func = function()
+                local current = Update.getInstalledVersion()
+                local available = Update.getAvailableVersion()
+                if available then
+                    return T(_("Update available: v%1 → v%2"), current, available)
+                end
+                return T(_("Check for updates (v%1)"), current)
+            end,
             callback = function()
                 Update.check()
             end,
+        },
+        {
+            text = _("View changelog"),
+            callback = function()
+                Update.showChangelog()
+            end,
+            separator = true,
         },
         {
             text = _("Check for updates in background"),
             checked_func = function()
                 return getSetting("update_check", false)
             end,
-            check_callback_updates_menu = true,
+            keep_menu_open = true,
             callback = function()
                 setSetting("update_check", not getSetting("update_check", false))
             end,
         },
+        {
+            text = _("Developer updates"),
+            sub_item_table_func = function()
+                developer_table = developerItems()
+                return developer_table
+            end,
+        },
     }
+    return {
+        { text = withIcon("\xEE\xB4\xBE", _("Cloud")), -- cloud-sync
+            sub_item_table = cloud },
+        { text = withIcon("\xEF\x83\xB6", _("Markdown files")), -- file-text
+            sub_item_table = files },
+        { text = withIcon("\xEE\xB6\xAE", _("Updates")), -- update
+            sub_item_table = updates },
+    }
+end
+
+--- About: the popup Bookshelf shows - the logo, the installed version,
+-- the description from _meta.lua and the tappable GitHub URL, centred
+-- on the screen. No buttons; tapping outside the frame (or Back) closes
+-- it. The logo lives in assets/ (SVG or PNG) and is only shown when
+-- the file is there, so a copy of the plugin without it still shows
+-- the rest.
+function MdBook:showAbout()
+    local src = debug.getinfo(1, "S").source
+    local plugin_dir
+    if src:sub(1, 1) == "@" then
+        plugin_dir = src:sub(2):match("^(.*)/[^/]+$")
+    end
+    local version = Update.getInstalledVersion()
+    local description = ""
+    if plugin_dir then
+        local ok, meta = pcall(dofile, plugin_dir .. "/_meta.lua")
+        if ok and type(meta) == "table" and meta.description then
+            description = meta.description
+        end
+    end
+
+    -- Hard-coded English URL; not translatable. Display form drops the
+    -- https:// prefix; the full URL with the scheme is what
+    -- Device:openLink and the clipboard receive on tap.
+    local GITHUB_URL_DISPLAY = "github.com/imanubdesigner/tomedown.koplugin"
+    local GITHUB_URL = "https://github.com/imanubdesigner/tomedown.koplugin"
+
+    local Screen = Device.screen
+    local Font = require("ui/font")
+    local Geom = require("ui/geometry")
+    local Size = require("ui/size")
+    local Blitbuffer = require("ffi/blitbuffer")
+    local FrameContainer = require("ui/widget/container/framecontainer")
+    local CenterContainer = require("ui/widget/container/centercontainer")
+    local MovableContainer = require("ui/widget/container/movablecontainer")
+    local InputContainer = require("ui/widget/container/inputcontainer")
+    local VerticalGroup = require("ui/widget/verticalgroup")
+    local VerticalSpan = require("ui/widget/verticalspan")
+    local TextBoxWidget = require("ui/widget/textboxwidget")
+    local TextWidget = require("ui/widget/textwidget")
+    local Button = require("ui/widget/button")
+    local GestureRange = require("ui/gesturerange")
+
+    local sw, sh = Screen:getWidth(), Screen:getHeight()
+    -- Frame target: ~80% of width on phone-sized portraits, capped so
+    -- it doesn't sprawl on landscape / tablet sizes
+    local frame_w = math.min(math.floor(sw * 0.8), Screen:scaleBySize(420))
+    local FRAME_PAD = Screen:scaleBySize(24)
+    local content_w = frame_w - FRAME_PAD * 2
+
+    local column = VerticalGroup:new{ align = "center" }
+
+    -- Logo at the top, centred: SVG preferred (scales to any density),
+    -- PNG as a fallback. alpha=true so a transparent background stays
+    -- transparent instead of rendering as opaque black
+    -- Native size from the file's own header (SVG viewBox/width/height):
+    -- passing width alone would leave ImageWidget reserve a square box
+    -- with empty bands above and below the logo
+    local function imageSize(path)
+        local f = io.open(path, "rb")
+        if not f then
+            return nil
+        end
+        local head = f:read(4096)
+        f:close()
+        if not head then
+            return nil
+        end
+        local w, h = head:match(
+            'viewBox%s*=%s*"%s*[%-%d%.]+%s+[%-%d%.]+%s+([%-%d%.]+)%s+([%-%d%.]+)%"')
+        if not w then
+            w = head:match('width%s*=%s*"([%d%.]+)"')
+            h = head:match('height%s*=%s*"([%d%.]+)"')
+        end
+        w, h = tonumber(w), tonumber(h)
+        if not w or not h or w <= 0 or h <= 0 then
+            return nil
+        end
+        return w, h
+    end
+    if plugin_dir then
+        local ok_lfs, lfs = pcall(require, "libs/libkoreader-lfs")
+        if ok_lfs and lfs and lfs.attributes then
+            for __, name in ipairs({ "logo.svg", "logo.png" }) do
+                local path = plugin_dir .. "/assets/" .. name
+                if lfs.attributes(path) then
+                    local ImageWidget = require("ui/widget/imagewidget")
+                    local logo = {
+                        file = path,
+                        width = math.min(content_w, Screen:scaleBySize(220)),
+                        scale_factor = 0,
+                        alpha = true,
+                    }
+                    local nat_w, nat_h = imageSize(path)
+                    if nat_w and nat_h then
+                        logo.height = math.floor(logo.width * nat_h / nat_w + 0.5)
+                    end
+                    column[#column + 1] = ImageWidget:new(logo)
+                    column[#column + 1] = VerticalSpan:new{
+                        width = Size.padding.default,
+                    }
+                    break
+                end
+            end
+        end
+    end
+
+    -- Version-only line: the logo carries the name, the digits stand
+    -- alone; sourced live from _meta.lua
+    column[#column + 1] = TextWidget:new{
+        text = "v" .. version,
+        face = Font:getFace("cfont", 16),
+    }
+    column[#column + 1] = VerticalSpan:new{ width = Size.padding.large }
+    column[#column + 1] = TextBoxWidget:new{
+        text = description,
+        face = Font:getFace("cfont", 16),
+        width = content_w,
+        alignment = "center",
+    }
+    column[#column + 1] = VerticalSpan:new{ width = Size.padding.large }
+    -- Tappable URL: Device:openLink where it exists (SDL/Android); on
+    -- the e-reader the URL goes to KOReader's internal clipboard with
+    -- a brief Notification instead (no browser to open)
+    local function open_github()
+        local ok = false
+        if Device.openLink then
+            local ok_call, ret = pcall(function() return Device:openLink(GITHUB_URL) end)
+            if ok_call and ret then
+                ok = true
+            end
+        end
+        if not ok and Device.input and Device.input.setClipboardText then
+            pcall(function() Device.input.setClipboardText(GITHUB_URL) end)
+            UIManager:show(Notification:new{
+                text = _("Link copied to clipboard"),
+            })
+        end
+    end
+    column[#column + 1] = Button:new{
+        text = GITHUB_URL_DISPLAY,
+        bordersize = 0,
+        padding = 0,
+        margin = 0,
+        text_font_face = "cfont",
+        text_font_size = 14,
+        callback = open_github,
+    }
+
+    local frame = FrameContainer:new{
+        radius = Size.radius.window,
+        padding = FRAME_PAD,
+        padding_top = math.floor(FRAME_PAD * 0.5),
+        margin = 0,
+        background = Blitbuffer.COLOR_WHITE,
+        column,
+    }
+
+    local dialog
+    dialog = InputContainer:new{
+        align = "center",
+        dimen = Geom:new{ x = 0, y = 0, w = sw, h = sh },
+        CenterContainer:new{
+            dimen = Geom:new{ w = sw, h = sh },
+            MovableContainer:new{ frame },
+        },
+    }
+    if Device:isTouchDevice() then
+        dialog.ges_events = {
+            TapClose = { GestureRange:new{
+                ges = "tap",
+                range = Geom:new{ x = 0, y = 0, w = sw, h = sh },
+            } },
+        }
+        dialog.onTapClose = function(self_d, _arg, ges_ev)
+            if not frame.dimen or ges_ev.pos:notIntersectWith(frame.dimen) then
+                UIManager:close(self_d)
+            end
+            return true
+        end
+    end
+    if Device:hasKeys() then
+        dialog.key_events = { Close = { { Device.input.group.Back } } }
+        dialog.onClose = function(self_d)
+            UIManager:close(self_d)
+            return true
+        end
+    end
+
+    UIManager:show(dialog)
+end
+
+--- One-time default for "Upload to cloud": a fresh install starts with
+-- it off (local-first), while anyone who has already exported keeps the
+-- old behaviour (on) unless they had explicitly chosen otherwise.
+function MdBook:migrateDefaults()
+    local settings = G_reader_settings:readSetting(SETTINGS_KEY)
+    if type(settings) == "table" and settings.upload == nil
+            and settings.exports ~= nil then
+        settings.upload = true
+        G_reader_settings:saveSetting(SETTINGS_KEY, settings)
+    end
 end
 
 function MdBook:init()
     self.ui.menu:registerToMainMenu(self)
+    -- ensure the plugin is in the UI event chain (same guard as
+    -- AnnotationSync), so onCloseDocument/onSuspend/... reach it
+    local found = false
+    for _, child in ipairs(self.ui) do
+        if child == self then
+            found = true
+            break
+        end
+    end
+    if not found then
+        table.insert(self.ui, self)
+    end
+    -- before anything reads the upload default (the pending flush below)
+    self:migrateDefaults()
     if getSetting("update_check", false) then
         -- quiet check shortly after KOReader starts; the same check also
         -- runs when the menu is opened (both throttled to once an hour)
@@ -1031,6 +1546,51 @@ function MdBook:init()
             Update.checkBackground()
         end)
     end
+    -- pending uploads from an offline export: catch up right away if the
+    -- network is already up (no NetworkConnected event will fire then)
+    self:schedulePendingFlush()
+end
+
+-- auto-export (first row of the Tomedown menu, off by default)
+
+function MdBook:onCloseDocument()
+    if not getSetting("auto_export", false) then
+        return
+    end
+    local doc = self.ui and self.ui.document
+    local path = doc and doc.file
+    if not path then
+        return
+    end
+    -- let the reader finish closing (and flush the .sdr) first
+    local closed_at = time.now()
+    UIManager:scheduleIn(1, function()
+        logger.info(string.format(
+            "tomedown: auto export starts %.2fs after the close",
+            time.to_ms(time.since(closed_at)) / 1000))
+        self:runExport({ path }, { auto = "close" })
+    end)
+end
+
+function MdBook:onSuspend()
+    if not getSetting("auto_export", false) then
+        return
+    end
+    local doc = self.ui and self.ui.document
+    local path = doc and doc.file
+    if not path then
+        return
+    end
+    -- synchronous and silent: no widget, no network right before sleep
+    self:runExport({ path }, { auto = "suspend" })
+end
+
+function MdBook:onResume()
+    self:schedulePendingFlush()
+end
+
+function MdBook:onNetworkConnected()
+    self:schedulePendingFlush()
 end
 
 -- first-run onboarding: offer to import the whole reading history
@@ -1073,11 +1633,15 @@ function MdBook:addToMainMenu(menu_items)
         end)
     end
     self:maybePromptLibraryImport()
+    -- Every row of the main menu carries a Nerd Font glyph (from
+    -- nerdfonts/symbols.ttf, KOReader's own fallback font). Settings
+    -- keeps its word plus the icon; inside, only the three group
+    -- labels are iconified - no glyph is ever added to a submenu.
     menu_items.tomedown = {
         text = "Tomedown",
         sub_item_table = {
             {
-                text = _("Export current book"),
+                text = withIcon("\xEE\x89\xBC", _("Export current book")),
                 enabled_func = function()
                     local file = self:getCurrentFile()
                     return file ~= nil and BookList.hasBookBeenOpened(file)
@@ -1094,7 +1658,7 @@ function MdBook:addToMainMenu(menu_items)
                 end,
             },
             {
-                text = _("Only updated"),
+                text = withIcon("\xEE\xA4\xB5", _("Export only what changed")),
                 enabled_func = function()
                     return #self:listBookFiles() > 0
                 end,
@@ -1106,13 +1670,13 @@ function MdBook:addToMainMenu(menu_items)
                 end,
             },
             {
-                text = _("Choose books…"),
+                text = withIcon("\xEE\xB9\x94", _("Choose books…")),
                 sub_item_table_func = function()
                     return self:genPickerMenu()
                 end,
             },
             {
-                text = _("Import all books from history"),
+                text = withIcon("\xEE\xA7\x99", _("Import all books from history")),
                 enabled_func = function()
                     return #self:listBookFiles() > 0
                 end,
@@ -1125,7 +1689,7 @@ function MdBook:addToMainMenu(menu_items)
                 separator = true,
             },
             {
-                text = _("Reload everything to the cloud"),
+                text = withIcon("\xEE\xB4\xBE", _("Reload everything to the cloud")),
                 enabled_func = function()
                     return self:hasServer()
                 end,
@@ -1134,9 +1698,16 @@ function MdBook:addToMainMenu(menu_items)
                 end,
             },
             {
-                text = _("Settings"),
+                text = withIcon("\xEF\x80\x93", _("Settings")),
                 sub_item_table_func = function()
                     return self:genSettingsMenu()
+                end,
+                separator = true,
+            },
+            {
+                text = withIcon("\xEE\xA7\xBC", _("About")),
+                callback = function()
+                    self:showAbout()
                 end,
             },
         },

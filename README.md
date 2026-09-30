@@ -89,19 +89,42 @@ first export and optional Remotely Save in Obsidian — is in
 
 ## Configuration (one-off)
 
-☰ menu → **Tomedown** → **Settings**:
+☰ menu → **Tomedown** → **Settings**, in three groups:
+
+**Cloud**
 
 | Entry | What to do |
 |---|---|
-| *Upload to cloud* | leave it ticked (it is by default); any WebDAV/Dropbox/FTP server works |
+| *Upload to cloud* | any WebDAV/Dropbox/FTP server works; on by default for installs that have already exported, off on a fresh install |
 | *Server and folder…* | opens the Cloud storage browser: pick your server (the examples use Koofr), then navigate to the final folder (e.g. `Bookshelf/Kindle`) and tap **Choose** |
 | *Remote folder…* | only if you want to override the folder chosen above (e.g. `/Bookshelf/Kindle`) |
+
+**Markdown files**
+
+| Entry | What to do |
+|---|---|
 | *Local folder* | defaults to `clipboard/tomedown` inside KOReader's data folder; tap it to browse with KOReader's folder picker (long-press a folder to choose it) |
 | *Generate the index 00 - Index.md* | table with internal links, author, highlight count and last export date |
 | *Include page bookmarks* | off by default: adds a `## Page bookmarks` section (bookmarked page + note) after the highlights |
-| *Version* | the installed version, read from `_meta.lua` |
-| *Check for updates…* | asks GitHub for newer releases, shows their notes and can install the update right away (**Update and restart**) |
-| *Check for updates in background* | off by default: when enabled, a quiet check runs when KOReader starts and when the menu opens (at most once an hour) and notifies you of a new release |
+| *Auto-export on close* | off by default: exports the book when you close it, and again (silently, no network) before the device suspends |
+
+**Updates**
+
+| Entry | What to do |
+|---|---|
+| *Check for updates (vX)* | the row doubles as the version display: it asks GitHub for newer stable releases, shows their notes and can install the update right away (**Update and restart**) |
+| *View changelog* | pages through the notes of every release on GitHub, newest first; the list is cached when a check runs, so the viewer also works offline, and **Refresh** fetches it again |
+| *Check for updates in background* | off by default: when enabled, a quiet check runs when KOReader starts and when the menu opens (at most once an hour) and notifies you of a new stable release |
+| *Developer updates* | a submenu with everything that is not meant for daily use (below) |
+
+**Developer updates**
+
+| Entry | What to do |
+|---|---|
+| *Beta Releases* | off by default: while ticked, the *Check for updates* row below appears and the changelog lists prereleases (tags like `0.4.0-beta.1`) too |
+| *Check for updates* | only visible while *Beta Releases* is ticked: checks GitHub for newer prereleases right away and installs them the same way as a stable update |
+| *Reset to latest stable release* | installs the newest stable release even when your install is a beta newer than it — the way back from a beta; it also unticks *Beta Releases* so the beta is not offered again |
+| *Installed: vX (Release/Beta)* | the installed version as a plain label |
 
 Everything is stored in KOReader's settings, so it applies to all books.
 
@@ -110,6 +133,9 @@ Everything is stored in KOReader's settings, so it applies to all books.
 The cloud server is **inherited automatically** from the one AnnotationSync
 already saved in KOReader (`Cloud settings`): *Server and folder…* shows
 exactly that. If it is the right folder, you do not have to touch anything.
+On a fresh install *Upload to cloud* starts off — tick it once you are
+ready to send the `.md` files (installs that have already exported keep
+it ticked).
 
 If AnnotationSync uploads its `.json` files somewhere other than where you
 want the `.md` files (say `/Bookshelf/Kindle`), set **Remote folder…** and
@@ -121,7 +147,7 @@ reach Obsidian.
 
 ### Updates
 
-*Check for updates…* compares the installed version with the releases
+*Check for updates (vX)* compares the installed version with the releases
 on GitHub and shows the notes of **every** release newer than yours, so
 someone updating from 0.2.0 to 1.0 reads the fixes of 0.3.0, 0.3.1 and
 1.0 in one window. When your KOReader renders Markdown, the notes keep
@@ -133,20 +159,42 @@ download or the unpacking fails, the releases page opens instead so the
 zip can be taken by hand (see *Installation*) — that works from any
 older version.
 
+Tick **Beta Releases** (*Settings → Developer updates*) to get the
+beta channel: a second **Check for updates** appears right below the
+box and offers prereleases (tags like `0.4.0-beta.1`) — the way to try
+a new feature before its final release. The check in *Settings →
+Updates* stays on stable releases whatever the toggle says, and
+unticking *Beta Releases* hides the beta check again. A beta install
+always sees the final release of the
+same version even with the box unticked: checking for updates from
+`0.4.0-beta.1` offers `0.4.0`.
+
+**View changelog** pages through the notes of every release GitHub
+knows (newest first, up to 25 of them). The list is saved whenever a
+check runs, so the viewer also works without a connection, and
+**Refresh** fetches it again. With *Beta Releases* ticked the
+prereleases are listed too.
+
+**Reset to latest stable release** (*Settings → Developer updates*) is
+the way back from a beta: it installs the newest stable release even
+when your beta install is newer than it (the check only ever offers
+*newer* versions). Confirm, and it also unticks *Beta Releases* so the
+same beta is not offered again on the next check.
+
 When you publish a release, bump `version` in `_meta.lua` to the tag
 without the `v`.
 
 The updater is built to keep working from old installs: repository and
-API URL never change, tags stay `vX.Y.Z`, release zips keep the
-`tomedown.koplugin/` top-level folder, and settings keys are never
-renamed.
+API URL never change, tags stay `vX.Y.Z` (prereleases `vX.Y.Z-beta.N`),
+release zips keep the `tomedown.koplugin/` top-level folder, and
+settings keys are never renamed.
 
 ## Usage
 
 ☰ menu → **Tomedown**:
 
 - **Export current book** — only the open book.
-- **Only updated** — exports only the books whose highlights changed since
+- **Export only what changed** — exports only the books whose highlights changed since
   the last export (per-book hash).
 - **Choose books…** — a list with checkboxes: tick the volumes and export
   just those.
@@ -155,6 +203,8 @@ renamed.
 - **Reload everything to the cloud** — re-uploads every file already in the
   local folder (use it after a failed upload).
 - **Settings** — see above.
+- **About** — a popup with the logo, the installed version, the description
+  and the GitHub link (tap the link to open it or copy it).
 
 On a fresh install, the first time you open the menu, Tomedown offers to
 import your whole KOReader reading history in one tap (*Export* / *Not now* — the
@@ -163,6 +213,20 @@ offer is made only once; the menu entry stays available anyway).
 After every export, if *Upload to cloud* is on, the `.md` files and the index
 are uploaded to the chosen server automatically. No image folder is created:
 only `*.md` files are uploaded (books + `00 - Index.md`).
+
+### Auto-export and offline reading
+
+With *Auto-export on close* enabled, closing a book exports it on the spot;
+suspending the device does the same right before sleep — silently, without
+any widget and without touching the network.
+
+No connection? The export still happens locally and the files wait in a
+pending list. As soon as KOReader comes back online (the connection event
+is enough — no prompt, no dialog), **only those pending files** are
+uploaded: books already in the cloud and unchanged are never re-sent, and
+a book whose highlights changed since its last upload is uploaded again,
+overwriting the old copy. Failed uploads stay pending and are retried on
+the next connection.
 
 ### Upload retries
 

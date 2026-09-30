@@ -28,8 +28,10 @@ setLang("it")
 T.check(i18n("Book index") == "Indice dei libri", "it: Book index")
 T.check(i18n("No chapter") == "Senza capitolo", "it: No chapter")
 T.check(i18n("Export in progress…") == "Esportazione in corso…", "it: progress message")
-T.check(i18n("%1 files exported") == "%1 file esportati", "it: notification with placeholder")
-T.check(i18n("Check for updates…") == "Controlla aggiornamenti…", "it: check for updates row")
+T.check(i18n("%1 files exported locally") == "%1 file esportati localmente",
+    "it: notification with placeholder")
+T.check(i18n("Check for updates (v%1)") == "Controlla aggiornamenti (v%1)",
+    "it: check for updates row")
 T.check(i18n("Update available!") == "Aggiornamento disponibile!", "it: update dialog title")
 T.check(i18n("stringa non presente") == "stringa non presente", "it: falls back to msgid")
 
