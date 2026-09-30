@@ -333,6 +333,9 @@ tags:
 - the page is the stable page number (`pageref`) when available, otherwise
   the running page number; the date under each highlight includes the
   time (`HH:MM`)
+- files exported by an older version of tomedown keep their old look
+  until they are rebuilt: run *Import all books from history* once and
+  every file is rewritten in the current format
 - the index uses wiki links (`[[…]]`), opened natively by Obsidian and by
   most Markdown apps:
 
