@@ -39,11 +39,11 @@ T.check(not T.contains(md, "language:"), "no language line when absent")
 T.check(not T.contains(md, "pages:"), "no pages line when absent")
 T.check(not T.contains(md, "status:"), "no status line when absent")
 T.check(not T.contains(md, "progress:"), "no progress line when absent")
-T.check(T.contains(md, "# Blackwater"), "h1 with the title")
-T.check(T.contains(md, "*Michael McDowell*"), "author in italics")
-T.check(T.contains(md, "**2 highlights**"), "highlight count")
-T.check(T.contains(md, "## Capitolo I"), "first chapter")
-T.check(T.contains(md, "## Capitolo II"), "second chapter")
+T.check(not T.contains(md, "# Blackwater"), "no h1 in the body")
+T.check(not T.contains(md, "*Michael McDowell*"), "author stays in the frontmatter only")
+T.check(T.contains(md, "> ## HIGHLIGHTS: 2"), "highlight count as a heading")
+T.check(T.contains(md, "#### Capitolo I"), "first chapter")
+T.check(T.contains(md, "#### Capitolo II"), "second chapter")
 T.check(T.contains(md, "> Prima frase."), "quote 1")
 T.check(T.contains(md, "> Seconda riga."), "quote 2")
 T.check(T.contains(md, "- **p. 10** · 02/09/2026 · note: nota utente"),
@@ -56,13 +56,13 @@ T.check(md:sub(-1) == "\n", "ends with a newline")
 T.check(not T.contains(md, "cover"), "no cover in the markdown")
 T.check(not T.contains(md, "![]("), "no image in the markdown")
 
--- no chapters: no ## sections
+-- no chapters: no #### sections
 local noChapters = render.buildBookMd({
     title = "Senza capitoli",
     count = 1,
     annotations = { { text = "Solo testo", page = "1" } },
 })
-T.check(not T.contains(noChapters, "\n## "), "without chapters no heading appears")
+T.check(not T.contains(noChapters, "\n#### "), "without chapters no heading appears")
 
 -- mixed chapters: annotations without a chapter use the given label
 local mixed = render.buildBookMd({
@@ -73,8 +73,8 @@ local mixed = render.buildBookMd({
         { text = "B" },
     },
 }, { no_chapter_label = "Senza capitolo" })
-T.check(T.contains(mixed, "## Capitolo I"), "chapter present")
-T.check(T.contains(mixed, "## Senza capitolo"), "fallback label")
+T.check(T.contains(mixed, "#### Capitolo I"), "chapter present")
+T.check(T.contains(mixed, "#### Senza capitolo"), "fallback label")
 T.check(not T.contains(mixed, "\n## No chapter"), "no leftover English msgid")
 
 -- multiline note flattened onto one line
@@ -173,16 +173,16 @@ local bmBook = render.buildBookMd({
         { page = "7", date = "02/09/2026" },
     },
 })
-T.check(T.contains(bmBook, "## Page bookmarks"), "bookmarks heading")
+T.check(T.contains(bmBook, "#### Page bookmarks"), "bookmarks heading")
 T.check(T.contains(bmBook, "> Nota segnalibro"), "bookmark note quoted")
 T.check(T.contains(bmBook, "- **p. 5** · 01/09/2026"), "bookmark meta row")
 T.check(T.contains(bmBook, "- **p. 7** · 02/09/2026"), "bookmark without note: meta only")
-T.check(T.contains(bmBook, "**1 highlights**"), "highlight count kept")
+T.check(T.contains(bmBook, "> ## HIGHLIGHTS: 1"), "highlight count kept")
 local iHl = bmBook:find("> Evidenziato", 1, true)
-local iSect = bmBook:find("## Page bookmarks", 1, true)
+local iSect = bmBook:find("#### Page bookmarks", 1, true)
 T.check(iHl and iSect and iHl < iSect, "the section comes after the highlights")
 local quoted = select(2, bmBook:gsub("> ", ""))
-T.check(quoted == 2, "only the highlight and the bookmark note are quoted: " .. quoted)
+T.check(quoted == 3, "stats heading, the highlight and the bookmark note: " .. quoted)
 
 local onlyBookmarks = render.buildBookMd({
     title = "Solo bm",
@@ -190,13 +190,14 @@ local onlyBookmarks = render.buildBookMd({
     annotations = {},
     bookmarks = { { page = "1", date = "01/01/2026" } },
 })
-T.check(not T.contains(onlyBookmarks, "**0 highlights**"), "no zero count line")
-T.check(T.contains(onlyBookmarks, "## Page bookmarks"), "bookmark-only book gets the section")
+T.check(not T.contains(onlyBookmarks, "> ## HIGHLIGHTS: 0"), "no zero count line")
+T.check(T.contains(onlyBookmarks, "#### Page bookmarks"), "bookmark-only book gets the section")
 T.check(not T.contains(md, "Page bookmarks"), "no section without bookmarks")
 
 -- ---------------------------------------------------------------- index
 local index = render.buildIndexMd({}, {})
-T.check(T.contains(index, "# Book index"), "index default title")
+T.check(T.contains(index, 'title: "Book index"'), "index default title in the frontmatter")
+T.check(not T.contains(index, "# Book index"), "no h1 in the index")
 T.check(T.contains(index, "_No exported books with highlights._"), "empty index")
 T.check(T.contains(index, "  - index"), "tag index")
 T.check(T.contains(index, "---\n"), "index frontmatter")
@@ -218,7 +219,7 @@ local rows = render.buildIndexMd({
     },
 }, { title = "Indice dei libri", exported = "2026-09-26" })
 
-T.check(T.contains(rows, "# Indice dei libri"), "index title")
+T.check(not T.contains(rows, "# Indice dei libri"), "no h1 in the index")
 T.check(T.contains(rows, 'title: "Indice dei libri"'), "index frontmatter")
 T.check(T.contains(rows, "| Book | Author | Highlights | Last export |"), "table header")
 T.check(T.contains(rows, "|:---|:---|---:|:---|"), "table separators")
@@ -253,5 +254,32 @@ T.check(render.fmtDate("2026-12-31") == "31/12/2026", "date without time")
 T.check(render.fmtDate("01/02/2026") == "01/02/2026", "already formatted date passes through")
 T.check(render.fmtDate(nil) == "", "nil date is empty")
 T.check(render.fmtDate(42) == "", "non-string date is empty")
+
+-- fmtDateTime
+T.check(render.fmtDateTime("2026-09-02 10:00:00") == "02/09/2026 10:00",
+    "ISO datetime keeps the time")
+T.check(render.fmtDateTime("2026-12-31") == "31/12/2026",
+    "date without time falls back to fmtDate")
+T.check(render.fmtDateTime("01/02/2026") == "01/02/2026",
+    "already formatted date passes through")
+T.check(render.fmtDateTime(nil) == "", "nil datetime is empty")
+T.check(render.fmtDateTime(42) == "", "non-string datetime is empty")
+
+-- series_index only when the book belongs to a series
+local orphan = render.buildBookMd({
+    title = "Orfano",
+    series_index = 4,
+    count = 1,
+    annotations = { { text = "X" } },
+})
+T.check(not T.contains(orphan, "series_index:"), "no series_index without a series")
+local named = render.buildBookMd({
+    title = "Serie senza numero",
+    series = "Saga",
+    count = 1,
+    annotations = { { text = "X" } },
+})
+T.check(T.contains(named, 'series: "Saga"'), "series without an index is kept")
+T.check(not T.contains(named, "series_index:"), "no index line when the index is unknown")
 
 T.finish("test_render")

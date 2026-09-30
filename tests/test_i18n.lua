@@ -85,24 +85,24 @@ local md = render.buildBookMd({
     annotations = { { text = "X" } },
 })
 T.check(T.contains(md, "evidenziati"), "render translates the highlights tag")
-T.check(T.contains(md, "**1 evidenziati**"), "render translates the count")
+T.check(T.contains(md, "> ## EVIDENZIATI: 1"), "render translates the count")
 
 local mixed = render.buildBookMd({
     title = "Libro",
     count = 2,
     annotations = { { text = "X", chapter = "Capitolo I" }, { text = "Y" } },
 }, { no_chapter_label = i18n("No chapter") })
-T.check(T.contains(mixed, "## Senza capitolo"), "chapter label translated")
+T.check(T.contains(mixed, "#### Senza capitolo"), "chapter label translated")
 
 local index = render.buildIndexMd({
     { link = "B", title = "B", author = "A", count = 1, date = "01/01/2026" },
 }, { title = i18n("Book index") })
-T.check(T.contains(index, "# Indice dei libri"), "index title translated")
+T.check(T.contains(index, 'title: "Indice dei libri"'), "index title translated")
 T.check(T.contains(index, "| Libro | Autore | Evidenziati | Ultimo export |"),
     "index header translated")
 
 setLang("en")
-T.check(T.contains(render.buildIndexMd({}, {}), "# Book index"), "back to English")
+T.check(T.contains(render.buildIndexMd({}, {}), 'title: "Book index"'), "back to English")
 
 -- 11. the same render instance sees the language change (no caching)
 setLang("it")

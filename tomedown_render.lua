@@ -41,6 +41,18 @@ function render.fmtDate(dt)
     return dt
 end
 
+-- "2026-09-26 10:11:12" -> "26/09/2026 10:11"
+function render.fmtDateTime(dt)
+    if type(dt) ~= "string" then
+        return ""
+    end
+    local y, m, d, hhmm = dt:match("^(%d%d%d%d)-(%d%d)-(%d%d)[ T](%d%d:%d%d)")
+    if y then
+        return d .. "/" .. m .. "/" .. y .. " " .. hhmm
+    end
+    return render.fmtDate(dt)
+end
+
 -- safe text inside an Obsidian wikilink
 function render.alias(s)
     s = tostring(s or "")
@@ -95,7 +107,7 @@ function render.buildBookMd(book, opts)
     if book.series then
         add("series: " .. yamlQuote(book.series))
     end
-    if book.series_index ~= nil and tostring(book.series_index) ~= "" then
+    if book.series and book.series_index ~= nil and tostring(book.series_index) ~= "" then
         if type(book.series_index) == "number" then
             add("series_index: " .. tostring(book.series_index))
         else
@@ -123,16 +135,10 @@ function render.buildBookMd(book, opts)
         add("  - " .. yamlListItem(kw))
     end
     add("---")
-    add("")
 
-    add("# " .. tostring(book.title or ""))
-    add("")
-    if book.author and book.author ~= "" then
-        add("*" .. tostring(book.author) .. "*")
-        add("")
-    end
     if count > 0 then
-        add("**" .. tostring(count) .. " " .. _("highlights") .. "**")
+        add("")
+        add("> ## " .. _("highlights"):upper() .. ": " .. tostring(count))
     end
 
     local with_chapters = hasAnyChapter(annotations)
@@ -143,7 +149,7 @@ function render.buildBookMd(book, opts)
             local chapter = annotationChapter(a, opts.no_chapter_label)
             if chapter ~= current_chapter then
                 add("")
-                add("## " .. chapter)
+                add("#### " .. chapter)
                 current_chapter = chapter
             end
         end
@@ -175,7 +181,7 @@ function render.buildBookMd(book, opts)
     local bookmarks = book.bookmarks or {}
     if #bookmarks > 0 then
         add("")
-        add("## " .. _("Page bookmarks"))
+        add("#### " .. _("Page bookmarks"))
         for __, b in ipairs(bookmarks) do
             add("")
             if b.text and tostring(b.text) ~= "" then
@@ -221,8 +227,6 @@ function render.buildIndexMd(books, opts)
     add("  - kindle")
     add("  - " .. _("index"))
     add("---")
-    add("")
-    add("# " .. title)
     add("")
 
     if #books == 0 then

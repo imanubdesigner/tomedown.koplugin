@@ -248,7 +248,7 @@ function MdBook:cleanAnnotations(raw)
                     note = trim(item.note),
                     chapter = trim(item.chapter),
                     page = pageLabel(item),
-                    date = render.fmtDate(datetime),
+                    date = render.fmtDateTime(datetime),
                     sort_page = tonumber(item.pageno) or 0,
                     sort_time = tostring(datetime or ""),
                 }
@@ -285,7 +285,7 @@ function MdBook:cleanBookmarks(raw)
             out[#out + 1] = {
                 text = note,
                 page = pageLabel(item),
-                date = render.fmtDate(datetime),
+                date = render.fmtDateTime(datetime),
                 sort_page = tonumber(item.pageno) or 0,
                 sort_time = tostring(datetime or ""),
             }

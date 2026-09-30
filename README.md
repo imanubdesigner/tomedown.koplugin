@@ -125,7 +125,7 @@ first export and optional Remotely Save in Obsidian — is in
 |---|---|
 | *Local folder* | defaults to `clipboard/tomedown` inside KOReader's data folder; tap it to browse with KOReader's folder picker (long-press a folder to choose it) |
 | *Generate the index 00 - Index.md* | table with internal links, author, highlight count and last export date |
-| *Include page bookmarks* | off by default: adds a `## Page bookmarks` section (bookmarked page + note) after the highlights |
+| *Include page bookmarks* | off by default: adds a `#### Page bookmarks` section (bookmarked page + note) after the highlights |
 | *Auto-export on close* | off by default: exports the book when you close it, and again (silently, no network) before the device suspends |
 
 **Updates**
@@ -299,42 +299,40 @@ tags:
   - gothic-fiction
 ---
 
-# Blackwater
+> ## HIGHLIGHTS: 150
 
-*Michael McDowell*
-
-**150 highlights**
-
-## Chapter I
+#### Chapter I
 
 > First highlighted sentence.
 > Second line of the same highlight.
 
-- **p. 10** · 02/09/2026 · note: to reread
+- **p. 10** · 02/09/2026 10:00 · note: to reread
 
 > Another highlight.
 
-- **p. 12** · 03/09/2026
+- **p. 12** · 03/09/2026 11:30
 
-## Page bookmarks
+#### Page bookmarks
 
 > Check the epilogue again
 
-- **p. 120** · 04/09/2026
+- **p. 120** · 04/09/2026 08:15
 ```
 
 - the frontmatter keeps what KOReader knows about the book: `series` and
-  `series_index`, `language`, `pages`, the reading `status`
+  `series_index` (only when the book belongs to a series), `language`,
+  `pages`, the reading `status`
   (`reading` / `abandoned` / `complete`), `progress` and the book's
   keywords appended to `tags`; a field KOReader does not know (ISBN, for
   instance) is simply not there, and unknown fields are omitted
 - **only highlights** are exported by default: page bookmarks and deleted
   annotations are left out — tick *Include page bookmarks* in Settings to
-  get the `## Page bookmarks` section shown above
+  get the `#### Page bookmarks` section shown above
 - the file name matches KOReader's standard exporter (`Author - Title`), so
   it does not clash with exports you already made
 - the page is the stable page number (`pageref`) when available, otherwise
-  the running page number
+  the running page number; the date under each highlight includes the
+  time (`HH:MM`)
 - the index uses wiki links (`[[…]]`), opened natively by Obsidian and by
   most Markdown apps:
 
