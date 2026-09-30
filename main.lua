@@ -1189,6 +1189,20 @@ function MdBook:genSettingsMenu()
             callback = function()
                 setSetting("include_bookmarks", not getSetting("include_bookmarks", false))
             end,
+            separator = true,
+        },
+        {
+            -- a behaviour toggle, not a file option: kept apart by the
+            -- separator, no icon (the inside of Settings stays text-only)
+            text = _("Auto-export on close"),
+            checked_func = function()
+                return getSetting("auto_export", false)
+            end,
+            keep_menu_open = true,
+            callback = function()
+                setSetting("auto_export",
+                    not getSetting("auto_export", false))
+            end,
         },
     }
     -- Developer updates: everything that is not meant for daily use,
@@ -1619,22 +1633,15 @@ function MdBook:addToMainMenu(menu_items)
         end)
     end
     self:maybePromptLibraryImport()
+    -- Every row of the main menu carries a Nerd Font glyph (from
+    -- nerdfonts/symbols.ttf, KOReader's own fallback font). Settings
+    -- keeps its word plus the icon; inside, only the three group
+    -- labels are iconified - no glyph is ever added to a submenu.
     menu_items.tomedown = {
         text = "Tomedown",
         sub_item_table = {
             {
-                text = _("Auto-export on close"),
-                checked_func = function()
-                    return getSetting("auto_export", false)
-                end,
-                keep_menu_open = true,
-                callback = function()
-                    setSetting("auto_export",
-                        not getSetting("auto_export", false))
-                end,
-            },
-            {
-                text = _("Export current book"),
+                text = withIcon("\xEE\x89\xBC", _("Export current book")),
                 enabled_func = function()
                     local file = self:getCurrentFile()
                     return file ~= nil and BookList.hasBookBeenOpened(file)
@@ -1651,7 +1658,7 @@ function MdBook:addToMainMenu(menu_items)
                 end,
             },
             {
-                text = _("Only updated"),
+                text = withIcon("\xEE\xA4\xB5", _("Export only what changed")),
                 enabled_func = function()
                     return #self:listBookFiles() > 0
                 end,
@@ -1663,13 +1670,13 @@ function MdBook:addToMainMenu(menu_items)
                 end,
             },
             {
-                text = _("Choose books…"),
+                text = withIcon("\xEE\xB9\x94", _("Choose books…")),
                 sub_item_table_func = function()
                     return self:genPickerMenu()
                 end,
             },
             {
-                text = _("Import all books from history"),
+                text = withIcon("\xEE\xA7\x99", _("Import all books from history")),
                 enabled_func = function()
                     return #self:listBookFiles() > 0
                 end,
@@ -1682,7 +1689,7 @@ function MdBook:addToMainMenu(menu_items)
                 separator = true,
             },
             {
-                text = _("Reload everything to the cloud"),
+                text = withIcon("\xEE\xB4\xBE", _("Reload everything to the cloud")),
                 enabled_func = function()
                     return self:hasServer()
                 end,
@@ -1691,14 +1698,14 @@ function MdBook:addToMainMenu(menu_items)
                 end,
             },
             {
-                text = _("Settings"),
+                text = withIcon("\xEF\x80\x93", _("Settings")),
                 sub_item_table_func = function()
                     return self:genSettingsMenu()
                 end,
                 separator = true,
             },
             {
-                text = _("About"),
+                text = withIcon("\xEE\xA7\xBC", _("About")),
                 callback = function()
                     self:showAbout()
                 end,

@@ -65,7 +65,7 @@ README's [Configuration](README.md#configuration-one-off) table.
 
 - On a **fresh install**, the first time you open the menu Tomedown offers
   to export your whole reading history in one tap (*Export* / *Not now*).
-- Later: **Export current book** for the open one, **Only updated** for
+- Later: **Export current book** for the open one, **Export only what changed** for
   whatever changed, **Import all books from history** if you skipped the
   offer.
 

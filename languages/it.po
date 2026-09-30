@@ -102,8 +102,8 @@ msgstr "Genera l'indice %1"
 msgid "Export current book"
 msgstr "Esporta libro corrente"
 
-msgid "Only updated"
-msgstr "Solo aggiornati"
+msgid "Export only what changed"
+msgstr "Esporta solo i cambiamenti"
 
 msgid "Choose books…"
 msgstr "Scegli libri…"

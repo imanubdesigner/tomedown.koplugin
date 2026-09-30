@@ -407,16 +407,15 @@ local menu_items = {}
 plugin:addToMainMenu(menu_items)
 T.check(menu_items.tomedown ~= nil, "menu entry registered")
 local sub = menu_items.tomedown.sub_item_table
-T.check(#sub == 8, "main menu entries: " .. #sub)
-T.check(sub[1].text == "Auto-export on close", "menu item 1")
-T.check(sub[2].text == "Export current book", "menu item 2")
-T.check(sub[3].text == "Only updated", "menu item 3")
-T.check(sub[4].text == "Choose books…", "menu item 4")
-T.check(sub[5].text == "Import all books from history", "menu item 5")
-T.check(sub[6].text == "Reload everything to the cloud", "menu item 6")
-T.check(sub[7].text == "Settings", "menu item 7")
-T.check(sub[7].separator == true, "separator before About")
-T.check(sub[8].text == "About", "menu item 8")
+T.check(#sub == 7, "main menu entries: " .. #sub)
+T.check(sub[1].text == "\xEE\x89\xBC  Export current book", "menu item 1")
+T.check(sub[2].text == "\xEE\xA4\xB5  Export only what changed", "menu item 2")
+T.check(sub[3].text == "\xEE\xB9\x94  Choose books…", "menu item 3")
+T.check(sub[4].text == "\xEE\xA7\x99  Import all books from history", "menu item 4")
+T.check(sub[5].text == "\xEE\xB4\xBE  Reload everything to the cloud", "menu item 5")
+T.check(sub[6].text == "\xEF\x80\x93  Settings", "menu item 6 with the cog")
+T.check(sub[6].separator == true, "separator before About")
+T.check(sub[7].text == "\xEE\xA7\xBC  About", "menu item 7")
 
 local cover_entry = false
 local function scanCover(items)
@@ -434,15 +433,14 @@ scanCover(menu_items)
 T.check(not cover_entry, "no menu entry about covers")
 
 ui.document = { file = FILE }
-T.check(sub[2].enabled_func() == true, "export current enabled with the book open")
+T.check(sub[1].enabled_func() == true, "export current enabled with the book open")
 ui.document = nil
 store.lastfile = FILE
-T.check(sub[2].enabled_func() == true, "export current enabled via lastfile")
+T.check(sub[1].enabled_func() == true, "export current enabled via lastfile")
 store.lastfile = nil
-T.check(sub[2].enabled_func() == false, "export current disabled without a file")
+T.check(sub[1].enabled_func() == false, "export current disabled without a file")
 ui.document = { file = nil }
-T.check(sub[5].enabled_func() == true, "all books enabled")
-T.check(sub[1].checked_func() == false, "auto-export off by default")
+T.check(sub[4].enabled_func() == true, "all books enabled")
 
 local settings = plugin:genSettingsMenu()
 T.check(#settings == 3, "settings groups: " .. #settings)
@@ -454,7 +452,7 @@ local cloud = settings[1].sub_item_table
 local files = settings[2].sub_item_table
 local updates = settings[3].sub_item_table
 T.check(#cloud == 3, "cloud rows: " .. #cloud)
-T.check(#files == 3, "markdown files rows: " .. #files)
+T.check(#files == 4, "markdown files rows: " .. #files)
 T.check(#updates == 4, "updates rows: " .. #updates)
 T.check(cloud[1].text == "Upload to cloud", "upload entry")
 T.check(cloud[2].text_func() == "Server and folder: not set", "server not set")
@@ -463,6 +461,10 @@ T.check(T.contains(files[1].text_func(), "clipboard/tomedown"), "default local f
 T.check(T.contains(files[2].text, "00 - Index.md"), "index entry with the file name")
 T.check(files[3].text == "Include page bookmarks", "page bookmarks entry")
 T.check(files[3].checked_func() == false, "page bookmarks off by default")
+T.check(files[3].separator == true, "separator before the auto-export toggle")
+T.check(files[4].text == "Auto-export on close",
+    "auto-export lives in Markdown files")
+T.check(files[4].checked_func() == false, "auto-export off by default")
 T.check(updates[1].text_func() == "Check for updates (v"
         .. Update.getInstalledVersion() .. ")",
     "check row carries the installed version: " .. updates[1].text_func())
@@ -512,7 +514,7 @@ for _, group in ipairs({ sub, cloud, files, updates, developer }) do
 end
 -- the About row opens the Bookshelf-style popup
 local shown_before = #UIManager.shown
-sub[8].callback()
+sub[7].callback()
 T.check(#UIManager.shown == shown_before + 1, "about popup shown")
 local dialog = UIManager.shown[#UIManager.shown]
 T.check(dialog ~= nil and dialog.__widget == "InputContainer",
@@ -975,10 +977,10 @@ T.check(#uploads == 0 and Notification.last_text == nil,
 ui.document = nil
 
 -- toggle on: the close exports after 1s and uploads right away
-sub[1].callback()
-T.check(sub[1].checked_func() == true, "auto-export toggled on")
+files[4].callback()
+T.check(files[4].checked_func() == true, "auto-export toggled on")
 uploadSetup()
-sub[1].callback() -- uploadSetup wiped the setting
+files[4].callback() -- uploadSetup wiped the setting
 ui.document = { file = FILE }
 plugin:onCloseDocument()
 T.check(UIManager:pendingCount() == 1, "toggle on: close schedules the export")
@@ -1005,7 +1007,7 @@ ui.document = nil
 -- without the cloud at all: one notification, right after the export
 uploadSetup()
 store.tomedown.upload = false
-sub[1].callback() -- uploadSetup wiped the auto-export setting too
+files[4].callback() -- uploadSetup wiped the auto-export setting too
 ui.document = { file = FILE }
 plugin:onCloseDocument()
 UIManager:runPending()
@@ -1026,7 +1028,7 @@ ui.document = nil
 
 -- offline close: exported locally, queued, the network is not touched
 uploadSetup()
-sub[1].callback()
+files[4].callback()
 NetworkMgr.connected = false
 ui.document = { file = FILE }
 plugin:onCloseDocument()
@@ -1075,7 +1077,7 @@ T.check(next(store.tomedown.pending_uploads or {}) == nil,
 
 -- suspend: local only and totally silent, even with the network up
 uploadSetup()
-sub[1].callback()
+files[4].callback()
 ui.document = { file = FILE }
 plugin:onSuspend()
 T.check(UIManager:pendingCount() == 0, "suspend schedules nothing")

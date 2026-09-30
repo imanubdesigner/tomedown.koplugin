@@ -106,6 +106,7 @@ first export and optional Remotely Save in Obsidian — is in
 | *Local folder* | defaults to `clipboard/tomedown` inside KOReader's data folder; tap it to browse with KOReader's folder picker (long-press a folder to choose it) |
 | *Generate the index 00 - Index.md* | table with internal links, author, highlight count and last export date |
 | *Include page bookmarks* | off by default: adds a `## Page bookmarks` section (bookmarked page + note) after the highlights |
+| *Auto-export on close* | off by default: exports the book when you close it, and again (silently, no network) before the device suspends |
 
 **Updates**
 
@@ -192,10 +193,8 @@ settings keys are never renamed.
 
 ☰ menu → **Tomedown**:
 
-- **Auto-export on close** — off by default: exports the book when you close it,
-  and again before the device suspends (silently, no network then).
 - **Export current book** — only the open book.
-- **Only updated** — exports only the books whose highlights changed since
+- **Export only what changed** — exports only the books whose highlights changed since
   the last export (per-book hash).
 - **Choose books…** — a list with checkboxes: tick the volumes and export
   just those.

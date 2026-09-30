@@ -170,7 +170,8 @@ local cloud = settings[1].sub_item_table
 local files = settings[2].sub_item_table
 local updates = settings[3].sub_item_table
 T.check(files[3].text == "Include page bookmarks", "page bookmarks row")
--- Auto-export lives in the main menu now (test_main checks the row)
+-- Auto-export lives in Settings > Markdown files now (test_main
+-- checks the row)
 T.check(#cloud == 3, "cloud rows: " .. #cloud)
 T.check(updates[1].text_func() == "Check for updates (v" .. INSTALLED .. ")",
     "check row: " .. updates[1].text_func())
