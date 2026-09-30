@@ -16,6 +16,26 @@
   <a href="LICENSE"><img src="https://img.shields.io/github/license/imanubdesigner/tomedown.koplugin?style=for-the-badge&color=171717&labelColor=171717" alt="License"></a>
 </p>
 
+## Contents
+
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Configuration (one-off)](#configuration-one-off)
+  - [If you already use AnnotationSync](#if-you-already-use-annotationsync)
+  - [Updates](#updates)
+- [Usage](#usage)
+  - [Auto-export and offline reading](#auto-export-and-offline-reading)
+  - [Upload retries](#upload-retries)
+- [File format](#file-format)
+- [Obsidian (optional)](#obsidian-optional)
+- [Notes and limitations](#notes-and-limitations)
+- [Languages (English / Italian)](#languages-english--italian)
+- [Debug](#debug)
+- [Tests](#tests)
+- [Project structure](#project-structure)
+- [Support](#support)
+- [License](#license)
+
 A KOReader plugin that exports the highlights of **each book into its own
 `.md` file**, with YAML frontmatter and an automatic index. Everything is
 written to a folder on the device first (`clipboard/tomedown`, changeable);
