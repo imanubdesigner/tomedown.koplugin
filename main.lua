@@ -22,6 +22,7 @@ local Notification = require("ui/widget/notification")
 local UIManager = require("ui/uimanager")
 local WidgetContainer = require("ui/widget/container/widgetcontainer")
 local logger = require("logger")
+local time = require("ui/time")
 local util = require("util")
 local ffiUtil = require("ffi/util")
 local md5 = require("ffi/sha2").md5
@@ -645,6 +646,7 @@ function MdBook:runExport(files, opts)
     -- network: the device is about to sleep)
     local silent = opts.auto == "suspend"
     self.book_cache = {}
+    local t0 = time.now()
 
     local dir = self:getLocalDir()
     util.makePath(dir)
@@ -695,6 +697,8 @@ function MdBook:runExport(files, opts)
             end
         end
     end
+    local ms_books = time.to_ms(time.since(t0))
+    local t1 = time.now()
 
     if with_index then
         local index_path = dir .. "/" .. INDEX_FILENAME
@@ -708,11 +712,18 @@ function MdBook:runExport(files, opts)
             end
         end
     end
+    local ms_index = time.to_ms(time.since(t1))
 
     setSetting("exports", export_records)
     if info then
         UIManager:close(info)
     end
+    local ms_total = time.to_ms(time.since(t0))
+    logger.info(string.format(
+        "tomedown: export done: exported=%d skipped=%d errors=%d"
+        .. " books=%dms index=%dms rest=%dms total=%dms",
+        exported, skipped, #errors, ms_books, ms_index,
+        ms_total - ms_books - ms_index, ms_total))
 
     -- two separate results: the local export is reported right away,
     -- so a reader who never enables the cloud does not wait for an
@@ -1510,7 +1521,11 @@ function MdBook:onCloseDocument()
         return
     end
     -- let the reader finish closing (and flush the .sdr) first
+    local closed_at = time.now()
     UIManager:scheduleIn(1, function()
+        logger.info(string.format(
+            "tomedown: auto export starts %.2fs after the close",
+            time.to_ms(time.since(closed_at)) / 1000))
         self:runExport({ path }, { auto = "close" })
     end)
 end
