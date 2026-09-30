@@ -107,11 +107,17 @@ first export and optional Remotely Save in Obsidian — is in
    enable *Tomedown*).
 4. **Tomedown** shows up in the file browser's top menu.
 
+   ![The NEW: Tomedown entry in KOReader's menu](assets/menu/NEW_tomedown.png)
+
 ## Configuration (one-off)
 
 ☰ menu → **Tomedown** → **Settings**, in three groups:
 
+![The three Tomedown settings groups](assets/menu/settings_menu.png)
+
 **Cloud**
+
+![Cloud settings](assets/menu/cloud_menu.png)
 
 | Entry | What to do |
 |---|---|
@@ -120,6 +126,8 @@ first export and optional Remotely Save in Obsidian — is in
 | *Remote folder…* | only if you want to override the folder chosen above (e.g. `/Bookshelf/Kindle`) |
 
 **Markdown files**
+
+![Markdown files settings](assets/menu/markdown_menu.png)
 
 | Entry | What to do |
 |---|---|
@@ -130,6 +138,8 @@ first export and optional Remotely Save in Obsidian — is in
 
 **Updates**
 
+![Updates settings](assets/menu/updates_menu.png)
+
 | Entry | What to do |
 |---|---|
 | *Check for updates (vX)* | the row doubles as the version display: it asks GitHub for newer stable releases, shows their notes and can install the update right away (**Update and restart**) |
@@ -138,6 +148,8 @@ first export and optional Remotely Save in Obsidian — is in
 | *Developer updates* | a submenu with everything that is not meant for daily use (below) |
 
 **Developer updates**
+
+![Developer updates submenu](assets/menu/developer_menu.png)
 
 | Entry | What to do |
 |---|---|
@@ -212,6 +224,8 @@ settings keys are never renamed.
 ## Usage
 
 ☰ menu → **Tomedown**:
+
+![The Tomedown main menu](assets/menu/tomedown_menu.png)
 
 - **Export current book** — only the open book.
 - **Export only what changed** — exports only the books whose highlights changed since
