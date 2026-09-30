@@ -448,6 +448,17 @@ T.check(settings[7].checked_func() == false, "auto-export off by default")
 T.check(settings[11].text == "Beta Releases", "beta releases entry")
 T.check(settings[11].checked_func() == false, "beta releases off by default")
 
+-- checkable rows must keep the menu open so KOReader refreshes them
+for i, row in ipairs(settings) do
+    if row.checked_func then
+        T.check(row.keep_menu_open == true,
+            "checkable settings row " .. i .. " keeps the menu open")
+    end
+end
+local main_src = T.readFile(T.plugin .. "/main.lua") or ""
+T.check(not main_src:find("check_callback_updates_menu", 1, true),
+    "no check_callback_updates_menu (it opts out of the menu refresh)")
+
 settings[1].callback()
 T.check(store.tomedown.upload == false, "upload disabled")
 settings[1].callback()

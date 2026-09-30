@@ -1064,7 +1064,7 @@ function MdBook:genPickerMenu()
             checked_func = function()
                 return selected[book.file] or nil
             end,
-            check_callback_updates_menu = true,
+            keep_menu_open = true,
             callback = function()
                 if selected[book.file] then
                     selected[book.file] = nil
@@ -1088,7 +1088,7 @@ function MdBook:genSettingsMenu()
             checked_func = function()
                 return self:hasServer() and getSetting("upload", true)
             end,
-            check_callback_updates_menu = true,
+            keep_menu_open = true,
             callback = function()
                 setSetting("upload", not getSetting("upload", true))
             end,
@@ -1138,7 +1138,7 @@ function MdBook:genSettingsMenu()
             checked_func = function()
                 return getSetting("with_index", true)
             end,
-            check_callback_updates_menu = true,
+            keep_menu_open = true,
             callback = function()
                 setSetting("with_index", not getSetting("with_index", true))
             end,
@@ -1148,7 +1148,7 @@ function MdBook:genSettingsMenu()
             checked_func = function()
                 return getSetting("include_bookmarks", false)
             end,
-            check_callback_updates_menu = true,
+            keep_menu_open = true,
             callback = function()
                 setSetting("include_bookmarks", not getSetting("include_bookmarks", false))
             end,
@@ -1158,7 +1158,7 @@ function MdBook:genSettingsMenu()
             checked_func = function()
                 return getSetting("auto_export", false)
             end,
-            check_callback_updates_menu = true,
+            keep_menu_open = true,
             callback = function()
                 setSetting("auto_export", not getSetting("auto_export", false))
             end,
@@ -1185,7 +1185,7 @@ function MdBook:genSettingsMenu()
             checked_func = function()
                 return getSetting("update_check", false)
             end,
-            check_callback_updates_menu = true,
+            keep_menu_open = true,
             callback = function()
                 setSetting("update_check", not getSetting("update_check", false))
             end,
@@ -1195,7 +1195,7 @@ function MdBook:genSettingsMenu()
             checked_func = function()
                 return getSetting("beta_releases", false)
             end,
-            check_callback_updates_menu = true,
+            keep_menu_open = true,
             callback = function()
                 setSetting("beta_releases", not getSetting("beta_releases", false))
                 Update.clearAvailableCache()
