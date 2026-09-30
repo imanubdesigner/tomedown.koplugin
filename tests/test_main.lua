@@ -41,6 +41,7 @@ local NetworkMgr = require("ui/network/manager")
 local TextWidget = require("ui/widget/textwidget")
 local TextBoxWidget = require("ui/widget/textboxwidget")
 local Button = require("ui/widget/button")
+local ImageWidget = require("ui/widget/imagewidget")
 local Update = require("tomedown_update")
 local lfs = require("libs/libkoreader-lfs")
 local json = require("json")
@@ -506,6 +507,15 @@ T.check(T.contains(TextBoxWidget.last and TextBoxWidget.last.text or "",
 T.check(Button.last ~= nil
         and Button.last.text == "github.com/imanubdesigner/tomedown.koplugin",
     "about shows the GitHub URL")
+-- the logo ships with the plugin and keeps its own ratio (viewBox)
+T.check(ImageWidget.last ~= nil
+        and (ImageWidget.last.file or ""):find("assets/logo.svg", 1, true) ~= nil,
+    "about shows the logo: " .. tostring(ImageWidget.last and ImageWidget.last.file))
+T.check(ImageWidget.last ~= nil and (ImageWidget.last.height or 0) > 0
+        and ImageWidget.last.height < ImageWidget.last.width,
+    "logo box follows the file ratio: "
+        .. tostring(ImageWidget.last and ImageWidget.last.width)
+        .. "x" .. tostring(ImageWidget.last and ImageWidget.last.height))
 UIManager:close(dialog)
 
 local main_src = T.readFile(T.plugin .. "/main.lua") or ""

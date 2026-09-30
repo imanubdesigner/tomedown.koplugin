@@ -1310,6 +1310,31 @@ function MdBook:showAbout()
     -- Logo at the top, centred: SVG preferred (scales to any density),
     -- PNG as a fallback. alpha=true so a transparent background stays
     -- transparent instead of rendering as opaque black
+    -- Native size from the file's own header (SVG viewBox/width/height):
+    -- passing width alone would leave ImageWidget reserve a square box
+    -- with empty bands above and below the logo
+    local function imageSize(path)
+        local f = io.open(path, "rb")
+        if not f then
+            return nil
+        end
+        local head = f:read(4096)
+        f:close()
+        if not head then
+            return nil
+        end
+        local w, h = head:match(
+            'viewBox%s*=%s*"%s*[%-%d%.]+%s+[%-%d%.]+%s+([%-%d%.]+)%s+([%-%d%.]+)%"')
+        if not w then
+            w = head:match('width%s*=%s*"([%d%.]+)"')
+            h = head:match('height%s*=%s*"([%d%.]+)"')
+        end
+        w, h = tonumber(w), tonumber(h)
+        if not w or not h or w <= 0 or h <= 0 then
+            return nil
+        end
+        return w, h
+    end
     if plugin_dir then
         local ok_lfs, lfs = pcall(require, "libs/libkoreader-lfs")
         if ok_lfs and lfs and lfs.attributes then
@@ -1317,12 +1342,17 @@ function MdBook:showAbout()
                 local path = plugin_dir .. "/assets/" .. name
                 if lfs.attributes(path) then
                     local ImageWidget = require("ui/widget/imagewidget")
-                    column[#column + 1] = ImageWidget:new{
+                    local logo = {
                         file = path,
                         width = math.min(content_w, Screen:scaleBySize(220)),
                         scale_factor = 0,
                         alpha = true,
                     }
+                    local nat_w, nat_h = imageSize(path)
+                    if nat_w and nat_h then
+                        logo.height = math.floor(logo.width * nat_h / nat_w + 0.5)
+                    end
+                    column[#column + 1] = ImageWidget:new(logo)
                     column[#column + 1] = VerticalSpan:new{
                         width = Size.padding.default,
                     }
