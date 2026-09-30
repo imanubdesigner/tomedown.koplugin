@@ -15,8 +15,8 @@ msgstr "Senza capitolo"
 msgid "Book index"
 msgstr "Indice dei libri"
 
-msgid "%1 files exported"
-msgstr "%1 file esportati"
+msgid "%1 files exported locally"
+msgstr "%1 file esportati localmente"
 
 msgid "%1 files exported — upload when online"
 msgstr "%1 file esportati — verranno caricati al prossimo collegamento"

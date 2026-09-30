@@ -794,7 +794,7 @@ function MdBook:showResult(exported, skipped, errors, offline_pending)
         if offline_pending then
             lines[#lines + 1] = T(_("%1 files exported — upload when online"), exported)
         else
-            lines[#lines + 1] = T(_("%1 files exported"), exported)
+            lines[#lines + 1] = T(_("%1 files exported locally"), exported)
         end
     else
         lines[#lines + 1] = _("No files exported")

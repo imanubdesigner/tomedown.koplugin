@@ -272,7 +272,7 @@ if md then
     T.check(not T.contains(md, "![]("), "nessuna immagine")
 end
 
-T.check(Notification.last_text == "1 files exported",
+T.check(Notification.last_text == "1 files exported locally",
     "export notification: " .. tostring(Notification.last_text))
 T.check(lfs.attributes(DIR .. "/covers", "mode") ~= "directory",
     "covers folder not created")
@@ -290,7 +290,7 @@ end
 plugin:runExport(plugin:listBookFiles(), {})
 UIManager:runPending()
 T.check(#plugin:listBookFiles() == 3, "three books listed (dim excluded)")
-T.check(Notification.last_text == "3 files exported",
+T.check(Notification.last_text == "3 files exported locally",
     "multi export: " .. tostring(Notification.last_text))
 
 index = T.readFile(INDEX_PATH)
@@ -602,7 +602,7 @@ T.check(T.contains(picker[1].text_func(), "Export selected (1)"), "one book sele
 T.check(picker[1].enabled_func() == true, "export selected enabled")
 picker[1].callback(nil)
 UIManager:runPending()
-T.check(Notification.last_text == "1 files exported",
+T.check(Notification.last_text == "1 files exported locally",
     "export of the selected: " .. tostring(Notification.last_text))
 
 picker = plugin:genPickerMenu()
@@ -717,7 +717,7 @@ store.tomedown.upload = false
 plugin:runExport({ FILE }, {})
 UIManager:runPending()
 T.check(#uploads == 0, "no upload with upload=false")
-T.check(Notification.last_text == "1 files exported",
+T.check(Notification.last_text == "1 files exported locally",
     "export-only notification: " .. tostring(Notification.last_text))
 
 -- explicit remote folder
@@ -771,7 +771,7 @@ T.check(attempt_count[MD_PATH] == 3 and attempt_count[INDEX_PATH] == 3,
     "maximum 3 attempts per file")
 T.check(sameList(positives(), { 2, 4, 2, 4 }),
     "backoff 2s/4s for every file, got " .. listStr(positives()))
-T.check(Notification.last_text == "1 files exported",
+T.check(Notification.last_text == "1 files exported locally",
     "the export is reported on its own: " .. tostring(Notification.last_text))
 local err_widget = UIManager.shown[#UIManager.shown]
 T.check(err_widget and err_widget.__widget == "InfoMessage", "error window shown")
