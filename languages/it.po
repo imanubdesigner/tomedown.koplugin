@@ -181,6 +181,12 @@ msgstr "Impossibile recuperare il changelog."
 msgid "Check for updates in background"
 msgstr "Controlla aggiornamenti in background"
 
+msgid "Developer updates"
+msgstr "Aggiornamenti per sviluppatori"
+
+msgid "Check for updates"
+msgstr "Controlla aggiornamenti"
+
 msgid "Reset to latest stable release"
 msgstr "Ripristina all'ultima release stabile"
 

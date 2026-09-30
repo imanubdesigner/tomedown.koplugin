@@ -1169,6 +1169,46 @@ function MdBook:genSettingsMenu()
             end,
         },
     }
+    -- Developer updates: everything that is not meant for daily use,
+    -- in its own submenu. Beta Releases first (the switch), then the
+    -- check that applies it, the way back to stable and the installed
+    -- version as a plain grey label
+    local developer = {
+        {
+            text = _("Beta Releases"),
+            checked_func = function()
+                return getSetting("beta_releases", false)
+            end,
+            keep_menu_open = true,
+            callback = function()
+                setSetting("beta_releases", not getSetting("beta_releases", false))
+                Update.clearAvailableCache()
+            end,
+            separator = true,
+        },
+        {
+            text = _("Check for updates"),
+            callback = function()
+                Update.check()
+            end,
+        },
+        {
+            -- the cartoon bomb (U+ED8F): the reset blows the beta up
+            text = withIcon("\xEE\xB6\x8F", _("Reset to latest stable release")),
+            callback = function()
+                Update.resetToStable()
+            end,
+        },
+        {
+            text_func = function()
+                local current = Update.getInstalledVersion()
+                local kind = current:find("-", 1, true)
+                    and _("Beta") or _("Release")
+                return T(_("Installed: v%1 (%2)"), current, kind)
+            end,
+            enabled = false,
+        },
+    }
     local updates = {
         {
             text_func = function()
@@ -1201,32 +1241,8 @@ function MdBook:genSettingsMenu()
             end,
         },
         {
-            text = _("Beta Releases"),
-            checked_func = function()
-                return getSetting("beta_releases", false)
-            end,
-            keep_menu_open = true,
-            callback = function()
-                setSetting("beta_releases", not getSetting("beta_releases", false))
-                Update.clearAvailableCache()
-            end,
-            separator = true,
-        },
-        {
-            -- the cartoon bomb (U+ED8F): the reset blows the beta up
-            text = withIcon("\xEE\xB6\x8F", _("Reset to latest stable release")),
-            callback = function()
-                Update.resetToStable()
-            end,
-        },
-        {
-            text_func = function()
-                local current = Update.getInstalledVersion()
-                local kind = current:find("-", 1, true)
-                    and _("Beta") or _("Release")
-                return T(_("Installed: v%1 (%2)"), current, kind)
-            end,
-            enabled = false,
+            text = _("Developer updates"),
+            sub_item_table = developer,
         },
     }
     return {

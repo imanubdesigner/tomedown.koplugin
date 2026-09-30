@@ -178,8 +178,10 @@ T.check(updates[2].text == "View changelog", "changelog row")
 T.check(updates[3].text == "Check for updates in background",
     "background toggle row")
 T.check(updates[3].checked_func() == false, "background check off by default")
-T.check(updates[4].text == "Beta Releases", "beta releases row")
-T.check(updates[4].checked_func() == false, "beta releases off by default")
+T.check(updates[4].text == "Developer updates", "developer updates row")
+local developer = updates[4].sub_item_table
+T.check(developer[1].text == "Beta Releases", "beta releases row")
+T.check(developer[1].checked_func() == false, "beta releases off by default")
 
 updates[3].callback()
 T.check(store.tomedown and store.tomedown.update_check == true,
@@ -187,9 +189,9 @@ T.check(store.tomedown and store.tomedown.update_check == true,
 T.check(updates[3].checked_func() == true, "toggle reflects the setting")
 updates[3].callback()
 T.check(store.tomedown.update_check == false, "background check toggled off")
-updates[4].callback()
+developer[1].callback()
 T.check(store.tomedown.beta_releases == true, "beta releases toggled on")
-updates[4].callback()
+developer[1].callback()
 T.check(store.tomedown.beta_releases == false, "beta releases toggled off")
 
 -- ------------------------------------------- 4. manual check: up to date
@@ -521,11 +523,12 @@ NetworkMgr.connected = true
 settings = plugin:genSettingsMenu()
 T.check(#settings == 3, "settings groups with the beta row: " .. #settings)
 updates = settings[3].sub_item_table
-T.check(updates[4].text == "Beta Releases", "beta releases row")
-T.check(updates[4].checked_func() == false, "beta releases off by default")
+developer = updates[4].sub_item_table
+T.check(developer[1].text == "Beta Releases", "beta releases row")
+T.check(developer[1].checked_func() == false, "beta releases off by default")
 
 -- toggle on: prereleases are offered, the stable release stays the latest
-updates[4].callback()
+developer[1].callback()
 T.check(store.tomedown.beta_releases == true, "beta releases toggled on")
 fakeReleases({
     release("v1.0.0", "stable 1.0.0"),
@@ -542,7 +545,7 @@ T.check(T.contains(beta_viewer and beta_viewer.text or "", "beta 1.0.0-beta.1"),
 T.check(Update.getAvailableVersion() == "1.0.0", "cache holds the stable version")
 
 -- toggling clears the cached version right away
-updates[4].callback()
+developer[1].callback()
 T.check(store.tomedown.beta_releases == false, "beta releases off again")
 T.check(Update.getAvailableVersion() == nil, "toggle clears the cached version")
 

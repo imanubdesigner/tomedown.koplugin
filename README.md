@@ -114,7 +114,14 @@ first export and optional Remotely Save in Obsidian — is in
 | *Check for updates (vX)* | the row doubles as the version display: it asks GitHub for newer releases, shows their notes and can install the update right away (**Update and restart**) |
 | *View changelog* | pages through the notes of every release on GitHub, newest first; the list is cached when a check runs, so the viewer also works offline, and **Refresh** fetches it again |
 | *Check for updates in background* | off by default: when enabled, a quiet check runs when KOReader starts and when the menu opens (at most once an hour) and notifies you of a new release |
+| *Developer updates* | a submenu with everything that is not meant for daily use (below) |
+
+**Developer updates**
+
+| Entry | What to do |
+|---|---|
 | *Beta Releases* | off by default: also offers prereleases (tags like `0.4.0-beta.1`) from *Check for updates* and the background check |
+| *Check for updates* | the same check, right away — tap it after ticking *Beta Releases* to see the prereleases now |
 | *Reset to latest stable release* | installs the newest stable release even when your install is a beta newer than it — the way back from a beta; it also unticks *Beta Releases* so the beta is not offered again |
 | *Installed: vX (Release/Beta)* | the installed version as a plain label |
 
@@ -151,11 +158,12 @@ download or the unpacking fails, the releases page opens instead so the
 zip can be taken by hand (see *Installation*) — that works from any
 older version.
 
-Tick **Beta Releases** to be offered prereleases too (tags like
-`0.4.0-beta.1`) — the way to try a new feature before its final
-release; untick it to go back to stable releases only. A beta install
-always sees the final release of the same version even with the box
-unticked: checking for updates from `0.4.0-beta.1` offers `0.4.0`.
+Tick **Beta Releases** (*Settings → Developer updates*) to be offered
+prereleases too (tags like `0.4.0-beta.1`) — the way to try a new
+feature before its final release; untick it to go back to stable
+releases only. A beta install always sees the final release of the
+same version even with the box unticked: checking for updates from
+`0.4.0-beta.1` offers `0.4.0`.
 
 **View changelog** pages through the notes of every release GitHub
 knows (newest first, up to 25 of them). The list is saved whenever a
@@ -163,11 +171,11 @@ check runs, so the viewer also works without a connection, and
 **Refresh** fetches it again. With *Beta Releases* ticked the
 prereleases are listed too.
 
-**Reset to latest stable release** is the way back from a beta: it
-installs the newest stable release even when your beta install is
-newer than it (the check only ever offers *newer* versions). Confirm,
-and it also unticks *Beta Releases* so the same beta is not offered
-again on the next check.
+**Reset to latest stable release** (*Settings → Developer updates*) is
+the way back from a beta: it installs the newest stable release even
+when your beta install is newer than it (the check only ever offers
+*newer* versions). Confirm, and it also unticks *Beta Releases* so the
+same beta is not offered again on the next check.
 
 When you publish a release, bump `version` in `_meta.lua` to the tag
 without the `v`.

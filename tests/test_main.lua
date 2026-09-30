@@ -453,7 +453,7 @@ local files = settings[2].sub_item_table
 local updates = settings[3].sub_item_table
 T.check(#cloud == 3, "cloud rows: " .. #cloud)
 T.check(#files == 3, "markdown files rows: " .. #files)
-T.check(#updates == 6, "updates rows: " .. #updates)
+T.check(#updates == 4, "updates rows: " .. #updates)
 T.check(cloud[1].text == "Upload to cloud", "upload entry")
 T.check(cloud[2].text_func() == "Server and folder: not set", "server not set")
 T.check(T.contains(cloud[3].text_func(), "Remote folder: not set"), "remote folder not set")
@@ -467,19 +467,23 @@ T.check(updates[1].text_func() == "Check for updates (v"
 T.check(updates[2].text == "View changelog", "changelog entry")
 T.check(updates[2].separator == true, "separator after the changelog entry")
 T.check(updates[3].text == "Check for updates in background", "background entry")
-T.check(updates[4].text == "Beta Releases", "beta releases entry")
-T.check(updates[4].checked_func() == false, "beta releases off by default")
-T.check(updates[4].separator == true, "separator after the beta toggle")
-T.check(updates[5].text == "\xEE\xB6\x8F  Reset to latest stable release",
+T.check(updates[4].text == "Developer updates", "developer updates entry")
+local developer = updates[4].sub_item_table
+T.check(#developer == 4, "developer rows: " .. #developer)
+T.check(developer[1].text == "Beta Releases", "beta releases entry")
+T.check(developer[1].checked_func() == false, "beta releases off by default")
+T.check(developer[1].separator == true, "separator after the beta toggle")
+T.check(developer[2].text == "Check for updates", "developer check entry")
+T.check(developer[3].text == "\xEE\xB6\x8F  Reset to latest stable release",
     "reset entry with the bomb icon")
 local installed_version = Update.getInstalledVersion()
-T.check(updates[6].text_func() == "Installed: v" .. installed_version
+T.check(developer[4].text_func() == "Installed: v" .. installed_version
         .. (installed_version:find("-", 1, true) and " (Beta)" or " (Release)"),
-    "installed row: " .. updates[6].text_func())
-T.check(updates[6].enabled == false, "installed row is a plain label")
+    "installed row: " .. developer[4].text_func())
+T.check(developer[4].enabled == false, "installed row is a plain label")
 
 -- checkable rows must keep the menu open so KOReader refreshes them
-for _, group in ipairs({ sub, cloud, files, updates }) do
+for _, group in ipairs({ sub, cloud, files, updates, developer }) do
     for i, row in ipairs(group) do
         if row.checked_func then
             T.check(row.keep_menu_open == true,
@@ -520,9 +524,9 @@ files[3].callback()
 T.check(store.tomedown.include_bookmarks == true, "page bookmarks enabled")
 files[3].callback()
 T.check(store.tomedown.include_bookmarks == false, "page bookmarks disabled")
-updates[4].callback()
+developer[1].callback()
 T.check(store.tomedown.beta_releases == true, "beta releases enabled")
-updates[4].callback()
+developer[1].callback()
 T.check(store.tomedown.beta_releases == false, "beta releases disabled")
 
 -- server picked from the Cloud storage list
