@@ -160,8 +160,8 @@ local ui = {
     document = { file = nil },
     annotation = nil,
 }
-local MdBook = require("main")
-local plugin = MdBook:new { ui = ui }
+local Tomedown = require("main")
+local plugin = Tomedown:new { ui = ui }
 
 resetWidgets()
 fakeReleases({})
@@ -372,14 +372,14 @@ clearStore()
 fakeReleases({ release("v" .. MAJOR, "") })
 
 -- background off: starting KOReader and opening the menu do nothing
-MdBook:new { ui = ui }
+Tomedown:new { ui = ui }
 local menu_items = {}
 plugin:addToMainMenu(menu_items)
 T.check(UIManager:pendingCount() == 0, "nothing scheduled while disabled")
 
 -- background on: start schedules the slow check, menu open the quick one
 store.tomedown = { update_check = true }
-MdBook:new { ui = ui }
+Tomedown:new { ui = ui }
 T.check(UIManager:pendingCount() == 1, "start schedules the check")
 T.check(UIManager.delay_log[1] == 10, "start waits 10s: " .. tostring(UIManager.delay_log[1]))
 

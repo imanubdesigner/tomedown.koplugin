@@ -175,8 +175,8 @@ readhistory.hist = {
     { file = FILE_DIM, dim = true },
 }
 
-local MdBook = require("main")
-local plugin = MdBook:new { ui = ui }
+local Tomedown = require("main")
+local plugin = Tomedown:new { ui = ui }
 
 -- ------------------------------------------------------------- helpers
 
