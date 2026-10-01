@@ -107,7 +107,11 @@ first export and optional Remotely Save in Obsidian — is in
    enable *Tomedown*).
 4. **Tomedown** is the first entry of KOReader's menu: on top of the
    *Navigation* tab (right before *Table of Contents*) while reading, on
-   top of the first tab in the file browser.
+   top of the first tab in the file browser (right before *Display mode*):
+
+   ![Tomedown first in the reader's Navigation tab](assets/menu/tomedown_reader_new_menu.png)
+
+   ![Tomedown first in the file browser's menu](assets/menu/tomedown_file_browser_top_menu.png)
 
 ## Configuration (one-off)
 
@@ -225,7 +229,7 @@ settings keys are never renamed.
 
 ☰ menu → **Tomedown**:
 
-![The Tomedown main menu](assets/menu/tomedown_menu.png)
+![The Tomedown menu](assets/menu/tomedown_reader_menu.png)
 
 - **Export current book** — only the open book.
 - **Export only what changed** — exports only the books whose highlights changed since
@@ -236,6 +240,8 @@ settings keys are never renamed.
   reading history.
 - **Reload everything to the cloud** — re-uploads every file already in the
   local folder (use it after a failed upload).
+- **Status** — one screen with network, server, pending uploads and the last
+  export/upload with their timestamp and outcome.
 - **Settings** — see above.
 - **About** — a popup with the logo, the installed version, the description
   and the GitHub link (tap the link to open it or copy it).

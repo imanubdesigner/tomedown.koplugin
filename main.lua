@@ -1648,18 +1648,13 @@ end
 
 function Tomedown:init()
     self.ui.menu:registerToMainMenu(self)
-    -- ensure the plugin is in the UI event chain (same guard as
-    -- AnnotationSync), so onCloseDocument/onSuspend/... reach it
-    local found = false
-    for _, child in ipairs(self.ui) do
-        if child == self then
-            found = true
-            break
-        end
-    end
-    if not found then
-        table.insert(self.ui, self)
-    end
+    -- Do NOT insert this instance into self.ui here: KOReader runs init()
+    -- inside createPluginInstance and inserts the instance itself right
+    -- after, via registerModule (ReaderUI and FileManager both do). An
+    -- extra insert left the plugin in the children array twice, so every
+    -- event reached it twice: on close two exports ran back to back and
+    -- the silent second one (nothing changed) overwrote the recorded
+    -- outcome shown by the Status panel.
     -- before anything reads the upload default (the pending flush below)
     self:migrateDefaults()
     if getSetting("update_check", false) then

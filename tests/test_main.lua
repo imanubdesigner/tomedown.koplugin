@@ -178,6 +178,22 @@ readhistory.hist = {
 local Tomedown = require("main")
 local plugin = Tomedown:new { ui = ui }
 
+-- KOReader runs init() inside createPluginInstance and only afterwards
+-- calls registerModule, which inserts the instance into the ui children
+-- itself. init() must not pre-insert: doing so left the plugin in the
+-- chain twice and every event (CloseDocument, Suspend, ...) reached it
+-- twice — on close two exports ran back to back, and the silent second
+-- one (nothing changed) overwrote the recorded outcome shown by Status.
+local pre_inserted = 0
+for __, child in ipairs(ui) do
+    if child == plugin then
+        pre_inserted = pre_inserted + 1
+    end
+end
+T.check(pre_inserted == 0,
+    "init does not pre-insert into the ui chain: " .. pre_inserted)
+table.insert(ui, plugin) -- what ReaderUI/FileManager registerModule does
+
 -- ------------------------------------------------------------- helpers
 
 local function resetUpload()
@@ -1247,14 +1263,15 @@ T.check(next(store.tomedown.pending_uploads or {}) == nil,
     "missing file dropped from pending")
 T.check(#uploads == 0, "no upload for missing files")
 
--- the plugin sits in the UI event chain (events reach it)
-local in_chain = false
+-- the plugin sits in the UI event chain exactly once (events must
+-- reach it once, not twice)
+local in_chain = 0
 for __, child in ipairs(ui) do
     if child == plugin then
-        in_chain = true
+        in_chain = in_chain + 1
     end
 end
-T.check(in_chain, "plugin registered in the UI event chain")
+T.check(in_chain == 1, "plugin in the UI event chain exactly once: " .. in_chain)
 
 -- --------------------------------------- 13. upload default and migration
 
