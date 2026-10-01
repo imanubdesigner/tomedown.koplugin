@@ -105,9 +105,9 @@ first export and optional Remotely Save in Obsidian — is in
 
 3. Unplug the Kindle and restart KOReader (or: ☰ menu → *Plugin management* →
    enable *Tomedown*).
-4. **Tomedown** shows up in the file browser's top menu.
-
-   ![The NEW: Tomedown entry in KOReader's menu](assets/menu/NEW_tomedown.png)
+4. **Tomedown** is the first entry of KOReader's menu: on top of the
+   *Navigation* tab (right before *Table of Contents*) while reading, on
+   top of the first tab in the file browser.
 
 ## Configuration (one-off)
 

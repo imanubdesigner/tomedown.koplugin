@@ -633,6 +633,37 @@ store.tomedown = {}
 T.check(plugin:genPickerMenu()[1].text_func() == "Export selected (0)",
     "no selection after the reset")
 
+-- MenuSorter appends the items it cannot place in the cached order
+-- tables at the bottom of the first tab, prefixed with "NEW: ";
+-- pinToTop() references them from the order tables instead, so the
+-- row lands on top of the right tab and loses the orphan handling.
+store.tomedown.import_prompt_done = true -- keep the menu rebuild quiet
+local reader_order = { navi = { "table_of_contents", "bookmarks" } }
+local fm_order = { filemanager_settings = { "filemanager_display_mode" } }
+package.loaded["ui/elements/reader_menu_order"] = reader_order
+package.loaded["ui/elements/filemanager_menu_order"] = fm_order
+plugin:addToMainMenu(menu_items)
+T.check(reader_order.navi[1] == "tomedown",
+    "reader: row pinned first in the Navigation tab")
+T.check(reader_order.navi[2] == "table_of_contents",
+    "reader: Table of Contents follows")
+T.check(fm_order.filemanager_settings[1] == "tomedown",
+    "file browser: row pinned first in the first tab")
+T.check(fm_order.filemanager_settings[2] == "filemanager_display_mode",
+    "file browser: Display mode follows")
+-- menu rebuilds re-run addToMainMenu: one entry, still first
+plugin:addToMainMenu(menu_items)
+T.check(#reader_order.navi == 3 and reader_order.navi[1] == "tomedown",
+    "reader placement is idempotent: " .. #reader_order.navi)
+T.check(#fm_order.filemanager_settings == 2
+        and fm_order.filemanager_settings[1] == "tomedown",
+    "file browser placement is idempotent: " .. #fm_order.filemanager_settings)
+-- no order tables at all (bare test/host environment): no failure
+package.loaded["ui/elements/reader_menu_order"] = nil
+package.loaded["ui/elements/filemanager_menu_order"] = nil
+T.check(pcall(plugin.addToMainMenu, plugin, menu_items),
+    "addToMainMenu without order tables does not fail")
+
 -- ----------------------------------------------- 5b. page bookmarks
 
 files[3].callback() -- enable "Include page bookmarks"

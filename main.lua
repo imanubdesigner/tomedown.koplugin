@@ -1626,6 +1626,30 @@ function Tomedown:maybePromptLibraryImport()
     end)
 end
 
+-- Pin this plugin's row to the top of its menu tab. MenuSorter appends
+-- items it cannot place in the cached order tables at the bottom of the
+-- first tab, prefixed with "NEW: ", which buries the entry on a second
+-- page. Referencing the id from the order tables puts it exactly where
+-- we want it (first row of the Navigation tab in the reader, first row
+-- of the first tab in the file browser) and skips the orphan pass
+-- entirely, so the "NEW: " prefix disappears too. Keyed by id, so tab
+-- reorders done by other plugins don't affect us. Idempotent:
+-- addToMainMenu fires again on menu rebuilds and once per host.
+local function pinToTop(order_module, group_id)
+    local ok, order = pcall(require, order_module)
+    if not ok or type(order) ~= "table" or type(order[group_id]) ~= "table" then
+        -- outside KOReader (tests): no order tables, no placement
+        return
+    end
+    local group = order[group_id]
+    for _, id in ipairs(group) do
+        if id == "tomedown" then
+            return
+        end
+    end
+    table.insert(group, 1, "tomedown")
+end
+
 function Tomedown:addToMainMenu(menu_items)
     if getSetting("update_check", false) then
         UIManager:scheduleIn(0.1, function()
@@ -1633,6 +1657,8 @@ function Tomedown:addToMainMenu(menu_items)
         end)
     end
     self:maybePromptLibraryImport()
+    pinToTop("ui/elements/reader_menu_order", "navi")
+    pinToTop("ui/elements/filemanager_menu_order", "filemanager_settings")
     -- Every row of the main menu carries a Nerd Font glyph (from
     -- nerdfonts/symbols.ttf, KOReader's own fallback font). Settings
     -- keeps its word plus the icon; inside, only the three group
