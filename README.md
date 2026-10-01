@@ -394,6 +394,15 @@ a clickable table and every title opens that book's file.
 
 [Watch the index in action (demo, MP4, 3 MB)](assets/obsidian/tomedown_obsidian.mp4)
 
+TEST-A-VIDEO
+<video src="https://raw.githubusercontent.com/imanubdesigner/tomedown.koplugin/main/assets/obsidian/tomedown_obsidian.mp4" controls width="720"></video>
+
+TEST-B-IMG
+![](https://raw.githubusercontent.com/imanubdesigner/tomedown.koplugin/main/assets/obsidian/tomedown_obsidian.mp4)
+
+TEST-C-BARE
+https://raw.githubusercontent.com/imanubdesigner/tomedown.koplugin/main/assets/obsidian/tomedown_obsidian.mp4
+
 ## Notes and limitations
 
 - The `.md` files are **rewritten on every export**: treat them as read-only
