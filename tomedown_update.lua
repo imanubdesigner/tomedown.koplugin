@@ -259,25 +259,48 @@ local function canRenderMarkdown()
         and type(Converter.mdToHtml) == "function"
 end
 
--- The stylesheet attached to every rendered note: the named fonts are
--- usually absent (Kindle, most desktop setups), so the renderer falls
--- back to its own sans-serif face instead of the serif default. It is
--- set on <html> on purpose: TextViewer's "Monospace" menu toggle styles
--- <body>, and an element rule beats an inherited one whatever the order,
--- so the toggle keeps working.
-local NOTES_CSS = 'html { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }'
+-- The stylesheet our viewers ask for: the named fonts are usually
+-- absent (Kindle, most desktop setups), so the renderer falls back to
+-- its own sans-serif face instead of the serif default. mupdf reads
+-- <style> blocks only from the document <head> - the one
+-- HtmlBoxWidget:setContent assembles from the css TextViewer passes to
+-- ScrollHtmlWidget - and TextViewer exposes no hook for it, so
+-- installNotesCssHook prepends this to that css, for our viewers
+-- only. It is prepended (not appended) so TextViewer's own
+-- "Monospace" menu rule, `body { font-family: monospace }`, still
+-- wins the cascade when the toggle is on.
+local NOTES_CSS = 'body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }'
 
---- Render a Markdown note to HTML with NOTES_CSS and return it with the
--- TextViewer text_format to request ("html" pre-converted, "md" as a
--- defensive fallback when the converter is missing - the caller has
--- already probed the same support with canRenderMarkdown()).
-local function renderNotes(text)
-    local ok, Converter = pcall(require, "apps/filemanager/filemanagerconverter")
-    if ok and type(Converter) == "table"
-            and type(Converter.mdToHtml) == "function" then
-        return Converter:mdToHtml(text, "", NOTES_CSS), "html"
+-- Whether the ScrollHtmlWidget wrapper is already in place.
+local notes_css_hooked = false
+
+--- Make every viewer tagged with __tomedown_notes render its HTML with
+-- NOTES_CSS. TextViewer builds its ScrollHtmlWidget css inline with no
+-- parameter to override, so a wrapper around ScrollHtmlWidget.new
+-- prepends the stylesheet to widgets whose dialog is one of our tagged
+-- viewers only - any other TextViewer in the session keeps its stock
+-- look. The wrapper stays installed for the session and fails safe:
+-- if a future KOReader moves the pieces and it never fires, our notes
+-- simply keep the serif default.
+local function installNotesCssHook()
+    if notes_css_hooked then
+        return
     end
-    return text, "md"
+    notes_css_hooked = true
+    local ok, ScrollHtmlWidget = pcall(require, "ui/widget/scrollhtmlwidget")
+    if not ok or type(ScrollHtmlWidget) ~= "table"
+            or type(ScrollHtmlWidget.new) ~= "function" then
+        return
+    end
+    local orig_new = ScrollHtmlWidget.new
+    ScrollHtmlWidget.new = function(class, o)
+        if type(o) == "table" and type(o.css) == "string"
+                and type(o.dialog) == "table"
+                and o.dialog.__tomedown_notes then
+            o.css = NOTES_CSS .. "\n" .. o.css
+        end
+        return orig_new(class, o)
+    end
 end
 
 --- The "Beta Releases" Settings toggle (default off): with it on, the
@@ -404,19 +427,17 @@ local function changelogShow(rels, idx)
         body = _("(no notes for this release)")
     end
     local text = (as_md and ("## " .. head) or head) .. "\n\n" .. body
-    local text_format
-    if as_md then
-        text, text_format = renderNotes(text)
-    end
     local viewer
     local function repage(new_idx)
         UIManager:close(viewer)
         changelogShow(rels, new_idx)
     end
+    installNotesCssHook()
     viewer = TextViewer:new{
         title = T(_("Changelog (%1 of %2)"), idx, #rels),
         text = text,
-        text_format = text_format,
+        text_format = as_md and "md" or nil,
+        __tomedown_notes = true,
         buttons_table = {
             {
                 {
@@ -540,15 +561,13 @@ local function checkBody(include_beta)
     local text = T(_("Installed: %1\nLatest: %2"), "v" .. installed,
         "v" .. latest)
         .. "\n\n" .. table.concat(notes, "\n\n")
-    local text_format
-    if as_md then
-        text, text_format = renderNotes(text)
-    end
     local viewer
+    installNotesCssHook()
     viewer = TextViewer:new{
         title = _("Update available!"),
         text = text,
-        text_format = text_format,
+        text_format = as_md and "md" or nil,
+        __tomedown_notes = true,
         buttons_table = {
             {
                 {
