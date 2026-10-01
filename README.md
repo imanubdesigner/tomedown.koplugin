@@ -364,6 +364,8 @@ tags:
 The sample above is what an English KOReader produces; with an Italian
 interface the same text comes out translated (see *Languages*).
 
+![Hovering a title in the index opens a preview of the book's note: the bold HIGHLIGHTS heading, the chapter heading and the highlight](assets/obsidian/00_index_preview.png)
+
 ## Obsidian (optional)
 
 Obsidian is just one way to read the notes: the files are plain Markdown,
@@ -387,6 +389,10 @@ Nextcloud, ownCloud, a NAS… — substitute its address and credentials.
 
 Result: `Bookshelf/Kindle/*.md` arrive in Obsidian, `00 - Index.md` opens as
 a clickable table and every title opens that book's file.
+
+![The book index in Obsidian: titles, authors, highlight counts and last export in a table, with the graph view alongside](assets/obsidian/00_index.png)
+
+[Watch the index in action (demo, MP4, 3 MB)](assets/obsidian/tomedown_obsidian.mp4)
 
 ## Notes and limitations
 
