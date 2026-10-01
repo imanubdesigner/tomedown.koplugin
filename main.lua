@@ -56,7 +56,7 @@ local function isTransient(code)
     return code >= 500 or code == 408 or code == 429
 end
 
-local MdBook = WidgetContainer:extend{
+local Tomedown = WidgetContainer:extend{
     name = "tomedown",
 }
 
@@ -109,7 +109,7 @@ local function trim(s)
     return s
 end
 
-function MdBook:getLocalDir()
+function Tomedown:getLocalDir()
     local dir = getSetting("local_dir")
     if dir and dir ~= "" then
         return dir
@@ -117,7 +117,7 @@ function MdBook:getLocalDir()
     return DataStorage:getFullDataDir() .. "/" .. DEFAULT_LOCAL_SUBDIR
 end
 
-function MdBook:getRemoteFolder()
+function Tomedown:getRemoteFolder()
     local folder = getSetting("remote_folder")
     if folder and folder ~= "" then
         return folder
@@ -129,7 +129,7 @@ end
 -- Koofr server: first the one chosen in "Settings", then the fallback
 -- already used by AnnotationSync, so whoever already set up Koofr on
 -- KOReader does not have to set it up again.
-function MdBook:getServer()
+function Tomedown:getServer()
     local server = getSetting("server")
     if server and server.type then
         return server
@@ -153,18 +153,18 @@ function MdBook:getServer()
     return nil
 end
 
-function MdBook:hasServer()
+function Tomedown:hasServer()
     return self:getServer() ~= nil and (self.ui and self.ui.cloudstorage) ~= nil
 end
 
-function MdBook:getCurrentFile()
+function Tomedown:getCurrentFile()
     if self.ui and self.ui.document then
         return self.ui.document.file
     end
     return G_reader_settings:readSetting("lastfile")
 end
 
-function MdBook:showProgress(text)
+function Tomedown:showProgress(text)
     local info = InfoMessage:new{ text = text }
     UIManager:show(info)
     UIManager:forceRePaint()
@@ -173,7 +173,7 @@ end
 
 -- reading the annotations
 
-function MdBook:listBookFiles()
+function Tomedown:listBookFiles()
     local files = {}
     for __, item in ipairs(readhistory.hist) do
         if not item.dim and item.file and item.file ~= ""
@@ -186,7 +186,7 @@ end
 
 -- fallback for .sdr files written by old KOReader versions
 -- (before annotations were saved in the "annotations" table)
-function MdBook:legacyAnnotations(ds)
+function Tomedown:legacyAnnotations(ds)
     local highlights = ds:readSetting("highlight")
     if type(highlights) ~= "table" then
         return nil
@@ -233,7 +233,7 @@ end
 
 -- keeps only the highlights (drawer), drops page bookmarks
 -- and deleted entries, then sorts them by page
-function MdBook:cleanAnnotations(raw)
+function Tomedown:cleanAnnotations(raw)
     local out = {}
     if type(raw) ~= "table" then
         return out
@@ -269,7 +269,7 @@ end
 
 -- keeps the page bookmarks (page, without pos0/pos1), drops deleted
 -- entries and auto-generated notes, then sorts them by page
-function MdBook:cleanBookmarks(raw)
+function Tomedown:cleanBookmarks(raw)
     local out = {}
     if type(raw) ~= "table" then
         return out
@@ -365,7 +365,7 @@ local function hashBook(title, author, annotations, meta, bookmarks)
 end
 
 -- file name identical to the standard exporter's ("%A - %T")
-function MdBook:fileBase(file, props)
+function Tomedown:fileBase(file, props)
     local name
     local bookinfo = self.ui and self.ui.bookinfo
     if bookinfo and bookinfo.expandString then
@@ -382,7 +382,7 @@ function MdBook:fileBase(file, props)
     return util.getSafeFilename(name, nil, nil, -1)
 end
 
-function MdBook:buildBook(file, live_annotations)
+function Tomedown:buildBook(file, live_annotations)
     if self.book_cache and self.book_cache[file] ~= nil then
         return self.book_cache[file]
     end
@@ -471,7 +471,7 @@ function MdBook:buildBook(file, live_annotations)
     return book
 end
 
-function MdBook:buildBooks(files)
+function Tomedown:buildBooks(files)
     local books = {}
     for __, file in ipairs(files) do
         local live
@@ -493,7 +493,7 @@ end
 
 -- index
 
-function MdBook:buildIndexEntries(dir, export_records)
+function Tomedown:buildIndexEntries(dir, export_records)
     local entries = {}
     for __, file in ipairs(self:listBookFiles()) do
         local book = self:buildBook(file)
@@ -521,7 +521,7 @@ end
 
 -- upload to the cloud
 
-function MdBook:cloudProvider(server)
+function Tomedown:cloudProvider(server)
     local cloud = self.ui and self.ui.cloudstorage
     if not (cloud and server and server.type and cloud.providers) then
         return nil
@@ -538,9 +538,26 @@ end
 -- permanent failure. It absorbs transient network blips (WiFi reconnecting,
 -- slow DNS, etc.) without needing a "Reload everything
 -- to the cloud" by hand every time.
-function MdBook:uploadPaths(server, paths, callback)
+function Tomedown:uploadPaths(server, paths, callback)
     local provider = self:cloudProvider(server)
+    -- remembered for the Status panel; every upload path funnels here
+    local function recordUpload(uploaded, errors)
+        if #paths > 0 then
+            logger.info(string.format("tomedown: upload done: ok=%d errors=%d",
+                uploaded, errors))
+            setSetting("last_upload", {
+                at = os.time(),
+                uploaded = uploaded,
+                errors = errors,
+            })
+        end
+    end
+    if #paths > 0 then
+        logger.info(string.format("tomedown: upload start: %d files -> %s",
+            #paths, server.name or server.type or "?"))
+    end
     if not (provider and provider.uploadFile and provider.run) then
+        recordUpload(0, #paths)
         if callback then callback(0, #paths, paths) end
         return
     end
@@ -583,6 +600,7 @@ function MdBook:uploadPaths(server, paths, callback)
     local function step()
         i = i + 1
         if i > #paths then
+            recordUpload(ok_count, fail_count)
             if callback then callback(ok_count, fail_count, failed) end
             return
         end
@@ -605,7 +623,7 @@ end
 -- files written locally but not yet in the cloud (offline export, upload
 -- failure, export during suspend): remembered across restarts so that the
 -- next connection can upload only those
-function MdBook:markPendingUploads(paths)
+function Tomedown:markPendingUploads(paths)
     local pending = getSetting("pending_uploads", {})
     local changed = false
     for __, path in ipairs(paths) do
@@ -622,7 +640,7 @@ function MdBook:markPendingUploads(paths)
     end
 end
 
-function MdBook:clearPendingUploads(paths)
+function Tomedown:clearPendingUploads(paths)
     local pending = getSetting("pending_uploads", {})
     local changed = false
     for __, path in ipairs(paths) do
@@ -636,7 +654,7 @@ function MdBook:clearPendingUploads(paths)
     end
 end
 
-function MdBook:runExport(files, opts)
+function Tomedown:runExport(files, opts)
     opts = opts or {}
     if opts.auto then
         -- close and suspend only export what changed since last time
@@ -715,6 +733,13 @@ function MdBook:runExport(files, opts)
     local ms_index = time.to_ms(time.since(t1))
 
     setSetting("exports", export_records)
+    -- remembered for the Status panel (also for silent suspend exports)
+    setSetting("last_export", {
+        at = os.time(),
+        exported = exported,
+        skipped = skipped,
+        errors = #errors,
+    })
     if info then
         UIManager:close(info)
     end
@@ -736,7 +761,7 @@ function MdBook:runExport(files, opts)
         if opts.auto == "close" and exported == 0 and #errors == 0 then
             return
         end
-        self:showResult(exported, skipped, errors, offline_pending)
+        self:showResult(exported, skipped, errors, offline_pending, opts.auto)
     end
     local function reportUpload(uploaded, upload_failed)
         if upload_failed > 0 then
@@ -785,10 +810,23 @@ function MdBook:runExport(files, opts)
     end
 end
 
+-- What started an automatic export, for the notification prefix.
+-- Manual runs stay unlabelled in the toast — the reader just tapped
+-- the menu entry — but the error window, which stays on screen after
+-- a background close, always names its trigger.
+local function autoTriggerLabel(auto)
+    if auto == "close" then
+        return _("Closing")
+    end
+    return nil
+end
+
 --- The local outcome: a toast right after the export finishes, an
 -- InfoMessage (stays on screen) when something went wrong. The cloud
--- reports separately, in reportUpload's own notification.
-function MdBook:showResult(exported, skipped, errors, offline_pending)
+-- reports separately, in reportUpload's own notification. `auto` is
+-- opts.auto of the run: automatic toasts carry their trigger, manual
+-- ones do not; the error window is always labelled.
+function Tomedown:showResult(exported, skipped, errors, offline_pending, auto)
     local lines = {}
     if exported > 0 then
         if offline_pending then
@@ -804,12 +842,96 @@ function MdBook:showResult(exported, skipped, errors, offline_pending)
     end
     if #errors > 0 then
         lines[#lines + 1] = _("Errors:") .. "\n" .. table.concat(errors, "\n")
-        UIManager:show(InfoMessage:new{ text = table.concat(lines, "\n") })
+        local trigger = autoTriggerLabel(auto) or _("Manual")
+        UIManager:show(InfoMessage:new{
+            text = trigger .. " · " .. table.concat(lines, "\n"),
+        })
         return
     end
+    local prefix = ""
+    local auto_label = autoTriggerLabel(auto)
+    if auto_label then
+        prefix = auto_label .. " · "
+    end
     UIManager:show(Notification:new{
-        text = table.concat(lines, " · "),
+        text = prefix .. table.concat(lines, " · "),
         timeout = 3,
+    })
+end
+
+-- Status panel: the state that otherwise lives only in the toast
+-- history — network, server, queued uploads and the outcome of the
+-- last export/upload with their timestamps — on a single screen.
+-- statusLines() is separated from showStatus() so the tests can read
+-- the text without any widget.
+
+function Tomedown:statusLines()
+    local lines = {}
+    lines[#lines + 1] = NetworkMgr:isConnected()
+        and _("Network: connected")
+        or _("Network: offline")
+    local server = self:getServer()
+    if server then
+        local desc = server.name or server.type or "?"
+        local folder = self:getRemoteFolder()
+        if folder ~= "" then
+            desc = desc .. " → " .. folder
+        end
+        lines[#lines + 1] = T(_("Server: %1"), desc)
+    else
+        lines[#lines + 1] = _("Server: not set")
+    end
+
+    local pending_count = 0
+    for __ in pairs(getSetting("pending_uploads", {})) do
+        pending_count = pending_count + 1
+    end
+    if pending_count > 0 then
+        lines[#lines + 1] = T(_("Upload pending: %1 files"), pending_count)
+    end
+
+    local last_export = getSetting("last_export")
+    if last_export and last_export.at then
+        local outcome = T(_("%1 exported, %2 skipped"),
+            last_export.exported, last_export.skipped)
+        if (last_export.errors or 0) > 0 then
+            outcome = outcome .. " · " .. T(_("%1 errors"), last_export.errors)
+        end
+        lines[#lines + 1] = T(_("Last export: %1 — %2"),
+            os.date("%d/%m/%Y %H:%M", last_export.at), outcome)
+    else
+        lines[#lines + 1] = _("Last export: never")
+    end
+
+    local last_upload = getSetting("last_upload")
+    if last_upload and last_upload.at then
+        local outcome = T(_("%1 uploaded"), last_upload.uploaded)
+        if (last_upload.errors or 0) > 0 then
+            outcome = outcome .. " · " .. T(_("%1 errors"), last_upload.errors)
+        end
+        lines[#lines + 1] = T(_("Last upload: %1 — %2"),
+            os.date("%d/%m/%Y %H:%M", last_upload.at), outcome)
+    else
+        lines[#lines + 1] = _("Last upload: never")
+    end
+
+    if pending_count > 0 then
+        if not getSetting("upload", false) then
+            lines[#lines + 1] = _("Next upload: disabled in settings")
+        elseif not NetworkMgr:isConnected() then
+            lines[#lines + 1] = _("Next upload: at the next connection")
+        elseif self._flushing then
+            lines[#lines + 1] = _("Next upload: in progress")
+        else
+            lines[#lines + 1] = _("Next upload: any moment now")
+        end
+    end
+    return lines
+end
+
+function Tomedown:showStatus()
+    UIManager:show(InfoMessage:new{
+        text = table.concat(self:statusLines(), "\n"),
     })
 end
 
@@ -817,7 +939,7 @@ end
 -- when KOReader wakes up and at plugin start, so an export made offline finds
 -- the network at the next opportunity without any prompt
 
-function MdBook:schedulePendingFlush()
+function Tomedown:schedulePendingFlush()
     if self._flush_scheduled or self._flushing then
         return
     end
@@ -837,7 +959,7 @@ function MdBook:schedulePendingFlush()
     end)
 end
 
-function MdBook:flushPendingUploads()
+function Tomedown:flushPendingUploads()
     if self._flushing or not getSetting("upload", false) then
         return
     end
@@ -863,6 +985,7 @@ function MdBook:flushPendingUploads()
         return
     end
     table.sort(paths)
+    logger.info(string.format("tomedown: flushing %d pending uploads", #paths))
     self._flushing = true
     local upload_info = self:showProgress(T(_("Uploading %1 files to the cloud…"), #paths))
     self:uploadPaths(server, paths, function(ok_count, fail_count, failed)
@@ -892,7 +1015,7 @@ function MdBook:flushPendingUploads()
     end)
 end
 
-function MdBook:reuploadAll(touchmenu)
+function Tomedown:reuploadAll(touchmenu)
     if touchmenu and touchmenu.closeMenu then
         touchmenu:closeMenu()
     end
@@ -944,7 +1067,7 @@ end
 
 -- settings / choices
 
-function MdBook:chooseCloudFolder(touchmenu)
+function Tomedown:chooseCloudFolder(touchmenu)
     local cloud = self.ui and self.ui.cloudstorage
     if not cloud then
         UIManager:show(InfoMessage:new{
@@ -960,7 +1083,7 @@ function MdBook:chooseCloudFolder(touchmenu)
     end)
 end
 
-function MdBook:editRemoteFolder(touchmenu)
+function Tomedown:editRemoteFolder(touchmenu)
     local dialog
     dialog = InputDialog:new{
         title = _("Remote folder on the server"),
@@ -994,7 +1117,7 @@ function MdBook:editRemoteFolder(touchmenu)
     UIManager:show(dialog)
 end
 
-function MdBook:editLocalDir(touchmenu)
+function Tomedown:editLocalDir(touchmenu)
     local PathChooser = require("ui/widget/pathchooser")
     UIManager:show(PathChooser:new{
         title = _("Local folder for exports"),
@@ -1014,7 +1137,7 @@ end
 
 -- menu
 
-function MdBook:genPickerMenu()
+function Tomedown:genPickerMenu()
     self.book_cache = {}
     local selected = getSetting("selected", {})
     local books = self:buildBooks(self:listBookFiles())
@@ -1114,7 +1237,7 @@ end
 -- in the main menu right under Settings. Every setting keeps its own
 -- row; the checkable ones keep their keep_menu_open so KOReader
 -- refreshes the tick in place.
-function MdBook:genSettingsMenu()
+function Tomedown:genSettingsMenu()
     local cloud = {
         {
             text = _("Upload to cloud"),
@@ -1325,7 +1448,7 @@ end
 -- it. The logo lives in assets/ (SVG or PNG) and is only shown when
 -- the file is there, so a copy of the plugin without it still shows
 -- the rest.
-function MdBook:showAbout()
+function Tomedown:showAbout()
     local src = debug.getinfo(1, "S").source
     local plugin_dir
     if src:sub(1, 1) == "@" then
@@ -1514,7 +1637,7 @@ end
 --- One-time default for "Upload to cloud": a fresh install starts with
 -- it off (local-first), while anyone who has already exported keeps the
 -- old behaviour (on) unless they had explicitly chosen otherwise.
-function MdBook:migrateDefaults()
+function Tomedown:migrateDefaults()
     local settings = G_reader_settings:readSetting(SETTINGS_KEY)
     if type(settings) == "table" and settings.upload == nil
             and settings.exports ~= nil then
@@ -1523,7 +1646,7 @@ function MdBook:migrateDefaults()
     end
 end
 
-function MdBook:init()
+function Tomedown:init()
     self.ui.menu:registerToMainMenu(self)
     -- ensure the plugin is in the UI event chain (same guard as
     -- AnnotationSync), so onCloseDocument/onSuspend/... reach it
@@ -1553,7 +1676,7 @@ end
 
 -- auto-export (first row of the Tomedown menu, off by default)
 
-function MdBook:onCloseDocument()
+function Tomedown:onCloseDocument()
     if not getSetting("auto_export", false) then
         return
     end
@@ -1572,7 +1695,7 @@ function MdBook:onCloseDocument()
     end)
 end
 
-function MdBook:onSuspend()
+function Tomedown:onSuspend()
     if not getSetting("auto_export", false) then
         return
     end
@@ -1585,11 +1708,11 @@ function MdBook:onSuspend()
     self:runExport({ path }, { auto = "suspend" })
 end
 
-function MdBook:onResume()
+function Tomedown:onResume()
     self:schedulePendingFlush()
 end
 
-function MdBook:onNetworkConnected()
+function Tomedown:onNetworkConnected()
     self:schedulePendingFlush()
 end
 
@@ -1598,7 +1721,7 @@ end
 -- addToMainMenu lazily on the first menu open of a session), so the
 -- reader is already interacting with the UI. The prompt appears once
 -- in a lifetime: both "Export" and "Not now" set the flag.
-function MdBook:maybePromptLibraryImport()
+function Tomedown:maybePromptLibraryImport()
     if getSetting("import_prompt_done", false) then
         return
     end
@@ -1626,13 +1749,39 @@ function MdBook:maybePromptLibraryImport()
     end)
 end
 
-function MdBook:addToMainMenu(menu_items)
+-- Pin this plugin's row to the top of its menu tab. MenuSorter appends
+-- items it cannot place in the cached order tables at the bottom of the
+-- first tab, prefixed with "NEW: ", which buries the entry on a second
+-- page. Referencing the id from the order tables puts it exactly where
+-- we want it (first row of the Navigation tab in the reader, first row
+-- of the first tab in the file browser) and skips the orphan pass
+-- entirely, so the "NEW: " prefix disappears too. Keyed by id, so tab
+-- reorders done by other plugins don't affect us. Idempotent:
+-- addToMainMenu fires again on menu rebuilds and once per host.
+local function pinToTop(order_module, group_id)
+    local ok, order = pcall(require, order_module)
+    if not ok or type(order) ~= "table" or type(order[group_id]) ~= "table" then
+        -- outside KOReader (tests): no order tables, no placement
+        return
+    end
+    local group = order[group_id]
+    for _, id in ipairs(group) do
+        if id == "tomedown" then
+            return
+        end
+    end
+    table.insert(group, 1, "tomedown")
+end
+
+function Tomedown:addToMainMenu(menu_items)
     if getSetting("update_check", false) then
         UIManager:scheduleIn(0.1, function()
             Update.checkBackground()
         end)
     end
     self:maybePromptLibraryImport()
+    pinToTop("ui/elements/reader_menu_order", "navi")
+    pinToTop("ui/elements/filemanager_menu_order", "filemanager_settings")
     -- Every row of the main menu carries a Nerd Font glyph (from
     -- nerdfonts/symbols.ttf, KOReader's own fallback font). Settings
     -- keeps its word plus the icon; inside, only the three group
@@ -1698,6 +1847,13 @@ function MdBook:addToMainMenu(menu_items)
                 end,
             },
             {
+                text = withIcon("\xEF\x83\xA4", _("Status")),
+                callback = function()
+                    self:showStatus()
+                end,
+                separator = true,
+            },
+            {
                 text = withIcon("\xEF\x80\x93", _("Settings")),
                 sub_item_table_func = function()
                     return self:genSettingsMenu()
@@ -1714,4 +1870,4 @@ function MdBook:addToMainMenu(menu_items)
     }
 end
 
-return MdBook
+return Tomedown

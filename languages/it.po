@@ -303,3 +303,60 @@ msgstr "Segnalibri di pagina"
 
 msgid "Beta Releases"
 msgstr "Beta Releases"
+
+msgid "Status"
+msgstr "Stato"
+
+msgid "Network: connected"
+msgstr "Rete: connessa"
+
+msgid "Network: offline"
+msgstr "Rete: disconnessa"
+
+msgid "Server: %1"
+msgstr "Server: %1"
+
+msgid "Server: not set"
+msgstr "Server: non impostato"
+
+msgid "Upload pending: %1 files"
+msgstr "Upload pendenti: %1 file"
+
+msgid "Last export: never"
+msgstr "Ultimo export: mai eseguito"
+
+msgid "%1 exported, %2 skipped"
+msgstr "%1 esportati, %2 saltati"
+
+msgid "Last export: %1 — %2"
+msgstr "Ultimo export: %1 — %2"
+
+msgid "%1 errors"
+msgstr "%1 errori"
+
+msgid "Last upload: never"
+msgstr "Ultimo upload: mai eseguito"
+
+msgid "%1 uploaded"
+msgstr "%1 caricati"
+
+msgid "Last upload: %1 — %2"
+msgstr "Ultimo upload: %1 — %2"
+
+msgid "Next upload: disabled in settings"
+msgstr "Prossimo upload: disattivato nelle impostazioni"
+
+msgid "Next upload: at the next connection"
+msgstr "Prossimo upload: al prossimo collegamento"
+
+msgid "Next upload: in progress"
+msgstr "Prossimo upload: in corso"
+
+msgid "Next upload: any moment now"
+msgstr "Prossimo upload: a breve"
+
+msgid "Closing"
+msgstr "Chiusura"
+
+msgid "Manual"
+msgstr "Manuale"
