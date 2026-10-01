@@ -33,6 +33,7 @@ local GetText = require("gettext")
 local UIManager = require("ui/uimanager")
 local InfoMessage = require("ui/widget/infomessage")
 local TextViewer = require("ui/widget/textviewer")
+local FileConverter = require("apps/filemanager/filemanagerconverter")
 local ConfirmBox = require("ui/widget/confirmbox")
 local Notification = require("ui/widget/notification")
 local Device = require("device")
@@ -240,8 +241,14 @@ T.check(T.contains(viewer.text, "v" .. MAJOR) and T.contains(viewer.text, "v" ..
     and T.contains(viewer.text, "v" .. MINOR), "header for every newer release")
 T.check(T.contains(viewer.text, "Fix A") and T.contains(viewer.text, "Fix B")
     and T.contains(viewer.text, "Fixes"), "notes of every newer release")
-T.check(viewer.text_format == "md",
-    "notes rendered as markdown: " .. tostring(viewer.text_format))
+T.check(viewer.text_format == "html",
+    "notes rendered as html: " .. tostring(viewer.text_format))
+T.check(FileConverter.last_stylesheet ~= nil
+        and T.contains(FileConverter.last_stylesheet, "font-family"),
+    "sans stylesheet attached: " .. tostring(FileConverter.last_stylesheet))
+T.check(T.contains(viewer.text, "Helvetica"),
+    "stylesheet embedded in the rendered html: "
+        .. tostring(T.contains(viewer.text or "", "Helvetica")))
 T.check(T.contains(viewer.text, "**bold**") and T.contains(viewer.text, "# Fixes")
     and T.contains(viewer.text, "`code`"),
     "markdown kept for rendering: " .. tostring(viewer.text))
@@ -281,6 +288,7 @@ T.check(not viewer_still_open, "viewer closed")
 -- stripped notes (what every version showed before)
 local saved_formats = TextViewer.html_text_formats
 TextViewer.html_text_formats = nil
+FileConverter.last_stylesheet = nil
 resetWidgets()
 Update._resetState()
 Update.check()
@@ -289,6 +297,9 @@ local plain = TextViewer.last
 T.check(plain ~= nil, "fallback viewer shown")
 T.check(plain.text_format == nil,
     "fallback stays plain text: " .. tostring(plain.text_format))
+T.check(FileConverter.last_stylesheet == nil,
+    "fallback never converts to html: "
+        .. tostring(FileConverter.last_stylesheet))
 T.check(not T.contains(plain.text, "**") and not T.contains(plain.text, "# "),
     "fallback strips markdown: " .. tostring(plain.text))
 T.check(T.contains(plain.text, "Fix A"), "fallback keeps the notes")
@@ -641,6 +652,8 @@ Update.showChangelog()
 T.check(TextViewer.last ~= nil, "changelog viewer shown")
 T.check(TextViewer.last.title == "Changelog (1 of 2)",
     "changelog title: " .. tostring(TextViewer.last and TextViewer.last.title))
+T.check(TextViewer.last.text_format == "html",
+    "changelog rendered as html: " .. tostring(TextViewer.last.text_format))
 T.check(T.contains(TextViewer.last.text or "", "v9.9.0"), "newest entry first")
 T.check(not T.contains(TextViewer.last.text or "", "2026-01-15"),
     "no date in the changelog headline")

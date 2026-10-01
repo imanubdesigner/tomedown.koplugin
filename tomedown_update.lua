@@ -259,6 +259,27 @@ local function canRenderMarkdown()
         and type(Converter.mdToHtml) == "function"
 end
 
+-- The stylesheet attached to every rendered note: the named fonts are
+-- usually absent (Kindle, most desktop setups), so the renderer falls
+-- back to its own sans-serif face instead of the serif default. It is
+-- set on <html> on purpose: TextViewer's "Monospace" menu toggle styles
+-- <body>, and an element rule beats an inherited one whatever the order,
+-- so the toggle keeps working.
+local NOTES_CSS = 'html { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }'
+
+--- Render a Markdown note to HTML with NOTES_CSS and return it with the
+-- TextViewer text_format to request ("html" pre-converted, "md" as a
+-- defensive fallback when the converter is missing - the caller has
+-- already probed the same support with canRenderMarkdown()).
+local function renderNotes(text)
+    local ok, Converter = pcall(require, "apps/filemanager/filemanagerconverter")
+    if ok and type(Converter) == "table"
+            and type(Converter.mdToHtml) == "function" then
+        return Converter:mdToHtml(text, "", NOTES_CSS), "html"
+    end
+    return text, "md"
+end
+
 --- The "Beta Releases" Settings toggle (default off): with it on, the
 -- prereleases are offered too. Reads the same settings key as main.lua.
 local function betaEnabled()
@@ -383,6 +404,10 @@ local function changelogShow(rels, idx)
         body = _("(no notes for this release)")
     end
     local text = (as_md and ("## " .. head) or head) .. "\n\n" .. body
+    local text_format
+    if as_md then
+        text, text_format = renderNotes(text)
+    end
     local viewer
     local function repage(new_idx)
         UIManager:close(viewer)
@@ -391,7 +416,7 @@ local function changelogShow(rels, idx)
     viewer = TextViewer:new{
         title = T(_("Changelog (%1 of %2)"), idx, #rels),
         text = text,
-        text_format = as_md and "md" or nil,
+        text_format = text_format,
         buttons_table = {
             {
                 {
@@ -512,13 +537,18 @@ local function checkBody(include_beta)
             notes[#notes + 1] = "v" .. rel.version .. "\n" .. stripMarkdown(body)
         end
     end
+    local text = T(_("Installed: %1\nLatest: %2"), "v" .. installed,
+        "v" .. latest)
+        .. "\n\n" .. table.concat(notes, "\n\n")
+    local text_format
+    if as_md then
+        text, text_format = renderNotes(text)
+    end
     local viewer
     viewer = TextViewer:new{
         title = _("Update available!"),
-        text = T(_("Installed: %1\nLatest: %2"), "v" .. installed,
-            "v" .. latest)
-            .. "\n\n" .. table.concat(notes, "\n\n"),
-        text_format = as_md and "md" or nil,
+        text = text,
+        text_format = text_format,
         buttons_table = {
             {
                 {
