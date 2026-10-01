@@ -407,15 +407,17 @@ local menu_items = {}
 plugin:addToMainMenu(menu_items)
 T.check(menu_items.tomedown ~= nil, "menu entry registered")
 local sub = menu_items.tomedown.sub_item_table
-T.check(#sub == 7, "main menu entries: " .. #sub)
+T.check(#sub == 8, "main menu entries: " .. #sub)
 T.check(sub[1].text == "\xEE\x89\xBC  Export current book", "menu item 1")
 T.check(sub[2].text == "\xEE\xA4\xB5  Export only what changed", "menu item 2")
 T.check(sub[3].text == "\xEE\xB9\x94  Choose books…", "menu item 3")
 T.check(sub[4].text == "\xEE\xA7\x99  Import all books from history", "menu item 4")
 T.check(sub[5].text == "\xEE\xB4\xBE  Reload everything to the cloud", "menu item 5")
-T.check(sub[6].text == "\xEF\x80\x93  Settings", "menu item 6 with the cog")
-T.check(sub[6].separator == true, "separator before About")
-T.check(sub[7].text == "\xEE\xA7\xBC  About", "menu item 7")
+T.check(sub[6].text == "\xEF\x83\xA4  Status", "menu item 6 with the dashboard")
+T.check(sub[6].separator == true, "separator before Settings")
+T.check(sub[7].text == "\xEF\x80\x93  Settings", "menu item 7 with the cog")
+T.check(sub[7].separator == true, "separator before About")
+T.check(sub[8].text == "\xEE\xA7\xBC  About", "menu item 8")
 
 local cover_entry = false
 local function scanCover(items)
@@ -514,7 +516,7 @@ for _, group in ipairs({ sub, cloud, files, updates, developer }) do
 end
 -- the About row opens the Bookshelf-style popup
 local shown_before = #UIManager.shown
-sub[7].callback()
+sub[8].callback()
 T.check(#UIManager.shown == shown_before + 1, "about popup shown")
 local dialog = UIManager.shown[#UIManager.shown]
 T.check(dialog ~= nil and dialog.__widget == "InputContainer",
@@ -664,6 +666,77 @@ package.loaded["ui/elements/filemanager_menu_order"] = nil
 T.check(pcall(plugin.addToMainMenu, plugin, menu_items),
     "addToMainMenu without order tables does not fail")
 
+-- Status panel: the settings read back into a few lines of text
+NetworkMgr.connected = false
+store.tomedown.upload = false
+local lines = plugin:statusLines()
+local status_text = table.concat(lines, "\n")
+T.check(lines[1] == "Network: offline", "status: offline line: " .. lines[1])
+T.check(lines[2] == "Server: not set", "status: no server line: " .. lines[2])
+T.check(T.contains(status_text, "Last export: never"), "status: no export yet")
+T.check(T.contains(status_text, "Last upload: never"), "status: no upload yet")
+T.check(#lines == 4, "status without pending: " .. #lines)
+
+NetworkMgr.connected = true
+store.tomedown.server = { name = "Koofr", type = "webdav", url = "/Bookshelf/Kindle" }
+store.tomedown.remote_folder = "/Cartella"
+store.tomedown.last_export = {
+    at = os.time({ year = 2026, month = 10, day = 1, hour = 14, min = 32, sec = 0 }),
+    exported = 3, skipped = 1, errors = 0,
+}
+store.tomedown.last_upload = {
+    at = os.time({ year = 2026, month = 10, day = 1, hour = 14, min = 35, sec = 0 }),
+    uploaded = 2, errors = 1,
+}
+store.tomedown.pending_uploads = { ["/a.md"] = true, ["/b.md"] = true }
+store.tomedown.upload = true
+lines = plugin:statusLines()
+status_text = table.concat(lines, "\n")
+T.check(lines[1] == "Network: connected",
+    "status: connected line: " .. lines[1])
+T.check(T.contains(status_text, "Koofr") and T.contains(status_text, "/Cartella"),
+    "status: server and folder: " .. lines[2])
+T.check(T.contains(status_text, "Upload pending: 2 files"),
+    "status: pending count")
+T.check(T.contains(status_text, "01/10/2026 14:32 — 3 exported, 1 skipped"),
+    "status: last export line: " .. tostring(lines[4]))
+T.check(T.contains(status_text, "01/10/2026 14:35 — 2 uploaded · 1 errors"),
+    "status: last upload line: " .. tostring(lines[5]))
+T.check(T.contains(status_text, "Next upload: any moment now"),
+    "status: next upload queued while online")
+T.check(#lines == 6, "status with pending: " .. #lines)
+
+NetworkMgr.connected = false
+T.check(T.contains(table.concat(plugin:statusLines(), "\n"),
+        "Next upload: at the next connection"),
+    "status: next upload waits for the connection")
+NetworkMgr.connected = true
+store.tomedown.upload = false
+T.check(T.contains(table.concat(plugin:statusLines(), "\n"),
+        "Next upload: disabled in settings"),
+    "status: next upload honours the setting")
+
+-- the panel is shown as an InfoMessage
+local shown_before_status = #UIManager.shown
+plugin:showStatus()
+T.check(#UIManager.shown == shown_before_status + 1, "status panel shown")
+
+-- runExport records its outcome for the panel (upload off: no cloud)
+store.tomedown.upload = false
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+local recorded = store.tomedown.last_export
+T.check(recorded ~= nil and recorded.at ~= nil and recorded.exported == 1
+        and recorded.skipped == 0,
+    "runExport records last_export: " .. tostring(recorded and recorded.exported))
+T.check(T.contains(table.concat(plugin:statusLines(), "\n"),
+        "Last export: "),
+    "status reads the recorded export")
+
+-- leave the store the way the sections after this one expect it
+store = {}
+store.tomedown = { import_prompt_done = true }
+
 -- ----------------------------------------------- 5b. page bookmarks
 
 files[3].callback() -- enable "Include page bookmarks"
@@ -807,6 +880,9 @@ T.check(attempt_count[INDEX_PATH] == 1, "index untouched by the md failure")
 T.check(sameList(positives(), { 2 }), "backoff iniziale 2s, ottenuto " .. listStr(positives()))
 T.check(T.contains(Notification.last_text or "", "Cloud: 2 files uploaded"),
     "full recovery: " .. tostring(Notification.last_text))
+local up = store.tomedown.last_upload
+T.check(up ~= nil and up.at ~= nil and up.uploaded == 2 and up.errors == 0,
+    "uploadPaths records last_upload: " .. tostring(up and up.uploaded))
 T.check(T.contains(table.concat(logger.history, "\n"), "retrying in"),
     "retry logged")
 

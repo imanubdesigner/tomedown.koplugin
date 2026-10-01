@@ -540,7 +540,18 @@ end
 -- to the cloud" by hand every time.
 function Tomedown:uploadPaths(server, paths, callback)
     local provider = self:cloudProvider(server)
+    -- remembered for the Status panel; every upload path funnels here
+    local function recordUpload(uploaded, errors)
+        if #paths > 0 then
+            setSetting("last_upload", {
+                at = os.time(),
+                uploaded = uploaded,
+                errors = errors,
+            })
+        end
+    end
     if not (provider and provider.uploadFile and provider.run) then
+        recordUpload(0, #paths)
         if callback then callback(0, #paths, paths) end
         return
     end
@@ -583,6 +594,7 @@ function Tomedown:uploadPaths(server, paths, callback)
     local function step()
         i = i + 1
         if i > #paths then
+            recordUpload(ok_count, fail_count)
             if callback then callback(ok_count, fail_count, failed) end
             return
         end
@@ -715,6 +727,13 @@ function Tomedown:runExport(files, opts)
     local ms_index = time.to_ms(time.since(t1))
 
     setSetting("exports", export_records)
+    -- remembered for the Status panel (also for silent suspend exports)
+    setSetting("last_export", {
+        at = os.time(),
+        exported = exported,
+        skipped = skipped,
+        errors = #errors,
+    })
     if info then
         UIManager:close(info)
     end
@@ -810,6 +829,82 @@ function Tomedown:showResult(exported, skipped, errors, offline_pending)
     UIManager:show(Notification:new{
         text = table.concat(lines, " · "),
         timeout = 3,
+    })
+end
+
+-- Status panel: the state that otherwise lives only in the toast
+-- history — network, server, queued uploads and the outcome of the
+-- last export/upload with their timestamps — on a single screen.
+-- statusLines() is separated from showStatus() so the tests can read
+-- the text without any widget.
+
+function Tomedown:statusLines()
+    local lines = {}
+    lines[#lines + 1] = NetworkMgr:isConnected()
+        and _("Network: connected")
+        or _("Network: offline")
+    local server = self:getServer()
+    if server then
+        local desc = server.name or server.type or "?"
+        local folder = self:getRemoteFolder()
+        if folder ~= "" then
+            desc = desc .. " → " .. folder
+        end
+        lines[#lines + 1] = T(_("Server: %1"), desc)
+    else
+        lines[#lines + 1] = _("Server: not set")
+    end
+
+    local pending_count = 0
+    for __ in pairs(getSetting("pending_uploads", {})) do
+        pending_count = pending_count + 1
+    end
+    if pending_count > 0 then
+        lines[#lines + 1] = T(_("Upload pending: %1 files"), pending_count)
+    end
+
+    local last_export = getSetting("last_export")
+    if last_export and last_export.at then
+        local outcome = T(_("%1 exported, %2 skipped"),
+            last_export.exported, last_export.skipped)
+        if (last_export.errors or 0) > 0 then
+            outcome = outcome .. " · " .. T(_("%1 errors"), last_export.errors)
+        end
+        lines[#lines + 1] = T(_("Last export: %1 — %2"),
+            os.date("%d/%m/%Y %H:%M", last_export.at), outcome)
+    else
+        lines[#lines + 1] = _("Last export: never")
+    end
+
+    local last_upload = getSetting("last_upload")
+    if last_upload and last_upload.at then
+        local outcome = T(_("%1 uploaded"), last_upload.uploaded)
+        if (last_upload.errors or 0) > 0 then
+            outcome = outcome .. " · " .. T(_("%1 errors"), last_upload.errors)
+        end
+        lines[#lines + 1] = T(_("Last upload: %1 — %2"),
+            os.date("%d/%m/%Y %H:%M", last_upload.at), outcome)
+    else
+        lines[#lines + 1] = _("Last upload: never")
+    end
+
+    if pending_count > 0 then
+        if not getSetting("upload", false) then
+            lines[#lines + 1] = _("Next upload: disabled in settings")
+        elseif not NetworkMgr:isConnected() then
+            lines[#lines + 1] = _("Next upload: at the next connection")
+        elseif self._flushing then
+            lines[#lines + 1] = _("Next upload: in progress")
+        else
+            lines[#lines + 1] = _("Next upload: any moment now")
+        end
+    end
+    return lines
+end
+
+function Tomedown:showStatus()
+    UIManager:show(InfoMessage:new{
+        text = table.concat(self:statusLines(), "\n"),
     })
 end
 
@@ -1722,6 +1817,13 @@ function Tomedown:addToMainMenu(menu_items)
                 callback = function(touchmenu)
                     self:reuploadAll(touchmenu)
                 end,
+            },
+            {
+                text = withIcon("\xEF\x83\xA4", _("Status")),
+                callback = function()
+                    self:showStatus()
+                end,
+                separator = true,
             },
             {
                 text = withIcon("\xEF\x80\x93", _("Settings")),
