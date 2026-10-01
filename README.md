@@ -392,7 +392,9 @@ a clickable table and every title opens that book's file.
 
 ![The book index in Obsidian: titles, authors, highlight counts and last export in a table, with the graph view alongside](assets/obsidian/00_index.png)
 
-[Watch the index in action (demo, MP4, 3 MB)](assets/obsidian/tomedown_obsidian.mp4)
+
+https://github.com/user-attachments/assets/a345caf7-bf6d-42c7-87fa-177d601790fa
+
 
 ## Notes and limitations
 
