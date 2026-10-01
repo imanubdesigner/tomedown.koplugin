@@ -733,6 +733,24 @@ T.check(T.contains(table.concat(plugin:statusLines(), "\n"),
         "Last export: "),
     "status reads the recorded export")
 
+-- export notifications: automatic runs carry their trigger, manual
+-- ones stay untouched; the error window always names its trigger
+plugin:showResult(3, 0, {}, false, "close")
+T.check(Notification.last_text == "Closing · 3 files exported locally",
+    "automatic toast carries the trigger: " .. tostring(Notification.last_text))
+plugin:showResult(3, 0, {}, false, nil)
+T.check(Notification.last_text == "3 files exported locally",
+    "manual toast is untouched: " .. tostring(Notification.last_text))
+plugin:showResult(2, 0, { "book.md: broken" }, false, nil)
+T.check(T.contains(InfoMessage.last_text or "", "Manual · 2 files exported locally")
+        and T.contains(InfoMessage.last_text or "", "Errors:"),
+    "error window always says what started it: " .. tostring(InfoMessage.last_text))
+plugin:showResult(2, 0, { "book.md: broken" }, false, "close")
+T.check(T.contains(InfoMessage.last_text or "", "Closing · 2 files exported locally"),
+    "error window labels a background close: " .. tostring(InfoMessage.last_text))
+InfoMessage.last_text = nil
+Notification.last_text = nil
+
 -- leave the store the way the sections after this one expect it
 store = {}
 store.tomedown = { import_prompt_done = true }

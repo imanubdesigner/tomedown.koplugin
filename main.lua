@@ -761,7 +761,7 @@ function Tomedown:runExport(files, opts)
         if opts.auto == "close" and exported == 0 and #errors == 0 then
             return
         end
-        self:showResult(exported, skipped, errors, offline_pending)
+        self:showResult(exported, skipped, errors, offline_pending, opts.auto)
     end
     local function reportUpload(uploaded, upload_failed)
         if upload_failed > 0 then
@@ -810,10 +810,23 @@ function Tomedown:runExport(files, opts)
     end
 end
 
+-- What started an automatic export, for the notification prefix.
+-- Manual runs stay unlabelled in the toast — the reader just tapped
+-- the menu entry — but the error window, which stays on screen after
+-- a background close, always names its trigger.
+local function autoTriggerLabel(auto)
+    if auto == "close" then
+        return _("Closing")
+    end
+    return nil
+end
+
 --- The local outcome: a toast right after the export finishes, an
 -- InfoMessage (stays on screen) when something went wrong. The cloud
--- reports separately, in reportUpload's own notification.
-function Tomedown:showResult(exported, skipped, errors, offline_pending)
+-- reports separately, in reportUpload's own notification. `auto` is
+-- opts.auto of the run: automatic toasts carry their trigger, manual
+-- ones do not; the error window is always labelled.
+function Tomedown:showResult(exported, skipped, errors, offline_pending, auto)
     local lines = {}
     if exported > 0 then
         if offline_pending then
@@ -829,11 +842,19 @@ function Tomedown:showResult(exported, skipped, errors, offline_pending)
     end
     if #errors > 0 then
         lines[#lines + 1] = _("Errors:") .. "\n" .. table.concat(errors, "\n")
-        UIManager:show(InfoMessage:new{ text = table.concat(lines, "\n") })
+        local trigger = autoTriggerLabel(auto) or _("Manual")
+        UIManager:show(InfoMessage:new{
+            text = trigger .. " · " .. table.concat(lines, "\n"),
+        })
         return
     end
+    local prefix = ""
+    local auto_label = autoTriggerLabel(auto)
+    if auto_label then
+        prefix = auto_label .. " · "
+    end
     UIManager:show(Notification:new{
-        text = table.concat(lines, " · "),
+        text = prefix .. table.concat(lines, " · "),
         timeout = 3,
     })
 end

@@ -354,3 +354,9 @@ msgstr "Prossimo upload: in corso"
 
 msgid "Next upload: any moment now"
 msgstr "Prossimo upload: a breve"
+
+msgid "Closing"
+msgstr "Chiusura"
+
+msgid "Manual"
+msgstr "Manuale"
