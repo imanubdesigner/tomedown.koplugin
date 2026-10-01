@@ -32,7 +32,8 @@ T.check(T.contains(md, 'title: "Blackwater"'), "frontmatter title")
 T.check(T.contains(md, 'author: "Michael McDowell"'), "frontmatter author")
 T.check(T.contains(md, "exported: 2026-09-26"), "frontmatter exported")
 T.check(T.contains(md, "highlights: 2"), "frontmatter highlights")
-T.check(T.contains(md, "  - kindle"), "tag kindle")
+T.check(T.contains(md, "  - ebook"), "tag ebook")
+T.check(not T.contains(md, "kindle"), "the old kindle tag is gone")
 T.check(T.contains(md, "  - highlights"), "tag highlights")
 T.check(not T.contains(md, "series:"), "no series line when absent")
 T.check(not T.contains(md, "language:"), "no language line when absent")
@@ -41,9 +42,9 @@ T.check(not T.contains(md, "status:"), "no status line when absent")
 T.check(not T.contains(md, "progress:"), "no progress line when absent")
 T.check(not T.contains(md, "# Blackwater"), "no h1 in the body")
 T.check(not T.contains(md, "*Michael McDowell*"), "author stays in the frontmatter only")
-T.check(T.contains(md, "> ## HIGHLIGHTS: 2"), "highlight count as a heading")
-T.check(T.contains(md, "#### Capitolo I"), "first chapter")
-T.check(T.contains(md, "#### Capitolo II"), "second chapter")
+T.check(T.contains(md, "# **HIGHLIGHTS: 2**"), "highlight count as a heading")
+T.check(T.contains(md, "\n# Capitolo I"), "first chapter")
+T.check(T.contains(md, "\n# Capitolo II"), "second chapter")
 T.check(T.contains(md, "> Prima frase."), "quote 1")
 T.check(T.contains(md, "> Seconda riga."), "quote 2")
 T.check(T.contains(md, "- **p. 10** · 02/09/2026 · note: nota utente"),
@@ -56,13 +57,23 @@ T.check(md:sub(-1) == "\n", "ends with a newline")
 T.check(not T.contains(md, "cover"), "no cover in the markdown")
 T.check(not T.contains(md, "![]("), "no image in the markdown")
 
--- no chapters: no #### sections
+-- separators: under the stats, between chapters, never at the end of the file
+T.check(T.contains(md, "# **HIGHLIGHTS: 2**\n\n---\n\n# Capitolo I"),
+    "separator between the stats and the first chapter")
+T.check(T.contains(md, "- **p. 10** · 02/09/2026 · note: nota utente\n\n---\n\n# Capitolo II"),
+    "separator when the chapter changes")
+T.check(not T.contains(md, "---\n\n---"), "no doubled separator")
+T.check(md:match("%-%-%-%s*$") == nil, "no separator at the end of the file")
+
+-- no chapters: the body has only the HIGHLIGHTS heading
 local noChapters = render.buildBookMd({
     title = "Senza capitoli",
     count = 1,
     annotations = { { text = "Solo testo", page = "1" } },
 })
-T.check(not T.contains(noChapters, "\n#### "), "without chapters no heading appears")
+local body_h1 = select(2, noChapters:gsub("\n# ", ""))
+T.check(body_h1 == 1, "without chapters only HIGHLIGHTS is an H1: " .. body_h1)
+T.check(noChapters:match("%-%-%-%s*$") == nil, "chapterless: no separator at the end")
 
 -- mixed chapters: annotations without a chapter use the given label
 local mixed = render.buildBookMd({
@@ -73,8 +84,8 @@ local mixed = render.buildBookMd({
         { text = "B" },
     },
 }, { no_chapter_label = "Senza capitolo" })
-T.check(T.contains(mixed, "#### Capitolo I"), "chapter present")
-T.check(T.contains(mixed, "#### Senza capitolo"), "fallback label")
+T.check(T.contains(mixed, "\n# Capitolo I"), "chapter present")
+T.check(T.contains(mixed, "\n# Senza capitolo"), "fallback label")
 T.check(not T.contains(mixed, "\n## No chapter"), "no leftover English msgid")
 
 -- multiline note flattened onto one line
@@ -139,12 +150,12 @@ for __, key in ipairs(seq) do
     last = pos or last
 end
 T.check(order_ok, "frontmatter keys in the documented order")
-local t1 = rich:find("  - kindle", 1, true)
+local t1 = rich:find("  - ebook", 1, true)
 local t2 = rich:find("  - highlights", 1, true)
 local t3 = rich:find("  - horror", 1, true)
 local t4 = rich:find("  - gothic-fiction", 1, true)
 T.check(t1 and t2 and t3 and t4 and t1 < t2 and t2 < t3 and t3 < t4,
-    "tags: kindle, highlights, then the book keywords")
+    "tags: ebook, highlights, then the book keywords")
 
 local idxBook = render.buildBookMd({
     title = "T",
@@ -173,16 +184,18 @@ local bmBook = render.buildBookMd({
         { page = "7", date = "02/09/2026" },
     },
 })
-T.check(T.contains(bmBook, "#### Page bookmarks"), "bookmarks heading")
+T.check(T.contains(bmBook, "\n# Page bookmarks"), "bookmarks heading")
 T.check(T.contains(bmBook, "> Nota segnalibro"), "bookmark note quoted")
 T.check(T.contains(bmBook, "- **p. 5** · 01/09/2026"), "bookmark meta row")
 T.check(T.contains(bmBook, "- **p. 7** · 02/09/2026"), "bookmark without note: meta only")
-T.check(T.contains(bmBook, "> ## HIGHLIGHTS: 1"), "highlight count kept")
+T.check(T.contains(bmBook, "# **HIGHLIGHTS: 1**"), "highlight count kept")
 local iHl = bmBook:find("> Evidenziato", 1, true)
-local iSect = bmBook:find("#### Page bookmarks", 1, true)
+local iSect = bmBook:find("\n# Page bookmarks", 1, true)
 T.check(iHl and iSect and iHl < iSect, "the section comes after the highlights")
+T.check(T.contains(bmBook, "\n\n---\n\n# Page bookmarks"),
+    "separator before the bookmarks section")
 local quoted = select(2, bmBook:gsub("> ", ""))
-T.check(quoted == 3, "stats heading, the highlight and the bookmark note: " .. quoted)
+T.check(quoted == 2, "the highlight and the bookmark note: " .. quoted)
 
 local onlyBookmarks = render.buildBookMd({
     title = "Solo bm",
@@ -190,8 +203,10 @@ local onlyBookmarks = render.buildBookMd({
     annotations = {},
     bookmarks = { { page = "1", date = "01/01/2026" } },
 })
-T.check(not T.contains(onlyBookmarks, "> ## HIGHLIGHTS: 0"), "no zero count line")
-T.check(T.contains(onlyBookmarks, "#### Page bookmarks"), "bookmark-only book gets the section")
+T.check(not T.contains(onlyBookmarks, "# **HIGHLIGHTS: 0**"), "no zero count line")
+T.check(T.contains(onlyBookmarks, "\n# Page bookmarks"), "bookmark-only book gets the section")
+T.check(select(2, onlyBookmarks:gsub("\n%-%-%-\n", "")) == 1,
+    "bookmark-only: no separator besides the frontmatter")
 T.check(not T.contains(md, "Page bookmarks"), "no section without bookmarks")
 
 -- ---------------------------------------------------------------- index
@@ -201,6 +216,8 @@ T.check(not T.contains(index, "# Book index"), "no h1 in the index")
 T.check(T.contains(index, "_No exported books with highlights._"), "empty index")
 T.check(T.contains(index, "  - index"), "tag index")
 T.check(T.contains(index, "---\n"), "index frontmatter")
+T.check(T.contains(index, "  - ebook"), "tag ebook in the index")
+T.check(not T.contains(index, "kindle"), "the old kindle tag is gone from the index")
 
 local rows = render.buildIndexMd({
     {
@@ -223,11 +240,11 @@ T.check(not T.contains(rows, "# Indice dei libri"), "no h1 in the index")
 T.check(T.contains(rows, 'title: "Indice dei libri"'), "index frontmatter")
 T.check(T.contains(rows, "| Book | Author | Highlights | Last export |"), "table header")
 T.check(T.contains(rows, "|:---|:---|---:|:---|"), "table separators")
-T.check(T.contains(rows, "[[Michael McDowell - Blackwater|Blackwater]]"), "wikilink with alias")
+T.check(T.contains(rows, "[[Michael McDowell - Blackwater\\|Blackwater]]"), "wikilink with alias")
 T.check(T.contains(rows, "| 2 | 26/09/2026 |"), "count and date in the row")
 T.check(T.contains(rows, "| A \\| B | 0 | — |"), "pipes escaped and empty date")
-local order = rows:find("[[Michael McDowell - Blackwater|Blackwater]]", 1, true)
-local order2 = rows:find("[[Altro Autore - Altro|Altro]]", 1, true)
+local order = rows:find("[[Michael McDowell - Blackwater\\|Blackwater]]", 1, true)
+local order2 = rows:find("[[Altro Autore - Altro\\|Altro]]", 1, true)
 T.check(order < order2, "the index keeps the order of the books it received")
 
 -- alias: no characters that break the wikilink
@@ -243,7 +260,7 @@ local pipeIndex = render.buildIndexMd({
     { link = "Base", title = "A | B", author = "Aut", count = 1, date = "01/01/2026" },
 })
 local line = pipeIndex:match("| %[[^\n]+")
-T.check(line and T.contains(line, "[[Base|A B]]"),
+T.check(line and T.contains(line, "[[Base\\|A B]]"),
     "title with pipe: the alias stays a single valid wikilink")
 T.check(line and line:gsub("[^|]", "") == "||||||",
     "the row has the right number of columns")

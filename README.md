@@ -133,7 +133,7 @@ first export and optional Remotely Save in Obsidian — is in
 |---|---|
 | *Local folder* | defaults to `clipboard/tomedown` inside KOReader's data folder; tap it to browse with KOReader's folder picker (long-press a folder to choose it) |
 | *Generate the index 00 - Index.md* | table with internal links, author, highlight count and last export date |
-| *Include page bookmarks* | off by default: adds a `#### Page bookmarks` section (bookmarked page + note) after the highlights |
+| *Include page bookmarks* | off by default: adds a `# Page bookmarks` section (bookmarked page + note) after the highlights |
 | *Auto-export on close* | off by default: exports the book when you close it, and again (silently, no network) before the device suspends |
 
 **Updates**
@@ -307,15 +307,17 @@ highlights: 150
 status: "complete"
 progress: "96%"
 tags:
-  - kindle
+  - ebook
   - highlights
   - horror
   - gothic-fiction
 ---
 
-> ## HIGHLIGHTS: 150
+# **HIGHLIGHTS: 150**
 
-#### Chapter I
+---
+
+# Chapter I
 
 > First highlighted sentence.
 > Second line of the same highlight.
@@ -326,7 +328,9 @@ tags:
 
 - **p. 12** · 03/09/2026 11:30
 
-#### Page bookmarks
+---
+
+# Page bookmarks
 
 > Check the epilogue again
 
@@ -341,7 +345,7 @@ tags:
   instance) is simply not there, and unknown fields are omitted
 - **only highlights** are exported by default: page bookmarks and deleted
   annotations are left out — tick *Include page bookmarks* in Settings to
-  get the `#### Page bookmarks` section shown above
+  get the `# Page bookmarks` section shown above
 - the file name matches KOReader's standard exporter (`Author - Title`), so
   it does not clash with exports you already made
 - the page is the stable page number (`pageref`) when available, otherwise
@@ -354,7 +358,7 @@ tags:
   most Markdown apps:
 
   ```markdown
-  | [[Michael McDowell - Blackwater|Blackwater]] | Michael McDowell | 150 | 26/09/2026 |
+  | [[Michael McDowell - Blackwater\|Blackwater]] | Michael McDowell | 150 | 26/09/2026 |
   ```
 
 The sample above is what an English KOReader produces; with an Italian

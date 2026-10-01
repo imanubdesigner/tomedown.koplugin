@@ -258,11 +258,11 @@ if md then
     T.check(T.contains(md, 'title: "Blackwater"'), "frontmatter title")
     T.check(T.contains(md, 'author: "Michael McDowell"'), "frontmatter author")
     T.check(T.contains(md, "highlights: 2"), "only the valid highlights")
-    T.check(T.contains(md, "  - kindle"), "tag kindle")
+    T.check(T.contains(md, "  - ebook"), "tag ebook")
     T.check(not T.contains(md, "# Blackwater"), "no h1 in the body")
-    T.check(T.contains(md, "> ## HIGHLIGHTS: 2"), "count")
-    T.check(T.contains(md, "#### Capitolo I"), "chapter 1")
-    T.check(T.contains(md, "#### Capitolo II"), "chapter 2")
+    T.check(T.contains(md, "# **HIGHLIGHTS: 2**"), "count")
+    T.check(T.contains(md, "\n# Capitolo I"), "chapter 1")
+    T.check(T.contains(md, "\n# Capitolo II"), "chapter 2")
     T.check(T.contains(md, "> Prima frase."), "quote")
     T.check(T.contains(md, "- **p. 10** · 02/09/2026 10:00 · note: nota utente"), "meta with note")
     T.check(T.contains(md, "nota utente"), "note present")
@@ -280,7 +280,7 @@ T.check(lfs.attributes(DIR .. "/covers", "mode") ~= "directory",
 local index = T.readFile(INDEX_PATH)
 T.check(index ~= nil, "index written")
 if index then
-    T.check(T.contains(index, "[[Michael McDowell - Blackwater|Blackwater]]"),
+    T.check(T.contains(index, "[[Michael McDowell - Blackwater\\|Blackwater]]"),
         "wikilink in the index")
     T.check(T.contains(index, "| 2 |"), "index columns (count)")
     T.check(T.contains(index, os.date("%d/%m/%Y")), "today's date in the index")
@@ -295,9 +295,9 @@ T.check(Notification.last_text == "3 files exported locally",
 
 index = T.readFile(INDEX_PATH)
 if index then
-    T.check(T.contains(index, "[[N_A - LibroVecchio|LibroVecchio]]"),
+    T.check(T.contains(index, "[[N_A - LibroVecchio\\|LibroVecchio]]"),
         "old .sdr book in the index")
-    T.check(T.contains(index, "[[Autore X - Senza Meta|Senza Meta]]"),
+    T.check(T.contains(index, "[[Autore X - Senza Meta\\|Senza Meta]]"),
         "title from the file name when title is missing")
 end
 
@@ -642,11 +642,11 @@ UIManager:runPending()
 local bmMd = T.readFile(MD_PATH)
 T.check(bmMd ~= nil, "export with page bookmarks")
 if bmMd then
-    T.check(T.contains(bmMd, "#### Page bookmarks"), "bookmarks section")
+    T.check(T.contains(bmMd, "\n# Page bookmarks"), "bookmarks section")
     T.check(T.contains(bmMd, "> Segnalibro di pagina"), "bookmark note quoted")
     T.check(T.contains(bmMd, "- **p. 5** · 01/09/2026 09:00"), "bookmark meta row")
     T.check(T.contains(bmMd, "highlights: 2"), "highlight count unchanged")
-    local iBm = bmMd:find("#### Page bookmarks", 1, true)
+    local iBm = bmMd:find("\n# Page bookmarks", 1, true)
     local iLast = bmMd:find("> Seconda riga.", 1, true)
     T.check(iBm and iLast and iLast < iBm, "the section comes after the highlights")
 end
@@ -665,8 +665,8 @@ local onlyBmMd = T.readFile(DIR .. "/Autore B - SoloBookmark.md")
 T.check(onlyBmMd ~= nil, "bookmark-only book exported")
 if onlyBmMd then
     T.check(T.contains(onlyBmMd, "highlights: 0"), "frontmatter count zero")
-    T.check(not T.contains(onlyBmMd, "> ## HIGHLIGHTS: 0"), "no zero count line in the body")
-    T.check(T.contains(onlyBmMd, "#### Page bookmarks"), "bookmark-only section")
+    T.check(not T.contains(onlyBmMd, "# **HIGHLIGHTS: 0**"), "no zero count line in the body")
+    T.check(T.contains(onlyBmMd, "\n# Page bookmarks"), "bookmark-only section")
     T.check(T.contains(onlyBmMd, "> Solo un segnalibro"), "bookmark-only quote")
 end
 
@@ -676,7 +676,7 @@ T.check(store.tomedown.include_bookmarks == false, "page bookmarks disabled agai
 plugin:runExport({ FILE }, {})
 UIManager:runPending()
 local bmOffMd = T.readFile(MD_PATH)
-T.check(bmOffMd ~= nil and not T.contains(bmOffMd, "## Page bookmarks"),
+T.check(bmOffMd ~= nil and not T.contains(bmOffMd, "# Page bookmarks"),
     "bookmarks section removed when disabled")
 
 -- ------------------------------------------------- 6. fallback servers

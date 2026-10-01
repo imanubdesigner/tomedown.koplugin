@@ -129,16 +129,31 @@ function render.buildBookMd(book, opts)
         add("progress: " .. yamlQuote(book.progress))
     end
     add("tags:")
-    add("  - kindle")
+    add("  - ebook")
     add("  - " .. _("highlights"))
     for __, kw in ipairs(book.keywords or {}) do
         add("  - " .. yamlListItem(kw))
     end
     add("---")
 
+    local open = false
     if count > 0 then
         add("")
-        add("> ## " .. _("highlights"):upper() .. ": " .. tostring(count))
+        add("# **" .. _("highlights"):upper() .. ": " .. tostring(count) .. "**")
+        add("")
+        add("---")
+    end
+
+    local function heading(h)
+        if open then
+            add("")
+            add("---")
+        end
+        if out[#out] ~= "" then
+            add("")
+        end
+        add(h)
+        open = true
     end
 
     local with_chapters = hasAnyChapter(annotations)
@@ -148,8 +163,7 @@ function render.buildBookMd(book, opts)
         if with_chapters then
             local chapter = annotationChapter(a, opts.no_chapter_label)
             if chapter ~= current_chapter then
-                add("")
-                add("#### " .. chapter)
+                heading("# " .. chapter)
                 current_chapter = chapter
             end
         end
@@ -176,12 +190,12 @@ function render.buildBookMd(book, opts)
             meta[1] = "…"
         end
         add("- " .. table.concat(meta, " · "))
+        open = true
     end
 
     local bookmarks = book.bookmarks or {}
     if #bookmarks > 0 then
-        add("")
-        add("#### " .. _("Page bookmarks"))
+        heading("# " .. _("Page bookmarks"))
         for __, b in ipairs(bookmarks) do
             add("")
             if b.text and tostring(b.text) ~= "" then
@@ -224,7 +238,7 @@ function render.buildIndexMd(books, opts)
     add("title: " .. yamlQuote(title))
     add("exported: " .. yamlQuote(opts.exported or os.date("%Y-%m-%d")))
     add("tags:")
-    add("  - kindle")
+    add("  - ebook")
     add("  - " .. _("index"))
     add("---")
     add("")
@@ -238,7 +252,7 @@ function render.buildIndexMd(books, opts)
     add("|:---|:---|---:|:---|")
     for __, b in ipairs(books) do
         local alias = render.alias(b.title)
-        local link = alias ~= "" and ("[[" .. tostring(b.link) .. "|" .. alias .. "]]")
+        local link = alias ~= "" and ("[[" .. tostring(b.link) .. "\\|" .. alias .. "]]")
             or ("[[" .. tostring(b.link) .. "]]")
         local author = tostring(b.author or ""):gsub("|", "\\|"):gsub("[\r\n]+", " ")
         local date = (b.date and b.date ~= "") and b.date or "—"

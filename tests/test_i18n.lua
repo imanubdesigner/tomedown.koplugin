@@ -85,14 +85,14 @@ local md = render.buildBookMd({
     annotations = { { text = "X" } },
 })
 T.check(T.contains(md, "evidenziati"), "render translates the highlights tag")
-T.check(T.contains(md, "> ## EVIDENZIATI: 1"), "render translates the count")
+T.check(T.contains(md, "# **EVIDENZIATI: 1**"), "render translates the count")
 
 local mixed = render.buildBookMd({
     title = "Libro",
     count = 2,
     annotations = { { text = "X", chapter = "Capitolo I" }, { text = "Y" } },
 }, { no_chapter_label = i18n("No chapter") })
-T.check(T.contains(mixed, "#### Senza capitolo"), "chapter label translated")
+T.check(T.contains(mixed, "\n# Senza capitolo"), "chapter label translated")
 
 local index = render.buildIndexMd({
     { link = "B", title = "B", author = "A", count = 1, date = "01/01/2026" },
