@@ -543,12 +543,18 @@ function Tomedown:uploadPaths(server, paths, callback)
     -- remembered for the Status panel; every upload path funnels here
     local function recordUpload(uploaded, errors)
         if #paths > 0 then
+            logger.info(string.format("tomedown: upload done: ok=%d errors=%d",
+                uploaded, errors))
             setSetting("last_upload", {
                 at = os.time(),
                 uploaded = uploaded,
                 errors = errors,
             })
         end
+    end
+    if #paths > 0 then
+        logger.info(string.format("tomedown: upload start: %d files -> %s",
+            #paths, server.name or server.type or "?"))
     end
     if not (provider and provider.uploadFile and provider.run) then
         recordUpload(0, #paths)
@@ -958,6 +964,7 @@ function Tomedown:flushPendingUploads()
         return
     end
     table.sort(paths)
+    logger.info(string.format("tomedown: flushing %d pending uploads", #paths))
     self._flushing = true
     local upload_info = self:showProgress(T(_("Uploading %1 files to the cloud…"), #paths))
     self:uploadPaths(server, paths, function(ok_count, fail_count, failed)

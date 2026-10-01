@@ -883,6 +883,11 @@ T.check(T.contains(Notification.last_text or "", "Cloud: 2 files uploaded"),
 local up = store.tomedown.last_upload
 T.check(up ~= nil and up.at ~= nil and up.uploaded == 2 and up.errors == 0,
     "uploadPaths records last_upload: " .. tostring(up and up.uploaded))
+local logged = table.concat(logger.history, "\n")
+T.check(T.contains(logged, "tomedown: upload start: 2 files"),
+    "upload start logged to crash.log")
+T.check(T.contains(logged, "tomedown: upload done: ok=2 errors=0"),
+    "upload result logged to crash.log")
 T.check(T.contains(table.concat(logger.history, "\n"), "retrying in"),
     "retry logged")
 
@@ -1160,6 +1165,9 @@ T.check(T.contains(Notification.last_text or "", "Cloud: 2 files uploaded"),
     "reconnect notification: " .. tostring(Notification.last_text))
 T.check(next(store.tomedown.pending_uploads or {}) == nil,
     "reconnect: pending list cleared")
+T.check(T.contains(table.concat(logger.history, "\n"),
+        "tomedown: flushing 2 pending uploads"),
+    "flush logged to crash.log")
 
 -- reconnect with nothing to do: no flush at all
 plugin:onNetworkConnected()
