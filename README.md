@@ -294,6 +294,8 @@ you had missed.
 
 ![The full menu on a flagged highlight: Remove Special Highlight](assets/menu/highlights/remove_special_highlights_big_menu.png)
 
+![In Obsidian the flagged highlight renders as a callout while the plain quotes stay quotes](assets/obsidian/markdown_special_highlights.png)
+
 After every export, if *Upload to cloud* is on, the `.md` files and the index
 are uploaded to the chosen server automatically. With *Include book covers*
 ticked the `covers/` folder travels with them — it is created on the server
@@ -449,6 +451,8 @@ tags:
 The sample above is what an English KOReader produces; with an Italian
 interface the same text comes out translated (see *Languages*).
 
+![The exported note in Obsidian: the properties, the rule and the centered cover](assets/obsidian/markdown_tags_cover.png)
+
 ![Hovering a title in the index opens a preview of the book's note: the bold HIGHLIGHTS heading, the chapter heading and the highlight](assets/obsidian/00_index_preview.png)
 
 ## Obsidian (optional)
@@ -484,7 +488,7 @@ Nextcloud, ownCloud, a NAS… — substitute its address and credentials.
 Result: `Bookshelf/Kindle/*.md` arrive in Obsidian, `00 - Index.md` opens as
 a clickable table and every title opens that book's file.
 
-![The book index in Obsidian: titles, authors, highlight counts and last export in a table, with the graph view alongside](assets/obsidian/00_index.png)
+![The book index in Obsidian: the stats line under the properties, then covers, titles, authors, highlight counts and last export in a table](assets/obsidian/index_v2_cover.png)
 
 
 https://github.com/user-attachments/assets/a345caf7-bf6d-42c7-87fa-177d601790fa
