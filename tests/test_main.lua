@@ -1326,6 +1326,10 @@ T.check(store.tomedown.upload == nil, "fresh install starts with upload off")
 -- ------------------------------- 14. covers, callout, special (v0.8.0)
 
 local BookInfo = require("apps/filemanager/filemanagerbookinfo")
+local Cover = require("tomedown_cover")
+local Device = require("device")
+local CanvasContext = require("document/canvascontext")
+local saved_screen_flag = Device.hasColorScreen
 
 -- a fake BlitBuffer like the stubs': getWidth/getHeight/free plus a
 -- writeToFile that leaves the parameters it received in the file
@@ -1390,6 +1394,29 @@ local index_content = T.readFile(INDEX_PATH)
 T.check(T.contains(index_content or "", COVER_REL), "the index row shows the cover")
 T.check(T.contains(index_content or "", "width:90px;height:120px"),
     "the index cover is sized 90x120")
+
+-- extraction always forces colour rendering on, and puts the flags
+-- back right after the call
+T.check(BookInfo.cover_seen and BookInfo.cover_seen.color_screen == true,
+    "colour forced on the screen flag while extracting: "
+        .. tostring(BookInfo.cover_seen and BookInfo.cover_seen.color_screen))
+T.check(BookInfo.cover_seen and BookInfo.cover_seen.canvas_color == true,
+    "colour forced on the canvas flag while extracting: "
+        .. tostring(BookInfo.cover_seen and BookInfo.cover_seen.canvas_color))
+T.check(Device.hasColorScreen == saved_screen_flag,
+    "the screen flag is restored once the cover is written")
+T.check(CanvasContext.is_color_rendering_enabled == false,
+    "the canvas flag is restored once the cover is written")
+
+-- a failed extraction restores the flags too
+BookInfo.cover_bb = nil
+T.check(Cover.extract(nil, FILE, DIR .. "/covers/no-cover-here.jpg") == false,
+    "extraction fails when the book has no cover image")
+T.check(Device.hasColorScreen == saved_screen_flag,
+    "the screen flag is restored after a failed extraction")
+T.check(CanvasContext.is_color_rendering_enabled == false,
+    "the canvas flag is restored after a failed extraction")
+BookInfo.cover_bb = fakeBB(1600, 2400)
 
 -- upload succeeds: the vault copy is the master one, the cover is
 -- dropped from the device while the md files stay local

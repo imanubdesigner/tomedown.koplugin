@@ -13,6 +13,8 @@ master one), an offline upload keeps it locally until the flush.
 ]]
 
 local BookInfo = require("apps/filemanager/filemanagerbookinfo")
+local CanvasContext = require("document/canvascontext")
+local Device = require("device")
 local lfs = require("libs/libkoreader-lfs")
 local logger = require("logger")
 local util = require("util")
@@ -38,6 +40,10 @@ end
 --- Ensure the cover of `file` exists at `path`.
 -- Reuses the file when it is already there (it was written by an
 -- earlier export and never uploaded yet).
+-- The extraction always forces colour rendering on: KOReader decodes
+-- covers in greyscale on greyscale e-ink screens, while the exported
+-- .jpg is meant to be shown in Obsidian, on a colour screen. Both
+-- knobs are put back right after the call, whatever happened inside.
 -- @tparam table|nil document the currently open document, when the
 -- book is the one on screen (nil for every other book)
 -- @string file the book's file path
@@ -47,7 +53,19 @@ function cover.extract(document, file, path)
     if lfs.attributes(path, "mode") == "file" then
         return true
     end
+    local saved_has_color_screen = Device.hasColorScreen
+    local saved_canvas_color = CanvasContext.is_color_rendering_enabled
+    Device.hasColorScreen = function() return true end
+    CanvasContext.is_color_rendering_enabled = true
+    if document and document.updateColorRendering then
+        pcall(document.updateColorRendering, document)
+    end
     local ok_bb, bb = pcall(BookInfo.getCoverImage, BookInfo, document, file, false)
+    Device.hasColorScreen = saved_has_color_screen
+    CanvasContext.is_color_rendering_enabled = saved_canvas_color
+    if document and document.updateColorRendering then
+        pcall(document.updateColorRendering, document)
+    end
     if not ok_bb or not bb then
         return false
     end
