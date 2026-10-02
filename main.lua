@@ -20,6 +20,7 @@ local InfoMessage = require("ui/widget/infomessage")
 local InputDialog = require("ui/widget/inputdialog")
 local NetworkMgr = require("ui/network/manager")
 local Notification = require("ui/widget/notification")
+local TextBoxWidget = require("ui/widget/textboxwidget")
 local UIManager = require("ui/uimanager")
 local WidgetContainer = require("ui/widget/container/widgetcontainer")
 local logger = require("logger")
@@ -989,11 +990,32 @@ function Tomedown:statusLines()
 end
 
 function Tomedown:showStatus()
+    -- KOReader's own inline styling, "Poor Text Formatting": the header
+    -- char must open the text and the two private-use chars wrap what
+    -- gets the bold face. Applied to the already translated lines, so
+    -- the msgids stay plain.
+    local styled = TextBoxWidget.PTF_HEADER
+    for i, line in ipairs(self:statusLines()) do
+        -- every line is "Label: value"; bold the label, up to the first
+        -- colon (values may well contain colons: times, paths)
+        local label, rest = line:match("^(.-:)(.*)$")
+        if label then
+            line = TextBoxWidget.PTF_BOLD_START .. label
+                .. TextBoxWidget.PTF_BOLD_END .. rest
+        end
+        if i > 1 then
+            styled = styled .. "\n"
+        end
+        styled = styled .. line
+    end
     UIManager:show(InfoMessage:new{
         -- the smallest info face (18pt vs the default 24): every entry
         -- stays on a single line instead of wrapping into a wall of text
         face = Font:getFace("xx_smallinfofont"),
-        text = table.concat(self:statusLines(), "\n"),
+        -- 90% of the screen (the default is 2/3): bold labels plus long
+        -- dates and outcomes still fit on one line
+        width = math.floor(Device.screen:getWidth() * 0.9),
+        text = styled,
     })
 end
 
