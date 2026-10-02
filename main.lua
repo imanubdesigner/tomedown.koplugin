@@ -32,6 +32,7 @@ local lfs = require("libs/libkoreader-lfs")
 local T = ffiUtil.template
 local _ = require("tomedown_i18n")
 local render = require("tomedown_render")
+local Cover = require("tomedown_cover")
 local Update = require("tomedown_update")
 
 local SETTINGS_KEY = "tomedown"
@@ -251,6 +252,7 @@ function Tomedown:cleanAnnotations(raw)
                     date = render.fmtDateTime(datetime),
                     sort_page = tonumber(item.pageno) or 0,
                     sort_time = tostring(datetime or ""),
+                    special = item.tomedown_special or nil,
                 }
             end
         end
@@ -351,6 +353,9 @@ local function hashBook(title, author, annotations, meta, bookmarks)
             tostring(a.chapter or ""),
             a.text,
             tostring(a.note or ""),
+            -- the Special Highlight mark changes the rendering, the hash
+            -- must catch up with it
+            tostring(a.special or ""),
         }, "\31")
     end
     for __, b in ipairs(bookmarks or {}) do
@@ -380,6 +385,24 @@ function Tomedown:fileBase(file, props)
     end
     name = name:gsub("\r?\n", "; ")
     return util.getSafeFilename(name, nil, nil, -1)
+end
+
+--- The vault-relative path of a book's cover, extracting the image the
+-- first time it is needed. nil when "Include book covers" is off or the
+-- book has no cover at all; the markdown then simply omits it.
+function Tomedown:ensureCover(file, base, dir)
+    if not getSetting("covers", false) then
+        return nil
+    end
+    local rel = Cover.relPath(base)
+    local document
+    if self.ui and self.ui.document and self.ui.document.file == file then
+        document = self.ui.document
+    end
+    if Cover.extract(document, file, dir .. "/" .. rel) then
+        return rel
+    end
+    return nil
 end
 
 function Tomedown:buildBook(file, live_annotations)
@@ -495,16 +518,31 @@ end
 
 function Tomedown:buildIndexEntries(dir, export_records)
     local entries = {}
+    local new_covers = {}
+    local with_covers = getSetting("covers", false)
     for __, file in ipairs(self:listBookFiles()) do
         local book = self:buildBook(file)
         if book and lfs.attributes(dir .. "/" .. book.base .. ".md") then
             local record = export_records[file]
+            local cover_rel = Cover.relPath(book.base)
+            local has_cover = lfs.attributes(dir .. "/" .. cover_rel, "mode") == "file"
+            if not has_cover and with_covers then
+                -- backfill: books exported before the option was turned on
+                has_cover = self:ensureCover(file, book.base, dir)
+                if has_cover then
+                    new_covers[#new_covers + 1] = dir .. "/" .. cover_rel
+                end
+            end
             entries[#entries + 1] = {
                 link = book.base,
                 title = book.title,
                 author = book.author,
+                series = book.series,
+                series_index = book.series_index,
+                status = book.status,
                 count = book.count,
                 date = record and render.fmtDate(record.date) or "",
+                cover = has_cover and cover_rel or nil,
             }
         end
     end
@@ -516,7 +554,7 @@ function Tomedown:buildIndexEntries(dir, export_records)
         end
         return tostring(a.title or ""):lower() < tostring(b.title or ""):lower()
     end)
-    return entries
+    return entries, new_covers
 end
 
 -- upload to the cloud
@@ -699,11 +737,19 @@ function Tomedown:runExport(files, opts)
                 and lfs.attributes(md_path) then
                 skipped = skipped + 1
             else
-                local md = render.buildBookMd(book, { no_chapter_label = _("No chapter") })
+                local cover_rel = self:ensureCover(file, book.base, dir)
+                local md = render.buildBookMd(book, {
+                    no_chapter_label = _("No chapter"),
+                    cover = cover_rel,
+                    callout = getSetting("callout", false),
+                })
                 local written_ok, err = util.writeToFile(md, md_path, true, false, true)
                 if written_ok then
                     exported = exported + 1
                     written[#written + 1] = md_path
+                    if cover_rel then
+                        written[#written + 1] = dir .. "/" .. cover_rel
+                    end
                     export_records[file] = {
                         hash = book.hash,
                         base = book.base,
@@ -721,12 +767,18 @@ function Tomedown:runExport(files, opts)
     if with_index then
         local index_path = dir .. "/" .. INDEX_FILENAME
         if exported > 0 or not lfs.attributes(index_path) then
-            local index_md = render.buildIndexMd(self:buildIndexEntries(dir, export_records), {
+            local entries, new_covers = self:buildIndexEntries(dir, export_records)
+            local index_md = render.buildIndexMd(entries, {
                 title = _("Book index"),
                 exported = os.date("%Y-%m-%d"),
+                show_covers = getSetting("covers", false),
             })
             if util.writeToFile(index_md, index_path, true, false, true) then
                 written[#written + 1] = index_path
+                -- covers pulled in by the backfill above join the upload
+                for __, path in ipairs(new_covers) do
+                    written[#written + 1] = path
+                end
             end
         end
     end
@@ -805,6 +857,12 @@ function Tomedown:runExport(files, opts)
                 end
             end
             self:clearPendingUploads(ok_paths)
+            -- the vault copy is now the master one: drop the transferred
+            -- covers from the device (the .md files stay local, they are
+            -- the library this plugin reads its history from)
+            if getSetting("covers", false) then
+                Cover.deleteUploaded(ok_paths, dir)
+            end
             reportUpload(ok_count, fail_count)
         end)
     end
@@ -1002,6 +1060,9 @@ function Tomedown:flushPendingUploads()
             end
         end
         self:clearPendingUploads(ok_paths)
+        if getSetting("covers", false) then
+            Cover.deleteUploaded(ok_paths, self:getLocalDir())
+        end
         if fail_count > 0 then
             UIManager:show(InfoMessage:new{
                 text = T(_("Cloud: %1 uploaded, %2 errors"), ok_count, fail_count),
@@ -1040,6 +1101,11 @@ function Tomedown:reuploadAll(touchmenu)
     listDir(dir, function(entry)
         return entry:sub(-3) == ".md"
     end)
+    -- covers still sitting on the device (upload was off, or the upload
+    -- failed earlier) ride along with "Reload everything"
+    listDir(dir .. "/covers", function(entry)
+        return entry:sub(-4) == ".jpg"
+    end)
     if #paths == 0 then
         UIManager:show(Notification:new{
             text = _("Nothing to upload, export something first."),
@@ -1050,8 +1116,21 @@ function Tomedown:reuploadAll(touchmenu)
 
     table.sort(paths)
     local info = self:showProgress(T(_("Uploading %1 files to the cloud…"), #paths))
-    self:uploadPaths(server, paths, function(ok_count, fail_count)
+    self:uploadPaths(server, paths, function(ok_count, fail_count, failed)
         UIManager:close(info)
+        if getSetting("covers", false) then
+            local failed_set = {}
+            for __, path in ipairs(failed) do
+                failed_set[path] = true
+            end
+            local ok_paths = {}
+            for __, path in ipairs(paths) do
+                if not failed_set[path] then
+                    ok_paths[#ok_paths + 1] = path
+                end
+            end
+            Cover.deleteUploaded(ok_paths, dir)
+        end
         if fail_count > 0 then
             UIManager:show(InfoMessage:new{
                 text = T(_("Cloud: %1/%2 files uploaded, %3 errors"), ok_count, #paths, fail_count),
@@ -1237,6 +1316,24 @@ end
 -- in the main menu right under Settings. Every setting keeps its own
 -- row; the checkable ones keep their keep_menu_open so KOReader
 -- refreshes the tick in place.
+-- Dropping the stored hash forces the next "Export only what changed"
+-- to rewrite every book: the render options (covers, callout) are not
+-- part of hashBook, so without this a settings toggle would leave the
+-- already exported .md files stale until the highlights change.
+function Tomedown:invalidateExportHashes()
+    local records = getSetting("exports", {})
+    local changed = false
+    for __, record in pairs(records) do
+        if type(record) == "table" and record.hash ~= nil then
+            record.hash = nil
+            changed = true
+        end
+    end
+    if changed then
+        setSetting("exports", records)
+    end
+end
+
 function Tomedown:genSettingsMenu()
     local cloud = {
         {
@@ -1311,6 +1408,28 @@ function Tomedown:genSettingsMenu()
             keep_menu_open = true,
             callback = function()
                 setSetting("include_bookmarks", not getSetting("include_bookmarks", false))
+            end,
+        },
+        {
+            text = _("Include book covers"),
+            checked_func = function()
+                return getSetting("covers", false)
+            end,
+            keep_menu_open = true,
+            callback = function()
+                setSetting("covers", not getSetting("covers", false))
+                self:invalidateExportHashes()
+            end,
+        },
+        {
+            text = _("All highlights as callouts"),
+            checked_func = function()
+                return getSetting("callout", false)
+            end,
+            keep_menu_open = true,
+            callback = function()
+                setSetting("callout", not getSetting("callout", false))
+                self:invalidateExportHashes()
             end,
             separator = true,
         },
@@ -1709,6 +1828,51 @@ end
 
 function Tomedown:onNetworkConnected()
     self:schedulePendingFlush()
+end
+
+-- Special Highlight: a toggle in the menu of an already existing
+-- highlight (tapped, so the annotation has an index). The mark lives on
+-- the annotation itself (tomedown_special in the .sdr): it survives
+-- restarts, reaches cleanAnnotations and therefore the markdown, and is
+-- part of the book hash so the next export rewrites the .md. Registered
+-- when the reader is ready through ReaderHighlight's public
+-- addToHighlightDialog API; the key is stable, so re-registering on
+-- every book only replaces the previous button.
+function Tomedown:onReaderReady()
+    local highlight = self.ui and self.ui.highlight
+    if not highlight or not highlight.addToHighlightDialog then
+        return
+    end
+    highlight:addToHighlightDialog("tomedown_special", function(this, index)
+        local annotations = this.ui.annotation and this.ui.annotation.annotations
+        local item = annotations and index and annotations[index]
+        local special = item and item.tomedown_special or false
+        return {
+            text = (special and "✓ " or "") .. _("Special Highlight"),
+            -- on a fresh text selection (index == nil) the annotation
+            -- does not exist yet: nothing to mark, keep the row hidden
+            show_in_highlight_dialog_func = function()
+                return index ~= nil
+            end,
+            callback = function()
+                if not item then
+                    return
+                end
+                item.tomedown_special = not item.tomedown_special or nil
+                local doc_settings = this.ui.doc_settings
+                if doc_settings then
+                    doc_settings:saveSetting("annotations", annotations)
+                end
+                this:onClose()
+                UIManager:show(Notification:new{
+                    text = item.tomedown_special
+                        and _("Highlight marked as special")
+                        or _("Special mark removed"),
+                    timeout = 2,
+                })
+            end,
+        }
+    end)
 end
 
 -- first-run onboarding: offer to import the whole reading history

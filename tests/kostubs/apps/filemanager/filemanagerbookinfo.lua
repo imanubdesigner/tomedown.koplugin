@@ -16,4 +16,12 @@ function BookInfo.extendProps(props, file)
     return out
 end
 
+-- test hook: tests set BookInfo.cover_bb to a fake BlitBuffer (or nil
+-- to simulate a book without any cover image)
+BookInfo.cover_bb = nil
+
+function BookInfo:getCoverImage(document, file, force_orig)
+    return BookInfo.cover_bb
+end
+
 return BookInfo

@@ -470,7 +470,7 @@ local cloud = settings[1].sub_item_table
 local files = settings[2].sub_item_table
 local updates = settings[3].sub_item_table
 T.check(#cloud == 3, "cloud rows: " .. #cloud)
-T.check(#files == 4, "markdown files rows: " .. #files)
+T.check(#files == 6, "markdown files rows: " .. #files)
 T.check(#updates == 4, "updates rows: " .. #updates)
 T.check(cloud[1].text == "Upload to cloud", "upload entry")
 T.check(cloud[2].text_func() == "Server and folder: not set", "server not set")
@@ -479,10 +479,14 @@ T.check(T.contains(files[1].text_func(), "clipboard/tomedown"), "default local f
 T.check(T.contains(files[2].text, "00 - Index.md"), "index entry with the file name")
 T.check(files[3].text == "Include page bookmarks", "page bookmarks entry")
 T.check(files[3].checked_func() == false, "page bookmarks off by default")
-T.check(files[3].separator == true, "separator before the auto-export toggle")
-T.check(files[4].text == "Auto-export on close",
+T.check(files[4].text == "Include book covers", "covers entry")
+T.check(files[4].checked_func() == false, "covers off by default")
+T.check(files[5].text == "All highlights as callouts", "callout entry")
+T.check(files[5].checked_func() == false, "callout off by default")
+T.check(files[5].separator == true, "separator before the auto-export toggle")
+T.check(files[6].text == "Auto-export on close",
     "auto-export lives in Markdown files")
-T.check(files[4].checked_func() == false, "auto-export off by default")
+T.check(files[6].checked_func() == false, "auto-export off by default")
 T.check(updates[1].text_func() == "Check for updates (v"
         .. Update.getInstalledVersion() .. ")",
     "check row carries the installed version: " .. updates[1].text_func())
@@ -997,18 +1001,21 @@ plugin:runExport({ FILE }, {})
 T.check(#uploads == 0, "first phase: export only")
 T.check(T.fileExists(MD_PATH) and T.fileExists(INDEX_PATH), "local files present")
 
--- a leftover covers folder must not end up in the upload
+-- a leftover cover rides along with "Reload everything"
 os.execute('mkdir -p "' .. DIR .. '/covers" && printf x > "' .. DIR .. '/covers/copertina.jpg"')
 
 resetUpload()
 store.tomedown.upload = true
 plugin:reuploadAll(nil)
 UIManager:runPending()
-T.check(#uploads == 2, "only the .md files re-uploaded: " .. #uploads)
+T.check(#uploads == 3, "md files plus the leftover cover re-uploaded: " .. #uploads)
 T.check(uploads[1].path == INDEX_PATH, "ordered: index first")
 T.check(uploads[2].path == MD_PATH, "ordered: book md second")
-T.check(Notification.last_text == "Cloud: 2 files uploaded",
+T.check(uploads[3].path == DIR .. "/covers/copertina.jpg", "ordered: cover last")
+T.check(Notification.last_text == "Cloud: 3 files uploaded",
     "reload notification: " .. tostring(Notification.last_text))
+T.check(T.fileExists(DIR .. "/covers/copertina.jpg"),
+    "covers option off: the uploaded cover stays local")
 T.rmrf(DIR .. "/covers")
 
 store = {}
@@ -1028,18 +1035,16 @@ T.check(#uploads == 0, "no file to re-upload")
 T.check(Notification.last_text == "Nothing to upload, export something first.",
     "empty folder notification: " .. tostring(Notification.last_text))
 
--- ------------------------------------------- 10. no cover anywhere
+-- ------------------------------------ 10. the cover support is wired in
 
-local sources = { "main.lua", "tomedown_render.lua", "README.md" }
-for __, name in ipairs(sources) do
-    local src = T.readFile(T.plugin .. "/" .. name)
-    if src then
-        local lower = src:lower()
-        T.check(not lower:find("buildcover") and not lower:find("cover_path")
-            and not lower:find("covers/", 1, true),
-            name .. " has no cover references left")
-    end
-end
+local render_src = T.readFile(T.plugin .. "/tomedown_render.lua")
+T.check(render_src and render_src:find("coverImg", 1, true),
+    "render embeds the cover")
+local cover_src = T.readFile(T.plugin .. "/tomedown_cover.lua")
+T.check(cover_src ~= nil, "tomedown_cover.lua exists")
+local main_src = T.readFile(T.plugin .. "/main.lua")
+T.check(main_src and main_src:find("tomedown_cover", 1, true),
+    "main.lua requires the cover module")
 
 -- --------------------------------------- 11. first-run import prompt
 
@@ -1123,10 +1128,10 @@ T.check(#uploads == 0 and Notification.last_text == nil,
 ui.document = nil
 
 -- toggle on: the close exports after 1s and uploads right away
-files[4].callback()
-T.check(files[4].checked_func() == true, "auto-export toggled on")
+files[6].callback()
+T.check(files[6].checked_func() == true, "auto-export toggled on")
 uploadSetup()
-files[4].callback() -- uploadSetup wiped the setting
+files[6].callback() -- uploadSetup wiped the setting
 ui.document = { file = FILE }
 plugin:onCloseDocument()
 T.check(UIManager:pendingCount() == 1, "toggle on: close schedules the export")
@@ -1153,7 +1158,7 @@ ui.document = nil
 -- without the cloud at all: one notification, right after the export
 uploadSetup()
 store.tomedown.upload = false
-files[4].callback() -- uploadSetup wiped the auto-export setting too
+files[6].callback() -- uploadSetup wiped the auto-export setting too
 ui.document = { file = FILE }
 plugin:onCloseDocument()
 UIManager:runPending()
@@ -1174,7 +1179,7 @@ ui.document = nil
 
 -- offline close: exported locally, queued, the network is not touched
 uploadSetup()
-files[4].callback()
+files[6].callback()
 NetworkMgr.connected = false
 ui.document = { file = FILE }
 plugin:onCloseDocument()
@@ -1226,7 +1231,7 @@ T.check(next(store.tomedown.pending_uploads or {}) == nil,
 
 -- suspend: local only and totally silent, even with the network up
 uploadSetup()
-files[4].callback()
+files[6].callback()
 ui.document = { file = FILE }
 plugin:onSuspend()
 T.check(UIManager:pendingCount() == 0, "suspend schedules nothing")
@@ -1287,5 +1292,178 @@ T.check(store.tomedown.upload == false, "explicit upload off is respected")
 store.tomedown = { server = SERVER }
 plugin:migrateDefaults()
 T.check(store.tomedown.upload == nil, "fresh install starts with upload off")
+
+-- ------------------------------- 14. covers, callout, special (v0.8.0)
+
+local BookInfo = require("apps/filemanager/filemanagerbookinfo")
+
+-- a fake BlitBuffer like the stubs': getWidth/getHeight/free plus a
+-- writeToFile that leaves the parameters it received in the file
+local function fakeBB(w, h)
+    return {
+        getWidth = function() return w end,
+        getHeight = function() return h end,
+        free = function() end,
+        writeToFile = function(_, path, format, quality)
+            local f = io.open(path, "wb")
+            if not f then
+                return false
+            end
+            f:write(string.format("JPG:%dx%d:%s:%d",
+                w, h, tostring(format), tonumber(quality) or 0))
+            f:close()
+            return true
+        end,
+    }
+end
+
+local COVER_PATH = DIR .. "/covers/" .. BASE .. ".jpg"
+local COVER_REL = "covers/" .. BASE .. ".jpg"
+
+NetworkMgr.connected = true
+
+-- the two new checkboxes flip their setting and invalidate the hashes
+-- (covers/callout are not part of hashBook: without the invalidation
+-- the already exported books would never be rewritten)
+uploadSetup()
+plugin:runExport({ FILE }, {})
+T.check(store.tomedown.exports[FILE].hash ~= nil, "hash stored by the export")
+files[4].callback()
+T.check(store.tomedown.covers == true, "covers toggled on")
+T.check(store.tomedown.exports[FILE].hash == nil,
+    "the covers toggle invalidates the stored hash")
+files[4].callback()
+T.check(store.tomedown.covers == false, "covers toggled off again")
+plugin:runExport({ FILE }, {})
+T.check(store.tomedown.exports[FILE].hash ~= nil, "hash back after the export")
+files[5].callback()
+T.check(store.tomedown.callout == true, "callout toggled on")
+T.check(store.tomedown.exports[FILE].hash == nil,
+    "the callout toggle invalidates the stored hash too")
+files[5].callback()
+
+-- extraction: capped to the 800x1200 box, quality 80, colours kept
+uploadSetup()
+store.tomedown.covers = true
+BookInfo.cover_bb = fakeBB(1600, 2400)
+cleanDir()
+plugin:runExport({ FILE }, {})
+local md_content = T.readFile(MD_PATH)
+T.check(T.fileExists(COVER_PATH), "cover extracted next to the md files")
+T.check(T.readFile(COVER_PATH) == "JPG:800x1200:jpg:80",
+    "scaled into the box at quality 80: " .. tostring(T.readFile(COVER_PATH)))
+T.check(T.contains(md_content or "", 'cover: "' .. COVER_REL .. '"'),
+    "frontmatter carries the cover")
+T.check(T.contains(md_content or "", '<img src="' .. COVER_REL .. '"'),
+    "the body embeds the cover")
+local index_content = T.readFile(INDEX_PATH)
+T.check(T.contains(index_content or "", COVER_REL), "the index row shows the cover")
+T.check(T.contains(index_content or "", "width:90px;height:120px"),
+    "the index cover is sized 90x120")
+
+-- upload succeeds: the vault copy is the master one, the cover is
+-- dropped from the device while the md files stay local
+resetUpload()
+cleanDir()
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+T.check(#uploads == 3, "book, index and cover uploaded: " .. #uploads)
+T.check(not T.fileExists(COVER_PATH), "the uploaded cover is removed")
+T.check(T.fileExists(MD_PATH), "the md files stay local")
+T.check(next(store.tomedown.pending_uploads or {}) == nil, "nothing pending")
+
+-- offline: the cover is queued with everything else and goes up at the
+-- next connection
+resetUpload()
+cleanDir()
+NetworkMgr.connected = false
+plugin:runExport({ FILE }, {})
+T.check(#uploads == 0, "offline: nothing uploaded")
+T.check(store.tomedown.pending_uploads[COVER_PATH] == true, "cover queued offline")
+T.check(T.fileExists(COVER_PATH), "cover kept while offline")
+NetworkMgr.connected = true
+plugin:onNetworkConnected()
+UIManager:runPending()
+T.check(#uploads == 3, "the flush uploads the cover too: " .. #uploads)
+T.check(not T.fileExists(COVER_PATH), "the flushed cover is removed too")
+
+-- the index backfills a cover that is missing while the option is on
+local entries, new_covers = plugin:buildIndexEntries(DIR, store.tomedown.exports)
+T.check(entries[1] and entries[1].cover == COVER_REL,
+    "the entry got the backfilled cover")
+T.check(#new_covers == 1 and new_covers[1] == COVER_PATH,
+    "the backfilled cover is listed for the upload")
+
+-- the callout option rewrites every highlight of the book
+resetUpload()
+store.tomedown.callout = true
+plugin:runExport({ FILE }, {})
+local callout_md = T.readFile(MD_PATH) or ""
+local expected = tonumber(callout_md:match("highlights: (%d+)")) or 0
+local n_callouts = select(2, callout_md:gsub("%[!highlight%]", ""))
+T.check(expected > 0 and n_callouts == expected,
+    "every highlight becomes a callout: " .. n_callouts .. "/" .. expected)
+store.tomedown.callout = false
+
+-- Special Highlight: registered when the reader is ready, toggled from
+-- the menu of an existing highlight, saved on the annotation itself
+local fake_highlight = {
+    dialogs = {},
+    ui = ui,
+    onClose = function() end,
+}
+function fake_highlight:addToHighlightDialog(idx, fn)
+    self.dialogs[idx] = fn
+end
+ui.highlight = fake_highlight
+ui.annotation = { annotations = {
+    { drawer = "underline", text = "Prima frase.", pageno = 10,
+        datetime = "2026-09-02 10:00:00" },
+} }
+local saved_annotations
+ui.doc_settings = {
+    saveSetting = function(_, key, value)
+        if key == "annotations" then
+            saved_annotations = value
+        end
+    end,
+}
+plugin:onReaderReady()
+local special_fn = fake_highlight.dialogs["tomedown_special"]
+T.check(special_fn ~= nil, "the button is registered on ReaderReady")
+local plain_button = special_fn(fake_highlight, 1)
+T.check(plain_button.show_in_highlight_dialog_func() == true,
+    "visible on an existing highlight")
+T.check(plain_button.text == "Special Highlight", "plain label when not marked")
+local fresh_button = special_fn(fake_highlight, nil)
+T.check(fresh_button.show_in_highlight_dialog_func() == false,
+    "hidden on a fresh selection")
+plain_button.callback()
+T.check(ui.annotation.annotations[1].tomedown_special == true, "marked")
+T.check(saved_annotations == ui.annotation.annotations,
+    "the mark is written back to the doc settings")
+T.check(Notification.last_text == "Highlight marked as special",
+    "mark notification: " .. tostring(Notification.last_text))
+local marked_button = special_fn(fake_highlight, 1)
+T.check(marked_button.text == "✓ Special Highlight", "state check in the label")
+marked_button.callback()
+T.check(ui.annotation.annotations[1].tomedown_special == nil, "unmarked again")
+T.check(Notification.last_text == "Special mark removed",
+    "unmark notification: " .. tostring(Notification.last_text))
+
+-- and the mark reaches the markdown as a callout
+ui.annotation.annotations[1].tomedown_special = true
+ui.document = { file = FILE }
+store.tomedown.upload = false
+cleanDir()
+plugin:runExport({ FILE }, {})
+local special_md = T.readFile(MD_PATH) or ""
+T.check(T.contains(special_md, "> [!highlight]\n> Prima frase."),
+    "the special highlight is rendered as a callout")
+ui.document = nil
+ui.annotation = nil
+ui.highlight = nil
+ui.doc_settings = nil
+BookInfo.cover_bb = nil
 
 T.finish("test_main")

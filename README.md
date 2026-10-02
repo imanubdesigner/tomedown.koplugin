@@ -136,9 +136,15 @@ first export and optional Remotely Save in Obsidian — is in
 | Entry | What to do |
 |---|---|
 | *Local folder* | defaults to `clipboard/tomedown` inside KOReader's data folder; tap it to browse with KOReader's folder picker (long-press a folder to choose it) |
-| *Generate the index 00 - Index.md* | table with internal links, author, highlight count and last export date |
+| *Generate the index 00 - Index.md* | table with internal links, author, series, reading status, highlight count and last export date |
 | *Include page bookmarks* | off by default: adds a `# Page bookmarks` section (bookmarked page + note) after the highlights |
+| *Include book covers* | off by default: exports the cover of every book into `covers/` and embeds it in the book file and in the index; the cover is removed from the device once its upload succeeded (the vault copy is the master one). Requires **Obsidian 1.8.1 or newer** to display |
+| *All highlights as callouts* | off by default: every highlight becomes an `> [!highlight]` callout instead of a plain quote; when off, only *Special Highlight* marks (see *Usage*) turn into callouts |
 | *Auto-export on close* | off by default: exports the book when you close it, and again (silently, no network) before the device suspends |
+
+Ticking or unticking *Include book covers* / *All highlights as callouts*
+rewrites every already exported file on the next export (the stored hash is
+invalidated, so *Export only what changed* re-sends everything once).
 
 **Updates**
 
@@ -250,9 +256,23 @@ On a fresh install, the first time you open the menu, Tomedown offers to
 import your whole KOReader reading history in one tap (*Export* / *Not now* — the
 offer is made only once; the menu entry stays available anyway).
 
+### Special highlights
+
+Tap an **existing** highlight in the reader and the highlight menu gains a
+**Special Highlight** row (with a ✓ when the mark is already on): the
+highlight is marked with a toggle saved inside the book's own settings.
+A special highlight is always exported as an `> [!highlight]` callout —
+even when *All highlights as callouts* is off — so the few highlights that
+really matter stay visually apart in Obsidian. Tapping the row again
+removes the mark; a notification confirms either way. The mark is part of
+the book's hash, so the next export rewrites that file.
+
 After every export, if *Upload to cloud* is on, the `.md` files and the index
-are uploaded to the chosen server automatically. No image folder is created:
-only `*.md` files are uploaded (books + `00 - Index.md`).
+are uploaded to the chosen server automatically. With *Include book covers*
+ticked the `covers/` folder travels with them; every cover is deleted from
+the device right after its upload succeeded (offline, it waits in the
+pending list and goes up with the next connection; with the option off, no
+image folder is created at all).
 
 ### Auto-export and offline reading
 
@@ -352,6 +372,24 @@ tags:
 - **only highlights** are exported by default: page bookmarks and deleted
   annotations are left out — tick *Include page bookmarks* in Settings to
   get the `# Page bookmarks` section shown above
+- with *Include book covers* ticked the file also carries `cover:
+  "covers/Author - Title.jpg"` in the frontmatter and an `<img>` right
+  after it (before the `# **HIGHLIGHTS**` heading). The cover is the
+  embedded one (or the custom cover KOReader knows), resized into a
+  800×1200 JPEG and dropped from the device after a successful upload —
+  the copy in the vault is the master one. Obsidian renders such images
+  starting with **version 1.8.1**
+- highlights marked **Special Highlight** (see *Usage*) are rendered as
+  `> [!highlight]` callouts; with *All highlights as callouts* ticked
+  every highlight gets the marker, otherwise only the special ones:
+
+  ```markdown
+  > [!highlight]
+  > First highlighted sentence.
+  > Second line of the same highlight.
+
+  - **p. 10** · 02/09/2026 10:00 · note: to reread
+  ```
 - the file name matches KOReader's standard exporter (`Author - Title`), so
   it does not clash with exports you already made
 - the page is the stable page number (`pageref`) when available, otherwise
@@ -361,11 +399,15 @@ tags:
   until they are rebuilt: run *Import all books from history* once and
   every file is rewritten in the current format
 - the index uses wiki links (`[[…]]`), opened natively by Obsidian and by
-  most Markdown apps:
+  most Markdown apps; with covers enabled the first column shows the
+  cover image (90×120 box):
 
   ```markdown
-  | [[Michael McDowell - Blackwater\|Blackwater]] | Michael McDowell | 150 | 26/09/2026 |
+  | <img src="covers/Michael McDowell - Blackwater.jpg" alt="" style="object-fit:contain;width:90px;height:120px"> | [[Michael McDowell - Blackwater\|Blackwater]] | Michael McDowell | Blackwater #1 | complete | 150 | 26/09/2026 |
   ```
+
+  Without the option the cover column disappears; books without a series
+  or a reading status show a dash in those cells.
 
 The sample above is what an English KOReader produces; with an Italian
 interface the same text comes out translated (see *Languages*).
@@ -377,7 +419,10 @@ interface the same text comes out translated (see *Languages*).
 Obsidian is just one way to read the notes: the files are plain Markdown,
 so any editor, reader or wiki works. If you do use Obsidian, only
 **Remotely Save** needs configuring here: the Tomedown plugin lives on
-KOReader, nothing special has to be installed in Obsidian. The steps below
+KOReader, nothing special has to be installed in Obsidian. **Book covers
+(*Include book covers*) require Obsidian 1.8.1 or newer** — that is the
+version that started rendering `<img>` tags whose `src` points at a file
+inside the vault; older versions show a broken image. The steps below
 use Koofr (this README's example cloud); with any other WebDAV server —
 Nextcloud, ownCloud, a NAS… — substitute its address and credentials.
 

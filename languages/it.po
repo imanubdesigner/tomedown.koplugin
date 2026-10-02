@@ -145,8 +145,50 @@ msgstr "indice"
 msgid "No exported books with highlights."
 msgstr "Nessun libro con evidenziati esportati."
 
-msgid "| Book | Author | Highlights | Last export |"
-msgstr "| Libro | Autore | Evidenziati | Ultimo export |"
+# index table cells (v0.8.0: cover/series/status columns)
+msgid "Cover"
+msgstr "Copertina"
+
+msgid "Book"
+msgstr "Libro"
+
+msgid "Author"
+msgstr "Autore"
+
+msgid "Series"
+msgstr "Serie"
+
+msgid "Highlights"
+msgstr "Evidenziati"
+
+msgid "Last export"
+msgstr "Ultimo export"
+
+msgid "Reading"
+msgstr "In lettura"
+
+msgid "Complete"
+msgstr "Completato"
+
+msgid "Abandoned"
+msgstr "Abbandonato"
+
+# settings: covers and callout (v0.8.0)
+msgid "Include book covers"
+msgstr "Includi le copertine"
+
+msgid "All highlights as callouts"
+msgstr "Tutte le evidenziazioni come callout"
+
+# Special Highlight (v0.8.0)
+msgid "Special Highlight"
+msgstr "Evidenziazione speciale"
+
+msgid "Highlight marked as special"
+msgstr "Evidenziazione marcata come speciale"
+
+msgid "Special mark removed"
+msgstr "Marchio speciale rimosso"
 
 msgid "Update available: v%1 → v%2"
 msgstr "Aggiornamento disponibile: v%1 → v%2"

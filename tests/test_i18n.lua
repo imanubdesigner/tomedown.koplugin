@@ -50,10 +50,16 @@ T.check(i18n("Book index") == "Book index", "fr without po -> msgid")
 setLang("de")
 T.check(i18n("No chapter") == "No chapter", "de without po -> msgid")
 
--- 7. multi-line index string
+-- 7. the index table is translated cell by cell now (the header gained
+-- the cover/series/status columns in v0.8.0)
 setLang("it")
-T.check(i18n("| Book | Author | Highlights | Last export |")
-    == "| Libro | Autore | Evidenziati | Ultimo export |", "it: table header")
+T.check(i18n("Book") == "Libro", "it: cell Book")
+T.check(i18n("Author") == "Autore", "it: cell Author")
+T.check(i18n("Series") == "Serie", "it: cell Series")
+T.check(i18n("Status") == "Stato", "it: cell Status")
+T.check(i18n("Highlights") == "Evidenziati", "it: cell Highlights")
+T.check(i18n("Last export") == "Ultimo export", "it: cell Last export")
+T.check(i18n("Cover") == "Copertina", "it: cell Cover")
 
 -- 8. the language changes even after loading (reload)
 setLang(nil)
@@ -98,8 +104,8 @@ local index = render.buildIndexMd({
     { link = "B", title = "B", author = "A", count = 1, date = "01/01/2026" },
 }, { title = i18n("Book index") })
 T.check(T.contains(index, 'title: "Indice dei libri"'), "index title translated")
-T.check(T.contains(index, "| Libro | Autore | Evidenziati | Ultimo export |"),
-    "index header translated")
+T.check(T.contains(index, "| Libro | Autore | Serie | Stato | Evidenziati | Ultimo export |"),
+    "index header translated cell by cell")
 
 setLang("en")
 T.check(T.contains(render.buildIndexMd({}, {}), 'title: "Book index"'), "back to English")
