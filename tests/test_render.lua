@@ -382,12 +382,22 @@ T.check(render.sanitizeTag("!!!") == "", "only forbidden characters: empty resul
 T.check(render.sanitizeTag(nil) == "", "nil is empty, not an error")
 T.check(render.sanitizeTag("gothic-fiction") == "gothic-fiction",
     "an already valid keyword is untouched")
-T.check(render.sanitizeTag("Favole dell'ORRORE!") == "Favole-dell'ORRORE",
-    "case and apostrophe kept, ! dropped")
+T.check(render.sanitizeTag("Favole dell'ORRORE!") == "Favole-dellORRORE",
+    "case kept, apostrophe and ! dropped")
 T.check(render.sanitizeTag("Séries noires") == "Séries-noires",
     "accents kept")
 T.check(render.sanitizeTag("fantasy/sci-fi") == "fantasy/sci-fi",
     "the nested tag separator survives")
+T.check(render.sanitizeTag("Horror tales; American") == "Horror-tales-American",
+    "semicolon dropped: Obsidian rejects it although its docs list allows it")
+T.check(render.sanitizeTag("Scifi [2020] = cult") == "Scifi-2020-cult",
+    "brackets and equals dropped, dashes around them collapsed")
+T.check(render.sanitizeTag("C# tips") == "C-tips",
+    "hash dropped")
+T.check(render.sanitizeTag("a\194\160b") == "a-b",
+    "non-breaking space becomes a dash")
+T.check(render.sanitizeTag("fantasy \240\159\144\137") == "fantasy-\240\159\144\137",
+    "emoji (multi-byte) survives")
 local clean_once = render.sanitizeTag("Occult & Supernatural")
 T.check(render.sanitizeTag(clean_once) == clean_once, "sanitizeTag is idempotent")
 

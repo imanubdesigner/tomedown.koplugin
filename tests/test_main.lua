@@ -386,7 +386,7 @@ rec.doc_props = {
     series_index = 4,
     language = "it",
     keywords = "horror, gothic-fiction, Occult & Supernatural, "
-        .. "American Horror tales, Horror tales: American, !!!",
+        .. "American Horror tales, Horror tales; American, !!!",
 }
 rec.doc_pages = 300
 rec.percent_finished = 0.956
@@ -410,7 +410,7 @@ if richMd then
     T.check(T.contains(richMd, "  - American-Horror-tales"),
         "keyword with spaces becomes a dash tag")
     T.check(T.contains(richMd, "  - Horror-tales-American"),
-        "keyword with a colon sanitized")
+        "keyword with a semicolon sanitized")
     T.check(not T.contains(richMd, "Occult &"),
         "the raw keyword never reaches the frontmatter")
     T.check(not T.contains(richMd, "!!!"),

@@ -396,8 +396,10 @@ tags:
   `pages`, the reading `status`
   (`reading` / `abandoned` / `complete`), `progress` and the book's
   keywords appended to `tags` — each one normalised into a valid Obsidian
-  tag (spaces become `-`, the characters Obsidian does not allow are
-  dropped); a field KOReader does not know (ISBN, for
+  tag by whitelist: spaces become `-`, then only letters, numbers, `-`,
+  `_`, `/` and non-ASCII characters (accents, emoji) survive — everything
+  else (`;`, `'`, `=`, `[`, `]`…) is dropped); a field KOReader does not
+  know (ISBN, for
   instance) is simply not there, and unknown fields are omitted
 - **only highlights** are exported by default: page bookmarks and deleted
   annotations are left out — tick *Include page bookmarks* in Settings to

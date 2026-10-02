@@ -29,22 +29,27 @@ local function yamlListItem(s)
     return yamlQuote(s)
 end
 
--- what Obsidian refuses inside a tag: its docs say tags can't contain
--- spaces, and only letters, numbers, "-", "_" and "/" survive
-local FORBIDDEN_TAG_CHARS = "[!@#%$%%%^%&%*%(%)%,%.%?\"%:%{%}%|%<>]"
-
 --- Normalise a keyword into a valid Obsidian tag.
--- Whitespace becomes "-", the characters Obsidian does not allow are
--- dropped, runs of "-" are collapsed and the edge ones are trimmed.
--- The case and any non-ASCII letter (accents included) are kept; the
--- result is idempotent. The caller drops the empty ones.
+-- Whitelist, not blacklist: whitespace (ASCII and non-breaking) becomes
+-- "-", then every byte outside ASCII letters, numbers, "-", "_" and "/"
+-- is dropped -- Obsidian's real validator is stricter than its docs'
+-- list, so anything else (";", "'", "=", "[", "\\", ...) never reaches
+-- the frontmatter. All non-ASCII bytes (accents, emoji) survive
+-- untouched, runs of "-" are collapsed and the edge ones are trimmed.
+-- The result is idempotent. The caller drops the empty ones.
 function render.sanitizeTag(s)
     if s == nil then
         return ""
     end
     s = tostring(s)
     s = s:gsub("%s+", "-")
-    s = s:gsub(FORBIDDEN_TAG_CHARS, "")
+    s = s:gsub("\194\160", "-") -- UTF-8 non-breaking space
+    s = s:gsub("[^\128-\255]", function(c)
+        if c:match("[%w_%-/]") then
+            return c
+        end
+        return ""
+    end)
     s = s:gsub("%-+", "-")
     s = s:gsub("^%-+", "")
     s = s:gsub("%-+$", "")
