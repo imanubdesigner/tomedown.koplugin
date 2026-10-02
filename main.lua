@@ -602,6 +602,8 @@ function Tomedown:uploadPaths(server, paths, callback)
         return
     end
     local i, ok_count, fail_count, failed = 0, 0, 0, {}
+    local dir = self:getLocalDir()
+    local made_folders = {}
 
     local function attemptUpload(path, attempt, on_done)
         local srv = util.tableDeepCopy(server)
@@ -614,8 +616,26 @@ function Tomedown:uploadPaths(server, paths, callback)
             srv.url = srv.address
         end
         provider.base = srv
+        -- KOReader's providers upload to <url>/<basename>, dropping any
+        -- local subfolder: a cover in covers/ would land flattened in the
+        -- remote root and the markdown would link to a folder that does
+        -- not exist. The subfolder joins the url instead, and is created
+        -- once per run before the first upload into it (an existing
+        -- folder answers 405 to MKCOL: the result is ignored).
+        local base_url = srv.url or ""
+        local rel = path:sub(1, #dir + 1) == dir .. "/" and path:sub(#dir + 2) or nil
+        local subdir = rel and rel:match("^(.*)/[^/]+$")
+        local upload_url = base_url
+        if subdir then
+            upload_url = (base_url:gsub("/+$", "")) .. "/" .. subdir
+        end
         provider.run(function()
-            local ok_call, code = pcall(provider.uploadFile, srv.url or "", path, nil, true)
+            if subdir and provider.createFolder
+                    and not made_folders[base_url .. "/" .. subdir] then
+                made_folders[base_url .. "/" .. subdir] = true
+                pcall(provider.createFolder, base_url, subdir)
+            end
+            local ok_call, code = pcall(provider.uploadFile, upload_url, path, nil, true)
             local success = ok_call and type(code) == "number" and code >= 200 and code < 300
             if success then
                 on_done(true)
