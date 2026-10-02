@@ -293,8 +293,9 @@ you had missed.
 
 After every export, if *Upload to cloud* is on, the `.md` files and the index
 are uploaded to the chosen server automatically. With *Include book covers*
-ticked the `covers/` folder travels with them; every cover is deleted from
-the device right after its upload succeeded (offline, it waits in the
+ticked the `covers/` folder travels with them — it is created on the server
+on the first upload, when it does not exist yet —; every cover is deleted
+from the device right after its upload succeeded (offline, it waits in the
 pending list and goes up with the next connection; with the option off, no
 image folder is created at all).
 

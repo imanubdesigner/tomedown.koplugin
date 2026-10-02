@@ -53,12 +53,17 @@ GetText.current_lang = nil
 local SERVER = { name = "Koofr", type = "webdav", url = "/Bookshelf/Kindle" }
 
 local uploads, attempt_count, upload_script = {}, {}, {}
+local created_folders = {}
 local cloud_list_callback
 
 local provider = {}
 function provider.run(callback)
     -- KOReader: checks the connection, then runs the step
     callback()
+end
+function provider.createFolder(url, folder_name)
+    created_folders[#created_folders + 1] = { url = url, name = folder_name }
+    return true
 end
 function provider.uploadFile(url, local_path, etag, overwrite)
     local n = (attempt_count[local_path] or 0) + 1
@@ -198,6 +203,7 @@ table.insert(ui, plugin) -- what ReaderUI/FileManager registerModule does
 
 local function resetUpload()
     uploads, attempt_count, upload_script = {}, {}, {}
+    created_folders = {}
     UIManager:reset()
     Notification.last_text = nil
     Notification.log = {}
@@ -1030,6 +1036,12 @@ T.check(#uploads == 3, "md files plus the leftover cover re-uploaded: " .. #uplo
 T.check(uploads[1].path == INDEX_PATH, "ordered: index first")
 T.check(uploads[2].path == MD_PATH, "ordered: book md second")
 T.check(uploads[3].path == DIR .. "/covers/copertina.jpg", "ordered: cover last")
+T.check(uploads[1].url == "/Bookshelf/Kindle"
+        and uploads[3].url == "/Bookshelf/Kindle/covers",
+    "reupload keeps root files and covers apart: "
+        .. tostring(uploads[3] and uploads[3].url))
+T.check(#created_folders == 1 and created_folders[1].name == "covers",
+    "reupload creates the remote covers folder too")
 T.check(Notification.last_text == "Cloud: 3 files uploaded",
     "reload notification: " .. tostring(Notification.last_text))
 T.check(T.fileExists(DIR .. "/covers/copertina.jpg"),
@@ -1386,9 +1398,34 @@ cleanDir()
 plugin:runExport({ FILE }, {})
 UIManager:runPending()
 T.check(#uploads == 3, "book, index and cover uploaded: " .. #uploads)
+local cover_up, root_url = nil, true
+for __, u in ipairs(uploads) do
+    if u.path == COVER_PATH then
+        cover_up = u
+    elseif u.url ~= "/Bookshelf/Kindle" then
+        root_url = false
+    end
+end
+T.check(cover_up and cover_up.url == "/Bookshelf/Kindle/covers",
+    "the cover joins the remote covers folder: "
+        .. tostring(cover_up and cover_up.url))
+T.check(root_url, "md and index stay in the remote root")
+T.check(#created_folders == 1 and created_folders[1].url == "/Bookshelf/Kindle"
+        and created_folders[1].name == "covers",
+    "the remote covers folder is created once: " .. #created_folders)
 T.check(not T.fileExists(COVER_PATH), "the uploaded cover is removed")
 T.check(T.fileExists(MD_PATH), "the md files stay local")
 T.check(next(store.tomedown.pending_uploads or {}) == nil, "nothing pending")
+
+-- a server that refuses the folder creation does not block the upload
+local realCreateFolder = provider.createFolder
+provider.createFolder = function() error("MKCOL refused") end
+resetUpload()
+cleanDir()
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+T.check(#uploads == 3, "upload proceeds when createFolder throws: " .. #uploads)
+provider.createFolder = realCreateFolder
 
 -- offline: the cover is queued with everything else and goes up at the
 -- next connection
