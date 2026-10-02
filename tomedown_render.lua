@@ -179,10 +179,16 @@ function render.buildBookMd(book, opts)
         end
     end
     add("---")
+    -- the body always opens: properties, rule, content
+    add("")
+    add("---")
 
     if opts.cover then
         add("")
-        add(render.coverImg(opts.cover, 400, 533))
+        add('<p align="center">' .. render.coverImg(opts.cover, 400, 533) .. "</p>")
+        -- second rule frames the cover above the count
+        add("")
+        add("---")
     end
 
     local open = false
@@ -299,11 +305,23 @@ function render.buildIndexMd(books, opts)
     add("  - " .. _("index"))
     add("---")
     add("")
+    add("---")
+    add("")
 
     if #books == 0 then
         add("_" .. _("No exported books with highlights.") .. "_")
         return table.concat(out, "\n") .. "\n"
     end
+
+    local total_highlights = 0
+    for __, b in ipairs(books) do
+        total_highlights = total_highlights + (tonumber(b.count) or 0)
+    end
+    local stats = _("*%1 books · %2 highlights — click a title to open its note.*")
+    stats = stats:gsub("%%1", tostring(#books))
+    stats = stats:gsub("%%2", tostring(total_highlights))
+    add(stats)
+    add("")
 
     local with_covers = opts.show_covers
     local status_labels = {
@@ -346,7 +364,7 @@ function render.buildIndexMd(books, opts)
         local date = (b.date and b.date ~= "") and b.date or "—"
         local cells = {}
         if with_covers then
-            cells[#cells + 1] = b.cover and render.coverImg(b.cover, 90, 120) or ""
+            cells[#cells + 1] = b.cover and render.coverImg(b.cover, 120, 160) or ""
         end
         cells[#cells + 1] = link
         cells[#cells + 1] = author

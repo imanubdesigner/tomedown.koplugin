@@ -57,12 +57,17 @@ T.check(md:sub(-1) == "\n", "ends with a newline")
 T.check(not T.contains(md, "cover"), "no cover in the markdown")
 T.check(not T.contains(md, "![]("), "no image in the markdown")
 
--- separators: under the stats, between chapters, never at the end of the file
+-- separators: the frontmatter rule, under the stats, between chapters,
+-- never at the end of the file
 T.check(T.contains(md, "# **HIGHLIGHTS: 2**\n\n---\n\n# Capitolo I"),
     "separator between the stats and the first chapter")
 T.check(T.contains(md, "- **p. 10** · 02/09/2026 · note: nota utente\n\n---\n\n# Capitolo II"),
     "separator when the chapter changes")
-T.check(not T.contains(md, "---\n\n---"), "no doubled separator")
+T.check(T.contains(md, "---\n\n---\n\n# **HIGHLIGHTS: 2**"),
+    "the body opens with a rule right after the frontmatter")
+local doubled = select(2, md:gsub("%-%-%-\n\n%-%-%-", ""))
+T.check(doubled == 1,
+    "exactly one doubled separator, the frontmatter rule: " .. doubled)
 T.check(md:match("%-%-%-%s*$") == nil, "no separator at the end of the file")
 
 -- no chapters: the body has only the HIGHLIGHTS heading
@@ -205,16 +210,18 @@ local onlyBookmarks = render.buildBookMd({
 })
 T.check(not T.contains(onlyBookmarks, "# **HIGHLIGHTS: 0**"), "no zero count line")
 T.check(T.contains(onlyBookmarks, "\n# Page bookmarks"), "bookmark-only book gets the section")
-T.check(select(2, onlyBookmarks:gsub("\n%-%-%-\n", "")) == 1,
-    "bookmark-only: no separator besides the frontmatter")
+T.check(select(2, onlyBookmarks:gsub("\n%-%-%-\n", "")) == 2,
+    "bookmark-only: frontmatter rule and body rule, nothing else")
 T.check(not T.contains(md, "Page bookmarks"), "no section without bookmarks")
 
 -- ---------------------------------------------------------------- cover
 local withCover = render.buildBookMd(book, { cover = "covers/Blackwater.jpg" })
 T.check(T.contains(withCover, 'cover: "covers/Blackwater.jpg"'), "cover in the frontmatter")
 T.check(T.contains(withCover,
-    '<img src="covers/Blackwater.jpg" alt="" style="object-fit:contain;width:400px;height:533px">'),
-    "cover embedded in the body")
+    '<p align="center"><img src="covers/Blackwater.jpg" alt="" style="object-fit:contain;width:400px;height:533px"></p>'),
+    "cover embedded in the body, centered")
+T.check(T.contains(withCover, "</p>\n\n---\n\n# **HIGHLIGHTS: 2**"),
+    "the rule between the cover and the highlights heading")
 local img_pos = withCover:find("<img ", 1, true)
 local hl_pos = withCover:find("# **HIGHLIGHTS", 1, true)
 T.check(img_pos and hl_pos and img_pos < hl_pos, "the cover sits before the highlights heading")
@@ -256,6 +263,9 @@ T.check(T.contains(index, "  - index"), "tag index")
 T.check(T.contains(index, "---\n"), "index frontmatter")
 T.check(T.contains(index, "  - ebook"), "tag ebook in the index")
 T.check(not T.contains(index, "kindle"), "the old kindle tag is gone from the index")
+T.check(T.contains(index, "---\n\n---\n\n_No exported"),
+    "the empty index opens the body with a rule")
+T.check(not T.contains(index, "·"), "no stats line without books")
 
 local rows = render.buildIndexMd({
     {
@@ -287,6 +297,9 @@ T.check(T.contains(rows, "| A \\| B | — | — | 0 | — |"),
 local order = rows:find("[[Michael McDowell - Blackwater\\|Blackwater]]", 1, true)
 local order2 = rows:find("[[Altro Autore - Altro\\|Altro]]", 1, true)
 T.check(order < order2, "the index keeps the order of the books it received")
+T.check(T.contains(rows,
+    "---\n\n---\n\n*2 books · 2 highlights — click a title to open its note.*\n\n| Book |"),
+    "the stats line sits between the frontmatter rule and the table")
 
 -- alias: no characters that break the wikilink
 local clean = render.alias("Titolo [x] #y | z ^w")
@@ -323,7 +336,7 @@ local covered = render.buildIndexMd({
 T.check(T.contains(covered, "| Cover | Book | Author | Series | Status | Highlights | Last export |"),
     "header with the cover column")
 T.check(T.contains(covered,
-    '<img src="covers/Autore - Titolo.jpg" alt="" style="object-fit:contain;width:90px;height:120px">'),
+    '<img src="covers/Autore - Titolo.jpg" alt="" style="object-fit:contain;width:120px;height:160px">'),
     "cover cell in the index row")
 T.check(T.contains(covered, "| Saga #2 |"), "series cell with the series index")
 T.check(T.contains(covered, "| Reading |"), "status cell translated to English")

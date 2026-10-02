@@ -342,6 +342,11 @@ end
 
 local function hashBook(title, author, annotations, meta, bookmarks)
     local parts = {
+        -- render format version: bumping it makes every stored hash stale,
+        -- so the next export rewrites all the .md files with the new layout
+        -- (render options stay out of here on purpose, see
+        -- invalidateExportHashes)
+        "fmt:3",
         "title:" .. tostring(title or ""),
         "author:" .. tostring(author or ""),
         "count:" .. tostring(#annotations),
@@ -1439,7 +1444,7 @@ function Tomedown:genSettingsMenu()
             end,
         },
         {
-            text = T(_("Generate the index %1"), INDEX_FILENAME),
+            text = T(_("Generate the %1 (for Obsidian)"), INDEX_FILENAME),
             checked_func = function()
                 return getSetting("with_index", true)
             end,
@@ -1470,7 +1475,7 @@ function Tomedown:genSettingsMenu()
             end,
         },
         {
-            text = _("All highlights as callouts"),
+            text = _("All highlights as Special Highlights"),
             checked_func = function()
                 return getSetting("callout", false)
             end,
