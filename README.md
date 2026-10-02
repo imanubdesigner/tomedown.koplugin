@@ -24,6 +24,7 @@
   - [If you already use AnnotationSync](#if-you-already-use-annotationsync)
   - [Updates](#updates)
 - [Usage](#usage)
+  - [Special highlights](#special-highlights)
   - [Auto-export and offline reading](#auto-export-and-offline-reading)
   - [Upload retries](#upload-retries)
 - [File format](#file-format)
@@ -249,6 +250,8 @@ settings keys are never renamed.
 - **Status** — a wide popup (90% of the screen) in a small font: one line
   per entry, labels in bold, with network, server, pending uploads and
   the last export/upload with their timestamp and outcome.
+
+  ![The Status popup: every entry on its own line, the labels in bold](assets/menu/settings/new_status_popup_messages.png)
 - **Settings** — see above.
 - **About** — a popup with the logo, the installed version, the description
   and the GitHub link (tap the link to open it or copy it).
