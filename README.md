@@ -109,19 +109,19 @@ first export and optional Remotely Save in Obsidian — is in
    *Navigation* tab (right before *Table of Contents*) while reading, on
    top of the first tab in the file browser (right before *Display mode*):
 
-   ![Tomedown first in the reader's Navigation tab](assets/menu/tomedown_reader_new_menu.png)
+   ![Tomedown first in the reader's Navigation tab](assets/menu/reader/tomedown_reader_new_menu.png)
 
-   ![Tomedown first in the file browser's menu](assets/menu/tomedown_file_browser_top_menu.png)
+   ![Tomedown first in the file browser's menu](assets/menu/reader/tomedown_file_browser_top_menu.png)
 
 ## Configuration (one-off)
 
 ☰ menu → **Tomedown** → **Settings**, in three groups:
 
-![The three Tomedown settings groups](assets/menu/settings_menu.png)
+![The three Tomedown settings groups](assets/menu/settings/settings_menu.png)
 
 **Cloud**
 
-![Cloud settings](assets/menu/cloud_menu.png)
+![Cloud settings](assets/menu/settings/cloud_menu.png)
 
 | Entry | What to do |
 |---|---|
@@ -131,7 +131,7 @@ first export and optional Remotely Save in Obsidian — is in
 
 **Markdown files**
 
-![Markdown files settings](assets/menu/markdown_menu.png)
+![Markdown files settings](assets/menu/settings/markdown_menu.png)
 
 | Entry | What to do |
 |---|---|
@@ -148,7 +148,7 @@ invalidated, so *Export only what changed* re-sends everything once).
 
 **Updates**
 
-![Updates settings](assets/menu/updates_menu.png)
+![Updates settings](assets/menu/settings/updates_menu.png)
 
 | Entry | What to do |
 |---|---|
@@ -159,7 +159,7 @@ invalidated, so *Export only what changed* re-sends everything once).
 
 **Developer updates**
 
-![Developer updates submenu](assets/menu/developer_menu.png)
+![Developer updates submenu](assets/menu/settings/developer_menu.png)
 
 | Entry | What to do |
 |---|---|
@@ -235,7 +235,7 @@ settings keys are never renamed.
 
 ☰ menu → **Tomedown**:
 
-![The Tomedown menu](assets/menu/tomedown_reader_menu.png)
+![The Tomedown menu](assets/menu/reader/tomedown_reader_menu.png)
 
 - **Export current book** — only the open book.
 - **Export only what changed** — exports only the books whose highlights changed since
@@ -259,18 +259,34 @@ offer is made only once; the menu entry stays available anyway).
 
 ### Special highlights
 
-Select some text: the highlight menu shows a **Special Highlight** row
-right under **Highlight**; one tap creates the highlight and marks it.
-Tap an existing highlight instead and the compact edit menu (trash,
-Style, Color, …) carries the same row at the bottom: it reads
-**Special Highlight** while the mark is off and **Remove Special
-Highlight** while it is on, so a single tap is enough either way (the
-full menu behind the "…" button has the same dynamic row). The mark is
-saved inside the book's own settings. A special highlight is always
-exported as an `> [!highlight]` callout — even when *All highlights as
-callouts* is off — so the few highlights that really matter stay visually
-apart in Obsidian. A notification confirms either way, and the mark is
-part of the book's hash, so the next export rewrites that file.
+Every book has a handful of highlights that really matter: the quote you
+want to open first, the line you will come back to. **Special Highlight**
+is the flag for those and only those. The mark lives inside the book's
+own settings and is part of the book's hash, so the next export rewrites
+that file; the flagged highlight is always exported as an `> [!highlight]`
+callout — even when *All highlights as callouts* is off — so it stays
+visually apart in Obsidian. A notification confirms every change.
+
+Marking it costs a single tap wherever you already are. **Selecting
+text** puts the row right under *Highlight*: one tap creates the
+highlight and flags it.
+
+![The highlight menu on a fresh selection: Special Highlight sits right under Highlight](assets/menu/highlights/special_highlights_big_menu.png)
+
+**Tapping an existing highlight** opens the compact edit menu (trash,
+Style, Color, …): the same row sits at the bottom, after the arrows. The
+label tells what the tap will do — *Special Highlight* flags it,
+*Remove Special Highlight* takes the flag off, and the menu closes with
+a notification either way.
+
+![The compact edit menu with Special Highlight as the bottom row](assets/menu/highlights/special_highlights_small_menu.png)
+![The compact edit menu with Remove Special Highlight as the bottom row](assets/menu/highlights/remove_special_highlights_small_menu.png)
+
+The full menu behind the "…" button carries the same dynamic row, so a
+flagged highlight always offers its own undo — and lets you flag one
+you had missed.
+
+![The full menu on a flagged highlight: Remove Special Highlight](assets/menu/highlights/remove_special_highlights_big_menu.png)
 
 After every export, if *Upload to cloud* is on, the `.md` files and the index
 are uploaded to the chosen server automatically. With *Include book covers*
