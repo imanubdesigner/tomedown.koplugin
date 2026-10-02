@@ -62,6 +62,15 @@ function render.alias(s)
     return s
 end
 
+-- the cover inside a .md file: a plain <img> tag with a fixed CSS box
+-- (Obsidian renders relative src paths since 1.8.1, object-fit is in
+-- the sanitizer whitelist, and the letterbox shows the theme background)
+function render.coverImg(rel, w, h)
+    rel = tostring(rel or ""):gsub('"', "&quot;")
+    return string.format('<img src="%s" alt="" style="object-fit:contain;width:%dpx;height:%dpx">',
+        rel, w, h)
+end
+
 local function annotationChapter(a, no_chapter_label)
     if type(a.chapter) == "string" and a.chapter ~= "" then
         return a.chapter
@@ -85,12 +94,14 @@ book = {
     status, progress,                          -- optional frontmatter
     keywords = { ... },                        -- optional, appended to tags
     annotations = {
-        { text, note, chapter, page, date },
+        { text, note, chapter, page, date, special },
         ...
     },
     bookmarks = { { text, page, date }, ... }, -- optional page bookmarks
 }
-opts = { no_chapter_label = _("No chapter") }
+opts = { no_chapter_label = _("No chapter"),
+         cover = "covers/x.jpg",               -- extracted during export
+         callout = false }                     -- every highlight as [!highlight]
 ]]
 function render.buildBookMd(book, opts)
     opts = opts or {}
@@ -104,6 +115,9 @@ function render.buildBookMd(book, opts)
     add("---")
     add("title: " .. yamlQuote(book.title))
     add("author: " .. yamlQuote(book.author))
+    if opts.cover then
+        add("cover: " .. yamlQuote(opts.cover))
+    end
     if book.series then
         add("series: " .. yamlQuote(book.series))
     end
@@ -135,6 +149,11 @@ function render.buildBookMd(book, opts)
         add("  - " .. yamlListItem(kw))
     end
     add("---")
+
+    if opts.cover then
+        add("")
+        add(render.coverImg(opts.cover, 400, 533))
+    end
 
     local open = false
     if count > 0 then
@@ -169,6 +188,11 @@ function render.buildBookMd(book, opts)
         end
 
         add("")
+        -- Special Highlight always renders as a callout; the global
+        -- setting turns every remaining highlight into one
+        if opts.callout or a.special then
+            add("> [!highlight]")
+        end
         local text = tostring(a.text or ""):gsub("\r\n", "\n"):gsub("\r", "\n")
         for line in (text .. "\n"):gmatch("(.-)\n") do
             add("> " .. line)
@@ -223,8 +247,11 @@ function render.buildBookMd(book, opts)
 end
 
 --[[
-books = { { link, title, author, count, date } }
-opts = { title, exported }
+books = { { link, title, author, series, series_index, status,
+            count, date, cover } }
+opts = { title, exported, show_covers }
+The Series and Status columns are always there (a dash when the book
+has neither), the cover column only with opts.show_covers.
 ]]
 function render.buildIndexMd(books, opts)
     opts = opts or {}
@@ -248,15 +275,56 @@ function render.buildIndexMd(books, opts)
         return table.concat(out, "\n") .. "\n"
     end
 
-    add(_("| Book | Author | Highlights | Last export |"))
-    add("|:---|:---|---:|:---|")
+    local with_covers = opts.show_covers
+    local status_labels = {
+        reading = _("Reading"),
+        complete = _("Complete"),
+        abandoned = _("Abandoned"),
+    }
+
+    local header, align = {}, {}
+    local function column(title, separator)
+        header[#header + 1] = title
+        align[#align + 1] = separator or ":---"
+    end
+    if with_covers then
+        column(_("Cover"))
+    end
+    column(_("Book"))
+    column(_("Author"))
+    column(_("Series"))
+    column(_("Status"))
+    column(_("Highlights"), "---:")
+    column(_("Last export"))
+    add("| " .. table.concat(header, " | ") .. " |")
+    add("|" .. table.concat(align, "|") .. "|")
+
     for __, b in ipairs(books) do
         local alias = render.alias(b.title)
         local link = alias ~= "" and ("[[" .. tostring(b.link) .. "\\|" .. alias .. "]]")
             or ("[[" .. tostring(b.link) .. "]]")
         local author = tostring(b.author or ""):gsub("|", "\\|"):gsub("[\r\n]+", " ")
+        local series = "—"
+        if b.series and tostring(b.series) ~= "" then
+            series = tostring(b.series)
+            if b.series_index ~= nil and tostring(b.series_index) ~= "" then
+                series = series .. " #" .. tostring(b.series_index)
+            end
+            series = series:gsub("|", "\\|"):gsub("[\r\n]+", " ")
+        end
+        local status = (b.status and status_labels[b.status]) or "—"
         local date = (b.date and b.date ~= "") and b.date or "—"
-        add("| " .. link .. " | " .. author .. " | " .. tostring(b.count or 0) .. " | " .. date .. " |")
+        local cells = {}
+        if with_covers then
+            cells[#cells + 1] = b.cover and render.coverImg(b.cover, 90, 120) or ""
+        end
+        cells[#cells + 1] = link
+        cells[#cells + 1] = author
+        cells[#cells + 1] = series
+        cells[#cells + 1] = status
+        cells[#cells + 1] = tostring(b.count or 0)
+        cells[#cells + 1] = date
+        add("| " .. table.concat(cells, " | ") .. " |")
     end
 
     return table.concat(out, "\n") .. "\n"

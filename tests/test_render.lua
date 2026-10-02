@@ -209,6 +209,44 @@ T.check(select(2, onlyBookmarks:gsub("\n%-%-%-\n", "")) == 1,
     "bookmark-only: no separator besides the frontmatter")
 T.check(not T.contains(md, "Page bookmarks"), "no section without bookmarks")
 
+-- ---------------------------------------------------------------- cover
+local withCover = render.buildBookMd(book, { cover = "covers/Blackwater.jpg" })
+T.check(T.contains(withCover, 'cover: "covers/Blackwater.jpg"'), "cover in the frontmatter")
+T.check(T.contains(withCover,
+    '<img src="covers/Blackwater.jpg" alt="" style="object-fit:contain;width:400px;height:533px">'),
+    "cover embedded in the body")
+local img_pos = withCover:find("<img ", 1, true)
+local hl_pos = withCover:find("# **HIGHLIGHTS", 1, true)
+T.check(img_pos and hl_pos and img_pos < hl_pos, "the cover sits before the highlights heading")
+T.check(render.coverImg('a"b.jpg', 90, 120):find("a&quot;b.jpg", 1, true) ~= nil,
+    "a quote in the path is escaped for the attribute")
+
+-- ---------------------------------------------------------------- callout
+local plainCallout = render.buildBookMd({
+    title = "P",
+    count = 1,
+    annotations = { { text = "Riga uno\nRiga due" } },
+})
+T.check(not T.contains(plainCallout, "[!highlight]"), "no callout by default")
+local allCallout = render.buildBookMd({
+    title = "P",
+    count = 2,
+    annotations = { { text = "Uno" }, { text = "Due", special = true } },
+}, { callout = true })
+T.check(select(2, allCallout:gsub("%[!highlight%]", "")) == 2,
+    "the option turns every highlight into a callout")
+T.check(T.contains(allCallout, "> [!highlight]\n> Uno"), "callout marker before the text")
+T.check(T.contains(allCallout, "> [!highlight]\n> Due"), "multi-line text stays inside the callout")
+local onlySpecial = render.buildBookMd({
+    title = "P",
+    count = 2,
+    annotations = { { text = "Uno" }, { text = "Due", special = true } },
+})
+T.check(select(2, onlySpecial:gsub("%[!highlight%]", "")) == 1,
+    "without the option only the special one is a callout")
+T.check(T.contains(onlySpecial, "> [!highlight]\n> Due"), "special one rendered as callout")
+T.check(T.contains(onlySpecial, "\n> Uno\n"), "the plain one stays a blockquote")
+
 -- ---------------------------------------------------------------- index
 local index = render.buildIndexMd({}, {})
 T.check(T.contains(index, 'title: "Book index"'), "index default title in the frontmatter")
@@ -238,11 +276,14 @@ local rows = render.buildIndexMd({
 
 T.check(not T.contains(rows, "# Indice dei libri"), "no h1 in the index")
 T.check(T.contains(rows, 'title: "Indice dei libri"'), "index frontmatter")
-T.check(T.contains(rows, "| Book | Author | Highlights | Last export |"), "table header")
-T.check(T.contains(rows, "|:---|:---|---:|:---|"), "table separators")
+T.check(T.contains(rows, "| Book | Author | Series | Status | Highlights | Last export |"),
+    "table header without the cover column")
+T.check(not T.contains(rows, "| Cover |"), "no cover column when the option is off")
+T.check(T.contains(rows, "|:---|:---|:---|:---|---:|:---|"), "table separators")
 T.check(T.contains(rows, "[[Michael McDowell - Blackwater\\|Blackwater]]"), "wikilink with alias")
 T.check(T.contains(rows, "| 2 | 26/09/2026 |"), "count and date in the row")
-T.check(T.contains(rows, "| A \\| B | 0 | — |"), "pipes escaped and empty date")
+T.check(T.contains(rows, "| A \\| B | — | — | 0 | — |"),
+    "pipes escaped, empty date, dash for series and status")
 local order = rows:find("[[Michael McDowell - Blackwater\\|Blackwater]]", 1, true)
 local order2 = rows:find("[[Altro Autore - Altro\\|Altro]]", 1, true)
 T.check(order < order2, "the index keeps the order of the books it received")
@@ -262,8 +303,37 @@ local pipeIndex = render.buildIndexMd({
 local line = pipeIndex:match("| %[[^\n]+")
 T.check(line and T.contains(line, "[[Base\\|A B]]"),
     "title with pipe: the alias stays a single valid wikilink")
-T.check(line and line:gsub("[^|]", "") == "||||||",
-    "the row has the right number of columns")
+T.check(line and line:gsub("[^|]", "") == "||||||||",
+    "the row has the right number of columns (7 separators + the escaped one)")
+
+-- index v2: cover column, series and status cells
+local covered = render.buildIndexMd({
+    {
+        link = "Autore - Titolo",
+        title = "Titolo",
+        author = "Autore",
+        series = "Saga",
+        series_index = 2,
+        status = "reading",
+        count = 3,
+        date = "01/01/2026",
+        cover = "covers/Autore - Titolo.jpg",
+    },
+}, { show_covers = true })
+T.check(T.contains(covered, "| Cover | Book | Author | Series | Status | Highlights | Last export |"),
+    "header with the cover column")
+T.check(T.contains(covered,
+    '<img src="covers/Autore - Titolo.jpg" alt="" style="object-fit:contain;width:90px;height:120px">'),
+    "cover cell in the index row")
+T.check(T.contains(covered, "| Saga #2 |"), "series cell with the series index")
+T.check(T.contains(covered, "| Reading |"), "status cell translated to English")
+T.check(T.contains(covered, "| 3 | 01/01/2026 |"), "count and date in the covered row")
+-- a book without a series/status/cover keeps the columns, with a dash
+local sparse = render.buildIndexMd({
+    { link = "B", title = "B", author = "Au", count = 1, date = "01/01/2026" },
+}, { show_covers = false })
+T.check(T.contains(sparse, "| [[B\\|B]] | Au | — | — | 1 | 01/01/2026 |"),
+    "missing series/status become a dash, no cover cell")
 
 -- fmtDate
 T.check(render.fmtDate("2026-09-02 10:00:00") == "02/09/2026", "ISO date in Italian format")

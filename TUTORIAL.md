@@ -57,7 +57,19 @@ automatically, and *Server and folder…* already shows it. Only set
 the JSONs.
 
 More options (index, page bookmarks, local folder…) are described in the
-README's [Configuration](README.md#configuration-one-off) table.
+README's [Configuration](README.md#configuration-one-off) table. Two more
+toggles there are worth knowing about (both off by default):
+
+- ***Include book covers*** — exports every book's cover into `covers/`
+  and embeds it in the book note and in the index. The cover is removed
+  from the device once its upload succeeded (the cloud copy is the master
+  one). **Obsidian 1.8.1 or newer is required to display them** — older
+  versions show a broken image; update Obsidian from its own settings if
+  you are behind.
+- ***All highlights as callouts*** — every highlight becomes an
+  `> [!highlight]` callout in the exported note. With it off, only the
+  highlights you mark as **Special Highlight** (day to day, below) get
+  the callout.
 
 ## Step 3 — First export
 
@@ -103,6 +115,9 @@ Save picks up whatever new export you make.
 2. Close the book → export (or tap *Export current book*).
 3. Upload to the cloud is automatic; Remotely Save syncs Obsidian on its
    schedule.
+4. **Mark what matters:** tap an existing highlight in the reader and
+   choose **Special Highlight** — it is exported as an `> [!highlight]`
+   callout, easy to spot in Obsidian. Tap it again to remove the mark.
 
 Updates of the plugin itself: **Settings → Check for updates…** (notes are
 shown formatted, with *Update and restart* right in the window).
@@ -124,6 +139,9 @@ shown formatted, with *Update and restart* right in the window).
   from the menu instead.
 - **`.json` files cluttering the vault** — add `*.json` to Remotely
   Save's ignore list (see step 4).
+- **Covers show as a broken image in Obsidian** — rendering images that
+  point at a file inside the vault needs Obsidian **1.8.1 or newer**:
+  update Obsidian, then sync again.
 
 ## Links
 
