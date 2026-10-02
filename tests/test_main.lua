@@ -1346,7 +1346,7 @@ T.check(store.tomedown.exports[FILE].hash == nil,
     "the callout toggle invalidates the stored hash too")
 files[5].callback()
 
--- extraction: capped to the 800x1200 box, quality 80, colours kept
+-- extraction: capped to the 800x1200 box, quality 50, colours kept
 uploadSetup()
 store.tomedown.covers = true
 BookInfo.cover_bb = fakeBB(1600, 2400)
@@ -1354,8 +1354,8 @@ cleanDir()
 plugin:runExport({ FILE }, {})
 local md_content = T.readFile(MD_PATH)
 T.check(T.fileExists(COVER_PATH), "cover extracted next to the md files")
-T.check(T.readFile(COVER_PATH) == "JPG:800x1200:jpg:80",
-    "scaled into the box at quality 80: " .. tostring(T.readFile(COVER_PATH)))
+T.check(T.readFile(COVER_PATH) == "JPG:800x1200:jpg:50",
+    "scaled into the box at quality 50: " .. tostring(T.readFile(COVER_PATH)))
 T.check(T.contains(md_content or "", 'cover: "' .. COVER_REL .. '"'),
     "frontmatter carries the cover")
 T.check(T.contains(md_content or "", '<img src="' .. COVER_REL .. '"'),
@@ -1409,8 +1409,10 @@ T.check(expected > 0 and n_callouts == expected,
     "every highlight becomes a callout: " .. n_callouts .. "/" .. expected)
 store.tomedown.callout = false
 
--- Special Highlight: registered when the reader is ready, toggled from
--- the menu of an existing highlight, saved on the annotation itself
+-- Special Highlight: registered when the reader is ready. The button
+-- sorts right under KOReader's Highlight button (the menu is ordered
+-- alphabetically by key), creates+marks on a fresh selection and toggles
+-- on an existing highlight; the mark lives on the annotation itself.
 local fake_highlight = {
     dialogs = {},
     ui = ui,
@@ -1418,6 +1420,15 @@ local fake_highlight = {
 }
 function fake_highlight:addToHighlightDialog(idx, fn)
     self.dialogs[idx] = fn
+end
+-- like ReaderHighlight:saveHighlight — a new annotation is appended and
+-- its index handed back to the callback (color prompt aside)
+function fake_highlight:showHighlightPrompt(caller_callback)
+    table.insert(ui.annotation.annotations, {
+        drawer = "underline", text = "Seconda frase.", pageno = 11,
+        datetime = "2026-09-03 10:00:00",
+    })
+    caller_callback(#ui.annotation.annotations)
 end
 ui.highlight = fake_highlight
 ui.annotation = { annotations = {
@@ -1433,15 +1444,16 @@ ui.doc_settings = {
     end,
 }
 plugin:onReaderReady()
-local special_fn = fake_highlight.dialogs["tomedown_special"]
+local special_key = "03b_special"
+local special_fn = fake_highlight.dialogs[special_key]
 T.check(special_fn ~= nil, "the button is registered on ReaderReady")
+T.check(special_key > "03_copy" and special_key < "04_add_note",
+    "the key sorts between Copy and Add note, i.e. right under Highlight: "
+        .. special_key)
 local plain_button = special_fn(fake_highlight, 1)
-T.check(plain_button.show_in_highlight_dialog_func() == true,
-    "visible on an existing highlight")
+T.check(plain_button.show_in_highlight_dialog_func == nil,
+    "no visibility filter: the button is always in the menu")
 T.check(plain_button.text == "Special Highlight", "plain label when not marked")
-local fresh_button = special_fn(fake_highlight, nil)
-T.check(fresh_button.show_in_highlight_dialog_func() == false,
-    "hidden on a fresh selection")
 plain_button.callback()
 T.check(ui.annotation.annotations[1].tomedown_special == true, "marked")
 T.check(saved_annotations == ui.annotation.annotations,
@@ -1454,6 +1466,17 @@ marked_button.callback()
 T.check(ui.annotation.annotations[1].tomedown_special == nil, "unmarked again")
 T.check(Notification.last_text == "Special mark removed",
     "unmark notification: " .. tostring(Notification.last_text))
+
+-- on a fresh text selection the button creates the highlight first
+local fresh_button = special_fn(fake_highlight, nil)
+T.check(fresh_button.text == "Special Highlight", "fresh label is plain")
+fresh_button.callback()
+T.check(#ui.annotation.annotations == 2, "the highlight was created")
+T.check(ui.annotation.annotations[2].tomedown_special == true,
+    "the created highlight is marked as special")
+T.check(Notification.last_text == "Highlight marked as special",
+    "creation notification: " .. tostring(Notification.last_text))
+table.remove(ui.annotation.annotations, 2)
 
 -- and the mark reaches the markdown as a callout
 ui.annotation.annotations[1].tomedown_special = true

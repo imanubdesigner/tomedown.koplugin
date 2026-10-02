@@ -1833,12 +1833,17 @@ function Tomedown:onNetworkConnected()
     self:schedulePendingFlush()
 end
 
--- Special Highlight: a toggle in the menu of an already existing
--- highlight (tapped, so the annotation has an index). The mark lives on
--- the annotation itself (tomedown_special in the .sdr): it survives
--- restarts, reaches cleanAnnotations and therefore the markdown, and is
--- part of the book hash so the next export rewrites the .md. Registered
--- when the reader is ready through ReaderHighlight's public
+-- Special Highlight: a row in KOReader's highlight menu. The menu is
+-- sorted alphabetically by key, so "03b_special" lands it right under
+-- "02_highlight" (same column, next row) — visible both on a fresh text
+-- selection and on an existing highlight. On a fresh selection there is
+-- no annotation yet: the button creates the highlight through the very
+-- same prompt "Highlight" uses (color prompt included) and marks what it
+-- hands back. On an existing highlight it is a plain toggle. The mark
+-- lives on the annotation itself (tomedown_special in the .sdr): it
+-- survives restarts, reaches cleanAnnotations and therefore the markdown,
+-- and is part of the book hash so the next export rewrites the .md.
+-- Registered when the reader is ready through ReaderHighlight's public
 -- addToHighlightDialog API; the key is stable, so re-registering on
 -- every book only replaces the previous button.
 function Tomedown:onReaderReady()
@@ -1846,33 +1851,44 @@ function Tomedown:onReaderReady()
     if not highlight or not highlight.addToHighlightDialog then
         return
     end
-    highlight:addToHighlightDialog("tomedown_special", function(this, index)
+    highlight:addToHighlightDialog("03b_special", function(this, index)
         local annotations = this.ui.annotation and this.ui.annotation.annotations
         local item = annotations and index and annotations[index]
         local special = item and item.tomedown_special or false
+        local save_and_notify = function(marked)
+            local doc_settings = this.ui.doc_settings
+            if doc_settings then
+                doc_settings:saveSetting("annotations",
+                    this.ui.annotation.annotations)
+            end
+            UIManager:show(Notification:new{
+                text = marked and _("Highlight marked as special")
+                    or _("Special mark removed"),
+                timeout = 2,
+            })
+        end
         return {
             text = (special and "✓ " or "") .. _("Special Highlight"),
-            -- on a fresh text selection (index == nil) the annotation
-            -- does not exist yet: nothing to mark, keep the row hidden
-            show_in_highlight_dialog_func = function()
-                return index ~= nil
-            end,
             callback = function()
-                if not item then
+                if item then
+                    item.tomedown_special = not item.tomedown_special or nil
+                    local marked = item.tomedown_special
+                    this:onClose()
+                    save_and_notify(marked)
                     return
                 end
-                item.tomedown_special = not item.tomedown_special or nil
-                local doc_settings = this.ui.doc_settings
-                if doc_settings then
-                    doc_settings:saveSetting("annotations", annotations)
-                end
-                this:onClose()
-                UIManager:show(Notification:new{
-                    text = item.tomedown_special
-                        and _("Highlight marked as special")
-                        or _("Special mark removed"),
-                    timeout = 2,
-                })
+                -- fresh selection: showHighlightPrompt saves the highlight
+                -- (and closes the menu) exactly like the Highlight button,
+                -- then hands us the new annotation's index to mark
+                this:showHighlightPrompt(function(new_index)
+                    local anns = this.ui.annotation and this.ui.annotation.annotations
+                    local annot = anns and anns[new_index]
+                    if not annot then
+                        return
+                    end
+                    annot.tomedown_special = true
+                    save_and_notify(true)
+                end)
             end,
         }
     end)
