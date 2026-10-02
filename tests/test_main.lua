@@ -1406,8 +1406,8 @@ T.check(T.contains(md_content or "", '<p align="center"><img src="' .. COVER_REL
     "the body embeds the cover centered")
 local index_content = T.readFile(INDEX_PATH)
 T.check(T.contains(index_content or "", COVER_REL), "the index row shows the cover")
-T.check(T.contains(index_content or "", "width:120px;height:160px"),
-    "the index cover is sized 120x160")
+T.check(T.contains(index_content or "", "width:90px;height:120px"),
+    "the index cover is sized 90x120")
 T.check(T.contains(index_content or "", "click a title to open its note."),
     "the exported index carries the stats line")
 

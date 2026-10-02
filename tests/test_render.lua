@@ -336,7 +336,7 @@ local covered = render.buildIndexMd({
 T.check(T.contains(covered, "| Cover | Book | Author | Series | Status | Highlights | Last export |"),
     "header with the cover column")
 T.check(T.contains(covered,
-    '<img src="covers/Autore - Titolo.jpg" alt="" style="object-fit:contain;width:120px;height:160px">'),
+    '<img src="covers/Autore - Titolo.jpg" alt="" style="object-fit:contain;width:90px;height:120px">'),
     "cover cell in the index row")
 T.check(T.contains(covered, "| Saga #2 |"), "series cell with the series index")
 T.check(T.contains(covered, "| Reading |"), "status cell translated to English")
