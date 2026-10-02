@@ -96,8 +96,8 @@ msgstr "Cartella remota: %1"
 msgid "Local folder: %1"
 msgstr "Cartella locale: %1"
 
-msgid "Generate the index %1"
-msgstr "Genera l'indice %1"
+msgid "Generate the %1 (for Obsidian)"
+msgstr "Genera il %1 (per Obsidian)"
 
 msgid "Export current book"
 msgstr "Esporta libro corrente"
@@ -145,6 +145,9 @@ msgstr "indice"
 msgid "No exported books with highlights."
 msgstr "Nessun libro con evidenziati esportati."
 
+msgid "*%1 books · %2 highlights — click a title to open its note.*"
+msgstr "*%1 libri · %2 evidenziazioni — clicca un titolo per aprire la sua nota.*"
+
 # index table cells (v0.8.0: cover/series/status columns)
 msgid "Cover"
 msgstr "Copertina"
@@ -177,8 +180,8 @@ msgstr "Abbandonato"
 msgid "Include book covers"
 msgstr "Includi le copertine"
 
-msgid "All highlights as callouts"
-msgstr "Tutte le evidenziazioni come callout"
+msgid "All highlights as Special Highlights"
+msgstr "Tutte le evidenziazioni come Special Highlights"
 
 # Special Highlight (v0.8.0)
 msgid "Special Highlight"

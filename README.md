@@ -137,13 +137,13 @@ first export and optional Remotely Save in Obsidian — is in
 | Entry | What to do |
 |---|---|
 | *Local folder* | defaults to `clipboard/tomedown` inside KOReader's data folder; tap it to browse with KOReader's folder picker (long-press a folder to choose it) |
-| *Generate the index 00 - Index.md* | table with internal links, author, series, reading status, highlight count and last export date |
+| *Generate the 00 - Index.md (for Obsidian)* | builds the Obsidian table — a stats line on top (books, highlights, a link hint), then internal links, author, series, reading status, highlight count and last export date |
 | *Include page bookmarks* | off by default: adds a `# Page bookmarks` section (bookmarked page + note) after the highlights |
 | *Include book covers* | off by default: exports the cover of every book into `covers/` and embeds it in the book file and in the index; the cover is removed from the device once its upload succeeded (the vault copy is the master one). Requires **Obsidian 1.8.1 or newer** to display |
-| *All highlights as callouts* | off by default: every highlight becomes an `> [!highlight]` callout instead of a plain quote; when off, only *Special Highlight* marks (see *Usage*) turn into callouts |
+| *All highlights as Special Highlights* | off by default: every highlight becomes an `> [!highlight]` callout instead of a plain quote; when off, only *Special Highlight* marks (see *Usage*) turn into callouts |
 | *Auto-export on close* | off by default: exports the book when you close it, and again (silently, no network) before the device suspends |
 
-Ticking or unticking *Include book covers* / *All highlights as callouts*
+Ticking or unticking *Include book covers* / *All highlights as Special Highlights*
 rewrites every already exported file on the next export (the stored hash is
 invalidated, so *Export only what changed* re-sends everything once).
 
@@ -270,7 +270,7 @@ want to open first, the line you will come back to. **Special Highlight**
 is the flag for those and only those. The mark lives inside the book's
 own settings and is part of the book's hash, so the next export rewrites
 that file; the flagged highlight is always exported as an `> [!highlight]`
-callout — even when *All highlights as callouts* is off — so it stays
+callout — even when *All highlights as Special Highlights* is off — so it stays
 visually apart in Obsidian. A notification confirms every change.
 
 Marking it costs a single tap wherever you already are. **Selecting
@@ -367,6 +367,8 @@ tags:
   - gothic-fiction
 ---
 
+---
+
 # **HIGHLIGHTS: 150**
 
 ---
@@ -405,14 +407,15 @@ tags:
   annotations are left out — tick *Include page bookmarks* in Settings to
   get the `# Page bookmarks` section shown above
 - with *Include book covers* ticked the file also carries `cover:
-  "covers/Author - Title.jpg"` in the frontmatter and an `<img>` right
-  after it (before the `# **HIGHLIGHTS**` heading). The cover is the
+  "covers/Author - Title.jpg"` in the frontmatter and a centered `<img>`
+  (wrapped in `<p align="center">`) right after the opening rule, with a
+  second rule between the cover and the `# **HIGHLIGHTS**` heading. The cover is the
   embedded one (or the custom cover KOReader knows), resized into a
   800×1200 JPEG and dropped from the device after a successful upload —
   the copy in the vault is the master one. Obsidian renders such images
   starting with **version 1.8.1**
 - highlights marked **Special Highlight** (see *Usage*) are rendered as
-  `> [!highlight]` callouts; with *All highlights as callouts* ticked
+  `> [!highlight]` callouts; with *All highlights as Special Highlights* ticked
   every highlight gets the marker, otherwise only the special ones:
 
   ```markdown
@@ -428,14 +431,16 @@ tags:
   the running page number; the date under each highlight includes the
   time (`HH:MM`)
 - files exported by an older version of tomedown keep their old look
-  until they are rebuilt: run *Import all books from history* once and
-  every file is rewritten in the current format
+  until they are rebuilt: the render format is part of the stored hash,
+  so the first export after an update rewrites every file in the current
+  format
 - the index uses wiki links (`[[…]]`), opened natively by Obsidian and by
-  most Markdown apps; with covers enabled the first column shows the
-  cover image (90×120 box):
+  most Markdown apps; the body opens with a rule and a stats line (books,
+  highlights, a link hint) above the table, and with covers enabled the
+  first column shows the cover image (120×160 box):
 
   ```markdown
-  | <img src="covers/Michael McDowell - Blackwater.jpg" alt="" style="object-fit:contain;width:90px;height:120px"> | [[Michael McDowell - Blackwater\|Blackwater]] | Michael McDowell | Blackwater #1 | complete | 150 | 26/09/2026 |
+  | <img src="covers/Michael McDowell - Blackwater.jpg" alt="" style="object-fit:contain;width:120px;height:160px"> | [[Michael McDowell - Blackwater\|Blackwater]] | Michael McDowell | Blackwater #1 | complete | 150 | 26/09/2026 |
   ```
 
   Without the option the cover column disappears; books without a series

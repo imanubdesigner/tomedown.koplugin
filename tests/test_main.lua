@@ -493,12 +493,13 @@ T.check(cloud[1].text == "Upload to cloud", "upload entry")
 T.check(cloud[2].text_func() == "Server and folder: not set", "server not set")
 T.check(T.contains(cloud[3].text_func(), "Remote folder: not set"), "remote folder not set")
 T.check(T.contains(files[1].text_func(), "clipboard/tomedown"), "default local folder")
-T.check(T.contains(files[2].text, "00 - Index.md"), "index entry with the file name")
+T.check(files[2].text == "Generate the 00 - Index.md (for Obsidian)",
+    "index entry with the file name and the Obsidian hint")
 T.check(files[3].text == "Include page bookmarks", "page bookmarks entry")
 T.check(files[3].checked_func() == false, "page bookmarks off by default")
 T.check(files[4].text == "Include book covers", "covers entry")
 T.check(files[4].checked_func() == false, "covers off by default")
-T.check(files[5].text == "All highlights as callouts", "callout entry")
+T.check(files[5].text == "All highlights as Special Highlights", "callout entry")
 T.check(files[5].checked_func() == false, "callout off by default")
 T.check(files[5].separator == true, "separator before the auto-export toggle")
 T.check(files[6].text == "Auto-export on close",
@@ -1401,10 +1402,14 @@ T.check(T.contains(md_content or "", 'cover: "' .. COVER_REL .. '"'),
     "frontmatter carries the cover")
 T.check(T.contains(md_content or "", '<img src="' .. COVER_REL .. '"'),
     "the body embeds the cover")
+T.check(T.contains(md_content or "", '<p align="center"><img src="' .. COVER_REL .. '"'),
+    "the body embeds the cover centered")
 local index_content = T.readFile(INDEX_PATH)
 T.check(T.contains(index_content or "", COVER_REL), "the index row shows the cover")
-T.check(T.contains(index_content or "", "width:90px;height:120px"),
-    "the index cover is sized 90x120")
+T.check(T.contains(index_content or "", "width:120px;height:160px"),
+    "the index cover is sized 120x160")
+T.check(T.contains(index_content or "", "click a title to open its note."),
+    "the exported index carries the stats line")
 
 -- extraction always forces colour rendering on, and puts the flags
 -- back right after the call
