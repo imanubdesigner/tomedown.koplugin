@@ -364,7 +364,7 @@ function render.buildIndexMd(books, opts)
         local date = (b.date and b.date ~= "") and b.date or "—"
         local cells = {}
         if with_covers then
-            cells[#cells + 1] = b.cover and render.coverImg(b.cover, 120, 160) or ""
+            cells[#cells + 1] = b.cover and render.coverImg(b.cover, 90, 120) or ""
         end
         cells[#cells + 1] = link
         cells[#cells + 1] = author

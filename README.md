@@ -437,10 +437,10 @@ tags:
 - the index uses wiki links (`[[…]]`), opened natively by Obsidian and by
   most Markdown apps; the body opens with a rule and a stats line (books,
   highlights, a link hint) above the table, and with covers enabled the
-  first column shows the cover image (120×160 box):
+  first column shows the cover image (90×120 box):
 
   ```markdown
-  | <img src="covers/Michael McDowell - Blackwater.jpg" alt="" style="object-fit:contain;width:120px;height:160px"> | [[Michael McDowell - Blackwater\|Blackwater]] | Michael McDowell | Blackwater #1 | complete | 150 | 26/09/2026 |
+  | <img src="covers/Michael McDowell - Blackwater.jpg" alt="" style="object-fit:contain;width:90px;height:120px"> | [[Michael McDowell - Blackwater\|Blackwater]] | Michael McDowell | Blackwater #1 | complete | 150 | 26/09/2026 |
   ```
 
   Without the option the cover column disappears; books without a series
