@@ -15,6 +15,7 @@ local BookList = require("ui/widget/booklist")
 local ConfirmBox = require("ui/widget/confirmbox")
 local DataStorage = require("datastorage")
 local Device = require("device")
+local Font = require("ui/font")
 local InfoMessage = require("ui/widget/infomessage")
 local InputDialog = require("ui/widget/inputdialog")
 local NetworkMgr = require("ui/network/manager")
@@ -989,6 +990,9 @@ end
 
 function Tomedown:showStatus()
     UIManager:show(InfoMessage:new{
+        -- the smallest info face (18pt vs the default 24): every entry
+        -- stays on a single line instead of wrapping into a wall of text
+        face = Font:getFace("xx_smallinfofont"),
         text = table.concat(self:statusLines(), "\n"),
     })
 end
@@ -1589,7 +1593,6 @@ function Tomedown:showAbout()
     local GITHUB_URL = "https://github.com/imanubdesigner/tomedown.koplugin"
 
     local Screen = Device.screen
-    local Font = require("ui/font")
     local Geom = require("ui/geometry")
     local Size = require("ui/size")
     local Blitbuffer = require("ffi/blitbuffer")

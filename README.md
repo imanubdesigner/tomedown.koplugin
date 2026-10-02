@@ -246,7 +246,8 @@ settings keys are never renamed.
   reading history.
 - **Reload everything to the cloud** — re-uploads every file already in the
   local folder (use it after a failed upload).
-- **Status** — one screen with network, server, pending uploads and the last
+- **Status** — a compact popup in a small font (one line per entry) with
+  network, server, pending uploads and the last
   export/upload with their timestamp and outcome.
 - **Settings** — see above.
 - **About** — a popup with the logo, the installed version, the description
