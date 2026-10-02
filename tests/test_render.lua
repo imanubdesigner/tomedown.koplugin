@@ -171,8 +171,8 @@ local weird = render.buildBookMd({
     keywords = { "Sci-Fi & Fantasy" },
     annotations = {},
 })
-T.check(T.contains(weird, '  - "Sci-Fi & Fantasy"'),
-    "a keyword needing quotes gets them")
+T.check(T.contains(weird, "  - Sci-Fi-Fantasy"),
+    "a dirty keyword is sanitized, not quoted as it was")
 
 -- ------------------------------------------------------------ page bookmarks
 local bmBook = render.buildBookMd({
@@ -368,5 +368,40 @@ local named = render.buildBookMd({
 })
 T.check(T.contains(named, 'series: "Saga"'), "series without an index is kept")
 T.check(not T.contains(named, "series_index:"), "no index line when the index is unknown")
+
+-- sanitizeTag: a keyword has to become a valid Obsidian tag
+T.check(render.sanitizeTag("Occult & Supernatural") == "Occult-Supernatural",
+    "spaces to dashes, & dropped")
+T.check(render.sanitizeTag("Horror tales: American") == "Horror-tales-American",
+    "colon dropped, the dashes around it collapsed")
+T.check(render.sanitizeTag("American Horror tales") == "American-Horror-tales",
+    "plain multi-word keyword")
+T.check(render.sanitizeTag("  spaced   out  ") == "spaced-out",
+    "run of spaces and edge spaces trimmed")
+T.check(render.sanitizeTag("!!!") == "", "only forbidden characters: empty result")
+T.check(render.sanitizeTag(nil) == "", "nil is empty, not an error")
+T.check(render.sanitizeTag("gothic-fiction") == "gothic-fiction",
+    "an already valid keyword is untouched")
+T.check(render.sanitizeTag("Favole dell'ORRORE!") == "Favole-dell'ORRORE",
+    "case and apostrophe kept, ! dropped")
+T.check(render.sanitizeTag("Séries noires") == "Séries-noires",
+    "accents kept")
+T.check(render.sanitizeTag("fantasy/sci-fi") == "fantasy/sci-fi",
+    "the nested tag separator survives")
+local clean_once = render.sanitizeTag("Occult & Supernatural")
+T.check(render.sanitizeTag(clean_once) == clean_once, "sanitizeTag is idempotent")
+
+-- through the exporter: dirty keywords render sanitized, dead ones vanish
+local tagged = render.buildBookMd({
+    title = "Blackwater",
+    keywords = { "Occult & Supernatural", "!!!", "American Horror tales" },
+    count = 1,
+    annotations = { { text = "X" } },
+})
+T.check(T.contains(tagged, "  - Occult-Supernatural"), "the rendered tag is sanitized")
+T.check(T.contains(tagged, "  - American-Horror-tales"),
+    "the second dirty keyword too")
+T.check(not T.contains(tagged, "Occult &"), "no raw keyword reaches the frontmatter")
+T.check(not T.contains(tagged, "- !!!"), "the dead keyword is not exported")
 
 T.finish("test_render")

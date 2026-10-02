@@ -385,7 +385,8 @@ rec.doc_props = {
     series = "Blackwater",
     series_index = 4,
     language = "it",
-    keywords = "horror, gothic-fiction",
+    keywords = "horror, gothic-fiction, Occult & Supernatural, "
+        .. "American Horror tales, Horror tales: American, !!!",
 }
 rec.doc_pages = 300
 rec.percent_finished = 0.956
@@ -404,6 +405,16 @@ if richMd then
     T.check(T.contains(richMd, 'progress: "96%"'), "progress rounded from percent_finished")
     T.check(T.contains(richMd, "  - horror"), "keyword tag")
     T.check(T.contains(richMd, "  - gothic-fiction"), "second keyword tag")
+    T.check(T.contains(richMd, "  - Occult-Supernatural"),
+        "dirty keyword sanitized: spaces and &")
+    T.check(T.contains(richMd, "  - American-Horror-tales"),
+        "keyword with spaces becomes a dash tag")
+    T.check(T.contains(richMd, "  - Horror-tales-American"),
+        "keyword with a colon sanitized")
+    T.check(not T.contains(richMd, "Occult &"),
+        "the raw keyword never reaches the frontmatter")
+    T.check(not T.contains(richMd, "!!!"),
+        "a keyword that sanitizes to nothing is dropped")
     local iSeries = richMd:find("series:", 1, true)
     local iIndex = richMd:find("series_index:", 1, true)
     local iLang = richMd:find('language:', 1, true)
