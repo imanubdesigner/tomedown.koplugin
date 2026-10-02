@@ -115,9 +115,10 @@ Save picks up whatever new export you make.
 2. Close the book → export (or tap *Export current book*).
 3. Upload to the cloud is automatic; Remotely Save syncs Obsidian on its
    schedule.
-4. **Mark what matters:** tap an existing highlight in the reader and
-   choose **Special Highlight** — it is exported as an `> [!highlight]`
-   callout, easy to spot in Obsidian. Tap it again to remove the mark.
+4. **Mark what matters:** when you select text, pick **Special Highlight**
+   right under *Highlight* — the highlight is created and exported as an
+   `> [!highlight]` callout, easy to spot in Obsidian. The same row on an
+   existing highlight toggles the mark off.
 
 Updates of the plugin itself: **Settings → Check for updates…** (notes are
 shown formatted, with *Update and restart* right in the window).

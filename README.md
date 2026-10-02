@@ -259,14 +259,15 @@ offer is made only once; the menu entry stays available anyway).
 
 ### Special highlights
 
-Tap an **existing** highlight in the reader and the highlight menu gains a
-**Special Highlight** row (with a ✓ when the mark is already on): the
-highlight is marked with a toggle saved inside the book's own settings.
-A special highlight is always exported as an `> [!highlight]` callout —
-even when *All highlights as callouts* is off — so the few highlights that
-really matter stay visually apart in Obsidian. Tapping the row again
-removes the mark; a notification confirms either way. The mark is part of
-the book's hash, so the next export rewrites that file.
+Select some text: the highlight menu shows a **Special Highlight** row
+right under **Highlight** (with a ✓ when the mark is already on). On a
+fresh selection one tap creates the highlight and marks it; tapping an
+existing highlight shows the same row as a plain toggle. The mark is
+saved inside the book's own settings. A special highlight is always
+exported as an `> [!highlight]` callout — even when *All highlights as
+callouts* is off — so the few highlights that really matter stay visually
+apart in Obsidian. A notification confirms either way, and the mark is
+part of the book's hash, so the next export rewrites that file.
 
 After every export, if *Upload to cloud* is on, the `.md` files and the index
 are uploaded to the chosen server automatically. With *Include book covers*

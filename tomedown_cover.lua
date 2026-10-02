@@ -21,7 +21,7 @@ local cover = {}
 
 -- export box: the shorter side wins, the aspect ratio is preserved
 local MAX_W, MAX_H = 800, 1200
-local JPEG_QUALITY = 80
+local JPEG_QUALITY = 50
 
 --- The relative path a cover occupies inside the vault (POSIX, the
 -- markdown always uses "/" even on Windows KOReader builds).
