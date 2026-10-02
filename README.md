@@ -260,9 +260,12 @@ offer is made only once; the menu entry stays available anyway).
 ### Special highlights
 
 Select some text: the highlight menu shows a **Special Highlight** row
-right under **Highlight** (with a ✓ when the mark is already on). On a
-fresh selection one tap creates the highlight and marks it; tapping an
-existing highlight shows the same row as a plain toggle. The mark is
+right under **Highlight**; one tap creates the highlight and marks it.
+Tap an existing highlight instead and the compact edit menu (trash,
+Style, Color, …) carries the same row at the bottom: it reads
+**Special Highlight** while the mark is off and **Remove Special
+Highlight** while it is on, so a single tap is enough either way (the
+full menu behind the "…" button has the same dynamic row). The mark is
 saved inside the book's own settings. A special highlight is always
 exported as an `> [!highlight]` callout — even when *All highlights as
 callouts* is off — so the few highlights that really matter stay visually

@@ -1411,8 +1411,10 @@ store.tomedown.callout = false
 
 -- Special Highlight: registered when the reader is ready. The button
 -- sorts right under KOReader's Highlight button (the menu is ordered
--- alphabetically by key), creates+marks on a fresh selection and toggles
--- on an existing highlight; the mark lives on the annotation itself.
+-- alphabetically by key), creates+marks on a fresh selection, toggles on
+-- an existing highlight with a dynamic label, and gets a twin row
+-- appended at the bottom of the compact edit menu through the
+-- showHighlightDialog hook. The mark lives on the annotation itself.
 local fake_highlight = {
     dialogs = {},
     ui = ui,
@@ -1461,7 +1463,8 @@ T.check(saved_annotations == ui.annotation.annotations,
 T.check(Notification.last_text == "Highlight marked as special",
     "mark notification: " .. tostring(Notification.last_text))
 local marked_button = special_fn(fake_highlight, 1)
-T.check(marked_button.text == "✓ Special Highlight", "state check in the label")
+T.check(marked_button.text == "Remove Special Highlight",
+    "dynamic label once marked: " .. tostring(marked_button.text))
 marked_button.callback()
 T.check(ui.annotation.annotations[1].tomedown_special == nil, "unmarked again")
 T.check(Notification.last_text == "Special mark removed",
@@ -1477,6 +1480,39 @@ T.check(ui.annotation.annotations[2].tomedown_special == true,
 T.check(Notification.last_text == "Highlight marked as special",
     "creation notification: " .. tostring(Notification.last_text))
 table.remove(ui.annotation.annotations, 2)
+
+-- the compact edit menu (tap on an existing highlight): the hook appends
+-- a dynamic-label row after the arrows, and wraps showHighlightDialog
+-- exactly once even when the reader is reopened
+plugin:onReaderReady()
+local ReaderHighlight = require("apps/reader/modules/readerhighlight")
+local fake_reader = { ui = ui }
+ReaderHighlight.showHighlightDialog(fake_reader, 1)
+local edit_opts = require("ui/widget/buttondialog").last_opts
+T.check(edit_opts ~= nil and edit_opts.name == "edit_highlight_dialog",
+    "the compact edit menu was built")
+T.check(edit_opts ~= nil and #edit_opts.buttons == 3,
+    "our row appended at the bottom, after the arrows: "
+        .. tostring(edit_opts and #edit_opts.buttons))
+local edit_button = edit_opts.buttons[3][1]
+T.check(edit_button.text == "Special Highlight",
+    "plain label on an unmarked highlight")
+edit_button.callback()
+T.check(ui.annotation.annotations[1].tomedown_special == true,
+    "one tap in the edit menu marks it")
+T.check(Notification.last_text == "Highlight marked as special",
+    "edit menu mark notification: " .. tostring(Notification.last_text))
+-- reopen: the label tells what the next tap will do, row not duplicated
+ReaderHighlight.showHighlightDialog(fake_reader, 1)
+edit_opts = require("ui/widget/buttondialog").last_opts
+T.check(#edit_opts.buttons == 3, "still a single row on re-open")
+T.check(edit_opts.buttons[3][1].text == "Remove Special Highlight",
+    "dynamic label once marked: " .. tostring(edit_opts.buttons[3][1].text))
+edit_opts.buttons[3][1].callback()
+T.check(ui.annotation.annotations[1].tomedown_special == nil,
+    "one tap unmarks it")
+T.check(Notification.last_text == "Special mark removed",
+    "edit menu unmark notification: " .. tostring(Notification.last_text))
 
 -- and the mark reaches the markdown as a callout
 ui.annotation.annotations[1].tomedown_special = true
