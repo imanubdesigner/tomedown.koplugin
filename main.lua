@@ -1833,19 +1833,113 @@ function Tomedown:onNetworkConnected()
     self:schedulePendingFlush()
 end
 
--- Special Highlight: a row in KOReader's highlight menu. The menu is
--- sorted alphabetically by key, so "03b_special" lands it right under
--- "02_highlight" (same column, next row) — visible both on a fresh text
--- selection and on an existing highlight. On a fresh selection there is
--- no annotation yet: the button creates the highlight through the very
--- same prompt "Highlight" uses (color prompt included) and marks what it
--- hands back. On an existing highlight it is a plain toggle. The mark
--- lives on the annotation itself (tomedown_special in the .sdr): it
--- survives restarts, reaches cleanAnnotations and therefore the markdown,
--- and is part of the book hash so the next export rewrites the .md.
--- Registered when the reader is ready through ReaderHighlight's public
--- addToHighlightDialog API; the key is stable, so re-registering on
--- every book only replaces the previous button.
+-- Special Highlight: two entry points. (1) KOReader's full highlight menu
+-- (fresh text selection or the "…" of an existing highlight): keyed
+-- "03b_special", so the alphabetical menu order lands the button right
+-- under "02_highlight"; on a fresh selection there is no annotation yet,
+-- so it creates the highlight through the very same prompt "Highlight"
+-- uses (color prompt included) and marks what it hands back. (2) The
+-- compact edit menu shown when an existing highlight is tapped
+-- (trash/Style/Color/…): KOReader builds it from a hardcoded list and
+-- exposes no API for it, so showHighlightDialog is wrapped and our row
+-- appended at the bottom while it constructs its ButtonDialog. Both
+-- buttons read the mark dynamically: "Special Highlight" marks,
+-- "Remove Special Highlight" unmarks. The mark lives on the annotation
+-- itself (tomedown_special in the .sdr): it survives restarts, reaches
+-- cleanAnnotations and therefore the markdown, and is part of the book
+-- hash so the next export rewrites the .md.
+
+-- saves the annotation list back on the book and confirms the change
+function Tomedown:_specialSave(rh, marked)
+    local doc_settings = rh.ui.doc_settings
+    if doc_settings then
+        doc_settings:saveSetting("annotations", rh.ui.annotation.annotations)
+    end
+    UIManager:show(Notification:new{
+        text = marked and _("Highlight marked as special")
+            or _("Special mark removed"),
+        timeout = 2,
+    })
+end
+
+-- marks/unmarks an existing highlight on an already loaded ReaderHighlight;
+-- close_menu runs right after the flip (the caller's way to dismiss its UI)
+function Tomedown:_specialToggle(rh, index, close_menu)
+    local annotations = rh.ui.annotation and rh.ui.annotation.annotations
+    local item = annotations and annotations[index]
+    if not item then
+        return
+    end
+    item.tomedown_special = not item.tomedown_special or nil
+    local marked = item.tomedown_special
+    if close_menu then
+        close_menu()
+    end
+    self:_specialSave(rh, marked)
+end
+
+-- the button of the row appended at the bottom of the compact edit menu;
+-- the label is read when the menu is built, the mark again on tap
+function Tomedown:_specialEditRow(rh, index)
+    local annotations = rh.ui.annotation and rh.ui.annotation.annotations
+    local item = annotations and annotations[index]
+    local marked = item and item.tomedown_special or false
+    local button -- forward declaration: the callback closes over it
+    button = {
+        text = marked and _("Remove Special Highlight")
+            or _("Special Highlight"),
+        callback = function()
+            self:_specialToggle(rh, index, button.on_done)
+        end,
+    }
+    return button
+end
+
+-- installs the edit-menu hook once per session: the guard lives on the
+-- ReaderHighlight class, so re-reading a book never wraps twice
+function Tomedown:_installSpecialEditRow()
+    local plugin = self
+    local ok_class, ReaderHighlight = pcall(require,
+        "apps/reader/modules/readerhighlight")
+    local ok_dialog, ButtonDialog = pcall(require, "ui/widget/buttondialog")
+    if not ok_class or not ok_dialog or not ReaderHighlight or not ButtonDialog then
+        return
+    end
+    if ReaderHighlight.__tomedown_special_row then
+        return
+    end
+    ReaderHighlight.__tomedown_special_row = true
+    local orig_show = ReaderHighlight.showHighlightDialog
+    ReaderHighlight.showHighlightDialog = function(rh, index)
+        local own_new = rawget(ButtonDialog, "new")
+        local resolved_new = ButtonDialog.new
+        ButtonDialog.new = function(bd, opts)
+            if type(opts) ~= "table" or opts.name ~= "edit_highlight_dialog" then
+                return resolved_new(bd, opts)
+            end
+            -- KOReader names that dialog "edit_highlight_dialog" (for its
+            -- own unit tests): append our row after the arrows and keep a
+            -- handle on the dialog so the tap can dismiss the menu
+            local button = plugin:_specialEditRow(rh, index)
+            opts.buttons[#opts.buttons + 1] = { button }
+            local dialog = resolved_new(bd, opts)
+            button.on_done = function()
+                UIManager:close(dialog)
+            end
+            return dialog
+        end
+        local ok, err = pcall(orig_show, rh, index)
+        if own_new then
+            ButtonDialog.new = own_new
+        else
+            ButtonDialog.new = nil
+        end
+        if not ok then
+            error(err, 0)
+        end
+    end
+end
+
 function Tomedown:onReaderReady()
     local highlight = self.ui and self.ui.highlight
     if not highlight or not highlight.addToHighlightDialog then
@@ -1854,27 +1948,15 @@ function Tomedown:onReaderReady()
     highlight:addToHighlightDialog("03b_special", function(this, index)
         local annotations = this.ui.annotation and this.ui.annotation.annotations
         local item = annotations and index and annotations[index]
-        local special = item and item.tomedown_special or false
-        local save_and_notify = function(marked)
-            local doc_settings = this.ui.doc_settings
-            if doc_settings then
-                doc_settings:saveSetting("annotations",
-                    this.ui.annotation.annotations)
-            end
-            UIManager:show(Notification:new{
-                text = marked and _("Highlight marked as special")
-                    or _("Special mark removed"),
-                timeout = 2,
-            })
-        end
+        local marked = item and item.tomedown_special or false
         return {
-            text = (special and "✓ " or "") .. _("Special Highlight"),
+            text = marked and _("Remove Special Highlight")
+                or _("Special Highlight"),
             callback = function()
                 if item then
-                    item.tomedown_special = not item.tomedown_special or nil
-                    local marked = item.tomedown_special
-                    this:onClose()
-                    save_and_notify(marked)
+                    self:_specialToggle(this, index, function()
+                        this:onClose()
+                    end)
                     return
                 end
                 -- fresh selection: showHighlightPrompt saves the highlight
@@ -1887,11 +1969,12 @@ function Tomedown:onReaderReady()
                         return
                     end
                     annot.tomedown_special = true
-                    save_and_notify(true)
+                    self:_specialSave(this, true)
                 end)
             end,
         }
     end)
+    self:_installSpecialEditRow()
 end
 
 -- first-run onboarding: offer to import the whole reading history

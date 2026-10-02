@@ -117,8 +117,9 @@ Save picks up whatever new export you make.
    schedule.
 4. **Mark what matters:** when you select text, pick **Special Highlight**
    right under *Highlight* — the highlight is created and exported as an
-   `> [!highlight]` callout, easy to spot in Obsidian. The same row on an
-   existing highlight toggles the mark off.
+   `> [!highlight]` callout, easy to spot in Obsidian. To toggle later,
+   tap the highlight and use the row at the bottom of its menu: it reads
+   **Special Highlight** or **Remove Special Highlight**.
 
 Updates of the plugin itself: **Settings → Check for updates…** (notes are
 shown formatted, with *Update and restart* right in the window).

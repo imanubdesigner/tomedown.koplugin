@@ -184,6 +184,9 @@ msgstr "Tutte le evidenziazioni come callout"
 msgid "Special Highlight"
 msgstr "Evidenziazione speciale"
 
+msgid "Remove Special Highlight"
+msgstr "Rimuovi evidenziazione speciale"
+
 msgid "Highlight marked as special"
 msgstr "Evidenziazione marcata come speciale"
 
