@@ -736,10 +736,14 @@ T.check(T.contains(table.concat(plugin:statusLines(), "\n"),
         "Next upload: disabled in settings"),
     "status: next upload honours the setting")
 
--- the panel is shown as an InfoMessage
+-- the panel is shown as an InfoMessage, in the smallest info face so
+-- every entry fits on its own line without wrapping
 local shown_before_status = #UIManager.shown
 plugin:showStatus()
 T.check(#UIManager.shown == shown_before_status + 1, "status panel shown")
+T.check(InfoMessage.last_face and InfoMessage.last_face.name == "xx_smallinfofont",
+    "status popup uses the small face: "
+        .. tostring(InfoMessage.last_face and InfoMessage.last_face.name))
 
 -- runExport records its outcome for the panel (upload off: no cloud)
 store.tomedown.upload = false
