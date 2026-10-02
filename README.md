@@ -471,8 +471,7 @@ Nextcloud, ownCloud, a NAS… — substitute its address and credentials.
      toggling *Include book covers*, migrations), which trips the default
      `50` guard and aborts the sync with *"you set changing files >= 50%
      is not allowed"*; the vault is regenerated from KOReader at any time,
-     so disabling that protection is safe (the *Sync Direction* default,
-     **Bidirectional**, needs no change)
+     so disabling that protection is safe
 3. In Remotely Save's local data, point to the folder that holds your books
    vault (in this example `Bookshelf/`).
 4. Sync.
