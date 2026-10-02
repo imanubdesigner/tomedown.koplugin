@@ -2,6 +2,8 @@
 local Device = {
     links = {},
     can_link = true,
+    -- greyscale e-ink default, like the generic KOReader device
+    hasColorScreen = function() return false end,
     -- enough screen for the About popup (fixed, not scaled)
     screen = {
         getWidth = function() return 600 end,

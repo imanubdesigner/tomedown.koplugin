@@ -147,6 +147,9 @@ Ticking or unticking *Include book covers* / *All highlights as callouts*
 rewrites every already exported file on the next export (the stored hash is
 invalidated, so *Export only what changed* re-sends everything once).
 
+Covers are always exported in full colour, whatever the device: the
+extraction forces colour rendering even on greyscale e-ink screens.
+
 **Updates**
 
 ![Updates settings](assets/menu/settings/updates_menu.png)

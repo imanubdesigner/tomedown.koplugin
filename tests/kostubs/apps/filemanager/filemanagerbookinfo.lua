@@ -1,5 +1,7 @@
 -- stub of apps/filemanager/filemanagerbookinfo.lua
 local BookInfo = {}
+local CanvasContext = require("document/canvascontext")
+local Device = require("device")
 
 -- mirrors the real signature (filemanagerbookinfo.lua v2026.07.2):
 -- display_title = title, or the file name without its extension
@@ -17,10 +19,16 @@ function BookInfo.extendProps(props, file)
 end
 
 -- test hook: tests set BookInfo.cover_bb to a fake BlitBuffer (or nil
--- to simulate a book without any cover image)
+-- to simulate a book without any cover image); cover_seen records the
+-- colour flags in effect while the extraction was running
 BookInfo.cover_bb = nil
+BookInfo.cover_seen = nil
 
 function BookInfo:getCoverImage(document, file, force_orig)
+    BookInfo.cover_seen = {
+        color_screen = Device:hasColorScreen(),
+        canvas_color = CanvasContext.is_color_rendering_enabled,
+    }
     return BookInfo.cover_bb
 end
 
