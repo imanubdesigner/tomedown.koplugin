@@ -29,6 +29,28 @@ local function yamlListItem(s)
     return yamlQuote(s)
 end
 
+-- what Obsidian refuses inside a tag: its docs say tags can't contain
+-- spaces, and only letters, numbers, "-", "_" and "/" survive
+local FORBIDDEN_TAG_CHARS = "[!@#%$%%%^%&%*%(%)%,%.%?\"%:%{%}%|%<>]"
+
+--- Normalise a keyword into a valid Obsidian tag.
+-- Whitespace becomes "-", the characters Obsidian does not allow are
+-- dropped, runs of "-" are collapsed and the edge ones are trimmed.
+-- The case and any non-ASCII letter (accents included) are kept; the
+-- result is idempotent. The caller drops the empty ones.
+function render.sanitizeTag(s)
+    if s == nil then
+        return ""
+    end
+    s = tostring(s)
+    s = s:gsub("%s+", "-")
+    s = s:gsub(FORBIDDEN_TAG_CHARS, "")
+    s = s:gsub("%-+", "-")
+    s = s:gsub("^%-+", "")
+    s = s:gsub("%-+$", "")
+    return s
+end
+
 -- "2026-09-26 10:11:12" -> "26/09/2026"
 function render.fmtDate(dt)
     if type(dt) ~= "string" then
@@ -146,7 +168,10 @@ function render.buildBookMd(book, opts)
     add("  - ebook")
     add("  - " .. _("highlights"))
     for __, kw in ipairs(book.keywords or {}) do
-        add("  - " .. yamlListItem(kw))
+        local tag = render.sanitizeTag(kw)
+        if tag ~= "" then
+            add("  - " .. yamlListItem(tag))
+        end
     end
     add("---")
 

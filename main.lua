@@ -307,12 +307,14 @@ function Tomedown:cleanBookmarks(raw)
     return out
 end
 
--- keywords may be a string ("horror, gothic"), a table, or absent
+-- keywords may be a string ("horror, gothic"), a table, or absent;
+-- each keyword is normalised into a valid Obsidian tag (the sanitized
+-- form is what both the hash and the exported frontmatter see)
 local function parseKeywords(keywords)
     local out = {}
     local function add(v)
         if type(v) == "string" or type(v) == "number" then
-            local s = tostring(v):gsub("^%s+", ""):gsub("%s+$", "")
+            local s = render.sanitizeTag(tostring(v))
             if s ~= "" then
                 out[#out + 1] = s
             end
