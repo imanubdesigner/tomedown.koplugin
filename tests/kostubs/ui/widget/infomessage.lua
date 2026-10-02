@@ -1,6 +1,6 @@
 -- stub of ui/widget/infomessage.lua: keeps track of the last text shown
--- and the face it was built with
-local InfoMessage = { last_text = nil, last_face = nil }
+-- and the face and width it was built with
+local InfoMessage = { last_text = nil, last_face = nil, last_width = nil }
 
 function InfoMessage:new(o)
     o = o or {}
@@ -10,6 +10,7 @@ function InfoMessage:new(o)
     end
     InfoMessage.last_text = o.text
     InfoMessage.last_face = o.face
+    InfoMessage.last_width = o.width
     return o
 end
 

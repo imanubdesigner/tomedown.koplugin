@@ -744,6 +744,20 @@ T.check(#UIManager.shown == shown_before_status + 1, "status panel shown")
 T.check(InfoMessage.last_face and InfoMessage.last_face.name == "xx_smallinfofont",
     "status popup uses the small face: "
         .. tostring(InfoMessage.last_face and InfoMessage.last_face.name))
+T.check(InfoMessage.last_width == math.floor(600 * 0.9),
+    "status popup widened to 90% of the screen: "
+        .. tostring(InfoMessage.last_width))
+T.check(InfoMessage.last_text
+        and InfoMessage.last_text:find(TextBoxWidget.PTF_HEADER, 1, true) == 1,
+    "styled status text opens with the PTF header")
+T.check(InfoMessage.last_text
+        and InfoMessage.last_text:find(TextBoxWidget.PTF_BOLD_START
+            .. "Network:" .. TextBoxWidget.PTF_BOLD_END, 1, true),
+    "the Network label is wrapped in bold")
+T.check(InfoMessage.last_text
+        and InfoMessage.last_text:find(TextBoxWidget.PTF_BOLD_START
+            .. "Last export:" .. TextBoxWidget.PTF_BOLD_END, 1, true),
+    "the Last export label is wrapped in bold")
 
 -- runExport records its outcome for the panel (upload off: no cloud)
 store.tomedown.upload = false
