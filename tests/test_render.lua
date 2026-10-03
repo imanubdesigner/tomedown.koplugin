@@ -301,6 +301,18 @@ T.check(T.contains(rows,
     "---\n\n---\n\n*2 books · 2 highlights — click a title to open its note.*\n\n| Book |"),
     "the stats line sits between the frontmatter rule and the table")
 
+local single = render.buildIndexMd({
+    {
+        link = "Autore - Solo",
+        title = "Solo",
+        author = "Autore",
+        count = 1,
+        date = "02/10/2026",
+    },
+}, { title = "Indice", exported = "2026-10-02" })
+T.check(T.contains(single, "*1 book · 1 highlight — click a title to open its note.*"),
+    "singular stats line with one book and one highlight")
+
 -- alias: no characters that break the wikilink
 local clean = render.alias("Titolo [x] #y | z ^w")
 T.check(not clean:find("[", 1, true) and not clean:find("|", 1, true),

@@ -145,8 +145,20 @@ msgstr "indice"
 msgid "No exported books with highlights."
 msgstr "Nessun libro con evidenziati esportati."
 
-msgid "*%1 books · %2 highlights — click a title to open its note.*"
-msgstr "*%1 libri · %2 evidenziazioni — clicca un titolo per aprire la sua nota.*"
+msgid "%1 book"
+msgstr "%1 libro"
+
+msgid "%1 books"
+msgstr "%1 libri"
+
+msgid "%1 highlight"
+msgstr "%1 evidenziazione"
+
+msgid "%1 highlights"
+msgstr "%1 evidenziazioni"
+
+msgid "— click a title to open its note."
+msgstr "— clicca un titolo per aprire la sua nota."
 
 # index table cells (v0.8.0: cover/series/status columns)
 msgid "Cover"

@@ -442,7 +442,7 @@ tags:
   first column shows the cover image (90×120 box):
 
   ```markdown
-  | <img src="covers/Michael McDowell - Blackwater.jpg" alt="" style="object-fit:contain;width:90px;height:120px"> | [[Michael McDowell - Blackwater\|Blackwater]] | Michael McDowell | Blackwater #1 | complete | 150 | 26/09/2026 |
+  | <img src="covers/Michael McDowell - Blackwater.jpg" alt="" style="object-fit:contain;width:90px;height:120px"> | [[Michael McDowell - Blackwater\|Blackwater]] | Michael McDowell | Blackwater #1 | Complete | 150 | 26/09/2026 |
   ```
 
   Without the option the cover column disappears; books without a series

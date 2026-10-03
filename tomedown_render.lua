@@ -317,9 +317,12 @@ function render.buildIndexMd(books, opts)
     for __, b in ipairs(books) do
         total_highlights = total_highlights + (tonumber(b.count) or 0)
     end
-    local stats = _("*%1 books · %2 highlights — click a title to open its note.*")
-    stats = stats:gsub("%%1", tostring(#books))
-    stats = stats:gsub("%%2", tostring(total_highlights))
+    local books_txt = #books == 1 and _("%1 book") or _("%1 books")
+    local highlights_txt = total_highlights == 1 and _("%1 highlight")
+        or _("%1 highlights")
+    local stats = "*" .. (books_txt:gsub("%%1", tostring(#books)))
+        .. " · " .. (highlights_txt:gsub("%%1", tostring(total_highlights)))
+        .. " " .. _("— click a title to open its note.") .. "*"
     add(stats)
     add("")
 
