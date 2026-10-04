@@ -394,11 +394,14 @@ touched block from one of its own at a glance. On every export:
 - a block you edited **inside** the comments is not a lost cause: the
   whole previous file is kept as `<name>.md.bak` before the rewrite, so
   your line waits in the backup while the fresh block joins in (the
-  toast reports `N files backed up (.bak)`);
+  toast reports `N files backed up (.bak)`); a file that has to be
+  rebuilt from scratch — markers broken beyond repair, an export from
+  tomedown ≤ 0.8 — comes with the same backup;
 - the frontmatter merges field by field: Tomedown's own fields
   (`status`, `progress`, `exported`…) always show KOReader's values, your
   tags are kept and unioned with the new ones, and a property only you
-  added (`rating: 5`, an alias…) survives;
+  added (`rating: 5`, an alias…) survives — even a line the parser
+  cannot place is kept verbatim, at the end;
 - the heading is the plugin's line (the `<!-- tomedown:notes -->` tag
   gives it away): renamed from *Personal notes: %1* in Settings, it is
   rewritten on the next export while your text below it stays put —
@@ -415,11 +418,13 @@ run: `%1 files backed up (.bak)`.
 
 Good to know:
 
-- don't move or delete the `<!-- tomedown:begin … -->` comments: a file
-  without markers is **adopted** — its text becomes the zone above the
-  block and the block joins in, nothing is lost (an export from tomedown
-  ≤ 0.8 is rebuilt once the same way, then behaves like every other
-  file);
+- don't move or delete the `<!-- tomedown:begin … -->` comments: a
+  marker line you broke is repaired around your zone on the next export,
+  a deleted one still recovers the zone (with a `.bak` alongside), and a
+  file with no markers at all is **adopted** — its text becomes the zone
+  above the block and the block joins in, nothing is lost (an export
+  from tomedown ≤ 0.8 is rebuilt once the same way, then behaves like
+  every other file);
 - files in the old three-region layout (preamble, highlights, bookmarks)
   are migrated once: your zones move above and below the new single
   block, the old generated content is dropped (the render has it again),

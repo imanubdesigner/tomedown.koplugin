@@ -115,6 +115,14 @@ local legacy08 = table.concat({
 out, info = merge.apply(legacy08, rendered, fps, { mode = "preserve" })
 T.check(out == rendered and info.reason == "legacy",
     "a v0.8 export is rebuilt once, with markers")
+T.check(info.backup == true, "the rebuild is flagged for a .bak")
+
+-- the rebuild keeps a key only the user knows about
+local legacyRated = legacy08:gsub("exported: 2026%-01%-01",
+    "exported: 2026-01-01\nrating: 5")
+out, info = merge.apply(legacyRated, rendered, fps, { mode = "preserve" })
+T.check(info.reason == "legacy" and T.contains(out, "rating: 5"),
+    "a rebuild keeps the user's front matter")
 
 -- our own front matter without usable markers: rebuilt too
 local mangled = '---\ntomedown: "1.0"\ntitle: "x"\n---\nmarkers deleted\n'
@@ -126,6 +134,17 @@ local wrongStamp = rendered:gsub('tomedown: "1%.0"', 'tomedown: "0.9"')
 out, info = merge.apply(wrongStamp, rendered, fps, { mode = "preserve" })
 T.check(out == rendered and info.reason == "format",
     "a file stamped with another format version is regenerated")
+
+-- the format rewrite keeps what the reader wrote around the block
+local oldStamped = wrongStamp:gsub("highlights: 1",
+    "highlights: 1\nrating: 5", 1)
+    :gsub("(" .. BODY_BEGIN .. ")", "Appunto sotto l'heading.\n\n%1")
+out, info = merge.apply(oldStamped, rendered, fps, { mode = "preserve" })
+T.check(info.reason == "format", "the stale stamp still regenerates")
+T.check(T.contains(out, "Appunto sotto l'heading."),
+    "the format rewrite keeps the zone")
+T.check(T.contains(out, "rating: 5") and T.contains(out, 'tomedown: "1.0"'),
+    "the user's key and the new stamp join")
 
 local stamped = rendered:gsub('\ttomedown: "1%.0"\n', ""):gsub('tomedown: "1%.0"\n', "")
 out, info = merge.apply(stamped, rendered, fps, { mode = "preserve" })
@@ -147,6 +166,38 @@ T.check(T.contains(out, "La mia introduzione scritta in Obsidian."),
     "the reader's zone survives")
 T.check(T.contains(out, "Nuova frase.") and not T.contains(out, "Prima frase."),
     "the block takes the new annotations")
+
+-- -------------------------------------- markers damaged while writing
+-- the render's own text locates the region again: the zone, the front
+-- matter and the heading all come across
+local damaged = diskIntro:gsub("<!%-%- tomedown:begin body",
+    "<! tomedown:begin body", 1)
+out, info = merge.apply(damaged, rendered, fps, { mode = "preserve" })
+T.check(info.reason == "merged", "a mangled begin marker still merges")
+T.check(T.contains(out, "La mia introduzione scritta in Obsidian."),
+    "the zone survives the mangled marker")
+T.check(T.contains(out, "<!-- tomedown:begin body hash="),
+    "the damaged marker line is repaired")
+
+local removed = diskIntro:gsub("<!%-%- tomedown:begin body[^\n]*\n", "", 1)
+out, info = merge.apply(removed, rendered, fps, { mode = "preserve" })
+T.check(info.reason == "merged" and info.backup,
+    "a deleted begin marker: the zone is recovered, the file is kept as .bak")
+T.check(T.contains(out, "La mia introduzione scritta in Obsidian."),
+    "the zone survives the deleted marker")
+
+-- when no boundary can be found the rebuild keeps a .bak instead
+local scrambled = diskIntro:gsub("# Capitolo I\n", "", 1)
+    :gsub("<!%-%- tomedown:begin body[^\n]*\n", "", 1)
+out, info = merge.apply(scrambled, rendered, fps, { mode = "preserve" })
+T.check(info.reason == "legacy" and info.backup == true,
+    "unlocatable content: rebuild with a .bak")
+
+-- the tail cannot be told from a truncated end marker: rebuild too
+local noEnd = diskIntro:gsub("<!%-%- tomedown:end body %-%->", "")
+out, info = merge.apply(noEnd, rendered, fps, { mode = "preserve" })
+T.check(info.reason == "legacy" and info.backup == true,
+    "a missing end marker: rebuild with a .bak")
 
 -- ------------------------------------------ a block the reader wrote inside
 local diskEdited = fresh:gsub(
@@ -288,8 +339,16 @@ T.check(T.contains(mfm, "rating: 5"), "a key only the user knows survives")
 T.check(not T.contains(mfm, "language:"), "a key the exporter dropped is dropped")
 local ipos, rpos = mfm:find("rating: 5"), mfm:find("exported: 2026")
 T.check(ipos and rpos and rpos < ipos, "user keys come after the exporter's")
-T.check(merge.mergeFrontmatter('broken\nline\nwithout key', renderedFm) == renderedFm,
-    "malformed disk frontmatter: the rendered one wins")
+local oddFm = merge.mergeFrontmatter('broken\nline\nwithout key', renderedFm)
+T.check(oddFm == renderedFm .. "\nbroken\nline\nwithout key",
+    "an unplaceable line is kept verbatim instead of dropping the rest")
+
+-- one odd line in the file's front matter: kept, not dropped
+local oddDisk = rendered:gsub("highlights: 1",
+    "highlights: 1\nrating : 5", 1)
+out, info = merge.apply(oddDisk, rendered, fps, { mode = "preserve" })
+T.check(info.reason == "merged" and T.contains(out, "rating : 5"),
+    "an odd front matter line survives the merge")
 
 -- ------------------------------------------- the notes heading (v1.0)
 local rendered_h = renderBook(annB, { notes_title = "Le mie note" })
