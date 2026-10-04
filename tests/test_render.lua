@@ -47,7 +47,7 @@ T.check(T.contains(md, "\n# Capitolo I"), "first chapter")
 T.check(T.contains(md, "\n# Capitolo II"), "second chapter")
 T.check(T.contains(md, "> Prima frase."), "quote 1")
 T.check(T.contains(md, "> Seconda riga."), "quote 2")
-T.check(T.contains(md, "- **p. 10** · 02/09/2026\n  **NOTE:** *nota utente*"),
+T.check(T.contains(md, "- **p. 10** · 02/09/2026\n\n- **NOTE:** *nota utente*"),
     "meta row with page, date and note")
 T.check(T.contains(md, "- **p. 38** · 03/09/2026"), "meta row without note")
 local i10 = md:find("- **p. 10**", 1, true)
@@ -61,7 +61,7 @@ T.check(not T.contains(md, "![]("), "no image in the markdown")
 -- never at the end of the file
 T.check(T.contains(md, "# **HIGHLIGHTS: 2**\n\n---\n\n# Capitolo I"),
     "separator between the stats and the first chapter")
-T.check(T.contains(md, "- **p. 10** · 02/09/2026\n  **NOTE:** *nota utente*\n\n---\n\n# Capitolo II"),
+T.check(T.contains(md, "- **p. 10** · 02/09/2026\n\n- **NOTE:** *nota utente*\n\n---\n\n# Capitolo II"),
     "separator when the chapter changes")
 -- markers carry a hash; strip it when asserting literal marker text
 local plain_md = (md:gsub(" hash=%w+", ""))

@@ -286,7 +286,7 @@ if md then
     T.check(T.contains(md, "\n# Capitolo I"), "chapter 1")
     T.check(T.contains(md, "\n# Capitolo II"), "chapter 2")
     T.check(T.contains(md, "> Prima frase."), "quote")
-    T.check(T.contains(md, "- **p. 10** · 02/09/2026 10:00\n  **NOTE:** *nota utente*"), "meta with note")
+    T.check(T.contains(md, "- **p. 10** · 02/09/2026 10:00\n\n- **NOTE:** *nota utente*"), "meta with note")
     T.check(T.contains(md, "nota utente"), "note present")
     T.check(not T.contains(md, "Segnalibro"), "page bookmark excluded")
     T.check(not T.contains(md, "Cancellato"), "deleted highlight excluded")

@@ -326,24 +326,25 @@ function render.buildBookMd(book, opts)
                 note_lines = nil
             end
         end
-        local bullet = #meta > 0
-        if bullet then
+        if #meta > 0 then
             add("- " .. table.concat(meta, " · "))
         end
         if note_lines then
+            if #meta > 0 then
+                add("")
+            end
             local first = true
             for __, line in ipairs(note_lines) do
                 if line:match("^%s*$") then
                     add("")
                 elseif first then
-                    add((bullet and "  " or "- ") .. "**NOTE:** *" .. line .. "*")
-                    bullet = true
+                    add("- **NOTE:** *" .. line .. "*")
                     first = false
                 else
                     add("  *" .. line .. "*")
                 end
             end
-        elseif not bullet then
+        elseif #meta == 0 then
             add("- …")
         end
         open = true
