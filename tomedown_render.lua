@@ -330,18 +330,17 @@ function render.buildBookMd(book, opts)
             add("- " .. table.concat(meta, " · "))
         end
         if note_lines then
-            if #meta > 0 then
-                add("")
-            end
+            local head = #meta > 0 and "  - " or "- "
+            local pad = #meta > 0 and "    " or "  "
             local first = true
             for __, line in ipairs(note_lines) do
                 if line:match("^%s*$") then
                     add("")
                 elseif first then
-                    add("- **NOTE:** *" .. line .. "*")
+                    add(head .. "**NOTE:** *" .. line .. "*")
                     first = false
                 else
-                    add("  *" .. line .. "*")
+                    add(pad .. "*" .. line .. "*")
                 end
             end
         elseif #meta == 0 then

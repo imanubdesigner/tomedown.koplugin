@@ -472,8 +472,7 @@ tags:
 > Second line of the same highlight.
 
 - **p. 10** · 02/09/2026 10:00
-
-- **NOTE:** *to reread*
+  - **NOTE:** *to reread*
 
 > Another highlight.
 
@@ -521,8 +520,7 @@ tags:
   > Second line of the same highlight.
 
   - **p. 10** · 02/09/2026 10:00
-
-  - **NOTE:** *to reread*
+    - **NOTE:** *to reread*
   ```
 - the file name matches KOReader's standard exporter (`Author - Title`), so
   it does not clash with exports you already made
