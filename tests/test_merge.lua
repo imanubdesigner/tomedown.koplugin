@@ -130,6 +130,14 @@ T.check(info4.reason == "merged" and #info4.edited == 0,
     "content equal to the render: not an edit anymore")
 T.check(T.contains(out4, "Nuova frase."), "the restored region updates again")
 
+-- no stored fingerprints (settings wiped): the region counts as ours,
+-- otherwise a wipe would freeze every file forever
+local wiped, winfo = merge.apply(diskEdited, rendered, nil,
+    { mode = "preserve", policy = "keep" })
+T.check(winfo.reason == "merged" and #winfo.edited == 0,
+    "without fingerprints nothing is reported as edited")
+T.check(wiped == rendered, "the generated note wins when we cannot prove an edit")
+
 -- ------------------------------------------------------------ frontmatter
 local diskFm = table.concat({
     'tomedown: "1.0"',

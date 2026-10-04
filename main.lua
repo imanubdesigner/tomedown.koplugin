@@ -34,6 +34,7 @@ local lfs = require("libs/libkoreader-lfs")
 local T = ffiUtil.template
 local _ = require("tomedown_i18n")
 local render = require("tomedown_render")
+local merge = require("tomedown_merge")
 local Cover = require("tomedown_cover")
 local Update = require("tomedown_update")
 
@@ -77,6 +78,16 @@ local function setSetting(key, value)
     local settings = G_reader_settings:readSetting(SETTINGS_KEY, {})
     settings[key] = value
     G_reader_settings:saveSetting(SETTINGS_KEY, settings)
+end
+
+local function readIfExists(path)
+    local f = io.open(path, "rb")
+    if not f then
+        return nil
+    end
+    local data = f:read("*a")
+    f:close()
+    return data
 end
 
 -- helpers
@@ -748,6 +759,13 @@ function Tomedown:runExport(files, opts)
     local export_records = getSetting("exports", {})
     local written, errors = {}, {}
     local skipped, exported = 0, 0
+    -- manual edits: "preserve" merges the render into the file on disk
+    -- (regions the reader wrote in win), "overwrite" writes what was
+    -- generated; the policy decides per file when they collide
+    local preserve = getSetting("preserve", true)
+    local mode = preserve and "preserve" or "overwrite"
+    local policy = getSetting("edit_policy", "keep")
+    local kept_edits, skipped_edits = 0, 0
 
     for __, file in ipairs(files) do
         local live
@@ -772,20 +790,44 @@ function Tomedown:runExport(files, opts)
                     cover = cover_rel,
                     callout = getSetting("callout", false),
                 })
-                local written_ok, err = util.writeToFile(md, md_path, true, false, true)
-                if written_ok then
-                    exported = exported + 1
-                    written[#written + 1] = md_path
-                    if cover_rel then
-                        written[#written + 1] = dir .. "/" .. cover_rel
+                -- fold the file on disk into the render: the user's zones
+                -- and hand-edited regions come across, our regions update
+                local content, skip_file = md, false
+                local old = readIfExists(md_path)
+                if old then
+                    local merged, info = merge.apply(old, md,
+                        record and record.regions,
+                        { mode = mode, policy = policy })
+                    if merged then
+                        content = merged
+                        kept_edits = kept_edits + #info.kept
+                    else
+                        -- policy "skip": the file stays exactly as the
+                        -- reader left it; the next export tries again
+                        skip_file = true
+                        skipped_edits = skipped_edits + 1
                     end
-                    export_records[file] = {
-                        hash = book.hash,
-                        base = book.base,
-                        date = os.date("%Y-%m-%d"),
-                    }
-                else
-                    errors[#errors + 1] = book.base .. ": " .. tostring(err)
+                end
+                if not skip_file then
+                    local written_ok, err =
+                        util.writeToFile(content, md_path, true, false, true)
+                    if written_ok then
+                        exported = exported + 1
+                        written[#written + 1] = md_path
+                        if cover_rel then
+                            written[#written + 1] = dir .. "/" .. cover_rel
+                        end
+                        export_records[file] = {
+                            hash = book.hash,
+                            base = book.base,
+                            date = os.date("%Y-%m-%d"),
+                            -- what we would have generated: the proof the
+                            -- next export compares the regions against
+                            regions = merge.fingerprints(merge.split(md)),
+                        }
+                    else
+                        errors[#errors + 1] = book.base .. ": " .. tostring(err)
+                    end
                 end
             end
         end
@@ -802,8 +844,26 @@ function Tomedown:runExport(files, opts)
                 exported = os.date("%Y-%m-%d"),
                 show_covers = getSetting("covers", false),
             })
-            if util.writeToFile(index_md, index_path, true, false, true) then
+            -- the index is a region too: the reader may have annotated it
+            local content, skip_index = index_md, false
+            local old_index = readIfExists(index_path)
+            if old_index then
+                local merged, info = merge.apply(old_index, index_md,
+                    getSetting("index_regions"),
+                    { mode = mode, policy = policy })
+                if merged then
+                    content = merged
+                    kept_edits = kept_edits + #info.kept
+                else
+                    skip_index = true
+                    skipped_edits = skipped_edits + 1
+                end
+            end
+            if not skip_index
+                    and util.writeToFile(content, index_path, true, false, true) then
                 written[#written + 1] = index_path
+                setSetting("index_regions",
+                    merge.fingerprints(merge.split(index_md)))
                 -- covers pulled in by the backfill above join the upload
                 for __, path in ipairs(new_covers) do
                     written[#written + 1] = path
@@ -820,6 +880,8 @@ function Tomedown:runExport(files, opts)
         exported = exported,
         skipped = skipped,
         errors = #errors,
+        kept = kept_edits,
+        skipped_edits = skipped_edits,
     })
     if info then
         UIManager:close(info)
@@ -842,7 +904,8 @@ function Tomedown:runExport(files, opts)
         if opts.auto == "close" and exported == 0 and #errors == 0 then
             return
         end
-        self:showResult(exported, skipped, errors, offline_pending, opts.auto)
+        self:showResult(exported, skipped, errors, offline_pending,
+            opts.auto, kept_edits, skipped_edits)
     end
     local function reportUpload(uploaded, upload_failed)
         if upload_failed > 0 then
@@ -912,8 +975,11 @@ end
 -- InfoMessage (stays on screen) when something went wrong. The cloud
 -- reports separately, in reportUpload's own notification. `auto` is
 -- opts.auto of the run: automatic toasts carry their trigger, manual
--- ones do not; the error window is always labelled.
-function Tomedown:showResult(exported, skipped, errors, offline_pending, auto)
+-- ones do not; the error window is always labelled. `kept` counts the
+-- hand-edited regions that survived, `skipped_edits` the files the
+-- policy left untouched.
+function Tomedown:showResult(exported, skipped, errors, offline_pending,
+        auto, kept, skipped_edits)
     local lines = {}
     if exported > 0 then
         if offline_pending then
@@ -926,6 +992,13 @@ function Tomedown:showResult(exported, skipped, errors, offline_pending, auto)
     end
     if skipped > 0 then
         lines[#lines + 1] = T(_("%1 files unchanged, skipped"), skipped)
+    end
+    if kept and kept > 0 then
+        lines[#lines + 1] = T(_("%1 manual edits kept"), kept)
+    end
+    if skipped_edits and skipped_edits > 0 then
+        lines[#lines + 1] = T(_("%1 files not rewritten (manual edits)"),
+            skipped_edits)
     end
     if #errors > 0 then
         lines[#lines + 1] = _("Errors:") .. "\n" .. table.concat(errors, "\n")
@@ -981,6 +1054,15 @@ function Tomedown:statusLines()
     if last_export and last_export.at then
         local outcome = T(_("%1 exported, %2 skipped"),
             last_export.exported, last_export.skipped)
+        if (last_export.kept or 0) > 0 then
+            outcome = outcome .. " · "
+                .. T(_("%1 manual edits kept"), last_export.kept)
+        end
+        if (last_export.skipped_edits or 0) > 0 then
+            outcome = outcome .. " · "
+                .. T(_("%1 files not rewritten (manual edits)"),
+                    last_export.skipped_edits)
+        end
         if (last_export.errors or 0) > 0 then
             outcome = outcome .. " · " .. T(_("%1 errors"), last_export.errors)
         end
@@ -1497,6 +1579,38 @@ function Tomedown:genSettingsMenu()
             callback = function()
                 setSetting("auto_export",
                     not getSetting("auto_export", false))
+            end,
+            separator = true,
+        },
+        {
+            -- what wins when the render meets a file the reader edited
+            text = _("Preserve manual edits"),
+            checked_func = function()
+                return getSetting("preserve", true)
+            end,
+            keep_menu_open = true,
+            callback = function()
+                setSetting("preserve", not getSetting("preserve", true))
+                -- switching modes must regenerate what the other mode
+                -- left behind: the next export rewrites every file
+                self:invalidateExportHashes()
+            end,
+        },
+        {
+            -- while preserving: "skip" leaves a hand-edited file alone
+            -- (with a warning), unchecked keeps the edits and updates
+            -- the rest of the file around them
+            text = _("Skip files with manual edits"),
+            enabled_func = function()
+                return getSetting("preserve", true)
+            end,
+            checked_func = function()
+                return getSetting("edit_policy", "keep") == "skip"
+            end,
+            keep_menu_open = true,
+            callback = function()
+                local skip = getSetting("edit_policy", "keep") == "skip"
+                setSetting("edit_policy", skip and "keep" or "skip")
             end,
         },
     }

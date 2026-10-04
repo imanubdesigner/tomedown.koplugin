@@ -487,7 +487,7 @@ local cloud = settings[1].sub_item_table
 local files = settings[2].sub_item_table
 local updates = settings[3].sub_item_table
 T.check(#cloud == 3, "cloud rows: " .. #cloud)
-T.check(#files == 6, "markdown files rows: " .. #files)
+T.check(#files == 8, "markdown files rows: " .. #files)
 T.check(#updates == 4, "updates rows: " .. #updates)
 T.check(cloud[1].text == "Upload to cloud", "upload entry")
 T.check(cloud[2].text_func() == "Server and folder: not set", "server not set")
@@ -505,6 +505,16 @@ T.check(files[5].separator == true, "separator before the auto-export toggle")
 T.check(files[6].text == "Auto-export on close",
     "auto-export lives in Markdown files")
 T.check(files[6].checked_func() == false, "auto-export off by default")
+T.check(files[6].separator == true, "separator before the preserve toggle")
+T.check(files[7].text == "Preserve manual edits", "preserve entry")
+T.check(files[7].checked_func() == true, "manual edits preserved by default")
+T.check(files[8].text == "Skip files with manual edits", "skip policy entry")
+T.check(files[8].checked_func() == false, "keep the edits by default")
+T.check(files[8].enabled_func() == true, "the policy applies while preserving")
+store.tomedown.preserve = false
+T.check(files[8].enabled_func() == false,
+    "the policy row goes away with the preservation off")
+store.tomedown.preserve = nil
 T.check(updates[1].text_func() == "Check for updates (v"
         .. Update.getInstalledVersion() .. ")",
     "check row carries the installed version: " .. updates[1].text_func())
@@ -1623,4 +1633,85 @@ ui.highlight = nil
 ui.doc_settings = nil
 BookInfo.cover_bb = nil
 
+-- ------------------------------- 15. preserve manual edits (v1.0)
+
+store.tomedown.upload = false
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+local clean_md = T.readFile(MD_PATH)
+T.check(clean_md ~= nil and T.contains(clean_md, "<!-- tomedown:begin highlights"),
+    "baseline export with the region markers before the edit: "
+        .. tostring(clean_md ~= nil))
+
+-- the reader writes a line inside the generated highlights region
+local user_line = "Riga scritta a mano in Obsidian.\n"
+local edited_md = (clean_md or ""):gsub(
+    "(<!%-%- tomedown:begin highlights %-%->\n)", "%1" .. user_line)
+local edit_file = io.open(MD_PATH, "wb")
+edit_file:write(edited_md)
+edit_file:close()
+
+-- a new annotation changes the render, but the edited region is theirs
+BookList.registry[FILE].annotations = modernAnnotations()
+table.insert(BookList.registry[FILE].annotations, {
+    drawer = "underline", text = "Aggiunta in seguito.", pageno = 12,
+    datetime = "2026-09-04 10:00:00",
+})
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+local kept_md = T.readFile(MD_PATH)
+T.check(kept_md ~= nil and T.contains(kept_md, user_line),
+    "the hand-written line survives the export")
+T.check(kept_md ~= nil and not T.contains(kept_md, "Aggiunta in seguito."),
+    "the edited region does not take the new annotation")
+T.check(T.contains(Notification.last_text or "", "1 manual edits kept"),
+    "the toast reports the kept edit: " .. tostring(Notification.last_text))
+local kept_record = store.tomedown.exports[FILE]
+T.check(kept_record and kept_record.regions and kept_record.regions.highlights,
+    "fingerprints stored for the next export")
+
+-- policy "skip": a hand-edited file is not rewritten at all, with a warning
+files[8].callback()
+T.check(files[8].checked_func() == true, "skip policy toggled on")
+table.insert(BookList.registry[FILE].annotations, {
+    drawer = "underline", text = "Mai dovrebbe scendere sul disco.", pageno = 13,
+    datetime = "2026-09-05 10:00:00",
+})
+local before_skip = T.readFile(MD_PATH)
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+T.check(T.readFile(MD_PATH) == before_skip, "the edited file is not rewritten")
+T.check(T.contains(Notification.last_text or "",
+        "1 files not rewritten (manual edits)"),
+    "the toast warns about the skipped file: " .. tostring(Notification.last_text))
+files[8].callback()
+T.check(files[8].checked_func() == false, "back to the keep policy")
+
+-- preservation off: the next export regenerates everything
+files[7].callback()
+T.check(files[7].checked_func() == false, "preservation toggled off")
+T.check(store.tomedown.exports[FILE].hash == nil,
+    "switching modes invalidates the hashes")
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+local regen_md = T.readFile(MD_PATH)
+T.check(regen_md ~= nil and not T.contains(regen_md, user_line),
+    "overwrite mode drops the hand-written line")
+T.check(regen_md ~= nil and T.contains(regen_md, "Mai dovrebbe scendere sul disco."),
+    "overwrite mode brings in the latest annotation")
+files[7].callback()
+T.check(files[7].checked_func() == true, "preservation back on for the next runs")
+
+-- the status panel reports both counters of the last run
+store.tomedown.last_export = {
+    at = os.time(), exported = 2, skipped = 1, errors = 0,
+    kept = 3, skipped_edits = 1,
+}
+local status = table.concat(plugin:statusLines(), "\n")
+T.check(T.contains(status, "3 manual edits kept"),
+    "status shows the kept edits: " .. tostring(status))
+T.check(T.contains(status, "1 files not rewritten (manual edits)"),
+    "status shows the skipped files")
+
+BookList.registry[FILE].annotations = modernAnnotations()
 T.finish("test_main")

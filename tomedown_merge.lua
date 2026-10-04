@@ -220,12 +220,14 @@ function merge.apply(disk_md, rendered_md, stored_fps, opts)
     stored_fps = stored_fps or {}
 
     -- first pass: which regions changed under our feet since the last
-    -- export (disk no longer matches the fingerprint we stored)
+    -- export (the disk no longer matches the fingerprint we stored).
+    -- No fingerprint at all (settings wiped, file from an older build)
+    -- means we cannot prove a hand edit: the region is regenerated.
     local edited = {}
     for i, rb in ipairs(rendered.blocks) do
         if rb.kind == "region" then
-            local db = disk.blocks[i]
-            if db.text ~= rb.text and md5(db.text) ~= stored_fps[rb.name] then
+            local db, fp = disk.blocks[i], stored_fps[rb.name]
+            if db.text ~= rb.text and fp ~= nil and md5(db.text) ~= fp then
                 edited[#edited + 1] = { index = i, name = rb.name }
             end
         end
@@ -238,22 +240,19 @@ function merge.apply(disk_md, rendered_md, stored_fps, opts)
         info.reason = "skip"
         return nil, info
     end
+    local is_edited = {}
+    for __, e in ipairs(edited) do
+        is_edited[e.index] = true
+        info.edited[#info.edited + 1] = e.name
+        info.kept[#info.kept + 1] = e.name
+    end
 
     local out = { fm = merge.mergeFrontmatter(disk.fm, rendered.fm),
         blocks = {} }
     for i, rb in ipairs(rendered.blocks) do
-        local db = disk.blocks[i]
-        if rb.kind == "zone" or db.text ~= rb.text
-            and md5(db.text) ~= stored_fps[rb.name] then
-            -- the user's zones, and the regions the user wrote in
-            out.blocks[i] = db
-        else
-            out.blocks[i] = rb
-        end
-    end
-    for __, e in ipairs(edited) do
-        info.edited[#info.edited + 1] = e.name
-        info.kept[#info.kept + 1] = e.name
+        -- zones: the user's, verbatim; regions: ours, or theirs when edited
+        out.blocks[i] = (rb.kind == "zone" or is_edited[i])
+            and disk.blocks[i] or rb
     end
     return merge.join(out), info
 end
