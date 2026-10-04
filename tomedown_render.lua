@@ -309,17 +309,41 @@ function render.buildBookMd(book, opts)
         if a.date and tostring(a.date) ~= "" then
             meta[#meta + 1] = tostring(a.date)
         end
-        local note = a.note and tostring(a.note):gsub("[\r\n]+", " ") or nil
-        if note == "" then
-            note = nil
+        local note_lines
+        if a.note then
+            local body = tostring(a.note):gsub("\r\n", "\n"):gsub("\r", "\n")
+            note_lines = {}
+            for line in (body .. "\n"):gmatch("(.-)\n") do
+                note_lines[#note_lines + 1] = line
+            end
+            while #note_lines > 0 and note_lines[1]:match("^%s*$") do
+                table.remove(note_lines, 1)
+            end
+            while #note_lines > 0 and note_lines[#note_lines]:match("^%s*$") do
+                table.remove(note_lines)
+            end
+            if #note_lines == 0 then
+                note_lines = nil
+            end
         end
-        if #meta > 0 then
+        local bullet = #meta > 0
+        if bullet then
             add("- " .. table.concat(meta, " · "))
         end
-        if note then
-            local label = "**NOTE:** *" .. note .. "*"
-            add(#meta > 0 and ("  " .. label) or ("- " .. label))
-        elseif #meta == 0 then
+        if note_lines then
+            local first = true
+            for __, line in ipairs(note_lines) do
+                if line:match("^%s*$") then
+                    add("")
+                elseif first then
+                    add((bullet and "  " or "- ") .. "**NOTE:** *" .. line .. "*")
+                    bullet = true
+                    first = false
+                else
+                    add("  *" .. line .. "*")
+                end
+            end
+        elseif not bullet then
             add("- …")
         end
         open = true

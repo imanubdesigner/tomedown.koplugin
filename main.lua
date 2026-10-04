@@ -368,7 +368,7 @@ local function hashBook(title, author, annotations, meta, bookmarks)
         -- so the next export rewrites all the .md files with the new layout
         -- (render options stay out of here on purpose, see
         -- invalidateExportHashes)
-        "fmt:5",
+        "fmt:6",
         "title:" .. tostring(title or ""),
         "author:" .. tostring(author or ""),
         "count:" .. tostring(#annotations),

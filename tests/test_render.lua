@@ -149,8 +149,16 @@ local multi = render.buildBookMd({
     count = 1,
     annotations = { { text = "X", note = "riga1\nriga2" } },
 })
-T.check(T.contains(multi, "**NOTE:** *riga1 riga2*"), "multiline note on one line")
-T.check(not T.contains(multi, "*riga1\n"), "the note does not break the meta line")
+T.check(T.contains(multi, "**NOTE:** *riga1*\n  *riga2*"), "multiline note keeps its lines")
+T.check(not T.contains(multi, "riga1 riga2"), "the lines are not flattened")
+
+-- a blank line inside the note becomes a paragraph break
+local para = render.buildBookMd({
+    title = "Par",
+    count = 1,
+    annotations = { { text = "Y", note = "a\n\nb" } },
+})
+T.check(T.contains(para, "**NOTE:** *a*\n\n  *b*"), "blank line in the note")
 
 -- a note without page/date: the note is the meta row
 local only_note = render.buildBookMd({
