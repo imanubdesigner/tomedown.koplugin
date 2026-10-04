@@ -424,11 +424,5 @@ msgstr "Manuale"
 msgid "Preserve manual edits"
 msgstr "Conserva le modifiche manuali"
 
-msgid "Skip files with manual edits"
-msgstr "Salta i file con modifiche manuali"
-
-msgid "%1 manual edits kept"
-msgstr "%1 modifiche manuali conservate"
-
-msgid "%1 files not rewritten (manual edits)"
-msgstr "%1 file non riscritti (modifiche manuali)"
+msgid "%1 files backed up (.bak)"
+msgstr "%1 file salvati in .bak"

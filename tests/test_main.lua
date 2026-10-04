@@ -487,7 +487,7 @@ local cloud = settings[1].sub_item_table
 local files = settings[2].sub_item_table
 local updates = settings[3].sub_item_table
 T.check(#cloud == 3, "cloud rows: " .. #cloud)
-T.check(#files == 8, "markdown files rows: " .. #files)
+T.check(#files == 7, "markdown files rows: " .. #files)
 T.check(#updates == 4, "updates rows: " .. #updates)
 T.check(cloud[1].text == "Upload to cloud", "upload entry")
 T.check(cloud[2].text_func() == "Server and folder: not set", "server not set")
@@ -508,12 +508,8 @@ T.check(files[6].checked_func() == false, "auto-export off by default")
 T.check(files[6].separator == true, "separator before the preserve toggle")
 T.check(files[7].text == "Preserve manual edits", "preserve entry")
 T.check(files[7].checked_func() == true, "manual edits preserved by default")
-T.check(files[8].text == "Skip files with manual edits", "skip policy entry")
-T.check(files[8].checked_func() == false, "keep the edits by default")
-T.check(files[8].enabled_func() == true, "the policy applies while preserving")
 store.tomedown.preserve = false
-T.check(files[8].enabled_func() == false,
-    "the policy row goes away with the preservation off")
+T.check(files[7].checked_func() == false, "the toggle reflects the setting")
 store.tomedown.preserve = nil
 T.check(updates[1].text_func() == "Check for updates (v"
         .. Update.getInstalledVersion() .. ")",
@@ -1651,7 +1647,8 @@ local edit_file = io.open(MD_PATH, "wb")
 edit_file:write(edited_md)
 edit_file:close()
 
--- a new annotation changes the render, but the edited region is theirs
+-- a new annotation changes the render: the block is rebuilt and the
+-- previous file is kept whole, as .bak
 BookList.registry[FILE].annotations = modernAnnotations()
 table.insert(BookList.registry[FILE].annotations, {
     drawer = "underline", text = "Aggiunta in seguito.", pageno = 12,
@@ -1659,33 +1656,38 @@ table.insert(BookList.registry[FILE].annotations, {
 })
 plugin:runExport({ FILE }, {})
 UIManager:runPending()
-local kept_md = T.readFile(MD_PATH)
-T.check(kept_md ~= nil and T.contains(kept_md, user_line),
-    "the hand-written line survives the export")
-T.check(kept_md ~= nil and not T.contains(kept_md, "Aggiunta in seguito."),
-    "the edited region does not take the new annotation")
-T.check(T.contains(Notification.last_text or "", "1 manual edits kept"),
-    "the toast reports the kept edit: " .. tostring(Notification.last_text))
+local rebuilt_md = T.readFile(MD_PATH)
+T.check(rebuilt_md ~= nil and not T.contains(rebuilt_md, user_line),
+    "the rebuilt block drops the line written inside it")
+T.check(rebuilt_md ~= nil and T.contains(rebuilt_md, "Aggiunta in seguito."),
+    "the rebuilt block takes the new annotation")
+T.check(T.contains(Notification.last_text or "", "1 files backed up (.bak)"),
+    "the toast reports the backup: " .. tostring(Notification.last_text))
+local bak_md = T.readFile(MD_PATH .. ".bak")
+T.check(bak_md ~= nil and T.contains(bak_md, user_line),
+    "the previous file is kept as .bak with the hand-written line")
 local kept_record = store.tomedown.exports[FILE]
 T.check(kept_record and kept_record.regions and kept_record.regions.body,
     "fingerprints stored for the next export")
 
--- policy "skip": a hand-edited file is not rewritten at all, with a warning
-files[8].callback()
-T.check(files[8].checked_func() == true, "skip policy toggled on")
-table.insert(BookList.registry[FILE].annotations, {
-    drawer = "underline", text = "Mai dovrebbe scendere sul disco.", pageno = 13,
-    datetime = "2026-09-05 10:00:00",
-})
-local before_skip = T.readFile(MD_PATH)
+-- a clean export of the same file needs no second backup
 plugin:runExport({ FILE }, {})
 UIManager:runPending()
-T.check(T.readFile(MD_PATH) == before_skip, "the edited file is not rewritten")
-T.check(T.contains(Notification.last_text or "",
-        "1 files not rewritten (manual edits)"),
-    "the toast warns about the skipped file: " .. tostring(Notification.last_text))
-files[8].callback()
-T.check(files[8].checked_func() == false, "back to the keep policy")
+T.check(not T.contains(Notification.last_text or "", ".bak"),
+    "a clean file is not backed up again: " .. tostring(Notification.last_text))
+
+-- text in the write zone (above the marker) survives while preserving
+local zone_line = "Appunto nella zona note.\n"
+local zoned_md = (T.readFile(MD_PATH) or ""):gsub(
+    "(<!%-%- tomedown:begin body)", zone_line .. "%1")
+local zone_file = io.open(MD_PATH, "wb")
+zone_file:write(zoned_md)
+zone_file:close()
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+T.check(T.readFile(MD_PATH) ~= nil
+        and T.contains(T.readFile(MD_PATH), zone_line),
+    "the zone above the marker survives the export")
 
 -- preservation off: the next export regenerates everything
 files[7].callback()
@@ -1695,23 +1697,18 @@ T.check(store.tomedown.exports[FILE].hash == nil,
 plugin:runExport({ FILE }, {})
 UIManager:runPending()
 local regen_md = T.readFile(MD_PATH)
-T.check(regen_md ~= nil and not T.contains(regen_md, user_line),
-    "overwrite mode drops the hand-written line")
-T.check(regen_md ~= nil and T.contains(regen_md, "Mai dovrebbe scendere sul disco."),
-    "overwrite mode brings in the latest annotation")
+T.check(regen_md ~= nil and not T.contains(regen_md, zone_line),
+    "overwrite mode drops the write zone too")
 files[7].callback()
 T.check(files[7].checked_func() == true, "preservation back on for the next runs")
 
--- the status panel reports both counters of the last run
+-- the status panel reports the backups of the last run
 store.tomedown.last_export = {
-    at = os.time(), exported = 2, skipped = 1, errors = 0,
-    kept = 3, skipped_edits = 1,
+    at = os.time(), exported = 2, skipped = 1, errors = 0, backups = 3,
 }
 local status = table.concat(plugin:statusLines(), "\n")
-T.check(T.contains(status, "3 manual edits kept"),
-    "status shows the kept edits: " .. tostring(status))
-T.check(T.contains(status, "1 files not rewritten (manual edits)"),
-    "status shows the skipped files")
+T.check(T.contains(status, "3 files backed up (.bak)"),
+    "status shows the backups: " .. tostring(status))
 
 BookList.registry[FILE].annotations = modernAnnotations()
 T.finish("test_main")

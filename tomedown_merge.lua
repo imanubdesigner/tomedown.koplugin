@@ -2,14 +2,16 @@
 Merge a fresh render into the note already on disk, region by region.
 
 The generated blocks live between tomedown markers (see
-tomedown_render.beginMarker): whatever sits outside them belongs to the
-user and is carried over untouched. A region is replaced only when its
-content still matches the fingerprint stored at the last export -- that
-is what tells "the annotations changed" apart from "the user edited
-this region".
+tomedown_render.beginMarker): whatever sits outside them belongs to
+the reader and is carried over untouched. Every export rebuilds the
+block from the render — the notes belong above the marker now — while
+the hash inside the begin marker (or, for markers from older builds,
+the fingerprint stored at the last export) tells whether the reader
+had written inside it: the file is then flagged so the caller can keep
+it as .bak before it is rewritten.
 
-Pure module: tomedown_render for the markers, ffi/sha2 for md5 (the
-test suite stubs it), nothing from KOReader.
+Pure module: tomedown_render for the markers and digests, ffi/sha2 for
+md5 (the test suite stubs it), nothing from KOReader.
 ]]
 
 local render = require("tomedown_render")
@@ -28,15 +30,17 @@ local OWNED = {
 
 -- Patterns are tolerant on purpose: the suffix after the region name
 -- (the human-readable hint) and the end marker's own name are ignored,
--- so files written by older builds keep parsing.
+-- so files written by older builds keep parsing. The hash inside a
+-- begin marker is optional: markers predating it parse as well.
+local BEGIN_PATTERN_HASH = "<!%-%- tomedown:begin ([%w_]+)%s+hash=(%w+)[^\n]*%-%->\n"
 local BEGIN_PATTERN = "<!%-%- tomedown:begin ([%w_]+)[^\n]*%-%->\n"
 local END_PATTERN = "<!%-%- tomedown:end[^\n]*%-%->"
 
 --- Split a note into its frontmatter and its alternating zone/region
--- blocks. Zones are the text between markers (the user's), regions the
--- generated content inside them. Returns nil when the file has no
+-- blocks. Zones are the text between markers (the reader's), regions
+-- the generated content inside them. Returns nil when the file has no
 -- complete marker pairs (a legacy export or a mangled file): the
--- caller then falls back to a full overwrite.
+-- caller then decides between rebuilding it and adopting its text.
 function merge.split(md)
     if type(md) ~= "string" then
         return nil
@@ -52,7 +56,10 @@ function merge.split(md)
     local pos = 1
     local found = false
     while true do
-        local s, e, name = rest:find(BEGIN_PATTERN, pos)
+        local s, e, name, hash = rest:find(BEGIN_PATTERN_HASH, pos)
+        if not s then
+            s, e, name = rest:find(BEGIN_PATTERN, pos)
+        end
         if not s then
             blocks[#blocks + 1] = { kind = "zone", text = rest:sub(pos) }
             break
@@ -62,7 +69,7 @@ function merge.split(md)
         if not cs then
             return nil
         end
-        blocks[#blocks + 1] = { kind = "region", name = name,
+        blocks[#blocks + 1] = { kind = "region", name = name, hash = hash,
             text = rest:sub(e + 1, cs - 1) }
         found = true
         pos = ce + 1
@@ -80,7 +87,7 @@ function merge.join(doc)
         if b.kind == "zone" then
             s = s .. b.text
         else
-            s = s .. render.beginMarker(b.name) .. "\n" .. b.text
+            s = s .. render.beginMarker(b.name, b.hash) .. "\n" .. b.text
                 .. render.endMarker(b.name)
         end
     end
@@ -189,75 +196,188 @@ local function regionNames(doc)
     return table.concat(names, ",")
 end
 
+-- The zones are framed on the way out, whatever shape they had on
+-- disk: the head zone separates the front matter from the begin marker
+-- with a blank line, the tail zone (below the end marker) starts with
+-- one and never glues to the marker. Both are idempotent, so a file
+-- that already looks right passes through a merge unchanged.
+local function frameHead(zone)
+    if not zone:find("%S") then
+        return "\n"
+    end
+    if zone:sub(1, 1) ~= "\n" then
+        zone = "\n" .. zone
+    end
+    if zone:sub(-1) ~= "\n" then
+        zone = zone .. "\n\n"
+    elseif zone:sub(-2) ~= "\n\n" then
+        zone = zone .. "\n"
+    end
+    return zone
+end
+
+local function frameTail(zone)
+    if not zone:find("%S") then
+        return ""
+    end
+    if zone:sub(1, 2) ~= "\n\n" then
+        zone = (zone:sub(1, 1) == "\n") and ("\n" .. zone)
+            or ("\n\n" .. zone)
+    end
+    if zone:sub(-1) ~= "\n" then
+        zone = zone .. "\n"
+    end
+    return zone
+end
+
+-- did the reader write inside this block? With a hash in the marker the
+-- block itself answers; markers from older builds fall back to the
+-- fingerprint stored at the last export, and with none we cannot prove
+-- an edit (the block counts as ours)
+local function regionEdited(db, stored_fp)
+    if db.hash then
+        return render.digest(db.text) ~= db.hash
+    end
+    if stored_fp then
+        return md5(db.text) ~= stored_fp
+    end
+    return false
+end
+
+-- a file we cannot merge but do generate ourselves: markers we cannot
+-- parse, or a v0.8 export (our front matter, no markers at all)
+local function rebuildable(disk_md)
+    if disk_md:find("tomedown:", 1, true) then
+        return true
+    end
+    local fm = disk_md:match("^%-%-%-\n(.-)\n%-%-%-\n")
+    if not fm then
+        return false
+    end
+    return fm:find("exported:", 1, true) ~= nil
+        and fm:find("  - ebook", 1, true) ~= nil
+end
+
+-- a file without markers of its own: its text becomes the zone above
+-- the generated block, nothing of it is lost
+local function adopt(disk_md, rendered)
+    local disk_fm, disk_body = disk_md:match("^%-%-%-\n(.-)\n%-%-%-\n(.*)$")
+    if not disk_fm then
+        disk_body = disk_md
+    end
+    local out = {
+        fm = disk_fm and merge.mergeFrontmatter(disk_fm, rendered.fm)
+            or rendered.fm,
+        blocks = {},
+    }
+    out.blocks[1] = { kind = "zone", text = frameHead("\n" .. disk_body) }
+    out.blocks[2] = rendered.blocks[2]
+    out.blocks[3] = { kind = "zone", text = frameTail("") }
+    return merge.join(out)
+end
+
+-- one-time conversion from the old three-region layout (preamble,
+-- highlights, bookmarks): the zone above the preamble stays above, the
+-- zones between and below the old regions join below the end marker,
+-- and the old generated content is dropped (the render has it again).
+-- Regions the reader had edited survive only in the .bak the caller
+-- writes: flagged through info.backup.
+local function migrate(disk, rendered, stored_fps)
+    stored_fps = stored_fps or {}
+    local edited, tail_chunks = {}, {}
+    for i, b in ipairs(disk.blocks) do
+        if b.kind == "region" then
+            local fp = stored_fps[b.name]
+            if fp and md5(b.text) ~= fp then
+                edited[#edited + 1] = b.name
+            end
+        elseif i > 1 and b.text:find("%S") then
+            tail_chunks[#tail_chunks + 1] =
+                b.text:gsub("^%s+", ""):gsub("%s+$", "")
+        end
+    end
+    local out = {
+        fm = merge.mergeFrontmatter(disk.fm, rendered.fm),
+        blocks = {},
+    }
+    out.blocks[1] = { kind = "zone", text = frameHead(disk.blocks[1].text) }
+    out.blocks[2] = rendered.blocks[2]
+    out.blocks[3] = { kind = "zone",
+        text = frameTail(table.concat(tail_chunks, "\n\n")) }
+    return merge.join(out), {
+        reason = "restructured",
+        edited = edited,
+        backup = #edited > 0,
+    }
+end
+
 --- Merge rendered_md into disk_md.
 --
--- opts.mode: "overwrite" (the exported file is written as generated)
---            "preserve" (hand edits win over the generated regions)
--- opts.policy (preserve only): "keep" the edited region as the user
---            left it, "skip" the whole file and let the caller warn.
+-- opts.mode: "overwrite" (write the render as generated)
+--            "preserve" (keep the file's front matter and zones, rebuild
+--             every generated region from the render)
 --
--- Returns the text to write and info = { reason, edited, kept }, or
--- nil and info.reason = "skip" when the policy says so. Reasons:
--- "overwrite" | "legacy" | "format" | "shape" | "merged" | "skip".
+-- Returns the text to write and info = { reason, edited, backup }:
+-- "overwrite" | "legacy" | "adopt" | "format" | "shape" |
+-- "restructured" | "merged". info.edited lists the regions the reader
+-- had written in; info.backup is true when the file on disk held such
+-- edits, so the caller can keep it as .bak before overwriting.
 function merge.apply(disk_md, rendered_md, stored_fps, opts)
     opts = opts or {}
     local rendered = merge.split(rendered_md)
     if not rendered then
         -- a render without markers would be a bug in tomedown_render
-        return rendered_md, { reason = "shape", edited = {}, kept = {} }
+        return rendered_md, { reason = "shape", edited = {} }
     end
     if opts.mode ~= "preserve" then
-        return rendered_md, { reason = "overwrite", edited = {}, kept = {} }
+        return rendered_md, { reason = "overwrite", edited = {} }
     end
     local disk = merge.split(disk_md)
     if not disk then
-        return rendered_md, { reason = "legacy", edited = {}, kept = {} }
+        if rebuildable(disk_md) then
+            return rendered_md, { reason = "legacy", edited = {} }
+        end
+        return adopt(disk_md, rendered), { reason = "adopt", edited = {} }
     end
     local stamp = disk.fm:match('tomedown:%s*"([^"]*)"')
     if stamp and stamp ~= render.FORMAT_VERSION then
-        return rendered_md, { reason = "format", edited = {}, kept = {} }
+        return rendered_md, { reason = "format", edited = {} }
     end
-    if regionNames(disk) ~= regionNames(rendered) then
-        return rendered_md, { reason = "shape", edited = {}, kept = {} }
+    local disk_names = regionNames(disk)
+    if disk_names ~= regionNames(rendered) then
+        if disk_names == "preamble,highlights,bookmarks" then
+            return migrate(disk, rendered, stored_fps)
+        end
+        return rendered_md, { reason = "shape", edited = {} }
     end
     stored_fps = stored_fps or {}
 
-    -- first pass: which regions changed under our feet since the last
-    -- export (the disk no longer matches the fingerprint we stored).
-    -- No fingerprint at all (settings wiped, file from an older build)
-    -- means we cannot prove a hand edit: the region is regenerated.
     local edited = {}
+    local out = {
+        fm = merge.mergeFrontmatter(disk.fm, rendered.fm),
+        blocks = {},
+    }
     for i, rb in ipairs(rendered.blocks) do
-        if rb.kind == "region" then
-            local db, fp = disk.blocks[i], stored_fps[rb.name]
-            if db.text ~= rb.text and fp ~= nil and md5(db.text) ~= fp then
-                edited[#edited + 1] = { index = i, name = rb.name }
+        if rb.kind == "zone" then
+            local text = (disk.blocks[i] and disk.blocks[i].text) or rb.text
+            if i == 1 then
+                text = frameHead(text)
+            elseif i == #rendered.blocks then
+                text = frameTail(text)
             end
+            out.blocks[i] = { kind = "zone", text = text }
+        else
+            if regionEdited(disk.blocks[i], stored_fps[rb.name]) then
+                edited[#edited + 1] = rb.name
+            end
+            out.blocks[i] = rb
         end
     end
-    local info = { reason = "merged", edited = {}, kept = {} }
-    if #edited > 0 and opts.policy == "skip" then
-        for __, e in ipairs(edited) do
-            info.edited[#info.edited + 1] = e.name
-        end
-        info.reason = "skip"
-        return nil, info
-    end
-    local is_edited = {}
-    for __, e in ipairs(edited) do
-        is_edited[e.index] = true
-        info.edited[#info.edited + 1] = e.name
-        info.kept[#info.kept + 1] = e.name
-    end
-
-    local out = { fm = merge.mergeFrontmatter(disk.fm, rendered.fm),
-        blocks = {} }
-    for i, rb in ipairs(rendered.blocks) do
-        -- zones: the user's, verbatim; regions: ours, or theirs when edited
-        out.blocks[i] = (rb.kind == "zone" or is_edited[i])
-            and disk.blocks[i] or rb
-    end
-    return merge.join(out), info
+    return merge.join(out), {
+        reason = "merged",
+        edited = edited,
+        backup = #edited > 0,
+    }
 end
 
 return merge

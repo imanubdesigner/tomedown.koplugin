@@ -63,7 +63,9 @@ T.check(T.contains(md, "# **HIGHLIGHTS: 2**\n\n---\n\n# Capitolo I"),
     "separator between the stats and the first chapter")
 T.check(T.contains(md, "- **p. 10** · 02/09/2026 · note: nota utente\n\n---\n\n# Capitolo II"),
     "separator when the chapter changes")
-T.check(T.contains(md, "---\n\n" .. render.beginMarker("body")
+-- markers carry a hash; strip it when asserting literal marker text
+local plain_md = (md:gsub(" hash=%w+", ""))
+T.check(T.contains(plain_md, "---\n\n" .. render.beginMarker("body")
     .. "\n\n---\n\n# **HIGHLIGHTS: 2**"),
     "the body opens with a rule right after the frontmatter, inside the body region")
 local doubled = select(2, md:gsub("%-%-%-\n\n%-%-%-", ""))
@@ -84,6 +86,18 @@ local body_tail = render.endMarker("body")
 T.check(md:sub(-#body_tail - 1) == body_tail .. "\n",
     "the file ends on the end marker, no trailing blank line")
 T.check(T.contains(md, 'tomedown: "1.0"'), "format stamp in the book frontmatter")
+
+-- markers: the begin carries the digest of the block, the end is plain
+T.check(T.contains(md, "hash="), "the begin marker carries a hash")
+T.check(T.contains(md, "⛔ generated below: do not edit inside"),
+    "the begin marker tells the block is generated")
+T.check(render.endMarker("body") == "<!-- tomedown:end body -->",
+    "the end marker is plain")
+T.check(render.digest("  x  ") == render.digest("x"),
+    "the digest ignores surrounding whitespace")
+T.check(#render.digest("x") == 8, "the digest is the short hash")
+T.check(not T.contains(render.beginMarker("body"), "hash="),
+    "a marker built without a hash stays hash-free")
 
 -- no chapters: the body has only the HIGHLIGHTS heading
 local noChapters = render.buildBookMd({
@@ -281,7 +295,8 @@ T.check(T.contains(index, "  - index"), "tag index")
 T.check(T.contains(index, "---\n"), "index frontmatter")
 T.check(T.contains(index, "  - ebook"), "tag ebook in the index")
 T.check(not T.contains(index, "kindle"), "the old kindle tag is gone from the index")
-T.check(T.contains(index, "---\n\n" .. render.beginMarker("index")
+local plain_index = (index:gsub(" hash=%w+", ""))
+T.check(T.contains(plain_index, "---\n\n" .. render.beginMarker("index")
     .. "\n\n---\n\n_No exported"),
     "the empty index opens the body with a rule, inside the index region")
 T.check(index:match("tomedown: \"1%.0\"") ~= nil, "format stamp in the index frontmatter")
@@ -322,7 +337,8 @@ T.check(T.contains(rows, "| A \\| B | — | — | 0 | — |"),
 local order = rows:find("[[Michael McDowell - Blackwater\\|Blackwater]]", 1, true)
 local order2 = rows:find("[[Altro Autore - Altro\\|Altro]]", 1, true)
 T.check(order < order2, "the index keeps the order of the books it received")
-T.check(T.contains(rows,
+local plain_rows = (rows:gsub(" hash=%w+", ""))
+T.check(T.contains(plain_rows,
     "---\n\n" .. render.beginMarker("index")
     .. "\n\n---\n\n*2 books · 2 highlights — click a title to open its note.*\n\n| Book |"),
     "the stats line sits between the frontmatter rule and the table")

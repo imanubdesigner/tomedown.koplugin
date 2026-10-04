@@ -21,6 +21,9 @@ local function pat(s)
     return (s:gsub("([%%%^%$%(%)%.%[%]%*%+%-%?])", "%%%1"))
 end
 
+-- the begin marker as it sits on disk: with its hash and hint text
+local BODY_BEGIN = "<!%-%- tomedown:begin body[^\n]*%-%->"
+
 local annA = { { text = "Prima frase.", chapter = "Capitolo I", page = "10",
     date = "02/09/2026" } }
 local annB = { { text = "Nuova frase.", chapter = "Capitolo I", page = "12",
@@ -67,16 +70,57 @@ local fpsB = merge.fingerprints(merge.split(renderBook(annB)))
 T.check(fpsB.body ~= fps.body, "a new annotation changes the fingerprint")
 T.check(next(merge.fingerprints(nil)) == nil, "no document: no fingerprints")
 
+-- the marker's hash is the digest of the block it wraps
+local marker_hash = fresh:match("<!%-%- tomedown:begin body hash=(%w+)")
+T.check(marker_hash ~= nil, "the begin marker carries a hash")
+T.check(marker_hash == render.digest(doc.blocks[2].text),
+    "the hash is the digest of the block it wraps")
+T.check(render.endMarker("body") == "<!-- tomedown:end body -->",
+    "the end marker is plain")
+
 -- ------------------------------------------------------------- apply basics
 local rendered = renderBook(annB)
 local out, info = merge.apply(fresh, rendered, fps, { mode = "overwrite" })
 T.check(out == rendered and info.reason == "overwrite",
     "overwrite mode writes what was generated")
 
-out, info = merge.apply("old file without markers\n", rendered, fps,
-    { mode = "preserve", policy = "keep" })
+-- a file with no markers at all: its text becomes the zone above the
+-- block, nothing of it is lost
+out, info = merge.apply("Appunto scritto a mano.\n", rendered, fps,
+    { mode = "preserve" })
+T.check(info.reason == "adopt", "a note without markers is adopted")
+T.check(T.contains(out, "Appunto scritto a mano."), "the note's text survives")
+T.check(T.contains(out, "Nuova frase."), "the generated block joins in")
+local zone_pos = out:find("Appunto scritto a mano.", 1, true)
+local mark_pos = out:find("<!-- tomedown:begin body", 1, true)
+T.check(zone_pos and mark_pos and zone_pos < mark_pos,
+    "the note sits above the block")
+out, info = merge.apply(out, rendered, fps, { mode = "preserve" })
+T.check(info.reason == "merged" and #info.edited == 0,
+    "the adopted file merges normally afterwards")
+
+-- a v0.8 export: our front matter, no markers — rebuilt once
+local legacy08 = table.concat({
+    "---",
+    'title: "Blackwater"',
+    "exported: 2026-01-01",
+    "highlights: 1",
+    "tags:",
+    "  - ebook",
+    "  - highlights",
+    "---",
+    "",
+    "> vecchio contenuto generato",
+}, "\n")
+out, info = merge.apply(legacy08, rendered, fps, { mode = "preserve" })
 T.check(out == rendered and info.reason == "legacy",
-    "a legacy file is regenerated once, with its markers")
+    "a v0.8 export is rebuilt once, with markers")
+
+-- our own front matter without usable markers: rebuilt too
+local mangled = '---\ntomedown: "1.0"\ntitle: "x"\n---\nmarkers deleted\n'
+out, info = merge.apply(mangled, rendered, fps, { mode = "preserve" })
+T.check(out == rendered and info.reason == "legacy",
+    "mangled markers are rebuilt")
 
 local wrongStamp = rendered:gsub('tomedown: "1%.0"', 'tomedown: "0.9"')
 out, info = merge.apply(wrongStamp, rendered, fps, { mode = "preserve" })
@@ -87,72 +131,130 @@ local stamped = rendered:gsub('\ttomedown: "1%.0"\n', ""):gsub('tomedown: "1%.0"
 out, info = merge.apply(stamped, rendered, fps, { mode = "preserve" })
 T.check(info.reason == "merged", "a missing stamp is not a blocker")
 
-local renamed = rendered:gsub(pat(render.beginMarker("body")),
-    render.beginMarker("stale"))
+local renamed = rendered:gsub("tomedown:begin body", "tomedown:begin stale")
 out, info = merge.apply(renamed, rendered, fps, { mode = "preserve" })
 T.check(out == rendered and info.reason == "shape",
     "another region name is a format change: regenerate")
 
 -- --------------------------------------------------------- zones are kept
-local diskIntro = fresh:gsub("(" .. pat(render.beginMarker("body")) .. ")",
+local diskIntro = fresh:gsub("(" .. BODY_BEGIN .. ")",
     "La mia introduzione scritta in Obsidian.\n\n%1")
 out, info = merge.apply(diskIntro, rendered, merge.fingerprints(
-    merge.split(fresh)), { mode = "preserve", policy = "keep" })
+    merge.split(fresh)), { mode = "preserve" })
 T.check(info.reason == "merged" and #info.edited == 0,
-    "text outside the regions is not an edit")
+    "text outside the block is not an edit")
 T.check(T.contains(out, "La mia introduzione scritta in Obsidian."),
-    "the user's zone survives")
+    "the reader's zone survives")
 T.check(T.contains(out, "Nuova frase.") and not T.contains(out, "Prima frase."),
-    "the untouched region takes the new annotations")
+    "the block takes the new annotations")
 
--- --------------------------------------------------- a region the user wrote in
+-- ------------------------------------------ a block the reader wrote inside
 local diskEdited = fresh:gsub(
-    "(" .. pat(render.beginMarker("body")) .. "\n)",
-    "%1Pensiero mio personale.\n")
+    "(" .. BODY_BEGIN .. "\n)", "%1Pensiero mio personale.\n")
 local stored = merge.fingerprints(merge.split(fresh))
 
-out, info = merge.apply(diskEdited, rendered, stored,
-    { mode = "preserve", policy = "keep" })
-T.check(info.reason == "merged" and info.edited[1] == "body"
-    and info.kept[1] == "body", "the hand edit is detected and kept")
-T.check(T.contains(out, "Pensiero mio personale."), "the user's line survives")
-T.check(T.contains(out, "Prima frase.") and not T.contains(out, "Nuova frase."),
-    "a kept region does not take the new annotations")
+out, info = merge.apply(diskEdited, rendered, stored, { mode = "preserve" })
+T.check(info.reason == "merged" and info.edited[1] == "body",
+    "the line inside the block is detected as an edit")
+T.check(info.backup == true, "the file is flagged for a .bak")
+T.check(not T.contains(out, "Pensiero mio personale."),
+    "the block is rebuilt: the line lives on only in the .bak")
+T.check(T.contains(out, "Nuova frase."),
+    "the rebuilt block takes the new annotations")
 
-local skipped
-skipped, info = merge.apply(diskEdited, rendered, stored,
-    { mode = "preserve", policy = "skip" })
-T.check(skipped == nil and info.reason == "skip" and info.edited[1] == "body",
-    "skip policy: the file is not written, the caller warns")
-
--- the kept region stays the user's on the next export too
+-- the rebuilt file is clean again on the next export
 local kept_fps = merge.fingerprints(merge.split(rendered))
-local out2, info2 = merge.apply(out, rendered, kept_fps,
-    { mode = "preserve", policy = "keep" })
-T.check(info2.edited[1] == "body" and T.contains(out2, "Pensiero mio personale."),
-    "the kept region stays the user's until they restore it")
+out, info = merge.apply(out, rendered, kept_fps, { mode = "preserve" })
+T.check(info.reason == "merged" and #info.edited == 0 and not info.backup,
+    "a rebuilt file needs no backup the next time")
+T.check(T.contains(out, "Nuova frase."), "it updates normally")
 
--- the user puts the generated content back by hand: under control again
-local disk3 = rendered:gsub(
-    "(" .. pat(render.beginMarker("body")) .. "\n)", "%1Pensiero\n")
-local out3, info3 = merge.apply(disk3, rendered, kept_fps,
-    { mode = "preserve", policy = "keep" })
-T.check(info3.edited[1] == "body", "first export keeps the new line")
-local restored = out3:gsub("Pensiero\n", "")
-T.check(restored == rendered, "deleting the line restores the generated note")
-local out4, info4 = merge.apply(restored, rendered, kept_fps,
-    { mode = "preserve", policy = "keep" })
-T.check(info4.reason == "merged" and #info4.edited == 0,
-    "content equal to the render: not an edit anymore")
-T.check(T.contains(out4, "Nuova frase."), "the restored region updates again")
+-- markers written by older builds carry no hash: the stored
+-- fingerprint decides, and without one nothing can be proven
+local hashless = fresh:gsub(" hash=%w+", "")
+T.check(hashless:find("tomedown:begin body", 1, true)
+        and not hashless:find("hash=", 1, true),
+    "the hashes are stripped from the markers")
 
--- no stored fingerprints (settings wiped): the region counts as ours,
--- otherwise a wipe would freeze every file forever
-local wiped, winfo = merge.apply(diskEdited, rendered, nil,
-    { mode = "preserve", policy = "keep" })
-T.check(winfo.reason == "merged" and #winfo.edited == 0,
-    "without fingerprints nothing is reported as edited")
-T.check(wiped == rendered, "the generated note wins when we cannot prove an edit")
+out, info = merge.apply(hashless, rendered, stored, { mode = "preserve" })
+T.check(info.reason == "merged" and #info.edited == 0,
+    "an untouched hashless block stays ours")
+
+local hlEdited = hashless:gsub("(" .. pat(render.beginMarker("body")) .. "\n)",
+    "%1Pensiero\n")
+T.check(hlEdited ~= hashless, "the hashless marker accepts a line too")
+out, info = merge.apply(hlEdited, rendered, stored, { mode = "preserve" })
+T.check(info.edited[1] == "body" and info.backup,
+    "without a hash the stored fingerprint still catches the edit")
+out, info = merge.apply(hlEdited, rendered, nil, { mode = "preserve" })
+T.check(info.reason == "merged" and #info.edited == 0,
+    "no hash and no fingerprint: the edit cannot be proven")
+T.check(T.contains(out, "Nuova frase."),
+    "the block is rebuilt either way")
+
+-- ----------------------------------------- migrating the old layout
+local old3 = table.concat({
+    "---",
+    'tomedown: "1.0"',
+    'title: "Blackwater"',
+    'author: "Michael McDowell"',
+    "exported: 2026-09-26",
+    "tags:",
+    "  - ebook",
+    "  - highlights",
+    "---",
+    "",
+    "Introduzione scritta in Obsidian.",
+    "",
+    "<!-- tomedown:begin preamble -->",
+    "",
+    "---",
+    "",
+    "# **HIGHLIGHTS: 1**",
+    "",
+    "<!-- tomedown:end preamble -->",
+    "",
+    "<!-- tomedown:begin highlights -->",
+    "",
+    "> Prima frase.",
+    "",
+    "- **p. 10** · 02/09/2026",
+    "",
+    "<!-- tomedown:end highlights -->",
+    "",
+    "Appunto sotto gli highlight.",
+    "",
+    "<!-- tomedown:begin bookmarks -->",
+    "<!-- tomedown:end bookmarks -->",
+    "",
+    "Nota in fondo al file.",
+}, "\n")
+
+local ofps = merge.fingerprints(merge.split(old3))
+out, info = merge.apply(old3, rendered, ofps, { mode = "preserve" })
+T.check(info.reason == "restructured", "the old three-region layout is migrated")
+T.check(T.contains(out, "Introduzione scritta in Obsidian."),
+    "the zone above the preamble stays above")
+T.check(T.contains(out, "Appunto sotto gli highlight.")
+        and T.contains(out, "Nota in fondo al file."),
+    "the inner and tail zones are kept below")
+T.check(T.contains(out, "Nuova frase.") and not T.contains(out, "Prima frase."),
+    "the old generated content is replaced by the render")
+T.check(not T.contains(out, "tomedown:begin preamble"),
+    "the old markers are gone")
+local inner_pos = out:find("Appunto sotto gli highlight.", 1, true)
+local end_pos = out:find("<!-- tomedown:end body", 1, true)
+T.check(inner_pos and end_pos and inner_pos > end_pos,
+    "the old inner zones sit below the end marker")
+
+-- an old region the reader had edited: only the .bak saves it
+local old3Edited = old3:gsub(
+    "(" .. pat("<!-- tomedown:begin highlights -->") .. "\n)",
+    "%1Riga scritta a mano.\n")
+out, info = merge.apply(old3Edited, rendered, ofps, { mode = "preserve" })
+T.check(info.reason == "restructured" and info.backup
+        and info.edited[1] == "highlights",
+    "an edited old region is flagged for the .bak")
 
 -- ------------------------------------------------------------ frontmatter
 local diskFm = table.concat({

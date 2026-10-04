@@ -1,11 +1,13 @@
 --[[
 Markdown text building for tomedown.koplugin.
 
-Nearly pure module: it only depends on tomedown_i18n (the plugin's po), so it
-can also be tested with a standard Lua interpreter.
+Nearly pure module: it depends on tomedown_i18n (the plugin's po) and
+ffi/sha2 for the block digests (the test suite stubs it), so it can
+also be tested with a standard Lua interpreter.
 ]]
 
 local _ = require("tomedown_i18n")
+local md5 = require("ffi/sha2").md5
 local render = {}
 
 -- Generated blocks are wrapped in HTML comments, invisible in every
@@ -15,21 +17,33 @@ local render = {}
 --
 -- The marker text is part of the file format, never translated: it has
 -- to stay byte-identical whatever the UI language, or switching
--- language would break every note. The two roles are told apart at a
--- glance: a begin marker is the plugin's territory (DENIED below,
--- free to write above it), an end marker hands writing back (SAFE
--- below, until the next marker).
+-- language would break every note. The begin marker is the plugin's
+-- territory: the notes belong above it, under the heading, and the
+-- marker carries the digest of the block it opens so the next export
+-- can tell "fresh" from "hand-edited" at a glance. The end marker just
+-- closes the block: everything below it is the reader's again.
 render.FORMAT_VERSION = "1.0"
 
-function render.beginMarker(name)
-    return "<!-- tomedown:begin " .. name
-        .. " — ⛔ DENIED below: generated block,"
-        .. " new updates stop arriving · FREE to write above -->"
+function render.beginMarker(name, hash)
+    local marker = "<!-- tomedown:begin " .. name
+    if hash then
+        marker = marker .. " hash=" .. hash
+    end
+    return marker .. " — ⛔ generated below: do not edit inside"
+        .. " or updates stop arriving · write your notes above -->"
 end
 
 function render.endMarker(name)
-    return "<!-- tomedown:end " .. name
-        .. " — ✍️ SAFE below: write until the next marker -->"
+    return "<!-- tomedown:end " .. name .. " -->"
+end
+
+-- Short digest of a generated block: the hash written inside its begin
+-- marker and read back by the merge to prove the block still matches
+-- what the exporter generated. Whitespace around the block never
+-- counts, so the same content hashes the same however it is framed.
+function render.digest(text)
+    local stripped = tostring(text or ""):gsub("^%s+", ""):gsub("%s+$", "")
+    return md5(stripped):sub(1, 8)
 end
 
 local function yamlQuote(s)
@@ -138,6 +152,15 @@ local function hasAnyChapter(annotations)
     return false
 end
 
+-- the region content as one string, for the digest in the begin marker
+local function sliceText(t, from, to)
+    local parts = {}
+    for i = from, to do
+        parts[#parts + 1] = t[i]
+    end
+    return table.concat(parts, "\n")
+end
+
 --[[
 book = {
     title, author, exported, count,
@@ -205,11 +228,13 @@ function render.buildBookMd(book, opts)
     end
     add("---")
     -- one generated block per book file: from the rule down to the last
-    -- bookmark is the plugin's territory; the user writes above it (right
-    -- under the front matter), and the next export refreshes this single
-    -- region without touching anything else
+    -- bookmark is the plugin's territory; the reader writes above it
+    -- (right under the front matter), and the next export refreshes this
+    -- single region without touching anything else. The content is
+    -- collected first: the begin marker is inserted below and carries
+    -- the digest of what it wraps.
     add("")
-    add(render.beginMarker("body"))
+    local region_from = #out + 1
     add("")
     add("---")
 
@@ -312,6 +337,8 @@ function render.buildBookMd(book, opts)
     if out[#out] ~= "" then
         add("")
     end
+    table.insert(out, region_from, render.beginMarker("body",
+        render.digest(sliceText(out, region_from, #out))))
     add(render.endMarker("body"))
 
     return table.concat(out, "\n") .. "\n"
@@ -341,8 +368,9 @@ function render.buildIndexMd(books, opts)
     add("  - " .. _("index"))
     add("---")
     add("")
-    -- one generated region: the rule, the stats line and the table
-    add(render.beginMarker("index"))
+    -- one generated region: the rule, the stats line and the table; the
+    -- content is collected first, the begin marker carries its digest
+    local region_from = #out + 1
     add("")
     add("---")
     add("")
@@ -350,6 +378,8 @@ function render.buildIndexMd(books, opts)
     if #books == 0 then
         add("_" .. _("No exported books with highlights.") .. "_")
         add("")
+        table.insert(out, region_from, render.beginMarker("index",
+            render.digest(sliceText(out, region_from, #out))))
         add(render.endMarker("index"))
         return table.concat(out, "\n") .. "\n"
     end
@@ -423,6 +453,8 @@ function render.buildIndexMd(books, opts)
     if out[#out] ~= "" then
         add("")
     end
+    table.insert(out, region_from, render.beginMarker("index",
+        render.digest(sliceText(out, region_from, #out))))
     add(render.endMarker("index"))
     return table.concat(out, "\n") .. "\n"
 end
