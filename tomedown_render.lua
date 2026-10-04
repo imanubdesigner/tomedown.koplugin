@@ -15,20 +15,21 @@ local render = {}
 --
 -- The marker text is part of the file format, never translated: it has
 -- to stay byte-identical whatever the UI language, or switching
--- language would break every note. Each line also teaches its own use
--- to whoever opens the file in a source view: the block belongs to the
--- plugin, the zones around it are free for the user.
+-- language would break every note. The two roles are told apart at a
+-- glance: a begin marker is the plugin's territory (DENIED below,
+-- free to write above it), an end marker hands writing back (SAFE
+-- below, until the next marker).
 render.FORMAT_VERSION = "1.0"
 
 function render.beginMarker(name)
     return "<!-- tomedown:begin " .. name
-        .. " — generated: DO NOT EDIT INSIDE (below this)"
-        .. " OR UPDATES STOP ARRIVING -->"
+        .. " — ⛔ DENIED below: generated block,"
+        .. " new updates stop arriving · FREE to write above -->"
 end
 
 function render.endMarker(name)
     return "<!-- tomedown:end " .. name
-        .. " — safe to write below this, until the next marker -->"
+        .. " — ✍️ SAFE below: write until the next marker -->"
 end
 
 local function yamlQuote(s)

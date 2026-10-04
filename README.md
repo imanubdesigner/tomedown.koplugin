@@ -358,24 +358,25 @@ HTML comments it uses as handles:
 
 ```markdown
 ---
-<!-- tomedown:end preamble — safe to write below this, until the next marker -->
+<!-- tomedown:end preamble — ✍️ SAFE below: write until the next marker -->
 
-<!-- tomedown:begin highlights — generated: DO NOT EDIT INSIDE (below this) OR UPDATES STOP ARRIVING -->
+<!-- tomedown:begin highlights — ⛔ DENIED below: generated block, new updates stop arriving · FREE to write above -->
 
 # Chapter I
 
 > First highlighted sentence.
 
 - **p. 10** · 02/09/2026
-<!-- tomedown:end highlights — safe to write below this, until the next marker -->
+<!-- tomedown:end highlights — ✍️ SAFE below: write until the next marker -->
 ```
 
 Obsidian and every Markdown renderer ignore the comments, so the file
-looks exactly the same. Each comment also spells out its own rule: the
-block belongs to the plugin (*DO NOT EDIT INSIDE (below this) or updates
-stop arriving*), the text around it is yours (*safe to write below this,
-until the next marker*), and the empty line between two comments — like
-the one above — is exactly where you type. On every export:
+looks exactly the same. Each comment also spells out its own role, and
+the two roles are told apart at a glance: ⛔ *DENIED* opens a block
+belonging to the plugin — free to write above it, never inside it —
+while ✍️ *SAFE* hands writing back for the stretch below it, until the
+next marker. The empty line between two comments — like the one above —
+is exactly where you type. On every export:
 
 - text you wrote **outside** the comments — your own paragraphs, headings,
   links — is carried over untouched, wherever it sits (before the first

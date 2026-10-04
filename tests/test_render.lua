@@ -285,7 +285,7 @@ T.check(T.contains(index, "---\n\n" .. render.beginMarker("index")
 T.check(index:match("tomedown: \"1%.0\"") ~= nil, "format stamp in the index frontmatter")
 T.check(select(2, index:gsub("<!%-%- tomedown:end[^\n]*%-%->", "")) == 1,
     "the empty index still closes its region")
-T.check(not T.contains(index, "·"), "no stats line without books")
+T.check(not T.contains(index, "click a title"), "no stats line without books")
 
 local rows = render.buildIndexMd({
     {
