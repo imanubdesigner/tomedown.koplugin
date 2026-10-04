@@ -353,67 +353,83 @@ tomedown: upload failed (attempt 1 of 3), retrying in 2 s: <path> 500
 
 Your vault is the destination, not a cache — since 1.0 an export folds the
 new render into the file that is already in your vault instead of
-overwriting it. Every block Tomedown generates sits between two invisible
-HTML comments it uses as handles:
+overwriting it. Every file holds one generated block, wrapped in two
+invisible HTML comments Tomedown uses as handles, under a heading it owns:
 
 ```markdown
 ---
-<!-- tomedown:end preamble — ✍️ SAFE below: write until the next marker -->
+title: "Blackwater"
+…
+---
 
-<!-- tomedown:begin highlights — ⛔ DENIED below: generated block, new updates stop arriving · FREE to write above -->
+## My notes... <!-- tomedown:notes -->
+
+your own intro, links, thoughts — everything under the heading
+and outside the block is yours
+
+<!-- tomedown:begin body hash=54dc6b6b — ⛔ generated below: do not edit inside or updates stop arriving · write your notes above -->
+
+---
+
+# **HIGHLIGHTS: 150**
 
 # Chapter I
 
 > First highlighted sentence.
 
 - **p. 10** · 02/09/2026
-<!-- tomedown:end highlights — ✍️ SAFE below: write until the next marker -->
+<!-- tomedown:end body -->
 ```
 
 Obsidian and every Markdown renderer ignore the comments, so the file
-looks exactly the same. Each comment also spells out its own role, and
-the two roles are told apart at a glance: ⛔ *DENIED* opens a block
-belonging to the plugin — free to write above it, never inside it —
-while ✍️ *SAFE* hands writing back for the stretch below it, until the
-next marker. The empty line between two comments — like the one above —
-is exactly where you type. On every export:
+looks exactly the same. The begin comment carries the digest (`hash=…`)
+of the block it wraps — the proof Tomedown compares against to tell a
+touched block from one of its own at a glance. On every export:
 
-- text you wrote **outside** the comments — your own paragraphs, headings,
-  links — is carried over untouched, wherever it sits (before the first
-  block, between two blocks, at the end);
-- blocks you did not touch are regenerated: new highlights, page
+- text you wrote **outside** the block — under the heading, below the
+  end comment, your own frontmatter properties — is carried over
+  untouched, wherever it sits;
+- the block itself is always regenerated: new highlights, page
   bookmarks, the `HIGHLIGHTS` heading, the index;
-- blocks you edited **inside** the comments stay exactly as you left them
-  (new highlights excluded from them), while the rest of the file —
-  frontmatter, your zones, the other blocks — still updates;
+- a block you edited **inside** the comments is not a lost cause: the
+  whole previous file is kept as `<name>.md.bak` before the rewrite, so
+  your line waits in the backup while the fresh block joins in (the
+  toast reports `N files backed up (.bak)`);
 - the frontmatter merges field by field: Tomedown's own fields
   (`status`, `progress`, `exported`…) always show KOReader's values, your
   tags are kept and unioned with the new ones, and a property only you
-  added (`rating: 5`, an alias…) survives.
+  added (`rating: 5`, an alias…) survives;
+- the heading is the plugin's line (the `<!-- tomedown:notes -->` tag
+  gives it away): renamed from *Personal notes: %1* in Settings, it is
+  rewritten on the next export while your text below it stays put —
+  leave the setting empty and files export without a heading.
 
-Two toggles in *Settings → Markdown files* control this:
+One toggle in *Settings → Markdown files* controls all this:
 
 - **Preserve manual edits** — on by default. Turn it off and every export
   writes exactly what was generated (the old behaviour); switching modes
   rewrites every file on the next export.
-- **Skip files with manual edits** — while preserving: a file whose blocks
-  you edited is left completely untouched instead of partially updated,
-  and the export warns you (`N files not rewritten (manual edits)`).
 
-The result toast and the *Status* panel report what happened: `2 manual
-edits kept`, `1 files not rewritten (manual edits)`.
+The result toast and the *Status* panel report the backups of the last
+run: `%1 files backed up (.bak)`.
 
 Good to know:
 
 - don't move or delete the `<!-- tomedown:begin … -->` comments: a file
-  without them (an export from tomedown ≤ 0.8) is rebuilt from scratch
-  once — your edits in that one migration are not carried over — and
-  counts as an old file from then on;
-- to put a block back under the plugin's control, paste the generated
-  content over it (or tick *Preserve manual edits* off once): until then
-  the block stays as you left it, new highlights excluded;
-- the index is treated the same way: annotate it freely between the
-  markers and your notes survive the next export.
+  without markers is **adopted** — its text becomes the zone above the
+  block and the block joins in, nothing is lost (an export from tomedown
+  ≤ 0.8 is rebuilt once the same way, then behaves like every other
+  file);
+- files in the old three-region layout (preamble, highlights, bookmarks)
+  are migrated once: your zones move above and below the new single
+  block, the old generated content is dropped (the render has it again),
+  and a region you had edited survives only in the `.bak` written
+  alongside;
+- markers from older builds carry no hash: for them the fingerprint from
+  the last export decides whether the block counts as edited (with none
+  to compare, the block counts as ours);
+- the index is treated the same way: annotate it freely outside its
+  `index` block and your notes survive the next export.
 
 ## File format
 
@@ -435,6 +451,9 @@ tags:
   - horror
   - gothic-fiction
 ---
+## My notes... <!-- tomedown:notes -->
+
+<!-- tomedown:begin body hash=9e7017ad — ⛔ generated below: do not edit inside or updates stop arriving · write your notes above -->
 
 ---
 
@@ -460,6 +479,8 @@ tags:
 > Check the epilogue again
 
 - **p. 120** · 04/09/2026 08:15
+
+<!-- tomedown:end body -->
 ```
 
 - the frontmatter keeps what KOReader knows about the book: `series` and
