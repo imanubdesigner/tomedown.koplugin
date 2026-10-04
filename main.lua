@@ -134,6 +134,47 @@ local function trim(s)
     return s
 end
 
+-- xpointer positions ("/body/DocFragment[16]/body/p[8]/text().0"):
+-- split into text/number chunks so p[2] sorts before p[10]. The order
+-- of the text never changes; pageno does with every layout change.
+local function posTokens(s)
+    local out = {}
+    local i = 1
+    while i <= #s do
+        local d0, d1 = s:find("%d+", i)
+        if not d0 then
+            out[#out + 1] = { text = s:sub(i) }
+            break
+        end
+        if d0 > i then
+            out[#out + 1] = { text = s:sub(i, d0 - 1) }
+        end
+        out[#out + 1] = { num = tonumber(s:sub(d0, d1)) }
+        i = d1 + 1
+    end
+    return out
+end
+
+local function posCompare(a, b)
+    local n = math.min(#a, #b)
+    for k = 1, n do
+        local x, y = a[k], b[k]
+        if x.num and y.num then
+            if x.num ~= y.num then
+                return x.num < y.num and -1 or 1
+            end
+        elseif x.num or y.num then
+            return x.num and -1 or 1
+        elseif x.text ~= y.text then
+            return x.text < y.text and -1 or 1
+        end
+    end
+    if #a == #b then
+        return 0
+    end
+    return #a < #b and -1 or 1
+end
+
 function Tomedown:getLocalDir()
     local dir = getSetting("local_dir")
     if dir and dir ~= "" then
@@ -245,6 +286,7 @@ function Tomedown:legacyAnnotations(ds)
                         datetime_updated = hl.datetime_updated,
                         pageno = pageno or 0,
                         pageref = pageno or page,
+                        pos0 = type(hl.pos0) == "string" and hl.pos0 or nil,
                     }
                 end
             end
@@ -268,12 +310,18 @@ function Tomedown:cleanAnnotations(raw)
             local text = trim(item.text)
             if text then
                 local datetime = item.datetime_updated or item.datetime
+                local pos = type(item.pos0) == "string" and item.pos0 or nil
+                if not pos and type(item.page) == "string"
+                    and item.page:sub(1, 1) == "/" then
+                    pos = item.page
+                end
                 out[#out + 1] = {
                     text = text,
                     note = trim(item.note),
                     chapter = trim(item.chapter),
                     page = pageLabel(item),
                     date = render.fmtDateTime(datetime),
+                    sort_pos = pos and posTokens(pos) or nil,
                     sort_page = tonumber(item.pageno) or 0,
                     sort_time = tostring(datetime or ""),
                     special = item.tomedown_special or nil,
@@ -282,6 +330,12 @@ function Tomedown:cleanAnnotations(raw)
         end
     end
     table.sort(out, function(a, b)
+        if a.sort_pos and b.sort_pos then
+            local d = posCompare(a.sort_pos, b.sort_pos)
+            if d ~= 0 then
+                return d < 0
+            end
+        end
         if a.sort_page ~= b.sort_page then
             return a.sort_page < b.sort_page
         end

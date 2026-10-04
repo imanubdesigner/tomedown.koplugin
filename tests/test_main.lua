@@ -199,6 +199,23 @@ T.check(pre_inserted == 0,
     "init does not pre-insert into the ui chain: " .. pre_inserted)
 table.insert(ui, plugin) -- what ReaderUI/FileManager registerModule does
 
+-- the export follows the order of the text, like a paper book:
+-- positions beat page numbers, which only describe one layout
+local sorted = plugin:cleanAnnotations({
+    { drawer = "underline", text = "B", pageno = 37,
+        datetime = "2026-10-04 19:00:00",
+        pos0 = "/body/DocFragment[16]/body/p[10]/text().0" },
+    { drawer = "underline", text = "A", pageno = 39,
+        datetime = "2026-10-04 20:00:00",
+        pos0 = "/body/DocFragment[8]/body/p[2]/text().0" },
+    { drawer = "underline", text = "C", pageno = 38,
+        datetime = "2026-10-04 21:00:00",
+        pos0 = "/body/DocFragment[16]/body/p[8]/text().0" },
+})
+T.check(sorted[1].text == "A" and sorted[2].text == "C" and sorted[3].text == "B",
+    "positions in the text sort the highlights, not the page numbers: "
+    .. sorted[1].text .. sorted[2].text .. sorted[3].text)
+
 -- ------------------------------------------------------------- helpers
 
 local function resetUpload()
