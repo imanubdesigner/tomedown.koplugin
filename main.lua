@@ -80,6 +80,17 @@ local function setSetting(key, value)
     G_reader_settings:saveSetting(SETTINGS_KEY, settings)
 end
 
+-- Title of the heading that names the writable zone in every exported
+-- file: translated default until the reader renames it from the
+-- Markdown menu, "" when they asked for no heading at all.
+local function getNotesTitle()
+    local value = getSetting("notes_title", nil)
+    if value == nil then
+        return _("My notes...")
+    end
+    return value
+end
+
 local function readIfExists(path)
     local f = io.open(path, "rb")
     if not f then
@@ -765,6 +776,7 @@ function Tomedown:runExport(files, opts)
     -- block held hand edits is kept as .bak before it is rewritten
     local preserve = getSetting("preserve", true)
     local mode = preserve and "preserve" or "overwrite"
+    local notes_title = getNotesTitle()
     local backups = 0
 
     for __, file in ipairs(files) do
@@ -789,6 +801,7 @@ function Tomedown:runExport(files, opts)
                     no_chapter_label = _("No chapter"),
                     cover = cover_rel,
                     callout = getSetting("callout", false),
+                    notes_title = notes_title,
                 })
                 -- fold the file on disk into the render: the reader's
                 -- zones and front matter come across, the block is rebuilt
@@ -796,7 +809,8 @@ function Tomedown:runExport(files, opts)
                 local old = readIfExists(md_path)
                 if old then
                     local merged, info = merge.apply(old, md,
-                        record and record.regions, { mode = mode })
+                        record and record.regions,
+                        { mode = mode, notes_title = notes_title })
                     content = merged
                     if info.backup then
                         -- the reader had written inside the block: the
@@ -843,13 +857,15 @@ function Tomedown:runExport(files, opts)
                 title = _("Book index"),
                 exported = os.date("%Y-%m-%d"),
                 show_covers = getSetting("covers", false),
+                notes_title = notes_title,
             })
             -- the index is a region too: the reader may have annotated it
             local content = index_md
             local old_index = readIfExists(index_path)
             if old_index then
                 local merged, info = merge.apply(old_index, index_md,
-                    getSetting("index_regions"), { mode = mode })
+                    getSetting("index_regions"),
+                    { mode = mode, notes_title = notes_title })
                 content = merged
                 if info.backup then
                     local bak = io.open(index_path .. ".bak", "wb")
@@ -1339,6 +1355,45 @@ function Tomedown:editLocalDir(touchmenu)
     })
 end
 
+-- heading of the notes zone: a rename must reach every file, so the
+-- saved value invalidates the export hashes and the next run rewrites
+-- the heading of each one (the blocks themselves do not change)
+function Tomedown:editNotesTitle(touchmenu)
+    local dialog
+    dialog = InputDialog:new{
+        title = _("Personal notes heading"),
+        input = getSetting("notes_title", nil) or _("My notes..."),
+        hint = _("leave empty to export no heading"),
+        buttons = {
+            {
+                {
+                    text = _("Cancel"),
+                    id = "close",
+                    callback = function()
+                        UIManager:close(dialog)
+                    end,
+                },
+            },
+            {
+                {
+                    text = _("Save"),
+                    callback = function()
+                        local value = dialog:getInputText() or ""
+                        setSetting("notes_title",
+                            value:gsub("^%s+", ""):gsub("%s+$", ""))
+                        self:invalidateExportHashes()
+                        UIManager:close(dialog)
+                        if touchmenu and touchmenu.updateItems then
+                            touchmenu:updateItems()
+                        end
+                    end,
+                },
+            },
+        },
+    }
+    UIManager:show(dialog)
+end
+
 -- menu
 
 function Tomedown:genPickerMenu()
@@ -1544,6 +1599,14 @@ function Tomedown:genSettingsMenu()
             callback = function()
                 setSetting("covers", not getSetting("covers", false))
                 self:invalidateExportHashes()
+            end,
+        },
+        {
+            text_func = function()
+                return T(_("Personal notes: %1"), getNotesTitle())
+            end,
+            callback = function(touchmenu)
+                self:editNotesTitle(touchmenu)
             end,
         },
         {

@@ -37,6 +37,15 @@ function render.endMarker(name)
     return "<!-- tomedown:end " .. name .. " -->"
 end
 
+-- Heading that titles the writable zone above the marker. It belongs
+-- to the plugin: the trailing tag tells the merge which line to rewrite
+-- when the reader renames it, everything below stays theirs. The title
+-- arrives translated from the plugin (opts.notes_title); an empty one
+-- means the file gets no heading.
+function render.notesHeading(title)
+    return "## " .. title .. " <!-- tomedown:notes -->"
+end
+
 -- Short digest of a generated block: the hash written inside its begin
 -- marker and read back by the merge to prove the block still matches
 -- what the exporter generated. Whitespace around the block never
@@ -230,9 +239,13 @@ function render.buildBookMd(book, opts)
     -- one generated block per book file: from the rule down to the last
     -- bookmark is the plugin's territory; the reader writes above it
     -- (right under the front matter), and the next export refreshes this
-    -- single region without touching anything else. The content is
-    -- collected first: the begin marker is inserted below and carries
-    -- the digest of what it wraps.
+    -- single region without touching anything else. The heading of the
+    -- write zone sits between the front matter and the block; the
+    -- content is collected first: the begin marker is inserted below
+    -- and carries the digest of what it wraps.
+    if opts.notes_title and opts.notes_title ~= "" then
+        add(render.notesHeading(opts.notes_title))
+    end
     add("")
     local region_from = #out + 1
     add("")
@@ -367,6 +380,9 @@ function render.buildIndexMd(books, opts)
     add("  - ebook")
     add("  - " .. _("index"))
     add("---")
+    if opts.notes_title and opts.notes_title ~= "" then
+        add(render.notesHeading(opts.notes_title))
+    end
     add("")
     -- one generated region: the rule, the stats line and the table; the
     -- content is collected first, the begin marker carries its digest

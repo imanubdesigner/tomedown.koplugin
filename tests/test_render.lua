@@ -99,6 +99,27 @@ T.check(#render.digest("x") == 8, "the digest is the short hash")
 T.check(not T.contains(render.beginMarker("body"), "hash="),
     "a marker built without a hash stays hash-free")
 
+-- the notes heading: titles the writable zone above the marker,
+-- outside the hashed block, and only appears with opts.notes_title
+T.check(not T.contains(md, "tomedown:notes"),
+    "no heading without opts.notes_title")
+local headed = render.buildBookMd(book, { notes_title = "My notes..." })
+T.check(T.contains(headed, "## My notes... <!-- tomedown:notes -->"),
+    "the heading titles the zone")
+T.check(headed:find('---\n## My notes... <!-- tomedown:notes -->\n\n'
+        .. "<!-- tomedown:begin body", 1, true) ~= nil,
+    "rule, heading, blank line, marker")
+T.check(select(2, headed:gsub("tomedown:notes", "")) == 1, "one heading only")
+T.check(headed:match("tomedown:begin body hash=(%w+)")
+        == md:match("tomedown:begin body hash=(%w+)"),
+    "the heading sits outside the hashed block")
+T.check(not T.contains(render.buildBookMd(book, { notes_title = "" }),
+    "tomedown:notes"), "an empty title exports no heading")
+local headed_index = render.buildIndexMd({}, { notes_title = "Appunti" })
+T.check(headed_index:find('---\n## Appunti <!-- tomedown:notes -->\n\n'
+        .. "<!-- tomedown:begin index", 1, true) ~= nil,
+    "the index gets the heading too")
+
 -- no chapters: the body has only the HIGHLIGHTS heading
 local noChapters = render.buildBookMd({
     title = "Senza capitoli",

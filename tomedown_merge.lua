@@ -230,6 +230,24 @@ local function frameTail(zone)
     return zone
 end
 
+-- The head zone of a preserve merge, with the plugin's heading on top:
+-- the old heading line is dropped first (wherever the reader moved it,
+-- so a renamed title lands at once and a file from before the heading
+-- gets it added), the text below is framed, the current heading joins.
+-- title == "" exports the zone without a heading, title == nil (a
+-- caller that does not pass the option) leaves the zone untouched.
+local function frameHeadWithHeading(zone, title)
+    if title == nil then
+        return frameHead(zone)
+    end
+    zone = (zone:gsub("#[^\n]*<!%-%- tomedown:notes %-%->\n?", "", 1))
+    zone = frameHead(zone)
+    if title ~= "" then
+        zone = render.notesHeading(title) .. "\n" .. zone
+    end
+    return zone
+end
+
 -- did the reader write inside this block? With a hash in the marker the
 -- block itself answers; markers from older builds fall back to the
 -- fingerprint stored at the last export, and with none we cannot prove
@@ -259,8 +277,9 @@ local function rebuildable(disk_md)
 end
 
 -- a file without markers of its own: its text becomes the zone above
--- the generated block, nothing of it is lost
-local function adopt(disk_md, rendered)
+-- the generated block, nothing of it is lost (and the current heading
+-- of the write zone joins on top, when one is given)
+local function adopt(disk_md, rendered, title)
     local disk_fm, disk_body = disk_md:match("^%-%-%-\n(.-)\n%-%-%-\n(.*)$")
     if not disk_fm then
         disk_body = disk_md
@@ -270,7 +289,8 @@ local function adopt(disk_md, rendered)
             or rendered.fm,
         blocks = {},
     }
-    out.blocks[1] = { kind = "zone", text = frameHead("\n" .. disk_body) }
+    out.blocks[1] = { kind = "zone",
+        text = frameHeadWithHeading("\n" .. disk_body, title) }
     out.blocks[2] = rendered.blocks[2]
     out.blocks[3] = { kind = "zone", text = frameTail("") }
     return merge.join(out)
@@ -282,7 +302,7 @@ end
 -- and the old generated content is dropped (the render has it again).
 -- Regions the reader had edited survive only in the .bak the caller
 -- writes: flagged through info.backup.
-local function migrate(disk, rendered, stored_fps)
+local function migrate(disk, rendered, stored_fps, title)
     stored_fps = stored_fps or {}
     local edited, tail_chunks = {}, {}
     for i, b in ipairs(disk.blocks) do
@@ -300,7 +320,8 @@ local function migrate(disk, rendered, stored_fps)
         fm = merge.mergeFrontmatter(disk.fm, rendered.fm),
         blocks = {},
     }
-    out.blocks[1] = { kind = "zone", text = frameHead(disk.blocks[1].text) }
+    out.blocks[1] = { kind = "zone",
+        text = frameHeadWithHeading(disk.blocks[1].text, title) }
     out.blocks[2] = rendered.blocks[2]
     out.blocks[3] = { kind = "zone",
         text = frameTail(table.concat(tail_chunks, "\n\n")) }
@@ -316,6 +337,9 @@ end
 -- opts.mode: "overwrite" (write the render as generated)
 --            "preserve" (keep the file's front matter and zones, rebuild
 --             every generated region from the render)
+-- opts.notes_title: title of the heading that names the write zone
+--             (current with render.notesHeading); "" exports the zone
+--             without a heading, nil leaves the zone's heading alone
 --
 -- Returns the text to write and info = { reason, edited, backup }:
 -- "overwrite" | "legacy" | "adopt" | "format" | "shape" |
@@ -337,7 +361,8 @@ function merge.apply(disk_md, rendered_md, stored_fps, opts)
         if rebuildable(disk_md) then
             return rendered_md, { reason = "legacy", edited = {} }
         end
-        return adopt(disk_md, rendered), { reason = "adopt", edited = {} }
+        return adopt(disk_md, rendered, opts.notes_title),
+            { reason = "adopt", edited = {} }
     end
     local stamp = disk.fm:match('tomedown:%s*"([^"]*)"')
     if stamp and stamp ~= render.FORMAT_VERSION then
@@ -346,7 +371,7 @@ function merge.apply(disk_md, rendered_md, stored_fps, opts)
     local disk_names = regionNames(disk)
     if disk_names ~= regionNames(rendered) then
         if disk_names == "preamble,highlights,bookmarks" then
-            return migrate(disk, rendered, stored_fps)
+            return migrate(disk, rendered, stored_fps, opts.notes_title)
         end
         return rendered_md, { reason = "shape", edited = {} }
     end
@@ -361,7 +386,7 @@ function merge.apply(disk_md, rendered_md, stored_fps, opts)
         if rb.kind == "zone" then
             local text = (disk.blocks[i] and disk.blocks[i].text) or rb.text
             if i == 1 then
-                text = frameHead(text)
+                text = frameHeadWithHeading(text, opts.notes_title)
             elseif i == #rendered.blocks then
                 text = frameTail(text)
             end

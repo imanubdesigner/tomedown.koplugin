@@ -487,7 +487,7 @@ local cloud = settings[1].sub_item_table
 local files = settings[2].sub_item_table
 local updates = settings[3].sub_item_table
 T.check(#cloud == 3, "cloud rows: " .. #cloud)
-T.check(#files == 7, "markdown files rows: " .. #files)
+T.check(#files == 8, "markdown files rows: " .. #files)
 T.check(#updates == 4, "updates rows: " .. #updates)
 T.check(cloud[1].text == "Upload to cloud", "upload entry")
 T.check(cloud[2].text_func() == "Server and folder: not set", "server not set")
@@ -499,17 +499,39 @@ T.check(files[3].text == "Include page bookmarks", "page bookmarks entry")
 T.check(files[3].checked_func() == false, "page bookmarks off by default")
 T.check(files[4].text == "Include book covers", "covers entry")
 T.check(files[4].checked_func() == false, "covers off by default")
-T.check(files[5].text == "All highlights as Special Highlights", "callout entry")
-T.check(files[5].checked_func() == false, "callout off by default")
-T.check(files[5].separator == true, "separator before the auto-export toggle")
-T.check(files[6].text == "Auto-export on close",
+T.check(files[5].text_func() == "Personal notes: My notes...",
+    "notes heading entry: " .. files[5].text_func())
+
+-- rename dialog
+plugin:editNotesTitle(nil)
+T.check(InputDialog.last ~= nil
+        and InputDialog.last.title == "Personal notes heading",
+    "notes heading dialog opened")
+InputDialog.last.input_text = "  Appunti miei  "
+InputDialog.last:simulateSave()
+T.check(store.tomedown.notes_title == "Appunti miei",
+    "heading saved and trimmed")
+T.check(files[5].text_func() == "Personal notes: Appunti miei",
+    "menu entry updated")
+plugin:editNotesTitle(nil)
+InputDialog.last.input_text = ""
+InputDialog.last:simulateSave()
+T.check(store.tomedown.notes_title == "", "an empty title clears the heading")
+store.tomedown.notes_title = nil
+T.check(files[5].text_func() == "Personal notes: My notes...",
+    "back to the default heading")
+
+T.check(files[6].text == "All highlights as Special Highlights", "callout entry")
+T.check(files[6].checked_func() == false, "callout off by default")
+T.check(files[6].separator == true, "separator before the auto-export toggle")
+T.check(files[7].text == "Auto-export on close",
     "auto-export lives in Markdown files")
-T.check(files[6].checked_func() == false, "auto-export off by default")
-T.check(files[6].separator == true, "separator before the preserve toggle")
-T.check(files[7].text == "Preserve manual edits", "preserve entry")
-T.check(files[7].checked_func() == true, "manual edits preserved by default")
+T.check(files[7].checked_func() == false, "auto-export off by default")
+T.check(files[7].separator == true, "separator before the preserve toggle")
+T.check(files[8].text == "Preserve manual edits", "preserve entry")
+T.check(files[8].checked_func() == true, "manual edits preserved by default")
 store.tomedown.preserve = false
-T.check(files[7].checked_func() == false, "the toggle reflects the setting")
+T.check(files[8].checked_func() == false, "the toggle reflects the setting")
 store.tomedown.preserve = nil
 T.check(updates[1].text_func() == "Check for updates (v"
         .. Update.getInstalledVersion() .. ")",
@@ -1176,10 +1198,10 @@ T.check(#uploads == 0 and Notification.last_text == nil,
 ui.document = nil
 
 -- toggle on: the close exports after 1s and uploads right away
-files[6].callback()
-T.check(files[6].checked_func() == true, "auto-export toggled on")
+files[7].callback()
+T.check(files[7].checked_func() == true, "auto-export toggled on")
 uploadSetup()
-files[6].callback() -- uploadSetup wiped the setting
+files[7].callback() -- uploadSetup wiped the setting
 ui.document = { file = FILE }
 plugin:onCloseDocument()
 T.check(UIManager:pendingCount() == 1, "toggle on: close schedules the export")
@@ -1206,7 +1228,7 @@ ui.document = nil
 -- without the cloud at all: one notification, right after the export
 uploadSetup()
 store.tomedown.upload = false
-files[6].callback() -- uploadSetup wiped the auto-export setting too
+files[7].callback() -- uploadSetup wiped the auto-export setting too
 ui.document = { file = FILE }
 plugin:onCloseDocument()
 UIManager:runPending()
@@ -1227,7 +1249,7 @@ ui.document = nil
 
 -- offline close: exported locally, queued, the network is not touched
 uploadSetup()
-files[6].callback()
+files[7].callback()
 NetworkMgr.connected = false
 ui.document = { file = FILE }
 plugin:onCloseDocument()
@@ -1279,7 +1301,7 @@ T.check(next(store.tomedown.pending_uploads or {}) == nil,
 
 -- suspend: local only and totally silent, even with the network up
 uploadSetup()
-files[6].callback()
+files[7].callback()
 ui.document = { file = FILE }
 plugin:onSuspend()
 T.check(UIManager:pendingCount() == 0, "suspend schedules nothing")
@@ -1388,11 +1410,11 @@ files[4].callback()
 T.check(store.tomedown.covers == false, "covers toggled off again")
 plugin:runExport({ FILE }, {})
 T.check(store.tomedown.exports[FILE].hash ~= nil, "hash back after the export")
-files[5].callback()
+files[6].callback()
 T.check(store.tomedown.callout == true, "callout toggled on")
 T.check(store.tomedown.exports[FILE].hash == nil,
     "the callout toggle invalidates the stored hash too")
-files[5].callback()
+files[6].callback()
 
 -- extraction: capped to the 800x1200 box, quality 50, colours kept
 uploadSetup()
@@ -1638,6 +1660,9 @@ local clean_md = T.readFile(MD_PATH)
 T.check(clean_md ~= nil and T.contains(clean_md, "<!-- tomedown:begin body"),
     "baseline export with the region markers before the edit: "
         .. tostring(clean_md ~= nil))
+T.check(clean_md ~= nil
+        and T.contains(clean_md, "## My notes... <!-- tomedown:notes -->"),
+    "baseline export opens the zone with the default heading")
 
 -- the reader writes a line inside the generated body region
 local user_line = "Riga scritta a mano in Obsidian.\n"
@@ -1661,6 +1686,9 @@ T.check(rebuilt_md ~= nil and not T.contains(rebuilt_md, user_line),
     "the rebuilt block drops the line written inside it")
 T.check(rebuilt_md ~= nil and T.contains(rebuilt_md, "Aggiunta in seguito."),
     "the rebuilt block takes the new annotation")
+T.check(rebuilt_md ~= nil
+        and T.contains(rebuilt_md, "## My notes... <!-- tomedown:notes -->"),
+    "the rebuild keeps the heading")
 T.check(T.contains(Notification.last_text or "", "1 files backed up (.bak)"),
     "the toast reports the backup: " .. tostring(Notification.last_text))
 local bak_md = T.readFile(MD_PATH .. ".bak")
@@ -1690,8 +1718,8 @@ T.check(T.readFile(MD_PATH) ~= nil
     "the zone above the marker survives the export")
 
 -- preservation off: the next export regenerates everything
-files[7].callback()
-T.check(files[7].checked_func() == false, "preservation toggled off")
+files[8].callback()
+T.check(files[8].checked_func() == false, "preservation toggled off")
 T.check(store.tomedown.exports[FILE].hash == nil,
     "switching modes invalidates the hashes")
 plugin:runExport({ FILE }, {})
@@ -1699,8 +1727,8 @@ UIManager:runPending()
 local regen_md = T.readFile(MD_PATH)
 T.check(regen_md ~= nil and not T.contains(regen_md, zone_line),
     "overwrite mode drops the write zone too")
-files[7].callback()
-T.check(files[7].checked_func() == true, "preservation back on for the next runs")
+files[8].callback()
+T.check(files[8].checked_func() == true, "preservation back on for the next runs")
 
 -- the status panel reports the backups of the last run
 store.tomedown.last_export = {

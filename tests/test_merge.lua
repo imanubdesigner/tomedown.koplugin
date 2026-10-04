@@ -291,4 +291,62 @@ T.check(ipos and rpos and rpos < ipos, "user keys come after the exporter's")
 T.check(merge.mergeFrontmatter('broken\nline\nwithout key', renderedFm) == renderedFm,
     "malformed disk frontmatter: the rendered one wins")
 
+-- ------------------------------------------- the notes heading (v1.0)
+local rendered_h = renderBook(annB, { notes_title = "Le mie note" })
+T.check(T.contains(rendered_h, "## Le mie note <!-- tomedown:notes -->"),
+    "the render opens the zone with the heading")
+
+-- a file from before the heading gains it above the marker
+local out_h, info_h = merge.apply(fresh, rendered_h, fps,
+    { mode = "preserve", notes_title = "Le mie note" })
+T.check(info_h.reason == "merged" and #info_h.edited == 0, "plain merge")
+T.check(out_h:find('---\n## Le mie note <!-- tomedown:notes -->\n\n'
+        .. "<!-- tomedown:begin body", 1, true) ~= nil,
+    "the heading joins above the marker")
+T.check(T.contains(out_h, "Nuova frase."), "the block still rebuilds")
+
+-- a renamed title lands at once, and only one heading ever stays
+out_h = merge.apply(out_h, rendered_h,
+    merge.fingerprints(merge.split(rendered_h)),
+    { mode = "preserve", notes_title = "Appunti miei" })
+local heads = select(2, out_h:gsub("tomedown:notes", ""))
+T.check(heads == 1 and T.contains(out_h, "## Appunti miei <!-- tomedown:notes -->")
+        and not T.contains(out_h, "Le mie note"),
+    "the old heading is replaced, never doubled: " .. heads)
+
+-- the reader's text in the zone keeps its place, right under the heading
+local zoned_h = out_h:gsub("(" .. BODY_BEGIN .. ")",
+    "Scritto sotto il titolo.\n%1")
+local zone_out = merge.apply(zoned_h, rendered_h,
+    merge.fingerprints(merge.split(rendered_h)),
+    { mode = "preserve", notes_title = "Appunti miei" })
+T.check(zone_out:find('## Appunti miei <!-- tomedown:notes -->\n\n'
+        .. "Scritto sotto il titolo.\n\n<!-- tomedown:begin body", 1, true)
+        ~= nil,
+    "heading first, the reader's line below it")
+
+-- a title of "" strips the heading, nil leaves the zone untouched
+local no_title = merge.apply(out_h, rendered_h, fps,
+    { mode = "preserve", notes_title = "" })
+T.check(not T.contains(no_title, "tomedown:notes"),
+    "an empty title exports the zone without heading")
+local keep_title = merge.apply(fresh, rendered_h, fps, { mode = "preserve" })
+T.check(not T.contains(keep_title, "tomedown:notes"),
+    "without the option the zone keeps no heading")
+
+-- adopted and migrated files get the heading too
+local adopt_h = merge.apply("Appunto senza marcatori.\n", rendered_h, nil,
+    { mode = "preserve", notes_title = "Le mie note" })
+T.check(T.contains(adopt_h, "## Le mie note <!-- tomedown:notes -->"),
+    "an adopted file gets the heading")
+local apos, amark = adopt_h:find("Appunto senza marcatori.", 1, true),
+    adopt_h:find("<!-- tomedown:begin body", 1, true)
+T.check(apos and amark and apos < amark,
+    "the adopted note sits under the heading")
+local mig_h, mig_info_h = merge.apply(old3, rendered_h, ofps,
+    { mode = "preserve", notes_title = "Le mie note" })
+T.check(mig_info_h.reason == "restructured"
+        and T.contains(mig_h, "## Le mie note <!-- tomedown:notes -->"),
+    "the migrated file gets the heading")
+
 T.finish("test_merge")
