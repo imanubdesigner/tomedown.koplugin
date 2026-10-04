@@ -60,7 +60,7 @@ T.check(not T.contains(md, "![]("), "no image in the markdown")
 -- separators: the frontmatter rule, under the stats, between chapters,
 -- never at the end of the file
 T.check(T.contains(md, "# **HIGHLIGHTS: 2**\n\n---\n" .. render.endMarker("preamble")
-    .. "\n" .. render.beginMarker("highlights") .. "\n\n# Capitolo I"),
+    .. "\n\n" .. render.beginMarker("highlights") .. "\n\n# Capitolo I"),
     "separator between the stats and the first chapter, regions in between")
 T.check(T.contains(md, "- **p. 10** · 02/09/2026 · note: nota utente\n\n---\n\n# Capitolo II"),
     "separator when the chapter changes")

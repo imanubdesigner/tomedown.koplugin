@@ -22,12 +22,13 @@ render.FORMAT_VERSION = "1.0"
 
 function render.beginMarker(name)
     return "<!-- tomedown:begin " .. name
-        .. " — generated: do not edit inside or updates stop arriving -->"
+        .. " — generated: DO NOT EDIT INSIDE (below this)"
+        .. " OR UPDATES STOP ARRIVING -->"
 end
 
 function render.endMarker(name)
     return "<!-- tomedown:end " .. name
-        .. " — safe to write until the next marker -->"
+        .. " — safe to write below this, until the next marker -->"
 end
 
 local function yamlQuote(s)
@@ -226,6 +227,9 @@ function render.buildBookMd(book, opts)
         add("---")
     end
     add(render.endMarker("preamble"))
+    -- one visible empty line between two markers: that line is where
+    -- the user writes, framed by the two rules
+    add("")
     add(render.beginMarker("highlights"))
 
     local function heading(h)
@@ -283,6 +287,7 @@ function render.buildBookMd(book, opts)
     end
 
     add(render.endMarker("highlights"))
+    add("")
     -- the bookmarks region is always emitted (even when empty) so the
     -- region sequence never shifts under the merge
     add(render.beginMarker("bookmarks"))
@@ -312,6 +317,8 @@ function render.buildBookMd(book, opts)
         end
     end
     add(render.endMarker("bookmarks"))
+    -- the tail zone gets the same visible line as the inner ones
+    add("")
 
     return table.concat(out, "\n") .. "\n"
 end
@@ -349,6 +356,7 @@ function render.buildIndexMd(books, opts)
     if #books == 0 then
         add("_" .. _("No exported books with highlights.") .. "_")
         add(render.endMarker("index"))
+        add("")
         return table.concat(out, "\n") .. "\n"
     end
 
@@ -418,6 +426,7 @@ function render.buildIndexMd(books, opts)
     end
 
     add(render.endMarker("index"))
+    add("")
     return table.concat(out, "\n") .. "\n"
 end
 

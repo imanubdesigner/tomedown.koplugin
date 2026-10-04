@@ -357,20 +357,25 @@ overwriting it. Every block Tomedown generates sits between two invisible
 HTML comments it uses as handles:
 
 ```markdown
-<!-- tomedown:begin highlights — generated: do not edit inside or updates stop arriving -->
-# **HIGHLIGHTS: 150**
+---
+<!-- tomedown:end preamble — safe to write below this, until the next marker -->
+
+<!-- tomedown:begin highlights — generated: DO NOT EDIT INSIDE (below this) OR UPDATES STOP ARRIVING -->
 
 # Chapter I
 
 > First highlighted sentence.
-<!-- tomedown:end highlights — safe to write until the next marker -->
+
+- **p. 10** · 02/09/2026
+<!-- tomedown:end highlights — safe to write below this, until the next marker -->
 ```
 
 Obsidian and every Markdown renderer ignore the comments, so the file
 looks exactly the same. Each comment also spells out its own rule: the
-block between them belongs to the plugin (*do not edit inside or updates
-stop arriving*), the text around it is yours (*safe to write until the
-next marker*). On every export:
+block belongs to the plugin (*DO NOT EDIT INSIDE (below this) or updates
+stop arriving*), the text around it is yours (*safe to write below this,
+until the next marker*), and the empty line between two comments — like
+the one above — is exactly where you type. On every export:
 
 - text you wrote **outside** the comments — your own paragraphs, headings,
   links — is carried over untouched, wherever it sits (before the first
