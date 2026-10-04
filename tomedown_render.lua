@@ -12,11 +12,22 @@ local render = {}
 -- Markdown renderer (Obsidian included, reading view and live preview
 -- alike): the export re-merges new content into these regions and leaves
 -- whatever the user wrote outside of them untouched.
+--
+-- The marker text is part of the file format, never translated: it has
+-- to stay byte-identical whatever the UI language, or switching
+-- language would break every note. Each line also teaches its own use
+-- to whoever opens the file in a source view: the block belongs to the
+-- plugin, the zones around it are free for the user.
 render.FORMAT_VERSION = "1.0"
-render.END_MARKER = "<!-- tomedown:end -->"
 
 function render.beginMarker(name)
-    return "<!-- tomedown:begin " .. name .. " -->"
+    return "<!-- tomedown:begin " .. name
+        .. " — generated: do not edit inside or updates stop arriving -->"
+end
+
+function render.endMarker(name)
+    return "<!-- tomedown:end " .. name
+        .. " — safe to write until the next marker -->"
 end
 
 local function yamlQuote(s)
@@ -214,7 +225,7 @@ function render.buildBookMd(book, opts)
         add("")
         add("---")
     end
-    add(render.END_MARKER)
+    add(render.endMarker("preamble"))
     add(render.beginMarker("highlights"))
 
     local function heading(h)
@@ -271,7 +282,7 @@ function render.buildBookMd(book, opts)
         open = true
     end
 
-    add(render.END_MARKER)
+    add(render.endMarker("highlights"))
     -- the bookmarks region is always emitted (even when empty) so the
     -- region sequence never shifts under the merge
     add(render.beginMarker("bookmarks"))
@@ -300,7 +311,7 @@ function render.buildBookMd(book, opts)
             add("- " .. table.concat(bmeta, " · "))
         end
     end
-    add(render.END_MARKER)
+    add(render.endMarker("bookmarks"))
 
     return table.concat(out, "\n") .. "\n"
 end
@@ -337,7 +348,7 @@ function render.buildIndexMd(books, opts)
 
     if #books == 0 then
         add("_" .. _("No exported books with highlights.") .. "_")
-        add(render.END_MARKER)
+        add(render.endMarker("index"))
         return table.concat(out, "\n") .. "\n"
     end
 
@@ -406,7 +417,7 @@ function render.buildIndexMd(books, opts)
         add("| " .. table.concat(cells, " | ") .. " |")
     end
 
-    add(render.END_MARKER)
+    add(render.endMarker("index"))
     return table.concat(out, "\n") .. "\n"
 end
 

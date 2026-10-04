@@ -26,8 +26,11 @@ local OWNED = {
     exported = true, highlights = true, status = true, progress = true,
 }
 
-local BEGIN_PATTERN = "<!%-%- tomedown:begin ([%w_]+) %-%->\n"
-local END_MARKER = render.END_MARKER
+-- Patterns are tolerant on purpose: the suffix after the region name
+-- (the human-readable hint) and the end marker's own name are ignored,
+-- so files written by older builds keep parsing.
+local BEGIN_PATTERN = "<!%-%- tomedown:begin ([%w_]+)[^\n]*%-%->\n"
+local END_PATTERN = "<!%-%- tomedown:end[^\n]*%-%->"
 
 --- Split a note into its frontmatter and its alternating zone/region
 -- blocks. Zones are the text between markers (the user's), regions the
@@ -55,14 +58,14 @@ function merge.split(md)
             break
         end
         blocks[#blocks + 1] = { kind = "zone", text = rest:sub(pos, s - 1) }
-        local ce = rest:find(END_MARKER, e + 1, true)
-        if not ce then
+        local cs, ce = rest:find(END_PATTERN, e + 1)
+        if not cs then
             return nil
         end
         blocks[#blocks + 1] = { kind = "region", name = name,
-            text = rest:sub(e + 1, ce - 1) }
+            text = rest:sub(e + 1, cs - 1) }
         found = true
-        pos = ce + #END_MARKER
+        pos = ce + 1
     end
     if not found then
         return nil
@@ -78,7 +81,7 @@ function merge.join(doc)
             s = s .. b.text
         else
             s = s .. render.beginMarker(b.name) .. "\n" .. b.text
-                .. END_MARKER
+                .. render.endMarker(b.name)
         end
     end
     if s:sub(-1) ~= "\n" then

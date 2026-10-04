@@ -1646,7 +1646,7 @@ T.check(clean_md ~= nil and T.contains(clean_md, "<!-- tomedown:begin highlights
 -- the reader writes a line inside the generated highlights region
 local user_line = "Riga scritta a mano in Obsidian.\n"
 local edited_md = (clean_md or ""):gsub(
-    "(<!%-%- tomedown:begin highlights %-%->\n)", "%1" .. user_line)
+    "(<!%-%- tomedown:begin highlights[^\n]*%-%->\n)", "%1" .. user_line)
 local edit_file = io.open(MD_PATH, "wb")
 edit_file:write(edited_md)
 edit_file:close()

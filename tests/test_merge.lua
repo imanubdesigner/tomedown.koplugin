@@ -15,6 +15,12 @@ local function renderBook(annotations, opts)
     }, opts)
 end
 
+-- markers are literal text: escape Lua's magic characters to use them
+-- as patterns (plain string.find would also do, but gsub needs it)
+local function pat(s)
+    return (s:gsub("([%%%^%$%(%)%.%[%]%*%+%-%?])", "%%%1"))
+end
+
 local annA = { { text = "Prima frase.", chapter = "Capitolo I", page = "10",
     date = "02/09/2026" } }
 local annB = { { text = "Nuova frase.", chapter = "Capitolo I", page = "12",
@@ -40,6 +46,18 @@ T.check(merge.split("---\ntitle: \"x\"\n---\n\n<!-- tomedown:begin a -->\ntext\n
     "an unterminated region does not split")
 T.check(merge.split("---\ntitle: \"x\"\n---\n\nonly zones\n") == nil,
     "frontmatter alone is not a marked document")
+
+-- files written by older builds (short markers, no hint text) keep
+-- parsing; join() rewrites them in the current format
+local oldStyle = "---\ntomedown: \"1.0\"\ntitle: \"x\"\n---\n\n"
+    .. "<!-- tomedown:begin preamble -->\nold body\n<!-- tomedown:end -->\n"
+local odoc = merge.split(oldStyle)
+T.check(odoc ~= nil and #odoc.blocks == 3 and odoc.blocks[2].name == "preamble"
+    and odoc.blocks[2].text == "old body\n",
+    "the older short markers still split")
+T.check(merge.join(odoc):find(render.beginMarker("preamble"), 1, true) ~= nil
+    and merge.join(odoc):find("<!-- tomedown:end -->", 1, true) == nil,
+    "join() upgrades the markers to the current format")
 
 -- ----------------------------------------------------------- fingerprints
 local fps = merge.fingerprints(doc)
@@ -73,13 +91,14 @@ out, info = merge.apply(stamped, rendered, fps, { mode = "preserve" })
 T.check(info.reason == "merged", "a missing stamp is not a blocker")
 
 local twoRegions = rendered:gsub(
-    "<!%-%- tomedown:begin bookmarks %-%->\n<!%-%- tomedown:end %-%->\n", "")
+    pat(render.beginMarker("bookmarks")) .. "\n"
+    .. pat(render.endMarker("bookmarks")) .. "\n", "")
 out, info = merge.apply(twoRegions, rendered, fps, { mode = "preserve" })
 T.check(out == rendered and info.reason == "shape",
     "a different region sequence is a format change: regenerate")
 
 -- --------------------------------------------------------- zones are kept
-local diskIntro = fresh:gsub("(<!%-%- tomedown:begin preamble %-%->)",
+local diskIntro = fresh:gsub("(" .. pat(render.beginMarker("preamble")) .. ")",
     "La mia introduzione scritta in Obsidian.\n\n%1")
 out, info = merge.apply(diskIntro, rendered, merge.fingerprints(
     merge.split(fresh)), { mode = "preserve", policy = "keep" })
@@ -92,7 +111,8 @@ T.check(T.contains(out, "Nuova frase.") and not T.contains(out, "Prima frase."),
 
 -- --------------------------------------------------- a region the user wrote in
 local diskEdited = fresh:gsub(
-    "(<!%-%- tomedown:begin highlights %-%->\n)", "%1Pensiero mio personale.\n")
+    "(" .. pat(render.beginMarker("highlights")) .. "\n)",
+    "%1Pensiero mio personale.\n")
 local stored = merge.fingerprints(merge.split(fresh))
 
 out, info = merge.apply(diskEdited, rendered, stored,
@@ -118,7 +138,7 @@ T.check(info2.edited[1] == "highlights" and T.contains(out2, "Pensiero mio perso
 
 -- the user puts the generated content back by hand: under control again
 local disk3 = rendered:gsub(
-    "(<!%-%- tomedown:begin highlights %-%->\n)", "%1Pensiero\n")
+    "(" .. pat(render.beginMarker("highlights")) .. "\n)", "%1Pensiero\n")
 local out3, info3 = merge.apply(disk3, rendered, kept_fps,
     { mode = "preserve", policy = "keep" })
 T.check(info3.edited[1] == "highlights", "first export keeps the new line")
