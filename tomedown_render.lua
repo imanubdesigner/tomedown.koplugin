@@ -310,13 +310,18 @@ function render.buildBookMd(book, opts)
             meta[#meta + 1] = tostring(a.date)
         end
         local note = a.note and tostring(a.note):gsub("[\r\n]+", " ") or nil
-        if note and note ~= "" then
-            meta[#meta + 1] = _("note: ") .. note
+        if note == "" then
+            note = nil
         end
-        if #meta == 0 then
-            meta[1] = "…"
+        if #meta > 0 then
+            add("- " .. table.concat(meta, " · "))
         end
-        add("- " .. table.concat(meta, " · "))
+        if note then
+            local label = "**NOTE:** *" .. note .. "*"
+            add(#meta > 0 and ("  " .. label) or ("- " .. label))
+        elseif #meta == 0 then
+            add("- …")
+        end
         open = true
     end
 

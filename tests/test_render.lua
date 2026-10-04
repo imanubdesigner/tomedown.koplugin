@@ -47,7 +47,7 @@ T.check(T.contains(md, "\n# Capitolo I"), "first chapter")
 T.check(T.contains(md, "\n# Capitolo II"), "second chapter")
 T.check(T.contains(md, "> Prima frase."), "quote 1")
 T.check(T.contains(md, "> Seconda riga."), "quote 2")
-T.check(T.contains(md, "- **p. 10** · 02/09/2026 · note: nota utente"),
+T.check(T.contains(md, "- **p. 10** · 02/09/2026\n  **NOTE:** *nota utente*"),
     "meta row with page, date and note")
 T.check(T.contains(md, "- **p. 38** · 03/09/2026"), "meta row without note")
 local i10 = md:find("- **p. 10**", 1, true)
@@ -61,7 +61,7 @@ T.check(not T.contains(md, "![]("), "no image in the markdown")
 -- never at the end of the file
 T.check(T.contains(md, "# **HIGHLIGHTS: 2**\n\n---\n\n# Capitolo I"),
     "separator between the stats and the first chapter")
-T.check(T.contains(md, "- **p. 10** · 02/09/2026 · note: nota utente\n\n---\n\n# Capitolo II"),
+T.check(T.contains(md, "- **p. 10** · 02/09/2026\n  **NOTE:** *nota utente*\n\n---\n\n# Capitolo II"),
     "separator when the chapter changes")
 -- markers carry a hash; strip it when asserting literal marker text
 local plain_md = (md:gsub(" hash=%w+", ""))
@@ -149,8 +149,16 @@ local multi = render.buildBookMd({
     count = 1,
     annotations = { { text = "X", note = "riga1\nriga2" } },
 })
-T.check(T.contains(multi, "note: riga1 riga2"), "multiline note on one line")
-T.check(not T.contains(multi, "note: riga1\n"), "the note does not break the meta line")
+T.check(T.contains(multi, "**NOTE:** *riga1 riga2*"), "multiline note on one line")
+T.check(not T.contains(multi, "*riga1\n"), "the note does not break the meta line")
+
+-- a note without page/date: the note is the meta row
+local only_note = render.buildBookMd({
+    title = "SoloNota",
+    count = 1,
+    annotations = { { text = "Z", note = "solo nota" } },
+})
+T.check(T.contains(only_note, "- **NOTE:** *solo nota*"), "note-only annotation")
 
 -- no page/date/note: ellipsis
 local bare = render.buildBookMd({

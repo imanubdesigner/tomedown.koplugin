@@ -136,9 +136,6 @@ msgstr ""
 msgid "highlights"
 msgstr "evidenziati"
 
-msgid "note: "
-msgstr "nota: "
-
 msgid "index"
 msgstr "indice"
 

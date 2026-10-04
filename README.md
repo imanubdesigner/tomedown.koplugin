@@ -471,7 +471,8 @@ tags:
 > First highlighted sentence.
 > Second line of the same highlight.
 
-- **p. 10** · 02/09/2026 10:00 · note: to reread
+- **p. 10** · 02/09/2026 10:00
+  **NOTE:** *to reread*
 
 > Another highlight.
 
@@ -518,7 +519,8 @@ tags:
   > First highlighted sentence.
   > Second line of the same highlight.
 
-  - **p. 10** · 02/09/2026 10:00 · note: to reread
+  - **p. 10** · 02/09/2026 10:00
+    **NOTE:** *to reread*
   ```
 - the file name matches KOReader's standard exporter (`Author - Title`), so
   it does not clash with exports you already made
@@ -612,7 +614,7 @@ texts. On English (or when no translation exists) the original msgid is
 used.
 
 The text inside the `.md` files is translated too (titles,
-`No chapter`, `N highlights`, `note:`, `Page bookmarks`, `Book index`, table
+`No chapter`, `N highlights`, `Page bookmarks`, `Book index`, table
 headers), so your exported notes follow KOReader's language.
 
 To fix or add a translation: edit `languages/it.po` (msgid = English source,
