@@ -59,16 +59,27 @@ T.check(not T.contains(md, "![]("), "no image in the markdown")
 
 -- separators: the frontmatter rule, under the stats, between chapters,
 -- never at the end of the file
-T.check(T.contains(md, "# **HIGHLIGHTS: 2**\n\n---\n\n# Capitolo I"),
-    "separator between the stats and the first chapter")
+T.check(T.contains(md, "# **HIGHLIGHTS: 2**\n\n---\n<!-- tomedown:end -->\n<!-- tomedown:begin highlights -->\n\n# Capitolo I"),
+    "separator between the stats and the first chapter, regions in between")
 T.check(T.contains(md, "- **p. 10** · 02/09/2026 · note: nota utente\n\n---\n\n# Capitolo II"),
     "separator when the chapter changes")
-T.check(T.contains(md, "---\n\n---\n\n# **HIGHLIGHTS: 2**"),
-    "the body opens with a rule right after the frontmatter")
+T.check(T.contains(md, "---\n\n<!-- tomedown:begin preamble -->\n\n---\n\n# **HIGHLIGHTS: 2**"),
+    "the body opens with a rule right after the frontmatter, inside the preamble region")
 local doubled = select(2, md:gsub("%-%-%-\n\n%-%-%-", ""))
-T.check(doubled == 1,
-    "exactly one doubled separator, the frontmatter rule: " .. doubled)
+T.check(doubled == 0,
+    "the marker splits the frontmatter rule from the body rule: " .. doubled)
 T.check(md:match("%-%-%-%s*$") == nil, "no separator at the end of the file")
+
+-- region markers: three named regions in a fixed order, always paired
+local begins = {}
+for name in md:gmatch("<!%-%- tomedown:begin ([%w_]+) %-%->") do
+    begins[#begins + 1] = name
+end
+T.check(table.concat(begins, ",") == "preamble,highlights,bookmarks",
+    "the three book regions in order: " .. table.concat(begins, ","))
+local ends = select(2, md:gsub("<!%-%- tomedown:end %-%->", ""))
+T.check(ends == 3, "three end markers: " .. ends)
+T.check(T.contains(md, 'tomedown: "1.0"'), "format stamp in the book frontmatter")
 
 -- no chapters: the body has only the HIGHLIGHTS heading
 local noChapters = render.buildBookMd({
@@ -225,6 +236,9 @@ T.check(T.contains(withCover, "</p>\n\n---\n\n# **HIGHLIGHTS: 2**"),
 local img_pos = withCover:find("<img ", 1, true)
 local hl_pos = withCover:find("# **HIGHLIGHTS", 1, true)
 T.check(img_pos and hl_pos and img_pos < hl_pos, "the cover sits before the highlights heading")
+local doubledCover = select(2, withCover:gsub("%-%-%-\n\n%-%-%-", ""))
+T.check(doubledCover == 0,
+    "with a cover no two rules touch: " .. doubledCover)
 T.check(render.coverImg('a"b.jpg', 90, 120):find("a&quot;b.jpg", 1, true) ~= nil,
     "a quote in the path is escaped for the attribute")
 
@@ -263,8 +277,11 @@ T.check(T.contains(index, "  - index"), "tag index")
 T.check(T.contains(index, "---\n"), "index frontmatter")
 T.check(T.contains(index, "  - ebook"), "tag ebook in the index")
 T.check(not T.contains(index, "kindle"), "the old kindle tag is gone from the index")
-T.check(T.contains(index, "---\n\n---\n\n_No exported"),
-    "the empty index opens the body with a rule")
+T.check(T.contains(index, "---\n\n<!-- tomedown:begin index -->\n\n---\n\n_No exported"),
+    "the empty index opens the body with a rule, inside the index region")
+T.check(index:match("tomedown: \"1%.0\"") ~= nil, "format stamp in the index frontmatter")
+T.check(select(2, index:gsub("<!%-%- tomedown:end %-%->", "")) == 1,
+    "the empty index still closes its region")
 T.check(not T.contains(index, "·"), "no stats line without books")
 
 local rows = render.buildIndexMd({
@@ -298,7 +315,7 @@ local order = rows:find("[[Michael McDowell - Blackwater\\|Blackwater]]", 1, tru
 local order2 = rows:find("[[Altro Autore - Altro\\|Altro]]", 1, true)
 T.check(order < order2, "the index keeps the order of the books it received")
 T.check(T.contains(rows,
-    "---\n\n---\n\n*2 books · 2 highlights — click a title to open its note.*\n\n| Book |"),
+    "---\n\n<!-- tomedown:begin index -->\n\n---\n\n*2 books · 2 highlights — click a title to open its note.*\n\n| Book |"),
     "the stats line sits between the frontmatter rule and the table")
 
 local single = render.buildIndexMd({

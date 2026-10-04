@@ -8,6 +8,17 @@ can also be tested with a standard Lua interpreter.
 local _ = require("tomedown_i18n")
 local render = {}
 
+-- Generated blocks are wrapped in HTML comments, invisible in every
+-- Markdown renderer (Obsidian included, reading view and live preview
+-- alike): the export re-merges new content into these regions and leaves
+-- whatever the user wrote outside of them untouched.
+render.FORMAT_VERSION = "1.0"
+render.END_MARKER = "<!-- tomedown:end -->"
+
+function render.beginMarker(name)
+    return "<!-- tomedown:begin " .. name .. " -->"
+end
+
 local function yamlQuote(s)
     if s == nil then
         return '""'
@@ -140,6 +151,7 @@ function render.buildBookMd(book, opts)
     end
 
     add("---")
+    add('tomedown: "' .. render.FORMAT_VERSION .. '"')
     add("title: " .. yamlQuote(book.title))
     add("author: " .. yamlQuote(book.author))
     if opts.cover then
@@ -179,7 +191,11 @@ function render.buildBookMd(book, opts)
         end
     end
     add("---")
-    -- the body always opens: properties, rule, content
+    -- the body always opens: properties, rule, content — all of it is a
+    -- generated region (cover, count heading) so a later export can
+    -- refresh it without touching what the user wrote around it
+    add("")
+    add(render.beginMarker("preamble"))
     add("")
     add("---")
 
@@ -198,6 +214,8 @@ function render.buildBookMd(book, opts)
         add("")
         add("---")
     end
+    add(render.END_MARKER)
+    add(render.beginMarker("highlights"))
 
     local function heading(h)
         if open then
@@ -253,6 +271,10 @@ function render.buildBookMd(book, opts)
         open = true
     end
 
+    add(render.END_MARKER)
+    -- the bookmarks region is always emitted (even when empty) so the
+    -- region sequence never shifts under the merge
+    add(render.beginMarker("bookmarks"))
     local bookmarks = book.bookmarks or {}
     if #bookmarks > 0 then
         heading("# " .. _("Page bookmarks"))
@@ -278,6 +300,7 @@ function render.buildBookMd(book, opts)
             add("- " .. table.concat(bmeta, " · "))
         end
     end
+    add(render.END_MARKER)
 
     return table.concat(out, "\n") .. "\n"
 end
@@ -298,6 +321,7 @@ function render.buildIndexMd(books, opts)
     end
 
     add("---")
+    add('tomedown: "' .. render.FORMAT_VERSION .. '"')
     add("title: " .. yamlQuote(title))
     add("exported: " .. yamlQuote(opts.exported or os.date("%Y-%m-%d")))
     add("tags:")
@@ -305,11 +329,15 @@ function render.buildIndexMd(books, opts)
     add("  - " .. _("index"))
     add("---")
     add("")
+    -- one generated region: the rule, the stats line and the table
+    add(render.beginMarker("index"))
+    add("")
     add("---")
     add("")
 
     if #books == 0 then
         add("_" .. _("No exported books with highlights.") .. "_")
+        add(render.END_MARKER)
         return table.concat(out, "\n") .. "\n"
     end
 
@@ -378,6 +406,7 @@ function render.buildIndexMd(books, opts)
         add("| " .. table.concat(cells, " | ") .. " |")
     end
 
+    add(render.END_MARKER)
     return table.concat(out, "\n") .. "\n"
 end
 
