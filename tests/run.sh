@@ -30,6 +30,8 @@ fi
 
 echo "=== test_render"
 "$LUA" test_render.lua
+echo "=== test_merge"
+"$LUA" test_merge.lua
 echo "=== test_po"
 "$LUA" test_po.lua
 echo "=== test_i18n"
