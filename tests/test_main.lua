@@ -1639,14 +1639,14 @@ store.tomedown.upload = false
 plugin:runExport({ FILE }, {})
 UIManager:runPending()
 local clean_md = T.readFile(MD_PATH)
-T.check(clean_md ~= nil and T.contains(clean_md, "<!-- tomedown:begin highlights"),
+T.check(clean_md ~= nil and T.contains(clean_md, "<!-- tomedown:begin body"),
     "baseline export with the region markers before the edit: "
         .. tostring(clean_md ~= nil))
 
--- the reader writes a line inside the generated highlights region
+-- the reader writes a line inside the generated body region
 local user_line = "Riga scritta a mano in Obsidian.\n"
 local edited_md = (clean_md or ""):gsub(
-    "(<!%-%- tomedown:begin highlights[^\n]*%-%->\n)", "%1" .. user_line)
+    "(<!%-%- tomedown:begin body[^\n]*%-%->\n)", "%1" .. user_line)
 local edit_file = io.open(MD_PATH, "wb")
 edit_file:write(edited_md)
 edit_file:close()
@@ -1667,7 +1667,7 @@ T.check(kept_md ~= nil and not T.contains(kept_md, "Aggiunta in seguito."),
 T.check(T.contains(Notification.last_text or "", "1 manual edits kept"),
     "the toast reports the kept edit: " .. tostring(Notification.last_text))
 local kept_record = store.tomedown.exports[FILE]
-T.check(kept_record and kept_record.regions and kept_record.regions.highlights,
+T.check(kept_record and kept_record.regions and kept_record.regions.body,
     "fingerprints stored for the next export")
 
 -- policy "skip": a hand-edited file is not rewritten at all, with a warning

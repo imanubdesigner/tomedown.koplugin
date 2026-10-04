@@ -61,13 +61,10 @@ T.check(merge.join(odoc):find(render.beginMarker("preamble"), 1, true) ~= nil
 
 -- ----------------------------------------------------------- fingerprints
 local fps = merge.fingerprints(doc)
-T.check(fps.preamble and fps.highlights and fps.bookmarks
-    and not fps.index, "the three book regions have fingerprints")
-T.check(fps.preamble:match("^%x+$") and #fps.preamble == 32, "md5 hex digests")
+T.check(fps.body and not fps.index, "the book file has a single body fingerprint")
+T.check(fps.body:match("^%x+$") and #fps.body == 32, "md5 hex digests")
 local fpsB = merge.fingerprints(merge.split(renderBook(annB)))
-T.check(fpsB.highlights ~= fps.highlights, "a new annotation changes the fingerprint")
-T.check(fpsB.preamble == fps.preamble and fpsB.bookmarks == fps.bookmarks,
-    "the preamble and the bookmarks do not move")
+T.check(fpsB.body ~= fps.body, "a new annotation changes the fingerprint")
 T.check(next(merge.fingerprints(nil)) == nil, "no document: no fingerprints")
 
 -- ------------------------------------------------------------- apply basics
@@ -90,15 +87,14 @@ local stamped = rendered:gsub('\ttomedown: "1%.0"\n', ""):gsub('tomedown: "1%.0"
 out, info = merge.apply(stamped, rendered, fps, { mode = "preserve" })
 T.check(info.reason == "merged", "a missing stamp is not a blocker")
 
-local twoRegions = rendered:gsub(
-    pat(render.beginMarker("bookmarks")) .. "\n"
-    .. pat(render.endMarker("bookmarks")) .. "\n", "")
-out, info = merge.apply(twoRegions, rendered, fps, { mode = "preserve" })
+local renamed = rendered:gsub(pat(render.beginMarker("body")),
+    render.beginMarker("stale"))
+out, info = merge.apply(renamed, rendered, fps, { mode = "preserve" })
 T.check(out == rendered and info.reason == "shape",
-    "a different region sequence is a format change: regenerate")
+    "another region name is a format change: regenerate")
 
 -- --------------------------------------------------------- zones are kept
-local diskIntro = fresh:gsub("(" .. pat(render.beginMarker("preamble")) .. ")",
+local diskIntro = fresh:gsub("(" .. pat(render.beginMarker("body")) .. ")",
     "La mia introduzione scritta in Obsidian.\n\n%1")
 out, info = merge.apply(diskIntro, rendered, merge.fingerprints(
     merge.split(fresh)), { mode = "preserve", policy = "keep" })
@@ -111,14 +107,14 @@ T.check(T.contains(out, "Nuova frase.") and not T.contains(out, "Prima frase."),
 
 -- --------------------------------------------------- a region the user wrote in
 local diskEdited = fresh:gsub(
-    "(" .. pat(render.beginMarker("highlights")) .. "\n)",
+    "(" .. pat(render.beginMarker("body")) .. "\n)",
     "%1Pensiero mio personale.\n")
 local stored = merge.fingerprints(merge.split(fresh))
 
 out, info = merge.apply(diskEdited, rendered, stored,
     { mode = "preserve", policy = "keep" })
-T.check(info.reason == "merged" and info.edited[1] == "highlights"
-    and info.kept[1] == "highlights", "the hand edit is detected and kept")
+T.check(info.reason == "merged" and info.edited[1] == "body"
+    and info.kept[1] == "body", "the hand edit is detected and kept")
 T.check(T.contains(out, "Pensiero mio personale."), "the user's line survives")
 T.check(T.contains(out, "Prima frase.") and not T.contains(out, "Nuova frase."),
     "a kept region does not take the new annotations")
@@ -126,22 +122,22 @@ T.check(T.contains(out, "Prima frase.") and not T.contains(out, "Nuova frase."),
 local skipped
 skipped, info = merge.apply(diskEdited, rendered, stored,
     { mode = "preserve", policy = "skip" })
-T.check(skipped == nil and info.reason == "skip" and info.edited[1] == "highlights",
+T.check(skipped == nil and info.reason == "skip" and info.edited[1] == "body",
     "skip policy: the file is not written, the caller warns")
 
 -- the kept region stays the user's on the next export too
 local kept_fps = merge.fingerprints(merge.split(rendered))
 local out2, info2 = merge.apply(out, rendered, kept_fps,
     { mode = "preserve", policy = "keep" })
-T.check(info2.edited[1] == "highlights" and T.contains(out2, "Pensiero mio personale."),
+T.check(info2.edited[1] == "body" and T.contains(out2, "Pensiero mio personale."),
     "the kept region stays the user's until they restore it")
 
 -- the user puts the generated content back by hand: under control again
 local disk3 = rendered:gsub(
-    "(" .. pat(render.beginMarker("highlights")) .. "\n)", "%1Pensiero\n")
+    "(" .. pat(render.beginMarker("body")) .. "\n)", "%1Pensiero\n")
 local out3, info3 = merge.apply(disk3, rendered, kept_fps,
     { mode = "preserve", policy = "keep" })
-T.check(info3.edited[1] == "highlights", "first export keeps the new line")
+T.check(info3.edited[1] == "body", "first export keeps the new line")
 local restored = out3:gsub("Pensiero\n", "")
 T.check(restored == rendered, "deleting the line restores the generated note")
 local out4, info4 = merge.apply(restored, rendered, kept_fps,

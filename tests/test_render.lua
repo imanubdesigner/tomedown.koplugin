@@ -59,28 +59,30 @@ T.check(not T.contains(md, "![]("), "no image in the markdown")
 
 -- separators: the frontmatter rule, under the stats, between chapters,
 -- never at the end of the file
-T.check(T.contains(md, "# **HIGHLIGHTS: 2**\n\n---\n" .. render.endMarker("preamble")
-    .. "\n\n" .. render.beginMarker("highlights") .. "\n\n# Capitolo I"),
-    "separator between the stats and the first chapter, regions in between")
+T.check(T.contains(md, "# **HIGHLIGHTS: 2**\n\n---\n\n# Capitolo I"),
+    "separator between the stats and the first chapter")
 T.check(T.contains(md, "- **p. 10** · 02/09/2026 · note: nota utente\n\n---\n\n# Capitolo II"),
     "separator when the chapter changes")
-T.check(T.contains(md, "---\n\n" .. render.beginMarker("preamble")
+T.check(T.contains(md, "---\n\n" .. render.beginMarker("body")
     .. "\n\n---\n\n# **HIGHLIGHTS: 2**"),
-    "the body opens with a rule right after the frontmatter, inside the preamble region")
+    "the body opens with a rule right after the frontmatter, inside the body region")
 local doubled = select(2, md:gsub("%-%-%-\n\n%-%-%-", ""))
 T.check(doubled == 0,
-    "the marker splits the frontmatter rule from the body rule: " .. doubled)
+    "the frontmatter rule and the body rule never touch: " .. doubled)
 T.check(md:match("%-%-%-%s*$") == nil, "no separator at the end of the file")
 
--- region markers: three named regions in a fixed order, always paired
+-- region markers: a single generated region per file, always paired
 local begins = {}
 for name in md:gmatch("<!%-%- tomedown:begin ([%w_]+)[^\n]*%-%->") do
     begins[#begins + 1] = name
 end
-T.check(table.concat(begins, ",") == "preamble,highlights,bookmarks",
-    "the three book regions in order: " .. table.concat(begins, ","))
+T.check(table.concat(begins, ",") == "body",
+    "one book region, named body: " .. table.concat(begins, ","))
 local ends = select(2, md:gsub("<!%-%- tomedown:end[^\n]*%-%->", ""))
-T.check(ends == 3, "three end markers: " .. ends)
+T.check(ends == 1, "one end marker: " .. ends)
+local body_tail = render.endMarker("body")
+T.check(md:sub(-#body_tail - 1) == body_tail .. "\n",
+    "the file ends on the end marker, no trailing blank line")
 T.check(T.contains(md, 'tomedown: "1.0"'), "format stamp in the book frontmatter")
 
 -- no chapters: the body has only the HIGHLIGHTS heading
@@ -285,6 +287,9 @@ T.check(T.contains(index, "---\n\n" .. render.beginMarker("index")
 T.check(index:match("tomedown: \"1%.0\"") ~= nil, "format stamp in the index frontmatter")
 T.check(select(2, index:gsub("<!%-%- tomedown:end[^\n]*%-%->", "")) == 1,
     "the empty index still closes its region")
+local index_tail = render.endMarker("index")
+T.check(index:sub(-#index_tail - 1) == index_tail .. "\n",
+    "the index ends on its end marker, no trailing blank line")
 T.check(not T.contains(index, "click a title"), "no stats line without books")
 
 local rows = render.buildIndexMd({

@@ -204,11 +204,12 @@ function render.buildBookMd(book, opts)
         end
     end
     add("---")
-    -- the body always opens: properties, rule, content — all of it is a
-    -- generated region (cover, count heading) so a later export can
-    -- refresh it without touching what the user wrote around it
+    -- one generated block per book file: from the rule down to the last
+    -- bookmark is the plugin's territory; the user writes above it (right
+    -- under the front matter), and the next export refreshes this single
+    -- region without touching anything else
     add("")
-    add(render.beginMarker("preamble"))
+    add(render.beginMarker("body"))
     add("")
     add("---")
 
@@ -227,12 +228,6 @@ function render.buildBookMd(book, opts)
         add("")
         add("---")
     end
-    add(render.endMarker("preamble"))
-    -- one visible empty line between two markers: that line is where
-    -- the user writes, framed by the two rules
-    add("")
-    add(render.beginMarker("highlights"))
-
     local function heading(h)
         if open then
             add("")
@@ -287,11 +282,6 @@ function render.buildBookMd(book, opts)
         open = true
     end
 
-    add(render.endMarker("highlights"))
-    add("")
-    -- the bookmarks region is always emitted (even when empty) so the
-    -- region sequence never shifts under the merge
-    add(render.beginMarker("bookmarks"))
     local bookmarks = book.bookmarks or {}
     if #bookmarks > 0 then
         heading("# " .. _("Page bookmarks"))
@@ -317,9 +307,12 @@ function render.buildBookMd(book, opts)
             add("- " .. table.concat(bmeta, " · "))
         end
     end
-    add(render.endMarker("bookmarks"))
-    -- the tail zone gets the same visible line as the inner ones
-    add("")
+    -- the region always closes on a blank line: the end marker never
+    -- glues to the last generated line
+    if out[#out] ~= "" then
+        add("")
+    end
+    add(render.endMarker("body"))
 
     return table.concat(out, "\n") .. "\n"
 end
@@ -356,8 +349,8 @@ function render.buildIndexMd(books, opts)
 
     if #books == 0 then
         add("_" .. _("No exported books with highlights.") .. "_")
-        add(render.endMarker("index"))
         add("")
+        add(render.endMarker("index"))
         return table.concat(out, "\n") .. "\n"
     end
 
@@ -426,8 +419,11 @@ function render.buildIndexMd(books, opts)
         add("| " .. table.concat(cells, " | ") .. " |")
     end
 
+    -- the region closes on a blank line, the file ends on the marker
+    if out[#out] ~= "" then
+        add("")
+    end
     add(render.endMarker("index"))
-    add("")
     return table.concat(out, "\n") .. "\n"
 end
 
