@@ -27,6 +27,7 @@
   - [Special highlights](#special-highlights)
   - [Auto-export and offline reading](#auto-export-and-offline-reading)
   - [Upload retries](#upload-retries)
+  - [Preserve your edits](#preserve-your-edits)
 - [File format](#file-format)
 - [Obsidian (optional)](#obsidian-optional)
 - [Notes and limitations](#notes-and-limitations)
@@ -347,6 +348,63 @@ the cloud**. The attempts are also logged:
 ```
 tomedown: upload failed (attempt 1 of 3), retrying in 2 s: <path> 500
 ```
+
+### Preserve your edits
+
+Your vault is the destination, not a cache — since 1.0 an export folds the
+new render into the file that is already in your vault instead of
+overwriting it. Every block Tomedown generates sits between two invisible
+HTML comments it uses as handles:
+
+```markdown
+<!-- tomedown:begin highlights -->
+# **HIGHLIGHTS: 150**
+
+# Chapter I
+
+> First highlighted sentence.
+<!-- tomedown:end -->
+```
+
+Obsidian and every Markdown renderer ignore the comments, so the file
+looks exactly the same. On every export:
+
+- text you wrote **outside** the comments — your own paragraphs, headings,
+  links — is carried over untouched, wherever it sits (before the first
+  block, between two blocks, at the end);
+- blocks you did not touch are regenerated: new highlights, page
+  bookmarks, the `HIGHLIGHTS` heading, the index;
+- blocks you edited **inside** the comments stay exactly as you left them
+  (new highlights excluded from them), while the rest of the file —
+  frontmatter, your zones, the other blocks — still updates;
+- the frontmatter merges field by field: Tomedown's own fields
+  (`status`, `progress`, `exported`…) always show KOReader's values, your
+  tags are kept and unioned with the new ones, and a property only you
+  added (`rating: 5`, an alias…) survives.
+
+Two toggles in *Settings → Markdown files* control this:
+
+- **Preserve manual edits** — on by default. Turn it off and every export
+  writes exactly what was generated (the old behaviour); switching modes
+  rewrites every file on the next export.
+- **Skip files with manual edits** — while preserving: a file whose blocks
+  you edited is left completely untouched instead of partially updated,
+  and the export warns you (`N files not rewritten (manual edits)`).
+
+The result toast and the *Status* panel report what happened: `2 manual
+edits kept`, `1 files not rewritten (manual edits)`.
+
+Good to know:
+
+- don't move or delete the `<!-- tomedown:begin … -->` comments: a file
+  without them (an export from tomedown ≤ 0.8) is rebuilt from scratch
+  once — your edits in that one migration are not carried over — and
+  counts as an old file from then on;
+- to put a block back under the plugin's control, paste the generated
+  content over it (or tick *Preserve manual edits* off once): until then
+  the block stays as you left it, new highlights excluded;
+- the index is treated the same way: annotate it freely between the
+  markers and your notes survive the next export.
 
 ## File format
 
