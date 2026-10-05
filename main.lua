@@ -1657,10 +1657,8 @@ function Tomedown:genSettingsMenu()
             end,
         },
         {
-            -- set-once options in their own submenus: the separator
-            -- divides them from the daily rows above
-            text = withIcon("\xEF\x86\x9A", _("Style")), -- paint-brush
-            separator = true,
+            -- set-once options in their own submenus
+            text = withIcon("\xEE\xAB\x97", _("Style")), -- palette
             sub_item_table = {
                 {
                     text_func = function()

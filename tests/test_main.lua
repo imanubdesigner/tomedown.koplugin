@@ -518,8 +518,7 @@ T.check(files[4].text == "Include book covers", "covers entry")
 T.check(files[4].checked_func() == false, "covers off by default")
 local style = files[5].sub_item_table
 local behaviour = files[6].sub_item_table
-T.check(files[5].text == "\xEF\x86\x9A  Style", "style submenu with icon")
-T.check(files[5].separator == true, "separator before the set-once submenus")
+T.check(files[5].text == "\xEE\xAB\x97  Style", "style submenu with icon")
 T.check(#style == 2, "style submenu rows: " .. #style)
 T.check(files[6].text == "\xEF\x87\x9E  Behaviour", "behaviour submenu with icon")
 T.check(#behaviour == 2, "behaviour submenu rows: " .. #behaviour)
