@@ -504,7 +504,7 @@ local cloud = settings[1].sub_item_table
 local files = settings[2].sub_item_table
 local updates = settings[3].sub_item_table
 T.check(#cloud == 3, "cloud rows: " .. #cloud)
-T.check(#files == 8, "markdown files rows: " .. #files)
+T.check(#files == 6, "markdown files rows: " .. #files)
 T.check(#updates == 4, "updates rows: " .. #updates)
 T.check(cloud[1].text == "Upload to cloud", "upload entry")
 T.check(cloud[2].text_func() == "Server and folder: not set", "server not set")
@@ -516,8 +516,15 @@ T.check(files[3].text == "Include page bookmarks", "page bookmarks entry")
 T.check(files[3].checked_func() == false, "page bookmarks off by default")
 T.check(files[4].text == "Include book covers", "covers entry")
 T.check(files[4].checked_func() == false, "covers off by default")
-T.check(files[5].text_func() == "Personal notes: My notes...",
-    "notes heading entry: " .. files[5].text_func())
+local style = files[5].sub_item_table
+local behaviour = files[6].sub_item_table
+T.check(files[5].text == "\xEF\x86\x9A  Style", "style submenu with icon")
+T.check(files[5].separator == true, "separator before the set-once submenus")
+T.check(#style == 2, "style submenu rows: " .. #style)
+T.check(files[6].text == "\xEF\x87\x9E  Behaviour", "behaviour submenu with icon")
+T.check(#behaviour == 2, "behaviour submenu rows: " .. #behaviour)
+T.check(style[1].text_func() == "Personal notes: My notes...",
+    "notes heading entry: " .. style[1].text_func())
 
 -- rename dialog
 plugin:editNotesTitle(nil)
@@ -528,27 +535,25 @@ InputDialog.last.input_text = "  Appunti miei  "
 InputDialog.last:simulateSave()
 T.check(store.tomedown.notes_title == "Appunti miei",
     "heading saved and trimmed")
-T.check(files[5].text_func() == "Personal notes: Appunti miei",
+T.check(style[1].text_func() == "Personal notes: Appunti miei",
     "menu entry updated")
 plugin:editNotesTitle(nil)
 InputDialog.last.input_text = ""
 InputDialog.last:simulateSave()
 T.check(store.tomedown.notes_title == "", "an empty title clears the heading")
 store.tomedown.notes_title = nil
-T.check(files[5].text_func() == "Personal notes: My notes...",
+T.check(style[1].text_func() == "Personal notes: My notes...",
     "back to the default heading")
 
-T.check(files[6].text == "All highlights as Special Highlights", "callout entry")
-T.check(files[6].checked_func() == false, "callout off by default")
-T.check(files[6].separator == true, "separator before the auto-export toggle")
-T.check(files[7].text == "Auto-export on close",
-    "auto-export lives in Markdown files")
-T.check(files[7].checked_func() == false, "auto-export off by default")
-T.check(files[7].separator == true, "separator before the preserve toggle")
-T.check(files[8].text == "Preserve manual edits", "preserve entry")
-T.check(files[8].checked_func() == true, "manual edits preserved by default")
+T.check(style[2].text == "All highlights as Special Highlights", "callout entry")
+T.check(style[2].checked_func() == false, "callout off by default")
+T.check(behaviour[1].text == "Auto-export on close",
+    "auto-export lives in Markdown files > Behaviour")
+T.check(behaviour[1].checked_func() == false, "auto-export off by default")
+T.check(behaviour[2].text == "Preserve manual edits", "preserve entry")
+T.check(behaviour[2].checked_func() == true, "manual edits preserved by default")
 store.tomedown.preserve = false
-T.check(files[8].checked_func() == false, "the toggle reflects the setting")
+T.check(behaviour[2].checked_func() == false, "the toggle reflects the setting")
 store.tomedown.preserve = nil
 T.check(updates[1].text_func() == "Check for updates (v"
         .. Update.getInstalledVersion() .. ")",
@@ -556,7 +561,8 @@ T.check(updates[1].text_func() == "Check for updates (v"
 T.check(updates[2].text == "View changelog", "changelog entry")
 T.check(updates[2].separator == true, "separator after the changelog entry")
 T.check(updates[3].text == "Check for updates in background", "background entry")
-T.check(updates[4].text == "Developer updates", "developer updates entry")
+T.check(updates[4].text == "\xEF\x84\xA6  Developer updates",
+    "developer updates entry with icon")
 local developer = updates[4].sub_item_table_func()
 T.check(#developer == 3, "beta check hidden by default: " .. #developer)
 T.check(developer[1].text == "Beta Releases", "beta releases entry")
@@ -589,7 +595,8 @@ T.check(#developer == 3, "beta check hidden again: " .. #developer)
 T.check(developer[1].separator == true, "separator back under the toggle")
 
 -- checkable rows must keep the menu open so KOReader refreshes them
-for _, group in ipairs({ sub, cloud, files, updates, developer }) do
+for _, group in ipairs({ sub, cloud, files, style, behaviour, updates,
+        developer }) do
     for i, row in ipairs(group) do
         if row.checked_func then
             T.check(row.keep_menu_open == true,
@@ -1215,10 +1222,10 @@ T.check(#uploads == 0 and Notification.last_text == nil,
 ui.document = nil
 
 -- toggle on: the close exports after 1s and uploads right away
-files[7].callback()
-T.check(files[7].checked_func() == true, "auto-export toggled on")
+behaviour[1].callback()
+T.check(behaviour[1].checked_func() == true, "auto-export toggled on")
 uploadSetup()
-files[7].callback() -- uploadSetup wiped the setting
+behaviour[1].callback() -- uploadSetup wiped the setting
 ui.document = { file = FILE }
 plugin:onCloseDocument()
 T.check(UIManager:pendingCount() == 1, "toggle on: close schedules the export")
@@ -1245,7 +1252,7 @@ ui.document = nil
 -- without the cloud at all: one notification, right after the export
 uploadSetup()
 store.tomedown.upload = false
-files[7].callback() -- uploadSetup wiped the auto-export setting too
+behaviour[1].callback() -- uploadSetup wiped the auto-export setting too
 ui.document = { file = FILE }
 plugin:onCloseDocument()
 UIManager:runPending()
@@ -1266,7 +1273,7 @@ ui.document = nil
 
 -- offline close: exported locally, queued, the network is not touched
 uploadSetup()
-files[7].callback()
+behaviour[1].callback()
 NetworkMgr.connected = false
 ui.document = { file = FILE }
 plugin:onCloseDocument()
@@ -1318,7 +1325,7 @@ T.check(next(store.tomedown.pending_uploads or {}) == nil,
 
 -- suspend: local only and totally silent, even with the network up
 uploadSetup()
-files[7].callback()
+behaviour[1].callback()
 ui.document = { file = FILE }
 plugin:onSuspend()
 T.check(UIManager:pendingCount() == 0, "suspend schedules nothing")
@@ -1427,11 +1434,11 @@ files[4].callback()
 T.check(store.tomedown.covers == false, "covers toggled off again")
 plugin:runExport({ FILE }, {})
 T.check(store.tomedown.exports[FILE].hash ~= nil, "hash back after the export")
-files[6].callback()
+style[2].callback()
 T.check(store.tomedown.callout == true, "callout toggled on")
 T.check(store.tomedown.exports[FILE].hash == nil,
     "the callout toggle invalidates the stored hash too")
-files[6].callback()
+style[2].callback()
 
 -- extraction: capped to the 800x1200 box, quality 50, colours kept
 uploadSetup()
@@ -1735,8 +1742,8 @@ T.check(T.readFile(MD_PATH) ~= nil
     "the zone above the marker survives the export")
 
 -- preservation off: the next export regenerates everything
-files[8].callback()
-T.check(files[8].checked_func() == false, "preservation toggled off")
+behaviour[2].callback()
+T.check(behaviour[2].checked_func() == false, "preservation toggled off")
 T.check(store.tomedown.exports[FILE].hash == nil,
     "switching modes invalidates the hashes")
 plugin:runExport({ FILE }, {})
@@ -1744,8 +1751,8 @@ UIManager:runPending()
 local regen_md = T.readFile(MD_PATH)
 T.check(regen_md ~= nil and not T.contains(regen_md, zone_line),
     "overwrite mode drops the write zone too")
-files[8].callback()
-T.check(files[8].checked_func() == true, "preservation back on for the next runs")
+behaviour[2].callback()
+T.check(behaviour[2].checked_func() == true, "preservation back on for the next runs")
 
 -- the status panel reports the backups of the last run
 store.tomedown.last_export = {

@@ -141,8 +141,8 @@ first export and optional Remotely Save in Obsidian — is in
 | *Generate the 00 - Index.md (for Obsidian)* | builds the Obsidian table — a stats line on top (books, highlights, a link hint), then internal links, author, series, reading status, highlight count and last export date |
 | *Include page bookmarks* | off by default: adds a `# Page bookmarks` section (bookmarked page + note) after the highlights |
 | *Include book covers* | off by default: exports the cover of every book into `covers/` and embeds it in the book file and in the index; the cover is removed from the device once its upload succeeded (the vault copy is the master one). Requires **Obsidian 1.8.1 or newer** to display |
-| *All highlights as Special Highlights* | off by default: every highlight becomes an `> [!highlight]` callout instead of a plain quote; when off, only *Special Highlight* marks (see *Usage*) turn into callouts |
-| *Auto-export on close* | off by default: exports the book when you close it, and again (silently, no network) before the device suspends |
+| *Style* | a submenu with the two options that shape the notes (below) |
+| *Behaviour* | a submenu with the two toggles that govern exporting and merging (below) |
 
 Ticking or unticking *Include book covers* / *All highlights as Special Highlights*
 rewrites every already exported file on the next export (the stored hash is
@@ -150,6 +150,20 @@ invalidated, so *Export only what changed* re-sends everything once).
 
 Covers are always exported in full colour, whatever the device: the
 extraction forces colour rendering even on greyscale e-ink screens.
+
+**Style**
+
+| Entry | What to do |
+|---|---|
+| *Personal notes: %1* | the heading above your notes block — tap it to rename, leave the field empty to export without a heading |
+| *All highlights as Special Highlights* | off by default: every highlight becomes an `> [!highlight]` callout instead of a plain quote; when off, only *Special Highlight* marks (see *Usage*) turn into callouts |
+
+**Behaviour**
+
+| Entry | What to do |
+|---|---|
+| *Auto-export on close* | off by default: exports the book when you close it, and again (silently, no network) before the device suspends |
+| *Preserve manual edits* | on by default: turn it off and every export writes exactly what was generated (the old behaviour); switching modes rewrites every file on the next export — see *Merging your edits* |
 
 **Updates**
 
@@ -403,11 +417,12 @@ touched block from one of its own at a glance. On every export:
   added (`rating: 5`, an alias…) survives — even a line the parser
   cannot place is kept verbatim, at the end;
 - the heading is the plugin's line (the `<!-- tomedown:notes -->` tag
-  gives it away): renamed from *Personal notes: %1* in Settings, it is
-  rewritten on the next export while your text below it stays put —
-  leave the setting empty and files export without a heading.
+  gives it away): renamed from *Personal notes: %1*
+  (*Settings → Markdown files → Style*), it is rewritten on the
+  next export while your text below it stays put — leave the setting
+  empty and files export without a heading.
 
-One toggle in *Settings → Markdown files* controls all this:
+One toggle in *Settings → Markdown files → Behaviour* controls all this:
 
 - **Preserve manual edits** — on by default. Turn it off and every export
   writes exactly what was generated (the old behaviour); switching modes

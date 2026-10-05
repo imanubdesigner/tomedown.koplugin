@@ -274,6 +274,12 @@ msgstr "Cloud"
 msgid "Markdown files"
 msgstr "File Markdown"
 
+msgid "Style"
+msgstr "Stile"
+
+msgid "Behaviour"
+msgstr "Comportamento"
+
 msgid "Updates"
 msgstr "Aggiornamenti"
 

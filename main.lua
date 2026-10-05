@@ -1537,11 +1537,12 @@ function Tomedown:genPickerMenu()
     return items
 end
 
---- Label of a group row: a Nerd Font glyph from the symbols font KOReader
--- already ships, two spaces, then the label. The glyph stays outside the
--- translated string, so .po files never see it. The code points are in
--- the Private Use Area on purpose (anything else risks missing glyphs in
--- other fonts) - the same rule Bookshelf's menus follow.
+--- Label of a group or submenu row: a Nerd Font glyph from the symbols
+-- font KOReader already ships, two spaces, then the label. The glyph
+-- stays outside the translated string, so .po files never see it. The
+-- code points are in the Private Use Area on purpose (anything else
+-- risks missing glyphs in other fonts) - the same rule Bookshelf's
+-- menus follow.
 local function withIcon(glyph, text)
     return glyph .. "  " .. text
 end
@@ -1656,52 +1657,62 @@ function Tomedown:genSettingsMenu()
             end,
         },
         {
-            text_func = function()
-                return T(_("Personal notes: %1"), getNotesTitle())
-            end,
-            callback = function(touchmenu)
-                self:editNotesTitle(touchmenu)
-            end,
-        },
-        {
-            text = _("All highlights as Special Highlights"),
-            checked_func = function()
-                return getSetting("callout", false)
-            end,
-            keep_menu_open = true,
-            callback = function()
-                setSetting("callout", not getSetting("callout", false))
-                self:invalidateExportHashes()
-            end,
+            -- set-once options in their own submenus: the separator
+            -- divides them from the daily rows above
+            text = withIcon("\xEF\x86\x9A", _("Style")), -- paint-brush
             separator = true,
+            sub_item_table = {
+                {
+                    text_func = function()
+                        return T(_("Personal notes: %1"), getNotesTitle())
+                    end,
+                    callback = function(touchmenu)
+                        self:editNotesTitle(touchmenu)
+                    end,
+                },
+                {
+                    text = _("All highlights as Special Highlights"),
+                    checked_func = function()
+                        return getSetting("callout", false)
+                    end,
+                    keep_menu_open = true,
+                    callback = function()
+                        setSetting("callout", not getSetting("callout", false))
+                        self:invalidateExportHashes()
+                    end,
+                },
+            },
         },
         {
-            -- a behaviour toggle, not a file option: kept apart by the
-            -- separator, no icon (the inside of Settings stays text-only)
-            text = _("Auto-export on close"),
-            checked_func = function()
-                return getSetting("auto_export", false)
-            end,
-            keep_menu_open = true,
-            callback = function()
-                setSetting("auto_export",
-                    not getSetting("auto_export", false))
-            end,
-            separator = true,
-        },
-        {
-            -- what wins when the render meets a file the reader edited
-            text = _("Preserve manual edits"),
-            checked_func = function()
-                return getSetting("preserve", true)
-            end,
-            keep_menu_open = true,
-            callback = function()
-                setSetting("preserve", not getSetting("preserve", true))
-                -- switching modes must regenerate what the other mode
-                -- left behind: the next export rewrites every file
-                self:invalidateExportHashes()
-            end,
+            text = withIcon("\xEF\x87\x9E", _("Behaviour")), -- sliders
+            sub_item_table = {
+                {
+                    text = _("Auto-export on close"),
+                    checked_func = function()
+                        return getSetting("auto_export", false)
+                    end,
+                    keep_menu_open = true,
+                    callback = function()
+                        setSetting("auto_export",
+                            not getSetting("auto_export", false))
+                    end,
+                },
+                {
+                    -- what wins when the render meets a file the reader edited
+                    text = _("Preserve manual edits"),
+                    checked_func = function()
+                        return getSetting("preserve", true)
+                    end,
+                    keep_menu_open = true,
+                    callback = function()
+                        setSetting("preserve", not getSetting("preserve", true))
+                        -- switching modes must regenerate what the other
+                        -- mode left behind: the next export rewrites
+                        -- every file
+                        self:invalidateExportHashes()
+                    end,
+                },
+            },
         },
     }
     -- Developer updates: everything that is not meant for daily use,
@@ -1801,7 +1812,7 @@ function Tomedown:genSettingsMenu()
             end,
         },
         {
-            text = _("Developer updates"),
+            text = withIcon("\xEF\x84\xA6", _("Developer updates")), -- code-fork
             sub_item_table_func = function()
                 developer_table = developerItems()
                 return developer_table
@@ -2298,8 +2309,8 @@ function Tomedown:addToMainMenu(menu_items)
     pinToTop("ui/elements/filemanager_menu_order", "filemanager_settings")
     -- Every row of the main menu carries a Nerd Font glyph (from
     -- nerdfonts/symbols.ttf, KOReader's own fallback font). Settings
-    -- keeps its word plus the icon; inside, only the three group
-    -- labels are iconified - no glyph is ever added to a submenu.
+    -- keeps its word plus the icon; inside, group labels and submenu
+    -- rows are iconified - plain setting rows stay text-only.
     menu_items.tomedown = {
         text = "Tomedown",
         sub_item_table = {

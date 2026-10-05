@@ -172,8 +172,8 @@ local cloud = settings[1].sub_item_table
 local files = settings[2].sub_item_table
 local updates = settings[3].sub_item_table
 T.check(files[3].text == "Include page bookmarks", "page bookmarks row")
--- Auto-export lives in Settings > Markdown files now (test_main
--- checks the row)
+-- Auto-export lives in Settings > Markdown files > Behaviour now
+-- (test_main checks the row)
 T.check(#cloud == 3, "cloud rows: " .. #cloud)
 T.check(updates[1].text_func() == "Check for updates (v" .. INSTALLED .. ")",
     "check row: " .. updates[1].text_func())
@@ -181,7 +181,8 @@ T.check(updates[2].text == "View changelog", "changelog row")
 T.check(updates[3].text == "Check for updates in background",
     "background toggle row")
 T.check(updates[3].checked_func() == false, "background check off by default")
-T.check(updates[4].text == "Developer updates", "developer updates row")
+T.check(updates[4].text == "\xEF\x84\xA6  Developer updates",
+    "developer updates row with icon")
 local developer = updates[4].sub_item_table_func()
 T.check(developer[1].text == "Beta Releases", "beta releases row")
 T.check(developer[1].checked_func() == false, "beta releases off by default")
