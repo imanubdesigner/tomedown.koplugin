@@ -595,6 +595,11 @@ Nextcloud, ownCloud, a NAS… — substitute its address and credentials.
    vault (in this example `Bookshelf/`).
 4. Sync.
 
+One setting deserves a page of its own: Remotely Save's experimental
+**Sync Direction**. Leave it on **Bidirectional (default)** —
+[SYNC-DIRECTION.md](SYNC-DIRECTION.md) explains the five options and
+where your edits live.
+
 Result: `Bookshelf/Kindle/*.md` arrive in Obsidian, `00 - Index.md` opens as
 a clickable table and every title opens that book's file.
 

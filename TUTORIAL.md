@@ -101,7 +101,8 @@ Markdown app — they are plain `.md` wherever they are.
    | Password | the **app password** from step 1 |
 
 3. Point it at the same folder you chose in step 2 (if you keep the notes
-   in a subfolder of the account), choose your sync direction/interval —
+   in a subfolder of the account), leave the sync direction on
+   **Bidirectional** ([why?](SYNC-DIRECTION.md)) and pick an interval —
    or just hit **Sync now** once to try.
 4. If AnnotationSync's `.json` files share the folder, add `*.json` to
    Remotely Save's **Ignore list** so only the notes reach Obsidian.
