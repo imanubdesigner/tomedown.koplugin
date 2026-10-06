@@ -13,9 +13,9 @@
     .frame   { fill: #FFFDF7; stroke: #17150F; stroke-width: 1.5; }
     .skel    { fill: #D9D2C2; }
     .accent  { fill: #F5C518; }
-    .cloud   { fill: #A3C6E3; stroke: #17150F; stroke-width: 2; stroke-linejoin: round; }
-    .cloudtri{ fill: #A3C6E3; stroke: #17150F; stroke-width: 1.5; }
-    .cloudbox{ fill: #A3C6E3; stroke: #17150F; stroke-width: 1.5; }
+    .cloud   { fill: #8FA8BE; stroke: #17150F; stroke-width: 2; stroke-linejoin: round; }
+    .cloudtri{ fill: #8FA8BE; stroke: #17150F; stroke-width: 1.5; }
+    .cloudbox{ fill: #8FA8BE; stroke: #17150F; stroke-width: 1.5; }
   </style>
 
   <!-- paper -->
