@@ -11,8 +11,8 @@
 </p>
 
 <p align="center">
-  <a href="https://codeberg.org/imanubdesigner/tomedown.koplugin/releases"><img src="https://img.shields.io/gitea/v/tag/USERNAME/tomedown.koplugin?gitea_url=https://codeberg.org&style=for-the-badge&color=171717&labelColor=171717&logo=codeberg&logoColor=white&label=version" alt="Latest version"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/gitea/license/imanubdsigner/tomedown.koplugin?gitea_url=https://codeberg.org&style=for-the-badge&color=171717&labelColor=171717" alt="License"></a>
+  <a href="https://codeberg.org/imanubdesigner/tomedown.koplugin"><img src="https://img.shields.io/badge/Codeberg-171717?style=for-the-badge&logo=codeberg&logoColor=white" alt="Codeberg"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/AGPL--3.0-171717?style=for-the-badge&logo=gnu&logoColor=white" alt="License AGPL-3.0"></a>
 </p>
 
 ## Contents
