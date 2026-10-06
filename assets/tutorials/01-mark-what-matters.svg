@@ -86,8 +86,9 @@
   <!-- tap -->
   <circle cx="750" cy="345" r="13" fill="none" stroke="#D7D0C4" stroke-width="2"/>
   <circle cx="750" cy="345" r="3.5" fill="#17150F"/>
-  <path d="M746 447 C775 425 770 392 759 364" fill="none" stroke="#D7D0C4" stroke-width="2"/>
-  <path d="M750 371 L757 361 L765 369" fill="none" stroke="#D7D0C4" stroke-width="2"/>
+  <!-- dashed route: from the flagged row, clear of the box, down to the toast -->
+  <path d="M780 345 C787 345 788 351 788 359 L788 468 C788 476 784 480 778 480" fill="none" stroke="#D7D0C4" stroke-width="2" stroke-dasharray="5 5"/>
+  <path d="M783 473 L775 480 L783 487" fill="none" stroke="#D7D0C4" stroke-width="2"/>
 
   <!-- notification -->
   <rect x="470" y="460" width="300" height="40" rx="20" fill="#F3EDE1" stroke="#D7D0C4" stroke-width="1.5"/>
