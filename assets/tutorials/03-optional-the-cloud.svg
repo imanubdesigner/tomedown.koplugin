@@ -7,15 +7,15 @@
     .body    { font-family: Georgia, "Times New Roman", serif; fill: #2B271F; }
     .menu    { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight: 700; fill: #17150F; }
     .code    { font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; fill: #17150F; }
-    .rule    { stroke: #17150F; stroke-width: 1; }
-    .hair    { stroke: #17150F; stroke-width: 1; opacity: .35; }
-    .card    { fill: #FFFDF7; stroke: #17150F; stroke-width: 1.5; }
-    .frame   { fill: #FFFDF7; stroke: #17150F; stroke-width: 1.5; }
+    .rule    { stroke: #D7D0C4; stroke-width: 1; }
+    .hair    { stroke: #D7D0C4; stroke-width: 1; opacity: 1; }
+    .card    { fill: #FFFDF7; stroke: #D7D0C4; stroke-width: 1.5; }
+    .frame   { fill: #FFFDF7; stroke: #D7D0C4; stroke-width: 1.5; }
     .skel    { fill: #D9D2C2; }
     .accent  { fill: #F5C518; }
-    .cloud   { fill: #91A3B0; stroke: #17150F; stroke-width: 2; stroke-linejoin: round; }
-    .cloudtri{ fill: #91A3B0; stroke: #17150F; stroke-width: 1.5; }
-    .cloudbox{ fill: #91A3B0; stroke: #17150F; stroke-width: 1.5; }
+    .cloud   { fill: #91A3B0; stroke: #D7D0C4; stroke-width: 2; stroke-linejoin: round; }
+    .cloudtri{ fill: #91A3B0; stroke: #D7D0C4; stroke-width: 1.5; }
+    .cloudbox{ fill: #91A3B0; stroke: #D7D0C4; stroke-width: 1.5; }
   </style>
 
   <!-- paper -->
@@ -42,7 +42,7 @@
   <line class="hair" x1="130" y1="394" x2="400" y2="394"/>
   <text class="menu" x="146" y="350" font-size="11">Upload to cloud</text>
   <!-- switch on -->
-  <rect x="348" y="339" width="36" height="17" rx="8.5" fill="#F5C518" stroke="#17150F" stroke-width="1.5"/>
+  <rect x="348" y="339" width="36" height="17" rx="8.5" fill="#F5C518" stroke="#D7D0C4" stroke-width="1.5"/>
   <circle cx="375.5" cy="347.5" r="5.5" fill="#17150F"/>
   <text class="menu" x="146" y="382" font-size="11">Server and folder: WebDAV → /Bookshelf</text>
   <text class="menu" x="146" y="414" font-size="11">Remote folder: /Bookshelf</text>
@@ -70,9 +70,9 @@
   <rect class="skel" x="634" y="450" width="26" height="5" rx="2.5"/>
 
   <!-- up arrows -->
-  <path d="M583 408 V394" fill="none" stroke="#17150F" stroke-width="2"/>
+  <path d="M583 408 V394" fill="none" stroke="#D7D0C4" stroke-width="2"/>
   <path class="cloudtri" d="M577 398 L583 388 L589 398 Z"/>
-  <path d="M651 418 V404" fill="none" stroke="#17150F" stroke-width="2"/>
+  <path d="M651 418 V404" fill="none" stroke="#D7D0C4" stroke-width="2"/>
   <path class="cloudtri" d="M645 408 L651 398 L657 408 Z"/>
 
   <!-- progress pill -->
@@ -96,7 +96,7 @@
   <line class="hair" x1="846" y1="394" x2="1136" y2="394"/>
   <text class="menu" x="862" y="350" font-size="11">Upload to cloud</text>
   <!-- switch off -->
-  <rect x="1086" y="339" width="36" height="17" rx="8.5" fill="#F3EDE1" stroke="#17150F" stroke-width="1.5"/>
+  <rect x="1086" y="339" width="36" height="17" rx="8.5" fill="#F3EDE1" stroke="#D7D0C4" stroke-width="1.5"/>
   <circle cx="1095.5" cy="347.5" r="5.5" fill="#17150F"/>
   <text class="menu" x="862" y="382" font-size="11">Reload everything to the cloud</text>
   <text class="labelm" x="862" y="414" font-size="10.5">files stay local until you do</text>
