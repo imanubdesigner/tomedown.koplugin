@@ -11,7 +11,7 @@
     .hair    { stroke: #D7D0C4; stroke-width: 1; opacity: 1; }
     .card    { fill: #FFFDF7; stroke: #D7D0C4; stroke-width: 1.5; }
     .skel    { fill: #D9D2C2; }
-    .accent  { fill: #F5C518; }
+    .accent  { fill: #F5DE7E; }
   </style>
 
   <!-- paper -->
