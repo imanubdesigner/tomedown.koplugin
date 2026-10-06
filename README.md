@@ -163,7 +163,7 @@ extraction forces colour rendering even on greyscale e-ink screens.
 | Entry | What to do |
 |---|---|
 | *Auto-export on close* | off by default: exports the book when you close it, and again (silently, no network) before the device suspends |
-| *Preserve manual edits* | on by default: turn it off and every export writes exactly what was generated (the old behaviour); switching modes rewrites every file on the next export — see *Merging your edits* |
+| *Preserve manual edits* | off by default (the tomedown ≤ 0.8 behaviour): switch it on and every export folds the new render into your file, keeping your zones; switching modes rewrites every file on the next export — see *Preserve your edits* |
 
 **Updates**
 
@@ -372,9 +372,12 @@ tomedown: upload failed (attempt 1 of 3), retrying in 2 s: <path> 500
 
 ### Preserve your edits
 
-Your vault is the destination, not a cache — since 1.0 an export folds the
-new render into the file that is already in your vault instead of
-overwriting it. Every file holds one generated block, wrapped in two
+Your vault is the destination, not a cache. Since 1.0 an export *can* fold
+the new render into the file that is already in your vault instead of
+overwriting it — but **Preserve manual edits** is off by default (what
+every release up to 0.8 always did), so upgrading changes nothing: switch
+it on in *Settings → Markdown files → Behaviour* and the file becomes a
+shared document. Every file holds one generated block, wrapped in two
 invisible HTML comments Tomedown uses as handles, under a heading it owns:
 
 ```markdown
@@ -431,9 +434,10 @@ touched block from one of its own at a glance. On every export:
 
 One toggle in *Settings → Markdown files → Behaviour* controls all this:
 
-- **Preserve manual edits** — on by default. Turn it off and every export
-  writes exactly what was generated (the old behaviour); switching modes
-  rewrites every file on the next export.
+- **Preserve manual edits** — off by default: every export writes exactly
+  what was generated, which is what tomedown ≤ 0.8 always did. Switch it
+  on and every export folds the new render into your file; switching
+  modes rewrites every file on the next export.
 
 The result toast and the *Status* panel report the backups of the last
 run: `%1 files backed up (.bak)`.

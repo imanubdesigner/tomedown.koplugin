@@ -550,9 +550,10 @@ T.check(behaviour[1].text == "Auto-export on close",
     "auto-export lives in Markdown files > Behaviour")
 T.check(behaviour[1].checked_func() == false, "auto-export off by default")
 T.check(behaviour[2].text == "Preserve manual edits", "preserve entry")
-T.check(behaviour[2].checked_func() == true, "manual edits preserved by default")
-store.tomedown.preserve = false
-T.check(behaviour[2].checked_func() == false, "the toggle reflects the setting")
+T.check(behaviour[2].checked_func() == false,
+    "manual edits off by default (the tomedown <= 0.8 behaviour)")
+store.tomedown.preserve = true
+T.check(behaviour[2].checked_func() == true, "the toggle reflects the setting")
 store.tomedown.preserve = nil
 T.check(updates[1].text_func() == "Check for updates (v"
         .. Update.getInstalledVersion() .. ")",
@@ -1677,6 +1678,9 @@ BookInfo.cover_bb = nil
 -- ------------------------------- 15. preserve manual edits (v1.0)
 
 store.tomedown.upload = false
+-- preserve is opt-in since 1.0: switch it on the way a reader would
+behaviour[2].callback()
+T.check(behaviour[2].checked_func() == true, "preserve switched on for this section")
 plugin:runExport({ FILE }, {})
 UIManager:runPending()
 local clean_md = T.readFile(MD_PATH)

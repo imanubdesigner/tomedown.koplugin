@@ -827,8 +827,10 @@ function Tomedown:runExport(files, opts)
     -- manual edits: "preserve" merges the render into the file on disk
     -- (the reader's zones and front matter stay, the generated block is
     -- rebuilt), "overwrite" writes what was generated; a file whose
-    -- block held hand edits is kept as .bak before it is rewritten
-    local preserve = getSetting("preserve", true)
+    -- block held hand edits is kept as .bak before it is rewritten.
+    -- Off by default: tomedown ≤ 0.8 always overwrote every file, and
+    -- an upgrade must not change that under the reader's feet
+    local preserve = getSetting("preserve", false)
     local mode = preserve and "preserve" or "overwrite"
     local notes_title = getNotesTitle()
     local backups = 0
@@ -1695,15 +1697,17 @@ function Tomedown:genSettingsMenu()
                             not getSetting("auto_export", false))
                     end,
                 },
-                {
-                    -- what wins when the render meets a file the reader edited
-                    text = _("Preserve manual edits"),
-                    checked_func = function()
-                        return getSetting("preserve", true)
-                    end,
-                    keep_menu_open = true,
-                    callback = function()
-                        setSetting("preserve", not getSetting("preserve", true))
+        {
+            -- what wins when the render meets a file the reader edited;
+            -- opt-in since 1.0: off means the tomedown ≤ 0.8 behaviour
+            -- (every export writes the file from scratch)
+            text = _("Preserve manual edits"),
+            checked_func = function()
+                return getSetting("preserve", false)
+            end,
+            keep_menu_open = true,
+            callback = function()
+                setSetting("preserve", not getSetting("preserve", false))
                         -- switching modes must regenerate what the other
                         -- mode left behind: the next export rewrites
                         -- every file
