@@ -11,9 +11,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/imanubdesigner/tomedown.koplugin/releases/latest"><img src="https://img.shields.io/github/v/release/imanubdesigner/tomedown.koplugin?style=for-the-badge&color=171717&labelColor=171717&logo=github&logoColor=white" alt="Latest release"></a>
-  <a href="https://github.com/imanubdesigner/tomedown.koplugin/actions/workflows/test.yml"><img src="https://img.shields.io/github/actions/workflow/status/imanubdesigner/tomedown.koplugin/test.yml?style=for-the-badge&labelColor=171717&logo=githubactions&logoColor=white&label=tests" alt="Test status"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/imanubdesigner/tomedown.koplugin?style=for-the-badge&color=171717&labelColor=171717" alt="License"></a>
+  <a href="https://codeberg.org/imanubdesigner/tomedown.koplugin/releases"><img src="https://img.shields.io/gitea/v/tag/USERNAME/tomedown.koplugin?gitea_url=https://codeberg.org&style=for-the-badge&color=171717&labelColor=171717&logo=codeberg&logoColor=white&label=version" alt="Latest version"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/gitea/license/imanubdsigner/tomedown.koplugin?gitea_url=https://codeberg.org&style=for-the-badge&color=171717&labelColor=171717" alt="License"></a>
 </p>
 
 ## Contents
