@@ -106,7 +106,7 @@
 
   <text class="body" x="832" y="594" font-size="16">Open it with any app: Obsidian, a wiki,</text>
   <text class="body" x="832" y="616" font-size="16">a text editor — it is plain Markdown.</text>
-  <text class="body" x="832" y="638" font-size="16">Your notes under the heading survive.</text>
+  <text class="body" x="832" y="638" font-size="16">Your notes sit under the heading.</text>
   <text class="labelm" x="832" y="672" font-size="11">refs: preserve your edits</text>
 
   <!-- footer -->

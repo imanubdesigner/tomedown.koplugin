@@ -63,7 +63,7 @@
   <text class="menu" x="606" y="367" font-size="11.5">My notes...</text>
 
   <rect x="490" y="414" width="260" height="34" rx="17" fill="#F3EDE1" stroke="#17150F" stroke-width="1.5"/>
-  <text class="deck" x="620" y="436" font-size="13.5" text-anchor="middle">rename it — or leave it empty</text>
+  <text class="deck" x="620" y="436" font-size="13.5" text-anchor="middle">rename it — if you want</text>
 
   <text class="body" x="448" y="594" font-size="16">The heading is yours: rename it in</text>
   <text class="body" x="448" y="616" font-size="16">Settings ▸ Style, or leave the setting</text>
@@ -83,8 +83,8 @@
   <rect x="1084" y="347" width="36" height="17" rx="8.5" fill="#FFFDF7" stroke="#17150F" stroke-width="1.5"/>
   <circle cx="1092.5" cy="355.5" r="5.5" fill="#6B6455"/>
   <text class="menu" x="862" y="412" font-size="11">Preserve manual edits</text>
-  <rect x="1084" y="397" width="36" height="17" rx="8.5" fill="#F5C518" stroke="#17150F" stroke-width="1.5"/>
-  <circle cx="1111.5" cy="405.5" r="5.5" fill="#17150F"/>
+  <rect x="1084" y="397" width="36" height="17" rx="8.5" fill="#FFFDF7" stroke="#17150F" stroke-width="1.5"/>
+  <circle cx="1092.5" cy="405.5" r="5.5" fill="#6B6455"/>
 
   <!-- export arrow -->
   <path d="M1004 438 V454" fill="none" stroke="#17150F" stroke-width="2"/>
