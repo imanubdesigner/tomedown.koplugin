@@ -311,6 +311,13 @@ you had missed.
 
 ![In Obsidian the flagged highlight renders as a callout while the plain quotes stay quotes](assets/obsidian/markdown_special_highlights.png)
 
+Callouts are an Obsidian convention. In **Notion** (and in GitHub, which
+only understands its own few alerts) the marker is imported as the
+literal text `[!highlight]` inside the quote — the quote, the page
+reference and the note all import normally, only the coloured box is
+missing; the word in brackets is the flag itself, there to be deleted or
+ignored.
+
 After every export, if *Upload to cloud* is on, the `.md` files and the index
 are uploaded to the chosen server automatically. With *Include book covers*
 ticked the `covers/` folder travels with them — it is created on the server
