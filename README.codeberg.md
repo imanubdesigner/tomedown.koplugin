@@ -164,8 +164,10 @@ first export and optional Remotely Save in Obsidian — is in
 | *Generate the 00 - Index.md (for Obsidian)* | builds the Obsidian tables — a stats line on top (books, highlights, starred specials), then the series books and your other books, each with the columns it actually has (internal links, author, series, highlight count with its stars, a Status column with the reading status over the progress bar and the percentage glued to it, and a Last read column with the date it was last opened) |
 | *Include page bookmarks* | off by default: adds a `# Page bookmarks` section (bookmarked page + note) after the highlights |
 | *Include book covers* | off by default: exports the cover of every book into `covers/` and embeds it in the book file and in the index; the cover is removed from the device once its upload succeeded (the vault copy is the master one). Requires **Obsidian 1.8.1 or newer** to display |
-| *Style* | a submenu with the two options that shape the notes (below) |
-| *Behaviour* | a submenu with the two toggles that govern exporting and merging (below) |
+| *All highlights as Special Highlights* | off by default: every highlight becomes an `> [!highlight]` callout instead of a plain quote; when off, only *Special Highlight* marks (see *Usage*) turn into callouts |
+| *Auto-export on close* | off by default: exports the book when you close it, and again (silently, no network) before the device suspends |
+| *Preserve manual edits* | off by default (the tomedown ≤ 0.8 behaviour): switch it on and every export folds the new render into your file, keeping your zones; switching modes rewrites every file on the next export — see *Preserve your edits* |
+| *Personal notes: %1* | the heading above your notes block — tap it to rename, leave the field empty to export without a heading; the row exists only while *Preserve manual edits* is on (with the toggle off no heading ever reaches the file) |
 
 Ticking or unticking *Include book covers* / *All highlights as Special Highlights*
 rewrites every already exported file on the next export (the stored hash is
@@ -173,20 +175,6 @@ invalidated, so *Export only what changed* re-sends everything once).
 
 Covers are always exported in full colour, whatever the device: the
 extraction forces colour rendering even on greyscale e-ink screens.
-
-**Style**
-
-| Entry | What to do |
-|---|---|
-| *Personal notes: %1* | the heading above your notes block — tap it to rename, leave the field empty to export without a heading |
-| *All highlights as Special Highlights* | off by default: every highlight becomes an `> [!highlight]` callout instead of a plain quote; when off, only *Special Highlight* marks (see *Usage*) turn into callouts |
-
-**Behaviour**
-
-| Entry | What to do |
-|---|---|
-| *Auto-export on close* | off by default: exports the book when you close it, and again (silently, no network) before the device suspends |
-| *Preserve manual edits* | off by default (the tomedown ≤ 0.8 behaviour): switch it on and every export folds the new render into your file, keeping your zones; switching modes rewrites every file on the next export — see *Preserve your edits* |
 
 **Updates**
 
@@ -399,7 +387,7 @@ Your vault is the destination, not a cache. Since 1.0 an export *can* fold
 the new render into the file that is already in your vault instead of
 overwriting it — but **Preserve manual edits** is off by default (what
 every release up to 0.8 always did), so upgrading changes nothing: switch
-it on in *Settings → Markdown files → Behaviour* and the file becomes a
+it on in *Settings → Markdown files* and the file becomes a
 shared document. Every file holds one generated block. With the toggle
 on the block is wrapped in two invisible HTML comments Tomedown uses as
 handles, under the heading the plugin owns and with its tag — the plain
@@ -455,7 +443,7 @@ touched block from one of its own at a glance. On every export:
 - the heading is the plugin's line (with preserve on the
   `<!-- tomedown:notes -->` tag gives it away): renamed from
   *Personal notes: %1*
-  (*Settings → Markdown files → Style*), it is rewritten on the
+  (*Settings → Markdown files*), it is rewritten on the
   next export while your text below it stays put — leave the setting
   empty and files export without a heading, and with preserve off
   files export without one at all (the next run would take it — and
@@ -467,7 +455,7 @@ touched block from one of its own at a glance. On every export:
   [Obsidian guide](OBSIDIAN.md) walks through the file as it sits in
   the vault, with and without the toggle.
 
-One toggle in *Settings → Markdown files → Behaviour* controls all this:
+One toggle in *Settings → Markdown files* controls all this:
 
 - **Preserve manual edits** — off by default: every export writes exactly
   what was generated, which is what tomedown ≤ 0.8 always did — a plain

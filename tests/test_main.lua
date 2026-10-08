@@ -520,14 +520,17 @@ T.check(settings[2].text == "\xEF\x83\xB6  Markdown files",
     "markdown files group with icon")
 T.check(settings[3].text == "\xEE\xB6\xAE  Updates", "updates group with icon")
 local cloud = settings[1].sub_item_table
-local files = settings[2].sub_item_table
 local updates = settings[3].sub_item_table
 T.check(#cloud == 3, "cloud rows: " .. #cloud)
-T.check(#files == 6, "markdown files rows: " .. #files)
 T.check(#updates == 4, "updates rows: " .. #updates)
 T.check(cloud[1].text == "Upload to cloud", "upload entry")
 T.check(cloud[2].text_func() == "Server and folder: not set", "server not set")
 T.check(T.contains(cloud[3].text_func(), "Remote folder: not set"), "remote folder not set")
+-- Markdown files: flat since 1.0, no Style/Behaviour submenus; the
+-- group is rebuilt on open because the Personal notes row only exists
+-- while preserve is on
+local files = settings[2].sub_item_table_func()
+T.check(#files == 7, "markdown files rows: " .. #files)
 T.check(T.contains(files[1].text_func(), "clipboard/tomedown"), "default local folder")
 T.check(files[2].text == "Generate the 00 - Index.md (for Obsidian)",
     "index entry with the file name and the Obsidian hint")
@@ -535,14 +538,24 @@ T.check(files[3].text == "Include page bookmarks", "page bookmarks entry")
 T.check(files[3].checked_func() == false, "page bookmarks off by default")
 T.check(files[4].text == "Include book covers", "covers entry")
 T.check(files[4].checked_func() == false, "covers off by default")
-local style = files[5].sub_item_table
-local behaviour = files[6].sub_item_table
-T.check(files[5].text == "\xEE\xAB\x97  Style", "style submenu with icon")
-T.check(#style == 2, "style submenu rows: " .. #style)
-T.check(files[6].text == "\xEF\x87\x9E  Behaviour", "behaviour submenu with icon")
-T.check(#behaviour == 2, "behaviour submenu rows: " .. #behaviour)
-T.check(style[1].text_func() == "Personal notes: My notes...",
-    "notes heading entry: " .. style[1].text_func())
+T.check(files[5].text == "All highlights as Special Highlights", "callout entry")
+T.check(files[5].checked_func() == false, "callout off by default")
+T.check(files[6].text == "Auto-export on close", "auto-export entry")
+T.check(files[6].checked_func() == false, "auto-export off by default")
+T.check(files[7].text == "Preserve manual edits", "preserve entry")
+T.check(files[7].checked_func() == false,
+    "manual edits off by default (the tomedown <= 0.8 behaviour)")
+T.check(files[8] == nil, "no personal notes row while preserve is off")
+
+-- flipping preserve shows the row in the open group, without leaving it
+local live = settings[2].sub_item_table_func()
+local open_menu = { item_table = live }
+live[7].callback(open_menu)
+T.check(store.tomedown.preserve == true, "preserve toggled on")
+T.check(#live == 8, "personal notes row appears with preserve on")
+local notes_row = live[8]
+T.check(notes_row.text_func() == "Personal notes: My notes...",
+    "notes heading entry: " .. notes_row.text_func())
 
 -- rename dialog
 plugin:editNotesTitle(nil)
@@ -553,27 +566,27 @@ InputDialog.last.input_text = "  Appunti miei  "
 InputDialog.last:simulateSave()
 T.check(store.tomedown.notes_title == "Appunti miei",
     "heading saved and trimmed")
-T.check(style[1].text_func() == "Personal notes: Appunti miei",
+T.check(notes_row.text_func() == "Personal notes: Appunti miei",
     "menu entry updated")
 plugin:editNotesTitle(nil)
 InputDialog.last.input_text = ""
 InputDialog.last:simulateSave()
 T.check(store.tomedown.notes_title == "", "an empty title clears the heading")
 store.tomedown.notes_title = nil
-T.check(style[1].text_func() == "Personal notes: My notes...",
+T.check(notes_row.text_func() == "Personal notes: My notes...",
     "back to the default heading")
 
-T.check(style[2].text == "All highlights as Special Highlights", "callout entry")
-T.check(style[2].checked_func() == false, "callout off by default")
-T.check(behaviour[1].text == "Auto-export on close",
-    "auto-export lives in Markdown files > Behaviour")
-T.check(behaviour[1].checked_func() == false, "auto-export off by default")
-T.check(behaviour[2].text == "Preserve manual edits", "preserve entry")
-T.check(behaviour[2].checked_func() == false,
-    "manual edits off by default (the tomedown <= 0.8 behaviour)")
-store.tomedown.preserve = true
-T.check(behaviour[2].checked_func() == true, "the toggle reflects the setting")
+-- back off: the row leaves the open group again
+live[7].callback(open_menu)
+T.check(store.tomedown.preserve == false, "preserve toggled back off")
+T.check(#live == 7, "personal notes row disappears with preserve off")
+T.check(files[7].checked_func() == false, "the toggle reflects the setting")
 store.tomedown.preserve = nil
+
+-- the rows that used to sit in the Style and Behaviour submenus, kept
+-- under the names the sections below toggle (all flat in `files` now)
+local behaviour = { [1] = files[6], [2] = files[7] }
+local style = { [2] = files[5] }
 T.check(updates[1].text_func() == "Check for updates (v"
         .. Update.getInstalledVersion() .. ")",
     "check row carries the installed version: " .. updates[1].text_func())
@@ -614,8 +627,8 @@ T.check(#developer == 3, "beta check hidden again: " .. #developer)
 T.check(developer[1].separator == true, "separator back under the toggle")
 
 -- checkable rows must keep the menu open so KOReader refreshes them
-for _, group in ipairs({ sub, cloud, files, style, behaviour, updates,
-        developer }) do
+-- (the rows of the old Style and Behaviour submenus are in `files`)
+for _, group in ipairs({ sub, cloud, files, updates, developer }) do
     for i, row in ipairs(group) do
         if row.checked_func then
             T.check(row.keep_menu_open == true,

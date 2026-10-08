@@ -1645,6 +1645,16 @@ function Tomedown:genSettingsMenu()
             end,
         },
     }
+    -- The Personal notes row renames the heading of the write zone, and
+    -- that heading is written only behind the merge markers: with
+    -- preserve off every export overwrites the file and no heading ever
+    -- reaches it, so the row exists solely while the preserve toggle
+    -- below is on. The group is therefore rebuilt every time it opens
+    -- instead of being a fixed table: files_table is the live copy the
+    -- open group shows, buildFilesRows assembles it — both declared
+    -- before the table so the toggle's callback can reach them.
+    local files_table
+    local buildFilesRows
     local files = {
         {
             text_func = function()
@@ -1686,44 +1696,27 @@ function Tomedown:genSettingsMenu()
             end,
         },
         {
-            -- set-once options in their own submenus
-            text = withIcon("\xEE\xAB\x97", _("Style")), -- palette
-            sub_item_table = {
-                {
-                    text_func = function()
-                        return T(_("Personal notes: %1"), getNotesTitle())
-                    end,
-                    callback = function(touchmenu)
-                        self:editNotesTitle(touchmenu)
-                    end,
-                },
-                {
-                    text = _("All highlights as Special Highlights"),
-                    checked_func = function()
-                        return getSetting("callout", false)
-                    end,
-                    keep_menu_open = true,
-                    callback = function()
-                        setSetting("callout", not getSetting("callout", false))
-                        self:invalidateExportHashes()
-                    end,
-                },
-            },
+            text = _("All highlights as Special Highlights"),
+            checked_func = function()
+                return getSetting("callout", false)
+            end,
+            keep_menu_open = true,
+            callback = function()
+                setSetting("callout", not getSetting("callout", false))
+                self:invalidateExportHashes()
+            end,
         },
         {
-            text = withIcon("\xEF\x87\x9E", _("Behaviour")), -- sliders
-            sub_item_table = {
-                {
-                    text = _("Auto-export on close"),
-                    checked_func = function()
-                        return getSetting("auto_export", false)
-                    end,
-                    keep_menu_open = true,
-                    callback = function()
-                        setSetting("auto_export",
-                            not getSetting("auto_export", false))
-                    end,
-                },
+            text = _("Auto-export on close"),
+            checked_func = function()
+                return getSetting("auto_export", false)
+            end,
+            keep_menu_open = true,
+            callback = function()
+                setSetting("auto_export",
+                    not getSetting("auto_export", false))
+            end,
+        },
         {
             -- what wins when the render meets a file the reader edited;
             -- opt-in since 1.0: off means the tomedown ≤ 0.8 behaviour
@@ -1733,17 +1726,46 @@ function Tomedown:genSettingsMenu()
                 return getSetting("preserve", false)
             end,
             keep_menu_open = true,
-            callback = function()
+            callback = function(touchmenu)
                 setSetting("preserve", not getSetting("preserve", false))
-                        -- switching modes must regenerate what the other
-                        -- mode left behind: the next export rewrites
-                        -- every file
-                        self:invalidateExportHashes()
-                    end,
-                },
-            },
+                -- switching modes must regenerate what the other
+                -- mode left behind: the next export rewrites
+                -- every file
+                self:invalidateExportHashes()
+                -- the Personal notes row below exists only while
+                -- preserve is on: rebuild the open group in place, the
+                -- way the Developer submenu does, so the row shows up
+                -- or goes away without leaving the menu
+                if touchmenu and files_table
+                        and touchmenu.item_table == files_table then
+                    local fresh = buildFilesRows()
+                    for i = #files_table, 1, -1 do
+                        files_table[i] = nil
+                    end
+                    for _, item in ipairs(fresh) do
+                        files_table[#files_table + 1] = item
+                    end
+                end
+            end,
         },
     }
+    buildFilesRows = function()
+        local rows = {}
+        for i, item in ipairs(files) do
+            rows[i] = item
+        end
+        if getSetting("preserve", false) then
+            rows[#rows + 1] = {
+                text_func = function()
+                    return T(_("Personal notes: %1"), getNotesTitle())
+                end,
+                callback = function(touchmenu)
+                    self:editNotesTitle(touchmenu)
+                end,
+            }
+        end
+        return rows
+    end
     -- Developer updates: everything that is not meant for daily use,
     -- in its own submenu. Beta Releases first; while it is ticked a
     -- beta "Check for updates" sits right below it, then a separator,
@@ -1852,7 +1874,10 @@ function Tomedown:genSettingsMenu()
         { text = withIcon("\xEE\xB4\xBE", _("Cloud")), -- cloud-sync
             sub_item_table = cloud },
         { text = withIcon("\xEF\x83\xB6", _("Markdown files")), -- file-text
-            sub_item_table = files },
+            sub_item_table_func = function()
+                files_table = buildFilesRows()
+                return files_table
+            end },
         { text = withIcon("\xEE\xB6\xAE", _("Updates")), -- update
             sub_item_table = updates },
     }

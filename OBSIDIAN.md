@@ -16,14 +16,14 @@ markers, no comments — nothing to hide from any Markdown app, which is
 the point of the default. The flip side is in the sheet's second callout:
 every export rebuilds the file from scratch, so anything you write in it
 is gone at the next run. If you want to write, flip *Preserve manual
-edits* (Settings → Behaviour) and read sheet 02 before the next export.
+edits* (Settings → Markdown files) and read sheet 02 before the next export.
 
 ## With Preserve manual edits on
 
 ![02 — Preserve on: the tagged heading, two blank lines of room, your words above the marker, and the generated block below it](assets/obsidian-guide/02-preserve-on.svg)
 
 The file grows a write zone: the heading with its gray tag (rename the
-heading in Settings → Style, the tag stays), two blank lines of room, and
+heading in Settings → Markdown files, the tag stays), two blank lines of room, and
 your words above the marker. Below the marker the plugin owns the lines
 and rebuilds them from the book; an edit made *inside* the block is caught
 by the hash in the marker and the previous file comes back as `.bak`. In
