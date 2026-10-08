@@ -169,6 +169,11 @@ first export and optional Remotely Save in Obsidian — is in
 | *Preserve manual edits* | off by default (the tomedown ≤ 0.8 behaviour): switch it on and every export folds the new render into your file, keeping your zones; switching modes rewrites every file on the next export — see *Preserve your edits* |
 | *Personal notes: %1* | the heading above your notes block — tap it to rename, leave the field empty to export without a heading; the row exists only while *Preserve manual edits* is on (with the toggle off no heading ever reaches the file) |
 
+With *Preserve manual edits* ticked the group grows the *Personal notes*
+row at the bottom (the heading of your notes block exports under):
+
+![Markdown files settings with preserve ticked](assets/menu/settings/markdown_menu_preserve.png)
+
 Ticking or unticking *Include book covers* / *All highlights as Special Highlights*
 rewrites every already exported file on the next export (the stored hash is
 invalidated, so *Export only what changed* re-sends everything once).
