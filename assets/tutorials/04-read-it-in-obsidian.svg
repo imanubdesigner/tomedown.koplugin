@@ -1,25 +1,25 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1740" height="1160" viewBox="0 0 1200 800" role="img" aria-label="Tomedown quickstart tutorial 04 — Read it in Obsidian: install Remotely Save, configure WebDAV, set the abort guard to 100, sync and open the index">
   <style>
-    .display { font-family: Georgia, "Times New Roman", serif; font-weight: 700; fill: #17150F; }
-    .deck    { font-family: Georgia, "Times New Roman", serif; font-style: italic; fill: #3A362C; }
-    .label   { font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; letter-spacing: 1.8px; fill: #17150F; }
-    .labelm  { font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; letter-spacing: 1.2px; fill: #6B6455; }
-    .body    { font-family: Georgia, "Times New Roman", serif; fill: #2B271F; }
-    .menu    { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight: 700; fill: #17150F; }
-    .code    { font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; fill: #17150F; }
-    .rule    { stroke: #D7D0C4; stroke-width: 1; }
-    .hair    { stroke: #D7D0C4; stroke-width: 1; opacity: 1; }
-    .card    { fill: #FFFDF7; stroke: #D7D0C4; stroke-width: 1.5; }
-    .skel    { fill: #D9D2C2; }
+    .display { font-family: Georgia, "Times New Roman", serif; font-weight: 700; fill: #37352F; }
+    .deck    { font-family: Georgia, "Times New Roman", serif; font-style: italic; fill: #5C5B57; }
+    .label   { font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; letter-spacing: 1.8px; fill: #37352F; }
+    .labelm  { font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; letter-spacing: 1.2px; fill: #9B9A97; }
+    .body    { font-family: Georgia, "Times New Roman", serif; fill: #37352F; }
+    .menu    { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight: 700; fill: #37352F; }
+    .code    { font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; fill: #37352F; }
+    .rule    { stroke: #E3E1DD; stroke-width: 1; }
+    .hair    { stroke: #E3E1DD; stroke-width: 1; opacity: 1; }
+    .card    { fill: #FFFFFF; stroke: #E3E1DD; stroke-width: 1.5; }
+    .skel    { fill: #E3E1DD; }
     .accent  { fill: #F5DE7E; }
   </style>
 
   <!-- paper -->
-  <rect width="1200" height="800" fill="#F3EDE1"/>
+  <rect width="1200" height="800" fill="#FFFFFF"/>
 
   <!-- header -->
   <text class="label" x="64" y="56" font-size="13">TOMEDOWN — QUICKSTART</text>
-  <rect x="952" y="40" width="184" height="24" rx="12" fill="#91A3B0" stroke="#D7D0C4" stroke-width="1.5"/>
+  <rect x="952" y="40" width="184" height="24" rx="12" fill="#91A3B0" stroke="#E3E1DD" stroke-width="1.5"/>
   <text class="label" x="1044" y="56" font-size="11" text-anchor="middle">REQUIRES CLOUD (03)</text>
   <text class="display" x="64" y="124" font-size="56">Read it in Obsidian</text>
   <text class="deck" x="64" y="168" font-size="19">Notion reads Markdown too — Obsidian’s edge is community plugins, and Remotely Save bridges your cloud.</text>
@@ -34,9 +34,9 @@
   <text class="labelm" x="92" y="334" font-size="9.5">COMMUNITY PLUGINS</text>
   <line class="hair" x1="76" y1="344" x2="306" y2="344"/>
   <text class="menu" x="92" y="376" font-size="12.5">Remotely Save</text>
-  <rect x="250" y="362" width="36" height="17" rx="8.5" fill="#F5DE7E" stroke="#D7D0C4" stroke-width="1.5"/>
-  <circle cx="277.5" cy="370.5" r="5.5" fill="#17150F"/>
-  <rect x="76" y="430" width="230" height="34" rx="17" fill="#FFFDF7" stroke="#D7D0C4" stroke-width="1.5"/>
+  <rect x="250" y="362" width="36" height="17" rx="8.5" fill="#F5DE7E" stroke="#E3E1DD" stroke-width="1.5"/>
+  <circle cx="277.5" cy="370.5" r="5.5" fill="#37352F"/>
+  <rect x="76" y="430" width="230" height="34" rx="17" fill="#FFFFFF" stroke="#E3E1DD" stroke-width="1.5"/>
   <text class="menu" x="191" y="451" font-size="11" text-anchor="middle">Trust author and enable</text>
 
   <text class="body" x="64" y="594" font-size="16">Cloud on (03)? In Obsidian:</text>
@@ -92,12 +92,12 @@
   <line class="hair" x1="880" y1="274" x2="1134" y2="274"/>
 
   <!-- sync button -->
-  <rect x="956" y="310" width="100" height="30" rx="15" fill="#FFFDF7" stroke="#D7D0C4" stroke-width="1.5"/>
+  <rect x="956" y="310" width="100" height="30" rx="15" fill="#FFFFFF" stroke="#E3E1DD" stroke-width="1.5"/>
   <text class="menu" x="1006" y="330" font-size="11.5" text-anchor="middle">Sync now</text>
 
   <!-- arrow down -->
-  <path d="M1006 346 V364" fill="none" stroke="#D7D0C4" stroke-width="2"/>
-  <path class="accent" d="M999 362 L1006 374 L1013 362 Z" stroke="#D7D0C4" stroke-width="1.5"/>
+  <path d="M1006 346 V364" fill="none" stroke="#E3E1DD" stroke-width="2"/>
+  <path class="accent" d="M999 362 L1006 374 L1013 362 Z" stroke="#E3E1DD" stroke-width="1.5"/>
 
   <!-- index card -->
   <rect class="card" x="892" y="390" width="230" height="142" rx="7"/>

@@ -1,21 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1740" height="1160" viewBox="0 0 1200 800" role="img" aria-label="Tomedown quickstart cover — five sheets from the first highlight to a note you can edit">
   <style>
-    .display { font-family: Georgia, "Times New Roman", serif; font-weight: 700; fill: #17150F; }
-    .deck    { font-family: Georgia, "Times New Roman", serif; font-style: italic; fill: #3A362C; }
-    .label   { font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; letter-spacing: 1.8px; fill: #17150F; }
-    .labelm  { font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; letter-spacing: 1.2px; fill: #6B6455; }
-    .body    { font-family: Georgia, "Times New Roman", serif; fill: #2B271F; }
-    .code    { font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; fill: #17150F; }
-    .rule    { stroke: #D7D0C4; stroke-width: 1; }
-    .hair    { stroke: #D7D0C4; stroke-width: 1; opacity: 1; }
-    .card    { fill: #FFFDF7; stroke: #D7D0C4; stroke-width: 1.5; }
-    .frame   { fill: #FFFDF7; stroke: #D7D0C4; stroke-width: 1.5; }
-    .skel    { fill: #D9D2C2; }
+    .display { font-family: Georgia, "Times New Roman", serif; font-weight: 700; fill: #37352F; }
+    .deck    { font-family: Georgia, "Times New Roman", serif; font-style: italic; fill: #5C5B57; }
+    .label   { font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; letter-spacing: 1.8px; fill: #37352F; }
+    .labelm  { font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; letter-spacing: 1.2px; fill: #9B9A97; }
+    .body    { font-family: Georgia, "Times New Roman", serif; fill: #37352F; }
+    .code    { font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; fill: #37352F; }
+    .rule    { stroke: #E3E1DD; stroke-width: 1; }
+    .hair    { stroke: #E3E1DD; stroke-width: 1; opacity: 1; }
+    .card    { fill: #FFFFFF; stroke: #E3E1DD; stroke-width: 1.5; }
+    .frame   { fill: #FFFFFF; stroke: #E3E1DD; stroke-width: 1.5; }
+    .skel    { fill: #E3E1DD; }
     .accent  { fill: #F5DE7E; }
   </style>
 
   <!-- paper -->
-  <rect width="1200" height="800" fill="#F3EDE1"/>
+  <rect width="1200" height="800" fill="#FFFFFF"/>
 
   <!-- header -->
   <text class="label" x="64" y="56" font-size="13">TOMEDOWN — QUICKSTART</text>
@@ -34,8 +34,8 @@
   <rect class="skel" x="110" y="344" width="100" height="6" rx="3"/>
   <rect class="skel" x="110" y="358" width="92" height="6" rx="3"/>
   <rect class="accent" x="110" y="372" width="80" height="10" rx="2"/>
-  <circle cx="110" cy="382" r="3.5" fill="#F3EDE1" stroke="#D7D0C4" stroke-width="1.5"/>
-  <circle cx="190" cy="382" r="3.5" fill="#F3EDE1" stroke="#D7D0C4" stroke-width="1.5"/>
+  <circle cx="110" cy="382" r="3.5" fill="#FFFFFF" stroke="#E3E1DD" stroke-width="1.5"/>
+  <circle cx="190" cy="382" r="3.5" fill="#FFFFFF" stroke="#E3E1DD" stroke-width="1.5"/>
   <rect class="skel" x="110" y="392" width="96" height="6" rx="3"/>
   <rect class="skel" x="110" y="406" width="70" height="6" rx="3"/>
   <text class="body" x="80" y="466" font-size="13">Long-press the passage;</text>
@@ -51,7 +51,7 @@
   <line class="hair" x1="311" y1="348" x2="451" y2="348"/>
   <rect class="skel" x="323" y="358" width="96" height="5" rx="2.5"/>
   <rect class="skel" x="323" y="370" width="74" height="5" rx="2.5"/>
-  <rect class="accent" x="323" y="388" width="116" height="18" rx="9" stroke="#D7D0C4" stroke-width="1"/>
+  <rect class="accent" x="323" y="388" width="116" height="18" rx="9" stroke="#E3E1DD" stroke-width="1"/>
   <text class="code" x="381" y="401" font-size="8" text-anchor="middle">/clipboard/tomedown</text>
   <text class="body" x="299" y="466" font-size="13">Close the book — the .md</text>
   <text class="body" x="299" y="486" font-size="13">is already in the folder.</text>
@@ -65,8 +65,8 @@
   <circle cx="608" cy="342" r="18" fill="#91A3B0"/>
   <circle cx="632" cy="354" r="14" fill="#91A3B0"/>
   <rect x="576" y="356" width="68" height="20" rx="10" fill="#91A3B0"/>
-  <path d="M600 384 L600 406" fill="none" stroke="#D7D0C4" stroke-width="2" stroke-dasharray="5 5"/>
-  <path d="M594 400 L600 408 L606 400" fill="none" stroke="#D7D0C4" stroke-width="2"/>
+  <path d="M600 384 L600 406" fill="none" stroke="#E3E1DD" stroke-width="2" stroke-dasharray="5 5"/>
+  <path d="M594 400 L600 408 L606 400" fill="none" stroke="#E3E1DD" stroke-width="2"/>
   <rect class="card" x="574" y="412" width="52" height="24" rx="4"/>
   <rect class="skel" x="582" y="422" width="30" height="4" rx="2"/>
   <rect class="skel" x="582" y="430" width="22" height="4" rx="2"/>
@@ -84,8 +84,8 @@
   <rect class="skel" x="743" y="364" width="34" height="4" rx="2"/>
   <rect class="skel" x="743" y="374" width="38" height="4" rx="2"/>
   <rect class="skel" x="743" y="384" width="30" height="4" rx="2"/>
-  <path d="M803 368 L829 368" fill="none" stroke="#D7D0C4" stroke-width="2" stroke-dasharray="5 5"/>
-  <path d="M823 363 L831 368 L823 373" fill="none" stroke="#D7D0C4" stroke-width="2"/>
+  <path d="M803 368 L829 368" fill="none" stroke="#E3E1DD" stroke-width="2" stroke-dasharray="5 5"/>
+  <path d="M823 363 L831 368 L823 373" fill="none" stroke="#E3E1DD" stroke-width="2"/>
   <rect class="card" x="837" y="330" width="64" height="76" rx="5"/>
   <text class="label" x="843" y="344" font-size="6.5">BLACKWATER</text>
   <line class="hair" x1="837" y1="348" x2="901" y2="348"/>
@@ -100,12 +100,12 @@
   <text class="display" x="956" y="282" font-size="30">05</text>
   <text class="label" x="996" y="279" font-size="12">KEEP</text>
   <line class="hair" x1="956" y1="300" x2="1120" y2="300"/>
-  <rect class="accent" x="997" y="330" width="84" height="22" rx="11" stroke="#D7D0C4" stroke-width="1"/>
+  <rect class="accent" x="997" y="330" width="84" height="22" rx="11" stroke="#E3E1DD" stroke-width="1"/>
   <text class="label" x="1039" y="345" font-size="10" text-anchor="middle">YOURS</text>
-  <rect x="983" y="360" width="110" height="22" rx="11" fill="#E9DFC9" stroke="#D7D0C4" stroke-width="1"/>
-  <text class="label" x="1038" y="375" font-size="10" text-anchor="middle" fill="#6B6455">GENERATED</text>
-  <rect x="1002" y="398" width="44" height="24" rx="12" fill="#FFFDF7" stroke="#D7D0C4" stroke-width="1.5"/>
-  <circle cx="1014" cy="410" r="8" fill="#6B6455"/>
+  <rect x="983" y="360" width="110" height="22" rx="11" fill="#F5F5F4" stroke="#E3E1DD" stroke-width="1"/>
+  <text class="label" x="1038" y="375" font-size="10" text-anchor="middle" fill="#9B9A97">GENERATED</text>
+  <rect x="1002" y="398" width="44" height="24" rx="12" fill="#FFFFFF" stroke="#E3E1DD" stroke-width="1.5"/>
+  <circle cx="1014" cy="410" r="8" fill="#9B9A97"/>
   <text class="labelm" x="1056" y="414" font-size="9">OFF</text>
   <text class="body" x="956" y="466" font-size="13">Write your notes; the</text>
   <text class="body" x="956" y="486" font-size="13">original stays as .bak.</text>
@@ -115,7 +115,7 @@
   <text class="body" x="64" y="620" font-size="16">Read them in order, or jump straight to the sheet you need.</text>
 
   <!-- CTA -->
-  <rect class="accent" x="906" y="556" width="230" height="48" rx="24" stroke="#D7D0C4" stroke-width="1.5"/>
+  <rect class="accent" x="906" y="556" width="230" height="48" rx="24" stroke="#E3E1DD" stroke-width="1.5"/>
   <text class="label" x="1021" y="586" font-size="13" text-anchor="middle">START WITH SHEET 01</text>
 
   <!-- footer -->
