@@ -1,19 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1697" viewBox="0 0 1200 1697" role="img" aria-label="Tomedown Obsidian guide 01 — the book file, as every export writes it by default: frontmatter, then the generated block, no heading and no markers; anything you write in the file is gone at the next export; to keep your words switch on Preserve manual edits (Settings, Behaviour)">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1697" viewBox="0 0 1200 1697" role="img" aria-label="Tomedown Obsidian guide 01 — the book file, as every export writes it by default: frontmatter, then the generated block, no heading and no markers; anything you write in the file is gone at the next export; to keep your words switch on Preserve manual edits (Settings, Markdown files, Behaviour)">
   <style>
-    .display { font-family: Georgia, "Times New Roman", serif; font-weight: 700; fill: #37352F; }
-    .deck    { font-family: Georgia, "Times New Roman", serif; font-style: italic; fill: #5C5B57; }
-    .label   { font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; letter-spacing: 1.8px; fill: #37352F; }
-    .labelm  { font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; letter-spacing: 1.2px; fill: #9B9A97; }
-    .body    { font-family: Georgia, "Times New Roman", serif; fill: #37352F; }
-    .codem   { font-family: Georgia, "Times New Roman", serif; font-style: italic; fill: #5C5B57; }
-    .code    { font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; fill: #37352F; }
-    .comment { font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; fill: #9B9A97; }
-    .menu    { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight: 700; fill: #37352F; }
+    .display { font-family: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", "Times New Roman", "Liberation Serif", "DejaVu Serif", serif; font-weight: 700; fill: #37352F; }
+    .deck    { font-family: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", "Times New Roman", "Liberation Serif", "DejaVu Serif", serif; font-style: italic; fill: #5C5B57; }
+    .body    { font-family: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", "Times New Roman", "Liberation Serif", "DejaVu Serif", serif; fill: #37352F; }
+    .menu    { font-family: "Helvetica Neue", Helvetica, Arial, "Liberation Sans", "DejaVu Sans", sans-serif; font-weight: 700; fill: #37352F; }
+    .ui      { font-family: "Helvetica Neue", Helvetica, Arial, "Liberation Sans", "DejaVu Sans", sans-serif; fill: #37352F; }
+    .uim     { font-family: "Helvetica Neue", Helvetica, Arial, "Liberation Sans", "DejaVu Sans", sans-serif; fill: #9B9A97; }
+    .label   { font-family: "SF Mono", Menlo, Consolas, "JetBrains Mono", "Liberation Mono", "DejaVu Sans Mono", monospace; letter-spacing: 1.8px; fill: #37352F; }
+    .labelm  { font-family: "SF Mono", Menlo, Consolas, "JetBrains Mono", "Liberation Mono", "DejaVu Sans Mono", monospace; letter-spacing: 1.2px; fill: #9B9A97; }
+    .nhead   { font-family: "SF Mono", Menlo, Consolas, "JetBrains Mono", "Liberation Mono", "DejaVu Sans Mono", monospace; font-weight: 600; letter-spacing: 1.5px; fill: #37352F; }
+    .code    { font-family: "SF Mono", Menlo, Consolas, "JetBrains Mono", "Liberation Mono", "DejaVu Sans Mono", monospace; fill: #37352F; }
+    .comment { font-family: "SF Mono", Menlo, Consolas, "JetBrains Mono", "Liberation Mono", "DejaVu Sans Mono", monospace; fill: #9B9A97; }
     .rule    { stroke: #E3E1DD; stroke-width: 1; }
     .hair    { stroke: #E3E1DD; stroke-width: 1; }
-    .dash    { stroke: #7F6DF2; stroke-width: 1.5; stroke-dasharray: 6 5; fill: none; }
+    .dash    { stroke: #7F6DF2; stroke-width: 1.5; stroke-dasharray: 6 5; fill: none; stroke-linecap: round; }
     .card    { fill: #FFFFFF; stroke: #E3E1DD; stroke-width: 1.5; }
-    .tint    { fill: #F4F1FE; stroke: #7F6DF2; stroke-width: 1.5; }
+    .note    { fill: none; stroke: #E3E1DD; stroke-width: 1.5; }
     .pill    { fill: #FFFFFF; stroke: #E3E1DD; stroke-width: 1.5; }
     .accent  { fill: #7F6DF2; }
   </style>
@@ -43,72 +45,62 @@
   <path d="M104 298 H64 V921 Q64 931 74 931 H104 Z" fill="#FAFAF9"/>
   <line class="hair" x1="104" y1="298" x2="104" y2="931"/>
   <circle cx="84" cy="330" r="7" fill="none" stroke="#9B9A97" stroke-width="2"/>
-  <path d="M89 335 L94 340" stroke="#9B9A97" stroke-width="2"/>
+  <path d="M89 335 L94 340" stroke="#9B9A97" stroke-width="2" stroke-linecap="round"/>
   <rect x="77" y="364" width="14" height="14" rx="3" fill="#7F6DF2"/>
   <rect x="76" y="404" width="16" height="3" rx="1.5" fill="#9B9A97"/>
   <rect x="76" y="411" width="16" height="3" rx="1.5" fill="#9B9A97"/>
   <rect x="76" y="418" width="10" height="3" rx="1.5" fill="#9B9A97"/>
 
-  <!-- source lines -->
-  <text class="code" x="128" y="326" font-size="12.5">---</text>
-  <text class="code" x="128" y="347" font-size="12.5">tomedown: "1.0"</text>
-  <text class="code" x="128" y="368" font-size="12.5">title: "Blackwater"</text>
-  <text class="code" x="128" y="389" font-size="12.5">author: "Michael McDowell"</text>
-  <text class="code" x="128" y="410" font-size="12.5">exported: 2026-10-07</text>
-  <text class="code" x="128" y="431" font-size="12.5">highlights: 150</text>
-  <text class="code" x="128" y="452" font-size="12.5">special: 42</text>
-  <text class="code" x="128" y="473" font-size="12.5">tags:</text>
-  <text class="code" x="128" y="494" font-size="12.5">  - ebook</text>
-  <text class="code" x="128" y="515" font-size="12.5">  - highlights</text>
-  <text class="code" x="128" y="536" font-size="12.5">---</text>
+  <!-- frontmatter -->
+  <text class="code" x="134" y="326" font-size="12.5">---</text>
+  <text class="code" x="134" y="347" font-size="12.5">tomedown: "1.0"</text>
+  <text class="code" x="134" y="368" font-size="12.5">title: "Blackwater"</text>
+  <text class="code" x="134" y="389" font-size="12.5">author: "Michael McDowell"</text>
+  <text class="code" x="134" y="410" font-size="12.5">exported: 2026-10-07</text>
+  <text class="code" x="134" y="431" font-size="12.5">highlights: 150</text>
+  <text class="code" x="134" y="452" font-size="12.5">special: 42</text>
+  <text class="code" x="134" y="473" font-size="12.5">tags:</text>
+  <text class="code" x="134" y="494" font-size="12.5">  - ebook</text>
+  <text class="code" x="134" y="515" font-size="12.5">  - highlights</text>
+  <text class="code" x="134" y="536" font-size="12.5">---</text>
   <!-- the reader's own line, written with preserve off -->
-  <rect class="accent" x="120" y="527" width="4" height="16"/>
+  <rect class="accent" x="120" y="550" width="4" height="17"/>
   <text class="code" x="134" y="562" font-size="12.5">Those last chapters wrecked me.</text>
-  <text class="code" x="128" y="583" font-size="12.5"> </text>
-  <text class="code" x="128" y="604" font-size="12.5">---</text>
-  <text class="code" x="128" y="625" font-size="12.5"> </text>
-  <text class="code" x="128" y="646" font-size="12.5"># **150 highlights · ★ 42 special**</text>
-  <text class="code" x="128" y="667" font-size="12.5"> </text>
-  <text class="code" x="128" y="688" font-size="12.5">---</text>
-  <text class="code" x="128" y="709" font-size="12.5"> </text>
-  <text class="code" x="128" y="730" font-size="12.5"># L'arrivo da Nonna.</text>
-  <text class="code" x="128" y="751" font-size="12.5"> </text>
-  <text class="code" x="128" y="772" font-size="12.5">&gt; Camminiamo a lungo. La casa di Nonna è lontana dalla stazione…</text>
-  <text class="code" x="128" y="793" font-size="12.5"> </text>
-  <text class="code" x="128" y="814" font-size="12.5">- **p. 5** · 30/09/2026 11:16</text>
-  <text class="code" x="128" y="835" font-size="12.5"> </text>
-  <text class="code" x="128" y="856" font-size="12.5">&gt; Sapete bene perché. A mio padre volevo bene, io.</text>
-  <text class="code" x="128" y="877" font-size="12.5"> </text>
-  <text class="code" x="128" y="898" font-size="12.5">- **p. 5** · 30/09/2026 11:16</text>
-  <text class="code" x="128" y="919" font-size="12.5"> </text>
+  <!-- the generated block -->
+  <text class="code" x="134" y="604" font-size="12.5">---</text>
+  <text class="code" x="134" y="646" font-size="12.5"># **150 highlights · ★ 42 special**</text>
+  <text class="code" x="134" y="688" font-size="12.5">---</text>
+  <text class="code" x="134" y="730" font-size="12.5"># L&apos;arrivo da Nonna.</text>
+  <text class="code" x="134" y="772" font-size="12.5">&gt; Camminiamo a lungo. La casa di Nonna è lontana dalla stazione…</text>
+  <text class="code" x="134" y="814" font-size="12.5">- **p. 5** · 30/09/2026 11:16</text>
+  <text class="code" x="134" y="856" font-size="12.5">&gt; Sapete bene perché. A mio padre volevo bene, io.</text>
+  <text class="code" x="134" y="898" font-size="12.5">- **p. 5** · 30/09/2026 11:16</text>
 
   <!-- ============ notes column ============ -->
-  <text class="labelm" x="866" y="306" font-size="11">FRONTMATTER</text>
-  <text class="body" x="866" y="334" font-size="15">Tomedown's fields on top,</text>
-  <text class="body" x="866" y="356" font-size="15">your tags merged — the</text>
-  <text class="body" x="866" y="378" font-size="15">same block every export</text>
-  <text class="body" x="866" y="400" font-size="15">rebuilds.</text>
-  <path class="dash" marker-end="url(#ah)" d="M864 347 H250"/>
+  <rect class="note" x="866" y="301" width="270" height="122" rx="10"/>
+  <text class="nhead" x="884" y="333" font-size="11">FRONTMATTER</text>
+  <text class="body" x="884" y="359" font-size="15">Tomedown's fields on top, your</text>
+  <text class="body" x="884" y="380" font-size="15">tags merged in — the same block</text>
+  <text class="body" x="884" y="401" font-size="15">at every export, never yours.</text>
+  <path class="dash" marker-end="url(#ah)" d="M854 362 C760 362 720 362 640 362"/>
 
-  <!-- the consequence, where the reader's line sits -->
-  <rect class="tint" x="866" y="452" width="270" height="196" rx="10"/>
-  <text class="label" x="884" y="480" font-size="11" fill="#7F6DF2">PRESERVE IS OFF</text>
-  <text class="body" x="884" y="508" font-size="15">Every export rebuilds this</text>
-  <text class="body" x="884" y="530" font-size="15">file from scratch —</text>
-  <text class="body" x="884" y="552" font-size="15">anything you write here</text>
-  <text class="body" x="884" y="574" font-size="15">is gone at the next</text>
-  <text class="body" x="884" y="596" font-size="15">export.</text>
-  <path class="dash" marker-end="url(#ah)" d="M864 562 H374"/>
+  <rect class="note" x="866" y="490" width="270" height="143" rx="10"/>
+  <text class="nhead" x="884" y="522" font-size="11">PRESERVE IS OFF</text>
+  <text class="body" x="884" y="548" font-size="15">Every export rebuilds this file</text>
+  <text class="body" x="884" y="569" font-size="15">from scratch: what you wrote</text>
+  <text class="body" x="884" y="590" font-size="15">here is gone at the next run.</text>
+  <text class="body" x="884" y="611" font-size="15">No .bak is written either.</text>
+  <path class="dash" marker-end="url(#ah)" d="M854 562 C760 562 720 562 640 562"/>
 
-  <text class="labelm" x="866" y="688" font-size="11">GENERATED</text>
-  <text class="body" x="866" y="716" font-size="15">From the rule down it is</text>
-  <text class="body" x="866" y="738" font-size="15">the book itself —</text>
-  <text class="body" x="866" y="760" font-size="15">highlights, chapters,</text>
-  <text class="body" x="866" y="782" font-size="15">counts, status.</text>
-  <path class="dash" marker-end="url(#ah)" d="M864 688 H400 V604 H158"/>
+  <rect class="note" x="866" y="687" width="270" height="122" rx="10"/>
+  <text class="nhead" x="884" y="719" font-size="11">GENERATED</text>
+  <text class="body" x="884" y="745" font-size="15">From the rule down it is the</text>
+  <text class="body" x="884" y="766" font-size="15">book itself: counts, chapters,</text>
+  <text class="body" x="884" y="787" font-size="15">quotes, page and date.</text>
+  <path class="dash" marker-end="url(#ah)" d="M854 748 C760 748 720 748 640 748"/>
 
-  <rect class="pill" x="866" y="826" width="270" height="44" rx="22"/>
-  <text class="label" x="1001" y="853" font-size="11" text-anchor="middle">NO HEADING · NO MARKERS</text>
+  <rect class="pill" x="866" y="853" width="270" height="44" rx="22"/>
+  <text class="label" x="1001" y="880" font-size="11" text-anchor="middle">NO HEADING · NO MARKERS</text>
 
   <!-- ============ three columns ============ -->
   <text class="display" x="64" y="1046" font-size="32">01</text>
@@ -134,7 +126,7 @@
 
   <!-- ============ the fix ============ -->
   <rect class="card" x="64" y="1230" width="1072" height="180" rx="10" fill="#FBFBFA"/>
-  <text class="label" x="96" y="1274" font-size="13">SETTINGS ▸ BEHAVIOUR</text>
+  <text class="label" x="96" y="1274" font-size="12">SETTINGS ▸ MARKDOWN FILES ▸ BEHAVIOUR</text>
   <rect x="96" y="1296" width="44" height="22" rx="11" fill="#FFFFFF" stroke="#E3E1DD" stroke-width="1.5"/>
   <circle cx="107" cy="1307" r="8" fill="#9B9A97"/>
   <text class="menu" x="156" y="1312" font-size="13">Preserve manual edits</text>
@@ -147,7 +139,7 @@
 
   <!-- closing line -->
   <text class="deck" x="600" y="1500" font-size="17" text-anchor="middle">The default since 0.8 — and still the default at 1.0.</text>
-  <text class="body" x="600" y="1534" font-size="15" text-anchor="middle" fill="#9B9A97">Switching modes rewrites every file on the next export; the plain file as it was comes along as .bak.</text>
+  <text class="body" x="600" y="1534" font-size="15" text-anchor="middle" fill="#9B9A97">Switching modes rewrites every file on the next export, and keeps nothing as .bak.</text>
 
   <!-- footer -->
   <line class="rule" x1="64" y1="1620" x2="1136" y2="1620"/>
