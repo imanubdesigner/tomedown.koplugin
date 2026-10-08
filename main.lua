@@ -34,6 +34,7 @@ local lfs = require("libs/libkoreader-lfs")
 local T = ffiUtil.template
 local _ = require("tomedown_i18n")
 local render = require("tomedown_render")
+local merge = require("tomedown_merge")
 local Cover = require("tomedown_cover")
 local Update = require("tomedown_update")
 
@@ -79,6 +80,27 @@ local function setSetting(key, value)
     G_reader_settings:saveSetting(SETTINGS_KEY, settings)
 end
 
+-- Title of the heading that names the writable zone in every exported
+-- file: translated default until the reader renames it from the
+-- Markdown menu, "" when they asked for no heading at all.
+local function getNotesTitle()
+    local value = getSetting("notes_title", nil)
+    if value == nil then
+        return _("My notes...")
+    end
+    return value
+end
+
+local function readIfExists(path)
+    local f = io.open(path, "rb")
+    if not f then
+        return nil
+    end
+    local data = f:read("*a")
+    f:close()
+    return data
+end
+
 -- helpers
 
 local function pageLabel(item)
@@ -110,6 +132,47 @@ local function trim(s)
         return nil
     end
     return s
+end
+
+-- xpointer positions ("/body/DocFragment[16]/body/p[8]/text().0"):
+-- split into text/number chunks so p[2] sorts before p[10]. The order
+-- of the text never changes; pageno does with every layout change.
+local function posTokens(s)
+    local out = {}
+    local i = 1
+    while i <= #s do
+        local d0, d1 = s:find("%d+", i)
+        if not d0 then
+            out[#out + 1] = { text = s:sub(i) }
+            break
+        end
+        if d0 > i then
+            out[#out + 1] = { text = s:sub(i, d0 - 1) }
+        end
+        out[#out + 1] = { num = tonumber(s:sub(d0, d1)) }
+        i = d1 + 1
+    end
+    return out
+end
+
+local function posCompare(a, b)
+    local n = math.min(#a, #b)
+    for k = 1, n do
+        local x, y = a[k], b[k]
+        if x.num and y.num then
+            if x.num ~= y.num then
+                return x.num < y.num and -1 or 1
+            end
+        elseif x.num or y.num then
+            return x.num and -1 or 1
+        elseif x.text ~= y.text then
+            return x.text < y.text and -1 or 1
+        end
+    end
+    if #a == #b then
+        return 0
+    end
+    return #a < #b and -1 or 1
 end
 
 function Tomedown:getLocalDir()
@@ -176,6 +239,18 @@ end
 
 -- reading the annotations
 
+-- when a book was last opened: the reading history carries the time of
+-- every entry, newest first — the index shows it as "Last read", "—"
+-- for a book the reader has not touched yet
+local function lastReadTime(file)
+    for __, item in ipairs(readhistory.hist) do
+        if item.file == file and type(item.time) == "number" then
+            return item.time
+        end
+    end
+    return nil
+end
+
 function Tomedown:listBookFiles()
     local files = {}
     for __, item in ipairs(readhistory.hist) do
@@ -223,6 +298,7 @@ function Tomedown:legacyAnnotations(ds)
                         datetime_updated = hl.datetime_updated,
                         pageno = pageno or 0,
                         pageref = pageno or page,
+                        pos0 = type(hl.pos0) == "string" and hl.pos0 or nil,
                     }
                 end
             end
@@ -246,12 +322,18 @@ function Tomedown:cleanAnnotations(raw)
             local text = trim(item.text)
             if text then
                 local datetime = item.datetime_updated or item.datetime
+                local pos = type(item.pos0) == "string" and item.pos0 or nil
+                if not pos and type(item.page) == "string"
+                    and item.page:sub(1, 1) == "/" then
+                    pos = item.page
+                end
                 out[#out + 1] = {
                     text = text,
                     note = trim(item.note),
                     chapter = trim(item.chapter),
                     page = pageLabel(item),
                     date = render.fmtDateTime(datetime),
+                    sort_pos = pos and posTokens(pos) or nil,
                     sort_page = tonumber(item.pageno) or 0,
                     sort_time = tostring(datetime or ""),
                     special = item.tomedown_special or nil,
@@ -260,6 +342,12 @@ function Tomedown:cleanAnnotations(raw)
         end
     end
     table.sort(out, function(a, b)
+        if a.sort_pos and b.sort_pos then
+            local d = posCompare(a.sort_pos, b.sort_pos)
+            if d ~= 0 then
+                return d < 0
+            end
+        end
         if a.sort_page ~= b.sort_page then
             return a.sort_page < b.sort_page
         end
@@ -346,7 +434,7 @@ local function hashBook(title, author, annotations, meta, bookmarks)
         -- so the next export rewrites all the .md files with the new layout
         -- (render options stay out of here on purpose, see
         -- invalidateExportHashes)
-        "fmt:4",
+        "fmt:8",
         "title:" .. tostring(title or ""),
         "author:" .. tostring(author or ""),
         "count:" .. tostring(#annotations),
@@ -449,6 +537,10 @@ function Tomedown:buildBook(file, live_annotations)
                 else
                     progress = nil
                 end
+                -- when the book was last opened, from the reading
+                -- history (there is no such key in the doc settings)
+                local lr = lastReadTime(file)
+                local last_read = lr and os.date("%Y-%m-%d", lr) or nil
                 local pages = info and info.pages
                 if type(pages) ~= "number" or pages <= 0 then
                     pages = nil
@@ -486,6 +578,7 @@ function Tomedown:buildBook(file, live_annotations)
                     pages = pages,
                     status = status,
                     progress = progress,
+                    last_read = last_read,
                     keywords = keywords,
                     count = #annotations,
                     annotations = annotations,
@@ -532,7 +625,6 @@ function Tomedown:buildIndexEntries(dir, export_records)
     for __, file in ipairs(self:listBookFiles()) do
         local book = self:buildBook(file)
         if book and lfs.attributes(dir .. "/" .. book.base .. ".md") then
-            local record = export_records[file]
             local cover_rel = Cover.relPath(book.base)
             local has_cover = lfs.attributes(dir .. "/" .. cover_rel, "mode") == "file"
             if not has_cover and with_covers then
@@ -540,6 +632,12 @@ function Tomedown:buildIndexEntries(dir, export_records)
                 has_cover = self:ensureCover(file, book.base, dir)
                 if has_cover then
                     new_covers[#new_covers + 1] = dir .. "/" .. cover_rel
+                end
+            end
+            local special = 0
+            for __, a in ipairs(book.annotations or {}) do
+                if a.special then
+                    special = special + 1
                 end
             end
             entries[#entries + 1] = {
@@ -550,7 +648,10 @@ function Tomedown:buildIndexEntries(dir, export_records)
                 series_index = book.series_index,
                 status = book.status,
                 count = book.count,
-                date = record and render.fmtDate(record.date) or "",
+                special = special,
+                progress = book.progress,
+                last_read = book.last_read and render.fmtDate(book.last_read)
+                    or "",
                 cover = has_cover and cover_rel or nil,
             }
         end
@@ -748,6 +849,16 @@ function Tomedown:runExport(files, opts)
     local export_records = getSetting("exports", {})
     local written, errors = {}, {}
     local skipped, exported = 0, 0
+    -- manual edits: "preserve" merges the render into the file on disk
+    -- (the reader's zones and front matter stay, the generated block is
+    -- rebuilt), "overwrite" writes what was generated; a file whose
+    -- block held hand edits is kept as .bak before it is rewritten.
+    -- Off by default: tomedown ≤ 0.8 always overwrote every file, and
+    -- an upgrade must not change that under the reader's feet
+    local preserve = getSetting("preserve", false)
+    local mode = preserve and "preserve" or "overwrite"
+    local notes_title = getNotesTitle()
+    local backups = 0
 
     for __, file in ipairs(files) do
         local live
@@ -771,8 +882,32 @@ function Tomedown:runExport(files, opts)
                     no_chapter_label = _("No chapter"),
                     cover = cover_rel,
                     callout = getSetting("callout", false),
+                    notes_title = notes_title,
+                    markers = preserve,
                 })
-                local written_ok, err = util.writeToFile(md, md_path, true, false, true)
+                -- fold the file on disk into the render: the reader's
+                -- zones and front matter come across, the block is rebuilt
+                local content = md
+                local old = readIfExists(md_path)
+                if old then
+                    local merged, info = merge.apply(old, md,
+                        record and record.regions,
+                        { mode = mode, notes_title = notes_title })
+                    content = merged
+                    if info.backup then
+                        -- the reader had written inside the block: the
+                        -- previous file is kept whole, as .bak, before
+                        -- the rebuilt one replaces it
+                        local bak = io.open(md_path .. ".bak", "wb")
+                        if bak then
+                            bak:write(old)
+                            bak:close()
+                            backups = backups + 1
+                        end
+                    end
+                end
+                local written_ok, err =
+                    util.writeToFile(content, md_path, true, false, true)
                 if written_ok then
                     exported = exported + 1
                     written[#written + 1] = md_path
@@ -783,6 +918,9 @@ function Tomedown:runExport(files, opts)
                         hash = book.hash,
                         base = book.base,
                         date = os.date("%Y-%m-%d"),
+                        -- what we would have generated: the proof the
+                        -- next export compares the regions against
+                        regions = merge.fingerprints(merge.split(md)),
                     }
                 else
                     errors[#errors + 1] = book.base .. ": " .. tostring(err)
@@ -801,9 +939,30 @@ function Tomedown:runExport(files, opts)
                 title = _("Book index"),
                 exported = os.date("%Y-%m-%d"),
                 show_covers = getSetting("covers", false),
+                notes_title = notes_title,
+                markers = preserve,
             })
-            if util.writeToFile(index_md, index_path, true, false, true) then
+            -- the index is a region too: the reader may have annotated it
+            local content = index_md
+            local old_index = readIfExists(index_path)
+            if old_index then
+                local merged, info = merge.apply(old_index, index_md,
+                    getSetting("index_regions"),
+                    { mode = mode, notes_title = notes_title })
+                content = merged
+                if info.backup then
+                    local bak = io.open(index_path .. ".bak", "wb")
+                    if bak then
+                        bak:write(old_index)
+                        bak:close()
+                        backups = backups + 1
+                    end
+                end
+            end
+            if util.writeToFile(content, index_path, true, false, true) then
                 written[#written + 1] = index_path
+                setSetting("index_regions",
+                    merge.fingerprints(merge.split(index_md)))
                 -- covers pulled in by the backfill above join the upload
                 for __, path in ipairs(new_covers) do
                     written[#written + 1] = path
@@ -820,6 +979,7 @@ function Tomedown:runExport(files, opts)
         exported = exported,
         skipped = skipped,
         errors = #errors,
+        backups = backups,
     })
     if info then
         UIManager:close(info)
@@ -842,7 +1002,8 @@ function Tomedown:runExport(files, opts)
         if opts.auto == "close" and exported == 0 and #errors == 0 then
             return
         end
-        self:showResult(exported, skipped, errors, offline_pending, opts.auto)
+        self:showResult(exported, skipped, errors, offline_pending,
+            opts.auto, backups)
     end
     local function reportUpload(uploaded, upload_failed)
         if upload_failed > 0 then
@@ -912,8 +1073,11 @@ end
 -- InfoMessage (stays on screen) when something went wrong. The cloud
 -- reports separately, in reportUpload's own notification. `auto` is
 -- opts.auto of the run: automatic toasts carry their trigger, manual
--- ones do not; the error window is always labelled.
-function Tomedown:showResult(exported, skipped, errors, offline_pending, auto)
+-- ones do not; the error window is always labelled. `backups` counts
+-- the files kept as .bak because the reader had written inside their
+-- generated block.
+function Tomedown:showResult(exported, skipped, errors, offline_pending,
+        auto, backups)
     local lines = {}
     if exported > 0 then
         if offline_pending then
@@ -926,6 +1090,9 @@ function Tomedown:showResult(exported, skipped, errors, offline_pending, auto)
     end
     if skipped > 0 then
         lines[#lines + 1] = T(_("%1 files unchanged, skipped"), skipped)
+    end
+    if backups and backups > 0 then
+        lines[#lines + 1] = T(_("%1 files backed up (.bak)"), backups)
     end
     if #errors > 0 then
         lines[#lines + 1] = _("Errors:") .. "\n" .. table.concat(errors, "\n")
@@ -981,6 +1148,10 @@ function Tomedown:statusLines()
     if last_export and last_export.at then
         local outcome = T(_("%1 exported, %2 skipped"),
             last_export.exported, last_export.skipped)
+        if (last_export.backups or 0) > 0 then
+            outcome = outcome .. " · "
+                .. T(_("%1 files backed up (.bak)"), last_export.backups)
+        end
         if (last_export.errors or 0) > 0 then
             outcome = outcome .. " · " .. T(_("%1 errors"), last_export.errors)
         end
@@ -1267,6 +1438,45 @@ function Tomedown:editLocalDir(touchmenu)
     })
 end
 
+-- heading of the notes zone: a rename must reach every file, so the
+-- saved value invalidates the export hashes and the next run rewrites
+-- the heading of each one (the blocks themselves do not change)
+function Tomedown:editNotesTitle(touchmenu)
+    local dialog
+    dialog = InputDialog:new{
+        title = _("Personal notes heading"),
+        input = getSetting("notes_title", nil) or _("My notes..."),
+        hint = _("leave empty to export no heading"),
+        buttons = {
+            {
+                {
+                    text = _("Cancel"),
+                    id = "close",
+                    callback = function()
+                        UIManager:close(dialog)
+                    end,
+                },
+            },
+            {
+                {
+                    text = _("Save"),
+                    callback = function()
+                        local value = dialog:getInputText() or ""
+                        setSetting("notes_title",
+                            value:gsub("^%s+", ""):gsub("%s+$", ""))
+                        self:invalidateExportHashes()
+                        UIManager:close(dialog)
+                        if touchmenu and touchmenu.updateItems then
+                            touchmenu:updateItems()
+                        end
+                    end,
+                },
+            },
+        },
+    }
+    UIManager:show(dialog)
+end
+
 -- menu
 
 function Tomedown:genPickerMenu()
@@ -1356,11 +1566,12 @@ function Tomedown:genPickerMenu()
     return items
 end
 
---- Label of a group row: a Nerd Font glyph from the symbols font KOReader
--- already ships, two spaces, then the label. The glyph stays outside the
--- translated string, so .po files never see it. The code points are in
--- the Private Use Area on purpose (anything else risks missing glyphs in
--- other fonts) - the same rule Bookshelf's menus follow.
+--- Label of a group or submenu row: a Nerd Font glyph from the symbols
+-- font KOReader already ships, two spaces, then the label. The glyph
+-- stays outside the translated string, so .po files never see it. The
+-- code points are in the Private Use Area on purpose (anything else
+-- risks missing glyphs in other fonts) - the same rule Bookshelf's
+-- menus follow.
 local function withIcon(glyph, text)
     return glyph .. "  " .. text
 end
@@ -1475,29 +1686,62 @@ function Tomedown:genSettingsMenu()
             end,
         },
         {
-            text = _("All highlights as Special Highlights"),
-            checked_func = function()
-                return getSetting("callout", false)
-            end,
-            keep_menu_open = true,
-            callback = function()
-                setSetting("callout", not getSetting("callout", false))
-                self:invalidateExportHashes()
-            end,
-            separator = true,
+            -- set-once options in their own submenus
+            text = withIcon("\xEE\xAB\x97", _("Style")), -- palette
+            sub_item_table = {
+                {
+                    text_func = function()
+                        return T(_("Personal notes: %1"), getNotesTitle())
+                    end,
+                    callback = function(touchmenu)
+                        self:editNotesTitle(touchmenu)
+                    end,
+                },
+                {
+                    text = _("All highlights as Special Highlights"),
+                    checked_func = function()
+                        return getSetting("callout", false)
+                    end,
+                    keep_menu_open = true,
+                    callback = function()
+                        setSetting("callout", not getSetting("callout", false))
+                        self:invalidateExportHashes()
+                    end,
+                },
+            },
         },
         {
-            -- a behaviour toggle, not a file option: kept apart by the
-            -- separator, no icon (the inside of Settings stays text-only)
-            text = _("Auto-export on close"),
+            text = withIcon("\xEF\x87\x9E", _("Behaviour")), -- sliders
+            sub_item_table = {
+                {
+                    text = _("Auto-export on close"),
+                    checked_func = function()
+                        return getSetting("auto_export", false)
+                    end,
+                    keep_menu_open = true,
+                    callback = function()
+                        setSetting("auto_export",
+                            not getSetting("auto_export", false))
+                    end,
+                },
+        {
+            -- what wins when the render meets a file the reader edited;
+            -- opt-in since 1.0: off means the tomedown ≤ 0.8 behaviour
+            -- (every export writes the file from scratch)
+            text = _("Preserve manual edits"),
             checked_func = function()
-                return getSetting("auto_export", false)
+                return getSetting("preserve", false)
             end,
             keep_menu_open = true,
             callback = function()
-                setSetting("auto_export",
-                    not getSetting("auto_export", false))
-            end,
+                setSetting("preserve", not getSetting("preserve", false))
+                        -- switching modes must regenerate what the other
+                        -- mode left behind: the next export rewrites
+                        -- every file
+                        self:invalidateExportHashes()
+                    end,
+                },
+            },
         },
     }
     -- Developer updates: everything that is not meant for daily use,
@@ -1597,7 +1841,7 @@ function Tomedown:genSettingsMenu()
             end,
         },
         {
-            text = _("Developer updates"),
+            text = withIcon("\xEF\x84\xA6", _("Developer updates")), -- code-fork
             sub_item_table_func = function()
                 developer_table = developerItems()
                 return developer_table
@@ -2094,8 +2338,8 @@ function Tomedown:addToMainMenu(menu_items)
     pinToTop("ui/elements/filemanager_menu_order", "filemanager_settings")
     -- Every row of the main menu carries a Nerd Font glyph (from
     -- nerdfonts/symbols.ttf, KOReader's own fallback font). Settings
-    -- keeps its word plus the icon; inside, only the three group
-    -- labels are iconified - no glyph is ever added to a submenu.
+    -- keeps its word plus the icon; inside, group labels and submenu
+    -- rows are iconified - plain setting rows stay text-only.
     menu_items.tomedown = {
         text = "Tomedown",
         sub_item_table = {

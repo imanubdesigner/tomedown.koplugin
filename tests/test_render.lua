@@ -32,6 +32,7 @@ T.check(T.contains(md, 'title: "Blackwater"'), "frontmatter title")
 T.check(T.contains(md, 'author: "Michael McDowell"'), "frontmatter author")
 T.check(T.contains(md, "exported: 2026-09-26"), "frontmatter exported")
 T.check(T.contains(md, "highlights: 2"), "frontmatter highlights")
+T.check(T.contains(md, "special: 0"), "frontmatter special count")
 T.check(T.contains(md, "  - ebook"), "tag ebook")
 T.check(not T.contains(md, "kindle"), "the old kindle tag is gone")
 T.check(T.contains(md, "  - highlights"), "tag highlights")
@@ -42,12 +43,12 @@ T.check(not T.contains(md, "status:"), "no status line when absent")
 T.check(not T.contains(md, "progress:"), "no progress line when absent")
 T.check(not T.contains(md, "# Blackwater"), "no h1 in the body")
 T.check(not T.contains(md, "*Michael McDowell*"), "author stays in the frontmatter only")
-T.check(T.contains(md, "# **HIGHLIGHTS: 2**"), "highlight count as a heading")
+T.check(T.contains(md, "# **2 highlights**"), "highlight count as a heading")
 T.check(T.contains(md, "\n# Capitolo I"), "first chapter")
 T.check(T.contains(md, "\n# Capitolo II"), "second chapter")
 T.check(T.contains(md, "> Prima frase."), "quote 1")
 T.check(T.contains(md, "> Seconda riga."), "quote 2")
-T.check(T.contains(md, "- **p. 10** · 02/09/2026 · note: nota utente"),
+T.check(T.contains(md, "- **p. 10** · 02/09/2026\n  - **NOTE:** *nota utente*"),
     "meta row with page, date and note")
 T.check(T.contains(md, "- **p. 38** · 03/09/2026"), "meta row without note")
 local i10 = md:find("- **p. 10**", 1, true)
@@ -59,16 +60,119 @@ T.check(not T.contains(md, "![]("), "no image in the markdown")
 
 -- separators: the frontmatter rule, under the stats, between chapters,
 -- never at the end of the file
-T.check(T.contains(md, "# **HIGHLIGHTS: 2**\n\n---\n\n# Capitolo I"),
+T.check(T.contains(md, "# **2 highlights**\n\n---\n\n# Capitolo I"),
     "separator between the stats and the first chapter")
-T.check(T.contains(md, "- **p. 10** · 02/09/2026 · note: nota utente\n\n---\n\n# Capitolo II"),
+T.check(T.contains(md, "- **p. 10** · 02/09/2026\n  - **NOTE:** *nota utente*\n\n---\n\n# Capitolo II"),
     "separator when the chapter changes")
-T.check(T.contains(md, "---\n\n---\n\n# **HIGHLIGHTS: 2**"),
-    "the body opens with a rule right after the frontmatter")
+-- markers carry a hash; strip it when asserting literal marker text
+local plain_md = (md:gsub(" hash=%w+", ""))
+T.check(T.contains(plain_md, "---\n\n\n" .. render.beginMarker("body")
+    .. "\n\n---\n\n# **2 highlights**"),
+    "the body opens with a rule after two blank lines, inside the body region")
 local doubled = select(2, md:gsub("%-%-%-\n\n%-%-%-", ""))
-T.check(doubled == 1,
-    "exactly one doubled separator, the frontmatter rule: " .. doubled)
+T.check(doubled == 0,
+    "the frontmatter rule and the body rule never touch: " .. doubled)
 T.check(md:match("%-%-%-%s*$") == nil, "no separator at the end of the file")
+
+-- region markers: a single generated region per file, always paired
+local begins = {}
+for name in md:gmatch("<!%-%- tomedown:begin ([%w_]+)[^\n]*%-%->") do
+    begins[#begins + 1] = name
+end
+T.check(table.concat(begins, ",") == "body",
+    "one book region, named body: " .. table.concat(begins, ","))
+local ends = select(2, md:gsub("<!%-%- tomedown:end[^\n]*%-%->", ""))
+T.check(ends == 1, "one end marker: " .. ends)
+local body_tail = render.endMarker("body")
+T.check(md:sub(-#body_tail - 1) == body_tail .. "\n",
+    "the file ends on the end marker, no trailing blank line")
+T.check(T.contains(md, 'tomedown: "1.0"'), "format stamp in the book frontmatter")
+
+-- markers: the begin carries the digest of the block, the end is plain
+T.check(T.contains(md, "hash="), "the begin marker carries a hash")
+T.check(T.contains(md, "⛔ generated below: do not edit inside"),
+    "the begin marker tells the block is generated")
+T.check(render.endMarker("body") == "<!-- tomedown:end body -->",
+    "the end marker is plain")
+T.check(render.digest("  x  ") == render.digest("x"),
+    "the digest ignores surrounding whitespace")
+T.check(#render.digest("x") == 8, "the digest is the short hash")
+T.check(not T.contains(render.beginMarker("body"), "hash="),
+    "a marker built without a hash stays hash-free")
+
+-- the notes heading: titles the writable zone above the marker,
+-- outside the hashed block, and only appears with opts.notes_title
+T.check(not T.contains(md, "tomedown:notes"),
+    "no heading without opts.notes_title")
+local headed = render.buildBookMd(book, { notes_title = "My notes..." })
+T.check(T.contains(headed, "## My notes... <!-- tomedown:notes -->"),
+    "the heading titles the zone")
+T.check(headed:find('---\n## My notes... <!-- tomedown:notes -->\n\n\n'
+        .. "<!-- tomedown:begin body", 1, true) ~= nil,
+    "rule, heading, two blank lines, marker")
+T.check(select(2, headed:gsub("tomedown:notes", "")) == 1, "one heading only")
+T.check(headed:match("tomedown:begin body hash=(%w+)")
+        == md:match("tomedown:begin body hash=(%w+)"),
+    "the heading sits outside the hashed block")
+T.check(not T.contains(render.buildBookMd(book, { notes_title = "" }),
+    "tomedown:notes"), "an empty title exports no heading")
+local headed_index = render.buildIndexMd({}, { notes_title = "Appunti" })
+T.check(headed_index:find('---\n## Appunti <!-- tomedown:notes -->\n\n\n'
+        .. "<!-- tomedown:begin index", 1, true) ~= nil,
+    "the index gets the heading too")
+
+-- the invitation of older builds is never written again: the room
+-- alone opens the zone, and opts.notes_invite is not honoured anymore
+local INVITE = render.notesInvite()
+T.check(not T.contains(headed, INVITE),
+    "no invitation in the book file")
+local invited = render.buildBookMd(book,
+    { notes_title = "My notes...", notes_invite = true })
+T.check(invited == headed, "opts.notes_invite is ignored since 1.0")
+T.check(invited:find('---\n## My notes... <!-- tomedown:notes -->\n\n\n'
+        .. "<!-- tomedown:begin body", 1, true) ~= nil,
+    "the zone opens with the heading and the room to write")
+T.check(invited:match("tomedown:begin body hash=(%w+)")
+        == md:match("tomedown:begin body hash=(%w+)"),
+    "the room lives outside the hashed block")
+local invited_index = render.buildIndexMd({},
+    { notes_title = "Appunti", notes_invite = true })
+T.check(invited_index:find('---\n## Appunti <!-- tomedown:notes -->\n\n\n'
+        .. "<!-- tomedown:begin index", 1, true) ~= nil
+        and not T.contains(invited_index, INVITE),
+    "the index zone opens with the room, without the invitation")
+local bare_invited = render.buildIndexMd({}, { notes_invite = true })
+T.check(not T.contains(bare_invited, "tomedown:notes")
+        and not T.contains(bare_invited, INVITE),
+    "no heading and no invitation either")
+
+-- markers=false is the export behind preserve off: no handles at all
+-- and no heading either — nothing to merge (every run overwrites) and
+-- nothing to write under (the next export would take it away)
+local unmarked = render.buildBookMd(book,
+    { notes_title = "My notes...", markers = false })
+T.check(not T.contains(unmarked, "tomedown:begin")
+        and not T.contains(unmarked, "tomedown:end")
+        and not T.contains(unmarked, "tomedown:notes")
+        and not T.contains(unmarked, "## My notes"),
+    "markers=false writes no markers, no tag and no heading")
+T.check(not T.contains(unmarked, INVITE),
+    "nor the invitation of older builds")
+-- apart from the handles and the zone framed around them the two
+-- documents are byte for byte the same
+local dehandled = (headed:gsub("<!%-%- tomedown:begin body[^\n]*%-%->\n", ""))
+dehandled = (dehandled:gsub("<!%-%- tomedown:end body[^\n]*%-%->\n?", ""))
+dehandled = (dehandled:gsub(
+    "## My notes%.%.%. <!%-%- tomedown:notes %-%->\n\n\n", "", 1))
+T.check(dehandled == unmarked,
+    "markers=false only takes the handles and the zone's frame out")
+local unmarked_index = render.buildIndexMd({},
+    { notes_title = "Appunti", markers = false })
+T.check(not T.contains(unmarked_index, "## Appunti")
+        and not T.contains(unmarked_index, "tomedown:begin"),
+    "the plain index carries no heading and no handles")
+T.check(not T.contains(render.buildBookMd(book, { markers = false }),
+    "tomedown:begin"), "no heading, no handles either")
 
 -- no chapters: the body has only the HIGHLIGHTS heading
 local noChapters = render.buildBookMd({
@@ -99,8 +203,32 @@ local multi = render.buildBookMd({
     count = 1,
     annotations = { { text = "X", note = "riga1\nriga2" } },
 })
-T.check(T.contains(multi, "note: riga1 riga2"), "multiline note on one line")
-T.check(not T.contains(multi, "note: riga1\n"), "the note does not break the meta line")
+T.check(T.contains(multi, "**NOTE:** *riga1*\n  *riga2*"), "multiline note keeps its lines")
+T.check(not T.contains(multi, "riga1 riga2"), "the lines are not flattened")
+
+-- a blank line inside the note becomes a paragraph break
+local para = render.buildBookMd({
+    title = "Par",
+    count = 1,
+    annotations = { { text = "Y", note = "a\n\nb" } },
+})
+T.check(T.contains(para, "**NOTE:** *a*\n\n  *b*"), "blank line in the note")
+
+-- a note without page/date: the note is the meta row
+local only_note = render.buildBookMd({
+    title = "SoloNota",
+    count = 1,
+    annotations = { { text = "Z", note = "solo nota" } },
+})
+T.check(T.contains(only_note, "- **NOTE:** *solo nota*"), "note-only annotation")
+
+-- nested under a meta row: the continuation lines indent deeper
+local nest = render.buildBookMd({
+    title = "Nido", count = 1,
+    annotations = { { text = "W", page = 5, date = "01/02/2026", note = "a\nb" } },
+})
+T.check(T.contains(nest, "- **p. 5** · 01/02/2026\n  - **NOTE:** *a*\n    *b*"),
+    "note nested under the meta row")
 
 -- no page/date/note: ellipsis
 local bare = render.buildBookMd({
@@ -193,7 +321,7 @@ T.check(T.contains(bmBook, "\n# Page bookmarks"), "bookmarks heading")
 T.check(T.contains(bmBook, "> Nota segnalibro"), "bookmark note quoted")
 T.check(T.contains(bmBook, "- **p. 5** · 01/09/2026"), "bookmark meta row")
 T.check(T.contains(bmBook, "- **p. 7** · 02/09/2026"), "bookmark without note: meta only")
-T.check(T.contains(bmBook, "# **HIGHLIGHTS: 1**"), "highlight count kept")
+T.check(T.contains(bmBook, "# **1 highlight**"), "highlight count kept")
 local iHl = bmBook:find("> Evidenziato", 1, true)
 local iSect = bmBook:find("\n# Page bookmarks", 1, true)
 T.check(iHl and iSect and iHl < iSect, "the section comes after the highlights")
@@ -208,7 +336,7 @@ local onlyBookmarks = render.buildBookMd({
     annotations = {},
     bookmarks = { { page = "1", date = "01/01/2026" } },
 })
-T.check(not T.contains(onlyBookmarks, "# **HIGHLIGHTS: 0**"), "no zero count line")
+T.check(not T.contains(onlyBookmarks, "# **0 highlight"), "no zero count line")
 T.check(T.contains(onlyBookmarks, "\n# Page bookmarks"), "bookmark-only book gets the section")
 T.check(select(2, onlyBookmarks:gsub("\n%-%-%-\n", "")) == 2,
     "bookmark-only: frontmatter rule and body rule, nothing else")
@@ -220,11 +348,14 @@ T.check(T.contains(withCover, 'cover: "covers/Blackwater.jpg"'), "cover in the f
 T.check(T.contains(withCover,
     '<p align="center"><img src="covers/Blackwater.jpg" alt="" style="object-fit:contain;width:400px;height:533px"></p>'),
     "cover embedded in the body, centered")
-T.check(T.contains(withCover, "</p>\n\n---\n\n# **HIGHLIGHTS: 2**"),
+T.check(T.contains(withCover, "</p>\n\n---\n\n# **2 highlights**"),
     "the rule between the cover and the highlights heading")
 local img_pos = withCover:find("<img ", 1, true)
-local hl_pos = withCover:find("# **HIGHLIGHTS", 1, true)
+local hl_pos = withCover:find("# **2 highlights", 1, true)
 T.check(img_pos and hl_pos and img_pos < hl_pos, "the cover sits before the highlights heading")
+local doubledCover = select(2, withCover:gsub("%-%-%-\n\n%-%-%-", ""))
+T.check(doubledCover == 0,
+    "with a cover no two rules touch: " .. doubledCover)
 T.check(render.coverImg('a"b.jpg', 90, 120):find("a&quot;b.jpg", 1, true) ~= nil,
     "a quote in the path is escaped for the attribute")
 
@@ -263,9 +394,17 @@ T.check(T.contains(index, "  - index"), "tag index")
 T.check(T.contains(index, "---\n"), "index frontmatter")
 T.check(T.contains(index, "  - ebook"), "tag ebook in the index")
 T.check(not T.contains(index, "kindle"), "the old kindle tag is gone from the index")
-T.check(T.contains(index, "---\n\n---\n\n_No exported"),
-    "the empty index opens the body with a rule")
-T.check(not T.contains(index, "·"), "no stats line without books")
+local plain_index = (index:gsub(" hash=%w+", ""))
+T.check(T.contains(plain_index, "---\n\n\n" .. render.beginMarker("index")
+    .. "\n\n---\n\n_No exported"),
+    "the empty index opens the body with a rule after two blank lines")
+T.check(index:match("tomedown: \"1%.0\"") ~= nil, "format stamp in the index frontmatter")
+T.check(select(2, index:gsub("<!%-%- tomedown:end[^\n]*%-%->", "")) == 1,
+    "the empty index still closes its region")
+local index_tail = render.endMarker("index")
+T.check(index:sub(-#index_tail - 1) == index_tail .. "\n",
+    "the index ends on its end marker, no trailing blank line")
+T.check(not T.contains(index, "click a title"), "no stats line without books")
 
 local rows = render.buildIndexMd({
     {
@@ -273,32 +412,34 @@ local rows = render.buildIndexMd({
         title = "Blackwater",
         author = "Michael McDowell",
         count = 2,
-        date = "26/09/2026",
     },
     {
         link = "Altro Autore - Altro",
         title = "Altro",
         author = "A | B",
         count = 0,
-        date = "",
     },
 }, { title = "Indice dei libri", exported = "2026-09-26" })
 
 T.check(not T.contains(rows, "# Indice dei libri"), "no h1 in the index")
 T.check(T.contains(rows, 'title: "Indice dei libri"'), "index frontmatter")
-T.check(T.contains(rows, "| Book | Author | Series | Status | Highlights | Last export |"),
-    "table header without the cover column")
+T.check(T.contains(rows, "| Book | Author | Highlights |"),
+    "table header: adaptive columns, no export date")
 T.check(not T.contains(rows, "| Cover |"), "no cover column when the option is off")
-T.check(T.contains(rows, "|:---|:---|:---|:---|---:|:---|"), "table separators")
+T.check(not T.contains(rows, "Last export"),
+    "the export date column is gone")
+T.check(T.contains(rows, "|:---|:---|---:|"), "table separators")
 T.check(T.contains(rows, "[[Michael McDowell - Blackwater\\|Blackwater]]"), "wikilink with alias")
-T.check(T.contains(rows, "| 2 | 26/09/2026 |"), "count and date in the row")
-T.check(T.contains(rows, "| A \\| B | — | — | 0 | — |"),
-    "pipes escaped, empty date, dash for series and status")
+T.check(T.contains(rows, "| Michael McDowell | 2 |"), "author and count in the row")
+T.check(T.contains(rows, "| A \\| B | 0 |"), "pipes escaped, count zero")
 local order = rows:find("[[Michael McDowell - Blackwater\\|Blackwater]]", 1, true)
 local order2 = rows:find("[[Altro Autore - Altro\\|Altro]]", 1, true)
 T.check(order < order2, "the index keeps the order of the books it received")
-T.check(T.contains(rows,
-    "---\n\n---\n\n*2 books · 2 highlights — click a title to open its note.*\n\n| Book |"),
+T.check(not T.contains(rows, "### "), "no group headings when every book is plain")
+local plain_rows = (rows:gsub(" hash=%w+", ""))
+T.check(T.contains(plain_rows,
+    "---\n\n\n" .. render.beginMarker("index")
+    .. "\n\n---\n\n**2 books** · **2 highlights**\n\n| Book |"),
     "the stats line sits between the frontmatter rule and the table")
 
 local single = render.buildIndexMd({
@@ -307,10 +448,9 @@ local single = render.buildIndexMd({
         title = "Solo",
         author = "Autore",
         count = 1,
-        date = "02/10/2026",
     },
 }, { title = "Indice", exported = "2026-10-02" })
-T.check(T.contains(single, "*1 book · 1 highlight — click a title to open its note.*"),
+T.check(T.contains(single, "**1 book** · **1 highlight**"),
     "singular stats line with one book and one highlight")
 
 -- alias: no characters that break the wikilink
@@ -323,15 +463,15 @@ T.check(render.alias(nil) == "", "alias with nil")
 
 -- title with pipe: the index alias stays valid
 local pipeIndex = render.buildIndexMd({
-    { link = "Base", title = "A | B", author = "Aut", count = 1, date = "01/01/2026" },
+    { link = "Base", title = "A | B", author = "Aut", count = 1 },
 })
 local line = pipeIndex:match("| %[[^\n]+")
 T.check(line and T.contains(line, "[[Base\\|A B]]"),
     "title with pipe: the alias stays a single valid wikilink")
-T.check(line and line:gsub("[^|]", "") == "||||||||",
-    "the row has the right number of columns (7 separators + the escaped one)")
+T.check(line and line:gsub("[^|]", "") == "|||||",
+    "the row has the right number of columns (4 separators + the escaped one)")
 
--- index v2: cover column, series and status cells
+-- index v3: cover column, series and status cells
 local covered = render.buildIndexMd({
     {
         link = "Autore - Titolo",
@@ -341,24 +481,79 @@ local covered = render.buildIndexMd({
         series_index = 2,
         status = "reading",
         count = 3,
-        date = "01/01/2026",
         cover = "covers/Autore - Titolo.jpg",
     },
 }, { show_covers = true })
-T.check(T.contains(covered, "| Cover | Book | Author | Series | Status | Highlights | Last export |"),
-    "header with the cover column")
 T.check(T.contains(covered,
-    '<img src="covers/Autore - Titolo.jpg" alt="" style="object-fit:contain;width:90px;height:120px">'),
+    "| Cover | Book | Author | Series | Status | Highlights |"),
+    "header with the cover column, no export date")
+T.check(T.contains(covered,
+    '<img src="covers/Autore - Titolo.jpg" alt="" style="object-fit:contain;width:120px;height:160px">'),
     "cover cell in the index row")
 T.check(T.contains(covered, "| Saga #2 |"), "series cell with the series index")
-T.check(T.contains(covered, "| Reading |"), "status cell translated to English")
-T.check(T.contains(covered, "| 3 | 01/01/2026 |"), "count and date in the covered row")
--- a book without a series/status/cover keeps the columns, with a dash
+T.check(T.contains(covered, "| Reading | 3 |"), "status cell translated to English")
+T.check(not T.contains(covered, "### "), "a lone group gets no heading")
+-- a book without a series/status/cover drops those columns, no dash
 local sparse = render.buildIndexMd({
-    { link = "B", title = "B", author = "Au", count = 1, date = "01/01/2026" },
+    { link = "B", title = "B", author = "Au", count = 1 },
 }, { show_covers = false })
-T.check(T.contains(sparse, "| [[B\\|B]] | Au | — | — | 1 | 01/01/2026 |"),
-    "missing series/status become a dash, no cover cell")
+T.check(T.contains(sparse, "| [[B\\|B]] | Au | 1 |"),
+    "missing series/status drop their columns, no cover cell")
+
+-- index v3: two groups, each with its own columns and a heading
+local split = render.buildIndexMd({
+    {
+        link = "Z - First", title = "First", author = "Zoe",
+        series = "Saga", series_index = 1, count = 1,
+    },
+    { link = "A - Solo", title = "Solo", author = "Al", count = 4 },
+}, {})
+T.check(T.contains(split, "### Series books"), "heading for the series group")
+T.check(T.contains(split, "### My books"), "heading for the plain group")
+T.check(T.contains(split, "| Book | Author | Series | Highlights |"),
+    "the series table keeps the Series column")
+T.check(T.contains(split, "| Book | Author | Highlights |"),
+    "the plain table has no Series column")
+T.check(T.contains(split, "| [[A - Solo\\|Solo]] | Al | 4 |"),
+    "the plain row carries only its own cells")
+
+-- series books read by series, then by position in it
+local sorted = render.buildIndexMd({
+    { link = "B", title = "B", series = "Alpha", series_index = 2, count = 1 },
+    { link = "C", title = "C", series = "Zeta", series_index = 1, count = 1 },
+    { link = "A", title = "A", series = "Alpha", series_index = 1, count = 1 },
+}, {})
+local posA = sorted:find("[[A\\|A]]", 1, true)
+local posB = sorted:find("[[B\\|B]]", 1, true)
+local posC = sorted:find("[[C\\|C]]", 1, true)
+T.check(posA and posB and posC and posA < posB and posB < posC,
+    "series books read by series, then by position")
+
+-- index v3: progress, last read and the special count
+local rich = render.buildIndexMd({
+    {
+        link = "Au - One", title = "One", author = "Au", status = "reading",
+        count = 5, special = 2, progress = "6%", last_read = "2026-10-01",
+    },
+    {
+        link = "Au - Two", title = "Two", author = "Au",
+        count = 1, progress = "", last_read = "",
+    },
+}, {})
+T.check(T.contains(rich,
+    "**2 books** · **6 highlights** · **★ 2 special**"),
+    "the stats line counts the specials")
+T.check(T.contains(rich, "| Book | Author | Status | Last read | Highlights |"),
+    "the percent rides with the bar, the date gets a column of its own")
+T.check(T.contains(rich,
+    "| Reading<br>▰▱▱▱▱▱▱▱▱▱&nbsp;6% | 01/10/2026 |"),
+    "the status word over the bar, the percent stuck to it with a nbsp")
+T.check(T.contains(rich, "| 5 · ★2 |"),
+    "special count in the highlights cell")
+T.check(T.contains(rich, "| Au | — | — | 1 |"),
+    "a book with no handle at all gets a dash in both cells")
+T.check(not T.contains(rich, "Last export"),
+    "the export date is not among the columns")
 
 -- fmtDate
 T.check(render.fmtDate("2026-09-02 10:00:00") == "02/09/2026", "ISO date in Italian format")
@@ -438,5 +633,22 @@ T.check(T.contains(tagged, "  - American-Horror-tales"),
     "the second dirty keyword too")
 T.check(not T.contains(tagged, "Occult &"), "no raw keyword reaches the frontmatter")
 T.check(not T.contains(tagged, "- !!!"), "the dead keyword is not exported")
+
+-- ------------------------------------------------------- reading bar
+T.check(render.progressBar("0%") == "▱▱▱▱▱▱▱▱▱▱",
+    "a book never opened gets an empty bar")
+T.check(render.progressBar("4%") == "▰▱▱▱▱▱▱▱▱▱",
+    "progress below 5% still lights one cell")
+T.check(render.progressBar("25%") == "▰▰▰▱▱▱▱▱▱▱",
+    "25% rounds to three cells")
+T.check(render.progressBar("150%") == "▰▰▰▰▰▰▰▰▰▰",
+    "the bar never runs past ten cells")
+T.check(render.progressBar("") == nil and render.progressBar(nil) == nil,
+    "no bar without a percentage")
+T.check(render.progressPct("0%") == "0%" and render.progressPct("4%") == "4%"
+        and render.progressPct("25%") == "25%" and render.progressPct("150%") == "150%",
+    "the percentage keeps its own shape")
+T.check(render.progressPct("") == nil and render.progressPct(nil) == nil,
+    "no percentage without a progress")
 
 T.finish("test_render")

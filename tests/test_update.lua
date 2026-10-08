@@ -5,7 +5,10 @@ offline gate), version jumps (0.2.0 -> 1.0), background check
 (throttle, Wi-Fi gate, notification) and the install flow
 ("Update and restart": download, unpack over the plugin folder,
 restart prompt, fallbacks) - all against a fake GitHub response, so
-nothing here touches the network.
+nothing here touches the network. The last section covers the second
+host (the Codeberg mirror): a GitHub that errors or answers nothing
+must still leave the check with a list, and the page we open follows
+the host that actually answered.
 --]]
 local HERE = arg[0]:match("^(.*)/") or "."
 package.path = HERE .. "/?.lua;" .. package.path
@@ -172,8 +175,8 @@ local cloud = settings[1].sub_item_table
 local files = settings[2].sub_item_table
 local updates = settings[3].sub_item_table
 T.check(files[3].text == "Include page bookmarks", "page bookmarks row")
--- Auto-export lives in Settings > Markdown files now (test_main
--- checks the row)
+-- Auto-export lives in Settings > Markdown files > Behaviour now
+-- (test_main checks the row)
 T.check(#cloud == 3, "cloud rows: " .. #cloud)
 T.check(updates[1].text_func() == "Check for updates (v" .. INSTALLED .. ")",
     "check row: " .. updates[1].text_func())
@@ -181,7 +184,8 @@ T.check(updates[2].text == "View changelog", "changelog row")
 T.check(updates[3].text == "Check for updates in background",
     "background toggle row")
 T.check(updates[3].checked_func() == false, "background check off by default")
-T.check(updates[4].text == "Developer updates", "developer updates row")
+T.check(updates[4].text == "\xEF\x84\xA6  Developer updates",
+    "developer updates row with icon")
 local developer = updates[4].sub_item_table_func()
 T.check(developer[1].text == "Beta Releases", "beta releases row")
 T.check(developer[1].checked_func() == false, "beta releases off by default")
@@ -553,9 +557,14 @@ T.check(developer[2].text == "Check for updates", "beta check entry")
 T.check(developer[2].separator == true, "separator before the reset row")
 T.check(developer[1].separator ~= true, "no separator under the toggle")
 
+-- a release above the installed one (with its own prerelease): the
+-- numbers follow whatever _meta.lua says, they never repeat it
+local STABLE = PATCH
+local STABLE_BETA = STABLE .. "-beta.1"
+
 fakeReleases({
-    release("v1.0.0", "stable 1.0.0"),
-    release("v1.0.0-beta.1", "beta 1.0.0-beta.1", { prerelease = true }),
+    release("v" .. STABLE, "stable " .. STABLE),
+    release("v" .. STABLE_BETA, "beta " .. STABLE_BETA, { prerelease = true }),
 })
 
 -- the Updates check is release-only even with the toggle on
@@ -563,13 +572,13 @@ Update.check()
 UIManager:runPending()
 local beta_viewer = TextViewer.last
 T.check(beta_viewer ~= nil, "viewer shown for the release check")
-T.check(T.contains(beta_viewer and beta_viewer.text or "", "Latest: v1.0.0"),
+T.check(T.contains(beta_viewer and beta_viewer.text or "", "Latest: v" .. STABLE),
     "stable release is the latest: " .. tostring(beta_viewer and beta_viewer.text))
 T.check(not T.contains(beta_viewer and beta_viewer.text or "",
-        "beta 1.0.0-beta.1"),
+        "beta " .. STABLE_BETA),
     "release check skips prereleases with the toggle on: "
         .. tostring(beta_viewer and beta_viewer.text))
-T.check(Update.getAvailableVersion() == "1.0.0", "cache holds the stable version")
+T.check(Update.getAvailableVersion() == STABLE, "cache holds the stable version")
 
 -- the beta check offers them and never touches the release cache
 Update.clearAvailableCache()
@@ -577,10 +586,10 @@ Update.check(true)
 UIManager:runPending()
 beta_viewer = TextViewer.last
 T.check(beta_viewer ~= nil
-        and T.contains(beta_viewer.text or "", "beta 1.0.0-beta.1"),
+        and T.contains(beta_viewer.text or "", "beta " .. STABLE_BETA),
     "beta check offers the prerelease: "
         .. tostring(beta_viewer and beta_viewer.text))
-T.check(T.contains(beta_viewer and beta_viewer.text or "", "Latest: v1.0.0"),
+T.check(T.contains(beta_viewer and beta_viewer.text or "", "Latest: v" .. STABLE),
     "stable release stays the latest in the beta check too")
 T.check(Update.getAvailableVersion() == nil,
     "beta check does not touch the release cache")
@@ -588,7 +597,7 @@ T.check(Update.getAvailableVersion() == nil,
 -- one more release check: the cache the Updates row shows comes back
 Update.check()
 UIManager:runPending()
-T.check(Update.getAvailableVersion() == "1.0.0",
+T.check(Update.getAvailableVersion() == STABLE,
     "release check caches the stable version again")
 
 -- toggle off: the row hides in place and the cached version goes away
@@ -600,14 +609,14 @@ T.check(Update.getAvailableVersion() == nil, "toggle clears the cached version")
 
 -- the same releases with the toggle off: the prerelease is skipped
 fakeReleases({
-    release("v1.0.0", "stable 1.0.0"),
-    release("v1.0.0-beta.1", "beta 1.0.0-beta.1", { prerelease = true }),
+    release("v" .. STABLE, "stable " .. STABLE),
+    release("v" .. STABLE_BETA, "beta " .. STABLE_BETA, { prerelease = true }),
 })
 Update.check()
 UIManager:runPending()
 beta_viewer = TextViewer.last
 T.check(beta_viewer ~= nil, "viewer shown for the stable release")
-T.check(not T.contains(beta_viewer and beta_viewer.text or "", "beta 1.0.0"),
+T.check(not T.contains(beta_viewer and beta_viewer.text or "", "beta " .. STABLE),
     "prerelease skipped with the toggle off: "
         .. tostring(beta_viewer and beta_viewer.text))
 
@@ -750,5 +759,82 @@ T.check(T.contains(InfoMessage.last_text or "", "up to date"),
     "already on the latest stable: " .. tostring(InfoMessage.last_text))
 T.check(not T.contains(ConfirmBox.last and ConfirmBox.last.text or "",
         "Tomedown updated"), "no install from an up-to-date reset")
+
+-- --------------------------------------- 14. the Codeberg fallback
+-- GitHub stays the home of the project, the Codeberg mirror answers
+-- the same question with the same release shape: a GitHub that is
+-- unreachable or has published nothing must not leave a check empty
+-- handed, and the page offered by a failure follows the host that
+-- actually answered.
+
+local GITHUB_API = "https://api.github.com/repos/imanubdesigner/tomedown.koplugin/releases?per_page=100"
+local CODEBERG_API = "https://codeberg.org/api/v1/repos/imanubdesigner/tomedown.koplugin/releases?limit=50"
+local CODEBERG_PAGE = "https://codeberg.org/imanubdesigner/tomedown.koplugin/releases"
+
+-- GitHub answers nothing: the mirror is asked next and its list is
+-- the one the check works from
+resetWidgets()
+Update._resetState()
+NetworkMgr.connected = true
+urls = {}
+Update.httpGetJSON = function(url)
+    urls[#urls + 1] = url
+    if url:find("api.github.com", 1, true) then
+        return nil
+    end
+    return { release("v" .. MAJOR, "from the mirror") }
+end
+Update.check()
+UIManager:runPending()
+T.check(#urls == 2, "GitHub tried once, then Codeberg: " .. #urls)
+T.check(urls[1] == GITHUB_API, "first request to GitHub: " .. tostring(urls[1]))
+T.check(urls[2] == CODEBERG_API, "second request to Codeberg: " .. tostring(urls[2]))
+T.check(TextViewer.last ~= nil
+        and T.contains(TextViewer.last.text or "", "from the mirror"),
+    "the mirror's notes are shown: "
+        .. tostring(TextViewer.last and TextViewer.last.text))
+T.check(Update.getAvailableVersion() == MAJOR, "the mirror's version cached")
+
+-- both hosts die afterwards: the check reports the same failure as
+-- before, and the page offered is the mirror's (it is the last one
+-- that ever answered)
+resetWidgets()
+NetworkMgr.connected = true
+urls = {}
+Update.httpGetJSON = function(url)
+    urls[#urls + 1] = url
+    return nil
+end
+Update.check()
+UIManager:runPending()
+T.check(ConfirmBox.last ~= nil
+        and T.contains(ConfirmBox.last.text or "", "Could not check for updates."),
+    "both hosts down: " .. tostring(ConfirmBox.last and ConfirmBox.last.text))
+T.check(#urls == 2, "both hosts tried by a dead check: " .. #urls)
+T.check(urls[1] == GITHUB_API and urls[2] == CODEBERG_API,
+    "GitHub first, Codeberg second: " .. table.concat(urls, " -> "))
+ConfirmBox.last.ok_callback()
+T.check(Device.links[1] == CODEBERG_PAGE,
+    "the page of the host that answered: " .. tostring(Device.links[1]))
+
+-- an error in one host costs us neither the other host nor the check
+resetWidgets()
+Update._resetState()
+NetworkMgr.connected = true
+urls = {}
+Update.httpGetJSON = function(url)
+    urls[#urls + 1] = url
+    if url:find("api.github.com", 1, true) then
+        error("boom-github")
+    end
+    return { release("v" .. MINOR, "survived the broken host") }
+end
+Update.check()
+UIManager:runPending()
+T.check(#urls == 2, "a throwing host does not stop the next: " .. #urls)
+T.check(TextViewer.last ~= nil
+        and T.contains(TextViewer.last.text or "", "survived the broken host"),
+    "the mirror answered after GitHub errored: "
+        .. tostring(TextViewer.last and TextViewer.last.text))
 
 T.finish("test_update")

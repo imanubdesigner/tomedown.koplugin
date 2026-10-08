@@ -1,0 +1,195 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1697" viewBox="0 0 1200 1697" role="img" aria-label="Tomedown Obsidian guide 03 — the index: one 00 - Index.md for the whole library with the stats line, two tables of wiki links, its own write zone above the marker, the settings toggle that generates it, and how it looks in reading view">
+  <style>
+    .display { font-family: Georgia, "Times New Roman", serif; font-weight: 700; fill: #37352F; }
+    .deck    { font-family: Georgia, "Times New Roman", serif; font-style: italic; fill: #5C5B57; }
+    .label   { font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; letter-spacing: 1.8px; fill: #37352F; }
+    .labelm  { font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; letter-spacing: 1.2px; fill: #9B9A97; }
+    .body    { font-family: Georgia, "Times New Roman", serif; fill: #37352F; }
+    .code    { font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; fill: #37352F; }
+    .comment { font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; fill: #9B9A97; }
+    .menu    { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight: 700; fill: #37352F; }
+    .ui      { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; fill: #37352F; }
+    .uim     { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; fill: #9B9A97; }
+    .link    { fill: #7F6DF2; }
+    .rule    { stroke: #E3E1DD; stroke-width: 1; }
+    .hair    { stroke: #E3E1DD; stroke-width: 1; }
+    .dash    { stroke: #7F6DF2; stroke-width: 1.5; stroke-dasharray: 6 5; fill: none; }
+    .card    { fill: #FFFFFF; stroke: #E3E1DD; stroke-width: 1.5; }
+    .accent  { fill: #7F6DF2; }
+  </style>
+
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 Q7 5 0 0 z" fill="#7F6DF2"/>
+    </marker>
+  </defs>
+
+  <!-- paper -->
+  <rect width="1200" height="1697" fill="#FFFFFF"/>
+
+  <!-- header -->
+  <text class="label" x="64" y="56" font-size="13">TOMEDOWN — OBSIDIAN GUIDE</text>
+  <text class="labelm" x="1136" y="56" font-size="13" text-anchor="end">KOReader plugin</text>
+  <text class="display" x="64" y="124" font-size="56">The index</text>
+  <text class="deck" x="64" y="168" font-size="19">One file for the whole library — rebuilt on every export, with its own write zone and its own switch.</text>
+  <line class="rule" x1="64" y1="204" x2="1136" y2="204"/>
+
+  <!-- ============ the window: 00 - Index.md in Obsidian (source view) ============ -->
+  <rect x="64" y="250" width="770" height="713" rx="10" fill="#FFFFFF" stroke="#E3E1DD" stroke-width="1.5"/>
+  <path d="M64 260 Q64 250 74 250 H824 Q834 250 834 260 V288 H64 Z" fill="#F5F5F4"/>
+  <line class="hair" x1="64" y1="288" x2="834" y2="288"/>
+  <text class="code" x="88" y="274" font-size="12.5">00 - Index.md</text>
+  <text class="comment" x="812" y="274" font-size="13" text-anchor="middle">×</text>
+  <path d="M104 288 H64 V953 Q64 963 74 963 H104 Z" fill="#FAFAF9"/>
+  <line class="hair" x1="104" y1="288" x2="104" y2="963"/>
+  <circle cx="84" cy="320" r="7" fill="none" stroke="#9B9A97" stroke-width="2"/>
+  <path d="M89 325 L94 330" stroke="#9B9A97" stroke-width="2"/>
+  <rect x="77" y="354" width="14" height="14" rx="3" fill="#7F6DF2"/>
+  <rect x="76" y="394" width="16" height="3" rx="1.5" fill="#9B9A97"/>
+  <rect x="76" y="401" width="16" height="3" rx="1.5" fill="#9B9A97"/>
+  <rect x="76" y="408" width="10" height="3" rx="1.5" fill="#9B9A97"/>
+
+  <!-- source lines -->
+  <text class="code" x="128" y="316" font-size="8.5">---</text>
+  <text class="code" x="128" y="334" font-size="8.5">tomedown: "1.0"</text>
+  <text class="code" x="128" y="352" font-size="8.5">title: "Book index"</text>
+  <text class="code" x="128" y="370" font-size="8.5">exported: "2026-10-07"</text>
+  <text class="code" x="128" y="388" font-size="8.5">tags:</text>
+  <text class="code" x="128" y="406" font-size="8.5">  - ebook</text>
+  <text class="code" x="128" y="424" font-size="8.5">  - index</text>
+  <text class="code" x="128" y="442" font-size="8.5">---</text>
+  <text x="128" y="460" font-size="8.5" font-family="SF Mono, Menlo, Consolas, monospace" fill="#37352F">## My notes... <tspan fill="#9B9A97">&lt;!-- tomedown:notes --&gt;</tspan></text>
+  <rect class="dash" x="120" y="474" width="640" height="26" rx="4"/>
+  <rect class="accent" x="120" y="521" width="4" height="15"/>
+  <text class="code" x="134" y="532" font-size="8.5">The slow-burn one — started in the tent.</text>
+    <text class="code" x="128" y="550" font-size="8.5"> </text>
+  <text class="comment" x="128" y="568" font-size="7.5">&lt;!-- tomedown:begin index hash=2a50b55d — ⛔ generated below: do not edit inside … write your notes above --&gt;</text>
+  <text class="code" x="128" y="586" font-size="8.5"> </text>
+  <text class="code" x="128" y="604" font-size="8.5">---</text>
+  <text class="code" x="128" y="622" font-size="8.5"> </text>
+  <text class="code" x="128" y="640" font-size="8.5">**14 books** · **89 highlights** · **★ 16 special**</text>
+  <text class="code" x="128" y="658" font-size="8.5"> </text>
+  <text class="code" x="128" y="676" font-size="8.5">### Series books</text>
+  <text class="code" x="128" y="694" font-size="8.5"> </text>
+  <text class="code" x="128" y="712" font-size="8.5">| Book | Author | Series | Status | Last read | Highlights |</text>
+  <text class="code" x="128" y="730" font-size="8.5">|:---|:---|:---|:---|:---|---:|</text>
+  <text class="code" x="128" y="748" font-size="8.5">| [[Blake Crouch - Pines\|Pines]] | Blake Crouch | Wayward Pines #1 | Reading&lt;br&gt;▰▰▰▰▰▱▱▱▱▱&amp;nbsp;40% | 07/10/2026 | 7 |</text>
+  <text class="code" x="128" y="766" font-size="8.5">| [[Blake Crouch - Uscita\|Uscita]] | Blake Crouch | Wayward Pines #2 | Complete&lt;br&gt;▰▰▰▰▰▰▰▰▰▰&amp;nbsp;100% | 06/10/2026 | 5 |</text>
+  <text class="code" x="128" y="784" font-size="8.5">| [[Blake Crouch - Ritorno\|Ritorno]] | Blake Crouch | Wayward Pines #3 | — | — | 9 · ★2 |</text>
+  <text class="code" x="128" y="802" font-size="8.5"> </text>
+  <text class="code" x="128" y="820" font-size="8.5">### My books</text>
+  <text class="code" x="128" y="838" font-size="8.5"> </text>
+  <text class="code" x="128" y="856" font-size="8.5">| Book | Author | Status | Last read | Highlights |</text>
+  <text class="code" x="128" y="874" font-size="8.5">|:---|:---|:---|:---|---:|</text>
+  <text class="code" x="128" y="892" font-size="8.5">| [[Michael McDowell - Blackwater\|Blackwater]] | Michael McDowell | Reading&lt;br&gt;▰▰▰▰▰▰▰▰▰▰&amp;nbsp;96% | 30/09/2026 | 150 · ★42 |</text>
+  <text class="code" x="128" y="910" font-size="8.5">| [[Alex North - Le Ombre\|Le Ombre]] | Alex North | Complete&lt;br&gt;▰▰▰▰▰▰▰▰▰▰&amp;nbsp;100% | 01/10/2026 | 10 |</text>
+  <text class="code" x="128" y="928" font-size="8.5"> </text>
+  <text class="comment" x="128" y="946" font-size="8.5">&lt;!-- tomedown:end index --&gt;</text>
+
+  <!-- ============ notes column: every arrow touches its target ============ -->
+  <text class="labelm" x="866" y="296" font-size="11">YOUR HEADING</text>
+  <text class="body" x="866" y="322" font-size="15">Same heading as the books;</text>
+  <text class="body" x="866" y="344" font-size="15">rename it in Settings ▸ Style</text>
+  <text class="body" x="866" y="366" font-size="15">— the gray tag after it stays,</text>
+  <text class="body" x="866" y="388" font-size="15">that's the line it rewrites.</text>
+  <path class="dash" marker-end="url(#ah)" d="M864 396 H420 V460 H331"/>
+
+  <text class="labelm" x="866" y="440" font-size="11">YOUR ZONE</text>
+  <text class="body" x="866" y="466" font-size="15">Heading, two blank lines and</text>
+  <text class="body" x="866" y="488" font-size="15">your words above the marker:</text>
+  <text class="body" x="866" y="510" font-size="15">same rules as the books.</text>
+  <path class="dash" marker-end="url(#ah)" d="M864 518 H812 V487 H773"/>
+
+  <text class="labelm" x="866" y="560" font-size="11">THE STATS LINE</text>
+  <text class="body" x="866" y="586" font-size="15">Books, highlights and the</text>
+  <text class="body" x="866" y="608" font-size="15">starred specials — one bold</text>
+  <text class="body" x="866" y="630" font-size="15">line, star out front.</text>
+  <path class="dash" marker-end="url(#ah)" d="M864 640 H400"/>
+
+  <text class="labelm" x="866" y="690" font-size="11">THE LINKS</text>
+  <text class="body" x="866" y="716" font-size="15">Every title is a wiki link;</text>
+  <text class="body" x="866" y="738" font-size="15">Status keeps the word over</text>
+  <text class="body" x="866" y="760" font-size="15">the bar, the percent stuck</text>
+  <text class="body" x="866" y="782" font-size="15">to it; the date gets a column.</text>
+  <path class="dash" marker-end="url(#ah)" d="M864 748 H794"/>
+
+  <!-- the switch -->
+  <rect class="card" x="866" y="830" width="270" height="180" rx="10" fill="#FBFBFA"/>
+  <text class="label" x="884" y="862" font-size="11">SETTINGS ▸ MARKDOWN</text>
+  <rect x="884" y="878" width="44" height="22" rx="11" fill="#7F6DF2"/>
+  <circle cx="917" cy="889" r="8" fill="#FFFFFF"/>
+  <text class="menu" x="940" y="886" font-size="12.5">Generate the</text>
+  <text class="menu" x="940" y="902" font-size="12.5">00 - Index.md</text>
+  <text class="labelm" x="884" y="930" font-size="10">ON BY DEFAULT</text>
+  <text class="body" x="884" y="962" font-size="13.5">Tick it — it already is.</text>
+  <text class="body" x="884" y="982" font-size="13.5">The index is written next</text>
+  <text class="body" x="884" y="1002" font-size="13.5">to the books, every run.</text>
+
+  <!-- ============ reading view: how the index renders ============ -->
+  <rect x="64" y="1030" width="1072" height="478" rx="10" fill="#FFFFFF" stroke="#E3E1DD" stroke-width="1.5"/>
+  <path d="M64 1040 Q64 1030 74 1030 H1126 Q1136 1030 1136 1040 V1064 H64 Z" fill="#F5F5F4"/>
+  <line class="hair" x1="64" y1="1064" x2="1136" y2="1064"/>
+  <text class="code" x="88" y="1054" font-size="12">00 - Index.md</text>
+  <text class="comment" x="1114" y="1054" font-size="12" text-anchor="middle">×</text>
+
+  <text class="body" x="96" y="1096" font-size="15"><tspan font-weight="700">14 books</tspan> · <tspan font-weight="700">89 highlights</tspan> · <tspan font-weight="700">★ 16 special</tspan></text>
+
+  <text class="menu" x="96" y="1136" font-size="18">Series books</text>
+  <text class="menu" x="96" y="1170" font-size="12.5">Book</text>
+  <text class="menu" x="376" y="1170" font-size="12.5">Author</text>
+  <text class="menu" x="526" y="1170" font-size="12.5">Series</text>
+  <text class="menu" x="700" y="1170" font-size="12.5">Status</text>
+  <text class="menu" x="900" y="1170" font-size="12.5">Last read</text>
+  <text class="menu" x="1104" y="1170" font-size="12.5" text-anchor="end">Highlights</text>
+  <line class="hair" x1="96" y1="1180" x2="1104" y2="1180"/>
+  <text class="ui link" x="96" y="1204" font-size="13">Pines</text>
+  <text class="ui" x="376" y="1204" font-size="13">Blake Crouch</text>
+  <text class="ui" x="526" y="1204" font-size="13">Wayward Pines #1</text>
+  <text class="ui" x="700" y="1204" font-size="13">Reading</text>
+  <text class="ui" x="900" y="1204" font-size="13">07/10/2026</text>
+  <text class="ui" x="1104" y="1204" font-size="13" text-anchor="end">7</text>
+  <text class="ui" x="700" y="1220" font-size="13">▰▰▰▰▰▱▱▱▱▱ 40%</text>
+  <text class="ui link" x="96" y="1250" font-size="13">Uscita</text>
+  <text class="ui" x="376" y="1250" font-size="13">Blake Crouch</text>
+  <text class="ui" x="526" y="1250" font-size="13">Wayward Pines #2</text>
+  <text class="ui" x="700" y="1250" font-size="13">Complete</text>
+  <text class="ui" x="900" y="1250" font-size="13">06/10/2026</text>
+  <text class="ui" x="1104" y="1250" font-size="13" text-anchor="end">5</text>
+  <text class="ui" x="700" y="1266" font-size="13">▰▰▰▰▰▰▰▰▰▰ 100%</text>
+  <text class="ui link" x="96" y="1296" font-size="13">Ritorno</text>
+  <text class="ui" x="376" y="1296" font-size="13">Blake Crouch</text>
+  <text class="ui" x="526" y="1296" font-size="13">Wayward Pines #3</text>
+  <text class="ui" x="700" y="1296" font-size="13">—</text>
+  <text class="ui" x="900" y="1296" font-size="13">—</text>
+  <text class="ui" x="1104" y="1296" font-size="13" text-anchor="end">9 · ★2</text>
+  <line class="hair" x1="96" y1="1320" x2="1104" y2="1320"/>
+
+  <text class="menu" x="96" y="1358" font-size="18">My books</text>
+  <text class="menu" x="96" y="1392" font-size="12.5">Book</text>
+  <text class="menu" x="376" y="1392" font-size="12.5">Author</text>
+  <text class="menu" x="560" y="1392" font-size="12.5">Status</text>
+  <text class="menu" x="760" y="1392" font-size="12.5">Last read</text>
+  <text class="menu" x="1104" y="1392" font-size="12.5" text-anchor="end">Highlights</text>
+  <line class="hair" x1="96" y1="1402" x2="1104" y2="1402"/>
+  <text class="ui link" x="96" y="1426" font-size="13">Blackwater</text>
+  <text class="ui" x="376" y="1426" font-size="13">Michael McDowell</text>
+  <text class="ui" x="560" y="1426" font-size="13">Reading</text>
+  <text class="ui" x="760" y="1426" font-size="13">30/09/2026</text>
+  <text class="ui" x="1104" y="1426" font-size="13" text-anchor="end">150 · ★42</text>
+  <text class="ui" x="560" y="1442" font-size="13">▰▰▰▰▰▰▰▰▰▰ 96%</text>
+  <text class="ui link" x="96" y="1472" font-size="13">Le Ombre</text>
+  <text class="ui" x="376" y="1472" font-size="13">Alex North</text>
+  <text class="ui" x="560" y="1472" font-size="13">Complete</text>
+  <text class="ui" x="760" y="1472" font-size="13">01/10/2026</text>
+  <text class="ui" x="1104" y="1472" font-size="13" text-anchor="end">10</text>
+  <text class="ui" x="560" y="1488" font-size="13">▰▰▰▰▰▰▰▰▰▰ 100%</text>
+
+  <text class="body" x="600" y="1538" font-size="13.5" text-anchor="middle" fill="#9B9A97">READING VIEW — real tables, every title a link; covers sit in the first column when switched on.</text>
+  <text class="deck" x="600" y="1582" font-size="17" text-anchor="middle">One switch, the same rules as the books: your zone above, the library below.</text>
+
+  <!-- footer -->
+  <line class="rule" x1="64" y1="1620" x2="1136" y2="1620"/>
+  <text class="label" x="64" y="1655" font-size="12">TOMEDOWN · THE INDEX</text>
+  <text class="labelm" x="600" y="1655" font-size="12" text-anchor="middle">03 / 03</text>
+  <text class="labelm" x="1136" y="1655" font-size="12" text-anchor="end">2026</text>
+</svg>

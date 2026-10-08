@@ -174,7 +174,7 @@ BookList.setRegistry({
     },
 })
 readhistory.hist = {
-    { file = FILE },
+    { file = FILE, time = os.time() },
     { file = FILE2 },
     { file = FILE3 },
     { file = FILE_DIM, dim = true },
@@ -198,6 +198,23 @@ end
 T.check(pre_inserted == 0,
     "init does not pre-insert into the ui chain: " .. pre_inserted)
 table.insert(ui, plugin) -- what ReaderUI/FileManager registerModule does
+
+-- the export follows the order of the text, like a paper book:
+-- positions beat page numbers, which only describe one layout
+local sorted = plugin:cleanAnnotations({
+    { drawer = "underline", text = "B", pageno = 37,
+        datetime = "2026-10-04 19:00:00",
+        pos0 = "/body/DocFragment[16]/body/p[10]/text().0" },
+    { drawer = "underline", text = "A", pageno = 39,
+        datetime = "2026-10-04 20:00:00",
+        pos0 = "/body/DocFragment[8]/body/p[2]/text().0" },
+    { drawer = "underline", text = "C", pageno = 38,
+        datetime = "2026-10-04 21:00:00",
+        pos0 = "/body/DocFragment[16]/body/p[8]/text().0" },
+})
+T.check(sorted[1].text == "A" and sorted[2].text == "C" and sorted[3].text == "B",
+    "positions in the text sort the highlights, not the page numbers: "
+    .. sorted[1].text .. sorted[2].text .. sorted[3].text)
 
 -- ------------------------------------------------------------- helpers
 
@@ -282,11 +299,11 @@ if md then
     T.check(T.contains(md, "highlights: 2"), "only the valid highlights")
     T.check(T.contains(md, "  - ebook"), "tag ebook")
     T.check(not T.contains(md, "# Blackwater"), "no h1 in the body")
-    T.check(T.contains(md, "# **HIGHLIGHTS: 2**"), "count")
+    T.check(T.contains(md, "# **2 highlights**"), "count")
     T.check(T.contains(md, "\n# Capitolo I"), "chapter 1")
     T.check(T.contains(md, "\n# Capitolo II"), "chapter 2")
     T.check(T.contains(md, "> Prima frase."), "quote")
-    T.check(T.contains(md, "- **p. 10** · 02/09/2026 10:00 · note: nota utente"), "meta with note")
+    T.check(T.contains(md, "- **p. 10** · 02/09/2026 10:00\n  - **NOTE:** *nota utente*"), "meta with note")
     T.check(T.contains(md, "nota utente"), "note present")
     T.check(not T.contains(md, "Segnalibro"), "page bookmark excluded")
     T.check(not T.contains(md, "Cancellato"), "deleted highlight excluded")
@@ -305,7 +322,10 @@ if index then
     T.check(T.contains(index, "[[Michael McDowell - Blackwater\\|Blackwater]]"),
         "wikilink in the index")
     T.check(T.contains(index, "| 2 |"), "index columns (count)")
-    T.check(T.contains(index, os.date("%d/%m/%Y")), "today's date in the index")
+    T.check(T.contains(index, os.date("%d/%m/%Y")),
+        "today's date in the index (last read)")
+    T.check(not T.contains(index, "Last export"),
+        "the export date column is gone from the index")
 end
 
 -- index with more rows after exporting every book
@@ -327,7 +347,7 @@ local legacy_md = T.readFile(DIR .. "/N_A - LibroVecchio.md")
 T.check(legacy_md ~= nil, "export of the book with the old .sdr")
 if legacy_md then
     T.check(T.contains(legacy_md, "> Vecchio evidenziato"), "highlight from a legacy .sdr")
-    T.check(T.contains(legacy_md, "note: nota vecchia"), "note from legacy bookmarks")
+    T.check(T.contains(legacy_md, "**NOTE:** *nota vecchia*"), "note from legacy bookmarks")
     T.check(T.contains(legacy_md, "**p. 3**"), "legacy page")
 end
 
@@ -421,6 +441,22 @@ if richMd then
     T.check(iSeries and iIndex and iLang and iSeries < iIndex and iIndex < iLang,
         "series, series_index, language in order")
 end
+-- the index reads what the book record carries: series, status,
+-- progress and when it was last opened
+local rich_index = T.readFile(INDEX_PATH)
+T.check(T.contains(rich_index or "", "| Blackwater #4 | Complete<br>"),
+    "the index row carries the series and the status")
+T.check(T.contains(rich_index or "", "▰▰▰▰▰▰▰▰▰▰&nbsp;96% |"),
+    "the reading bar with the percent glued to it")
+T.check(T.contains(rich_index or "", "| Status | Last read | Highlights |"),
+    "the date sits in a column of its own")
+T.check(T.contains(rich_index or "", os.date("%d/%m/%Y")),
+    "the index row carries the last read date")
+T.check(T.contains(rich_index or "", "### Series books")
+        and T.contains(rich_index or "", "### My books"),
+    "the series books and the rest sit under their own headings")
+T.check(not T.contains(rich_index or "", "Last export"),
+    "no export date column in the rich index either")
 T.check(store.tomedown.exports[FILE].hash ~= saved_hash,
     "hash changes with the new metadata")
 
@@ -499,19 +535,53 @@ T.check(files[3].text == "Include page bookmarks", "page bookmarks entry")
 T.check(files[3].checked_func() == false, "page bookmarks off by default")
 T.check(files[4].text == "Include book covers", "covers entry")
 T.check(files[4].checked_func() == false, "covers off by default")
-T.check(files[5].text == "All highlights as Special Highlights", "callout entry")
-T.check(files[5].checked_func() == false, "callout off by default")
-T.check(files[5].separator == true, "separator before the auto-export toggle")
-T.check(files[6].text == "Auto-export on close",
-    "auto-export lives in Markdown files")
-T.check(files[6].checked_func() == false, "auto-export off by default")
+local style = files[5].sub_item_table
+local behaviour = files[6].sub_item_table
+T.check(files[5].text == "\xEE\xAB\x97  Style", "style submenu with icon")
+T.check(#style == 2, "style submenu rows: " .. #style)
+T.check(files[6].text == "\xEF\x87\x9E  Behaviour", "behaviour submenu with icon")
+T.check(#behaviour == 2, "behaviour submenu rows: " .. #behaviour)
+T.check(style[1].text_func() == "Personal notes: My notes...",
+    "notes heading entry: " .. style[1].text_func())
+
+-- rename dialog
+plugin:editNotesTitle(nil)
+T.check(InputDialog.last ~= nil
+        and InputDialog.last.title == "Personal notes heading",
+    "notes heading dialog opened")
+InputDialog.last.input_text = "  Appunti miei  "
+InputDialog.last:simulateSave()
+T.check(store.tomedown.notes_title == "Appunti miei",
+    "heading saved and trimmed")
+T.check(style[1].text_func() == "Personal notes: Appunti miei",
+    "menu entry updated")
+plugin:editNotesTitle(nil)
+InputDialog.last.input_text = ""
+InputDialog.last:simulateSave()
+T.check(store.tomedown.notes_title == "", "an empty title clears the heading")
+store.tomedown.notes_title = nil
+T.check(style[1].text_func() == "Personal notes: My notes...",
+    "back to the default heading")
+
+T.check(style[2].text == "All highlights as Special Highlights", "callout entry")
+T.check(style[2].checked_func() == false, "callout off by default")
+T.check(behaviour[1].text == "Auto-export on close",
+    "auto-export lives in Markdown files > Behaviour")
+T.check(behaviour[1].checked_func() == false, "auto-export off by default")
+T.check(behaviour[2].text == "Preserve manual edits", "preserve entry")
+T.check(behaviour[2].checked_func() == false,
+    "manual edits off by default (the tomedown <= 0.8 behaviour)")
+store.tomedown.preserve = true
+T.check(behaviour[2].checked_func() == true, "the toggle reflects the setting")
+store.tomedown.preserve = nil
 T.check(updates[1].text_func() == "Check for updates (v"
         .. Update.getInstalledVersion() .. ")",
     "check row carries the installed version: " .. updates[1].text_func())
 T.check(updates[2].text == "View changelog", "changelog entry")
 T.check(updates[2].separator == true, "separator after the changelog entry")
 T.check(updates[3].text == "Check for updates in background", "background entry")
-T.check(updates[4].text == "Developer updates", "developer updates entry")
+T.check(updates[4].text == "\xEF\x84\xA6  Developer updates",
+    "developer updates entry with icon")
 local developer = updates[4].sub_item_table_func()
 T.check(#developer == 3, "beta check hidden by default: " .. #developer)
 T.check(developer[1].text == "Beta Releases", "beta releases entry")
@@ -544,7 +614,8 @@ T.check(#developer == 3, "beta check hidden again: " .. #developer)
 T.check(developer[1].separator == true, "separator back under the toggle")
 
 -- checkable rows must keep the menu open so KOReader refreshes them
-for _, group in ipairs({ sub, cloud, files, updates, developer }) do
+for _, group in ipairs({ sub, cloud, files, style, behaviour, updates,
+        developer }) do
     for i, row in ipairs(group) do
         if row.checked_func then
             T.check(row.keep_menu_open == true,
@@ -843,7 +914,7 @@ local onlyBmMd = T.readFile(DIR .. "/Autore B - SoloBookmark.md")
 T.check(onlyBmMd ~= nil, "bookmark-only book exported")
 if onlyBmMd then
     T.check(T.contains(onlyBmMd, "highlights: 0"), "frontmatter count zero")
-    T.check(not T.contains(onlyBmMd, "# **HIGHLIGHTS: 0**"), "no zero count line in the body")
+    T.check(not T.contains(onlyBmMd, "# **0 highlight"), "no zero count line in the body")
     T.check(T.contains(onlyBmMd, "\n# Page bookmarks"), "bookmark-only section")
     T.check(T.contains(onlyBmMd, "> Solo un segnalibro"), "bookmark-only quote")
 end
@@ -1170,10 +1241,10 @@ T.check(#uploads == 0 and Notification.last_text == nil,
 ui.document = nil
 
 -- toggle on: the close exports after 1s and uploads right away
-files[6].callback()
-T.check(files[6].checked_func() == true, "auto-export toggled on")
+behaviour[1].callback()
+T.check(behaviour[1].checked_func() == true, "auto-export toggled on")
 uploadSetup()
-files[6].callback() -- uploadSetup wiped the setting
+behaviour[1].callback() -- uploadSetup wiped the setting
 ui.document = { file = FILE }
 plugin:onCloseDocument()
 T.check(UIManager:pendingCount() == 1, "toggle on: close schedules the export")
@@ -1200,7 +1271,7 @@ ui.document = nil
 -- without the cloud at all: one notification, right after the export
 uploadSetup()
 store.tomedown.upload = false
-files[6].callback() -- uploadSetup wiped the auto-export setting too
+behaviour[1].callback() -- uploadSetup wiped the auto-export setting too
 ui.document = { file = FILE }
 plugin:onCloseDocument()
 UIManager:runPending()
@@ -1221,7 +1292,7 @@ ui.document = nil
 
 -- offline close: exported locally, queued, the network is not touched
 uploadSetup()
-files[6].callback()
+behaviour[1].callback()
 NetworkMgr.connected = false
 ui.document = { file = FILE }
 plugin:onCloseDocument()
@@ -1273,7 +1344,7 @@ T.check(next(store.tomedown.pending_uploads or {}) == nil,
 
 -- suspend: local only and totally silent, even with the network up
 uploadSetup()
-files[6].callback()
+behaviour[1].callback()
 ui.document = { file = FILE }
 plugin:onSuspend()
 T.check(UIManager:pendingCount() == 0, "suspend schedules nothing")
@@ -1382,11 +1453,11 @@ files[4].callback()
 T.check(store.tomedown.covers == false, "covers toggled off again")
 plugin:runExport({ FILE }, {})
 T.check(store.tomedown.exports[FILE].hash ~= nil, "hash back after the export")
-files[5].callback()
+style[2].callback()
 T.check(store.tomedown.callout == true, "callout toggled on")
 T.check(store.tomedown.exports[FILE].hash == nil,
     "the callout toggle invalidates the stored hash too")
-files[5].callback()
+style[2].callback()
 
 -- extraction: capped to the 800x1200 box, quality 50, colours kept
 uploadSetup()
@@ -1406,9 +1477,10 @@ T.check(T.contains(md_content or "", '<p align="center"><img src="' .. COVER_REL
     "the body embeds the cover centered")
 local index_content = T.readFile(INDEX_PATH)
 T.check(T.contains(index_content or "", COVER_REL), "the index row shows the cover")
-T.check(T.contains(index_content or "", "width:90px;height:120px"),
-    "the index cover is sized 90x120")
-T.check(T.contains(index_content or "", "click a title to open its note."),
+T.check(T.contains(index_content or "", "width:120px;height:160px"),
+    "the index cover is sized 120x160")
+T.check((index_content or ""):match(
+    "%*%*%d+ books?%*%* · %*%*%d+ highlights?%*%*") ~= nil,
     "the exported index carries the stats line")
 
 -- extraction always forces colour rendering on, and puts the flags
@@ -1623,4 +1695,111 @@ ui.highlight = nil
 ui.doc_settings = nil
 BookInfo.cover_bb = nil
 
+-- ------------------------------- 15. preserve manual edits (v1.0)
+
+store.tomedown.upload = false
+-- with preserve off (the default, and every export so far) the file
+-- on disk is plain markdown: no heading, no marker, nothing the next
+-- run could not replace wholesale
+T.check(not T.contains(special_md, "## My notes...")
+        and not T.contains(special_md, "tomedown:begin"),
+    "preserve off: no heading and no marker in the plain export")
+T.check(not T.contains(special_md, "Write your thoughts"),
+    "preserve off: no invitation either")
+-- preserve is opt-in since 1.0: switch it on the way a reader would
+behaviour[2].callback()
+T.check(behaviour[2].checked_func() == true, "preserve switched on for this section")
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+local clean_md = T.readFile(MD_PATH)
+T.check(clean_md ~= nil and T.contains(clean_md, "<!-- tomedown:begin body"),
+    "baseline export with the region markers before the edit: "
+        .. tostring(clean_md ~= nil))
+T.check(clean_md ~= nil
+        and T.contains(clean_md, "## My notes... <!-- tomedown:notes -->"),
+    "baseline export opens the zone with the default heading")
+T.check(clean_md ~= nil
+        and clean_md:find("## My notes... <!-- tomedown:notes -->\n\n\n"
+            .. "<!-- tomedown:begin body", 1, true) ~= nil,
+    "the zone opens with the heading and two blank lines of room")
+T.check(clean_md ~= nil
+        and not T.contains(clean_md,
+            "Write your thoughts, your emotions, your questions."),
+    "preserve on seeds the room, never the invitation")
+
+-- the reader writes a line inside the generated body region
+local user_line = "Riga scritta a mano in Obsidian.\n"
+local edited_md = (clean_md or ""):gsub(
+    "(<!%-%- tomedown:begin body[^\n]*%-%->\n)", "%1" .. user_line)
+local edit_file = io.open(MD_PATH, "wb")
+edit_file:write(edited_md)
+edit_file:close()
+
+-- a new annotation changes the render: the block is rebuilt and the
+-- previous file is kept whole, as .bak
+BookList.registry[FILE].annotations = modernAnnotations()
+table.insert(BookList.registry[FILE].annotations, {
+    drawer = "underline", text = "Aggiunta in seguito.", pageno = 12,
+    datetime = "2026-09-04 10:00:00",
+})
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+local rebuilt_md = T.readFile(MD_PATH)
+T.check(rebuilt_md ~= nil and not T.contains(rebuilt_md, user_line),
+    "the rebuilt block drops the line written inside it")
+T.check(rebuilt_md ~= nil and T.contains(rebuilt_md, "Aggiunta in seguito."),
+    "the rebuilt block takes the new annotation")
+T.check(rebuilt_md ~= nil
+        and T.contains(rebuilt_md, "## My notes... <!-- tomedown:notes -->"),
+    "the rebuild keeps the heading")
+T.check(T.contains(Notification.last_text or "", "1 files backed up (.bak)"),
+    "the toast reports the backup: " .. tostring(Notification.last_text))
+local bak_md = T.readFile(MD_PATH .. ".bak")
+T.check(bak_md ~= nil and T.contains(bak_md, user_line),
+    "the previous file is kept as .bak with the hand-written line")
+local kept_record = store.tomedown.exports[FILE]
+T.check(kept_record and kept_record.regions and kept_record.regions.body,
+    "fingerprints stored for the next export")
+
+-- a clean export of the same file needs no second backup
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+T.check(not T.contains(Notification.last_text or "", ".bak"),
+    "a clean file is not backed up again: " .. tostring(Notification.last_text))
+
+-- text in the write zone (above the marker) survives while preserving
+local zone_line = "Appunto nella zona note.\n"
+local zoned_md = (T.readFile(MD_PATH) or ""):gsub(
+    "(<!%-%- tomedown:begin body)", zone_line .. "%1")
+local zone_file = io.open(MD_PATH, "wb")
+zone_file:write(zoned_md)
+zone_file:close()
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+T.check(T.readFile(MD_PATH) ~= nil
+        and T.contains(T.readFile(MD_PATH), zone_line),
+    "the zone above the marker survives the export")
+
+-- preservation off: the next export regenerates everything
+behaviour[2].callback()
+T.check(behaviour[2].checked_func() == false, "preservation toggled off")
+T.check(store.tomedown.exports[FILE].hash == nil,
+    "switching modes invalidates the hashes")
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+local regen_md = T.readFile(MD_PATH)
+T.check(regen_md ~= nil and not T.contains(regen_md, zone_line),
+    "overwrite mode drops the write zone too")
+behaviour[2].callback()
+T.check(behaviour[2].checked_func() == true, "preservation back on for the next runs")
+
+-- the status panel reports the backups of the last run
+store.tomedown.last_export = {
+    at = os.time(), exported = 2, skipped = 1, errors = 0, backups = 3,
+}
+local status = table.concat(plugin:statusLines(), "\n")
+T.check(T.contains(status, "3 files backed up (.bak)"),
+    "status shows the backups: " .. tostring(status))
+
+BookList.registry[FILE].annotations = modernAnnotations()
 T.finish("test_main")

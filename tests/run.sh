@@ -30,6 +30,8 @@ fi
 
 echo "=== test_render"
 "$LUA" test_render.lua
+echo "=== test_merge"
+"$LUA" test_merge.lua
 echo "=== test_po"
 "$LUA" test_po.lua
 echo "=== test_i18n"
@@ -38,6 +40,8 @@ echo "=== test_main"
 "$LUA" test_main.lua
 echo "=== test_update"
 "$LUA" test_update.lua
+echo "=== test_readme"
+"$LUA" test_readme.lua
 
 if command -v luac5.1 >/dev/null 2>&1; then
     echo "=== syntax check (luac5.1, the interpreter that runs on the Kindle)"

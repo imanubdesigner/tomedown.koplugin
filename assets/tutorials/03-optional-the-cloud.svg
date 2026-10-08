@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1740" height="1160" viewBox="0 0 1200 800" role="img" aria-label="Tomedown quickstart tutorial 03 — Optional: the cloud: switch upload on, every export sends the files, and without a cloud everything still works">
+  <style>
+    .display { font-family: Georgia, "Times New Roman", serif; font-weight: 700; fill: #17150F; }
+    .deck    { font-family: Georgia, "Times New Roman", serif; font-style: italic; fill: #3A362C; }
+    .label   { font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; letter-spacing: 1.8px; fill: #17150F; }
+    .labelm  { font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; letter-spacing: 1.2px; fill: #6B6455; }
+    .body    { font-family: Georgia, "Times New Roman", serif; fill: #2B271F; }
+    .menu    { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight: 700; fill: #17150F; }
+    .code    { font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; fill: #17150F; }
+    .rule    { stroke: #D7D0C4; stroke-width: 1; }
+    .hair    { stroke: #D7D0C4; stroke-width: 1; opacity: 1; }
+    .card    { fill: #FFFDF7; stroke: #D7D0C4; stroke-width: 1.5; }
+    .frame   { fill: #FFFDF7; stroke: #D7D0C4; stroke-width: 1.5; }
+    .skel    { fill: #D9D2C2; }
+    .accent  { fill: #F5DE7E; }
+    .cloud   { fill: #91A3B0; stroke: #D7D0C4; stroke-width: 2; stroke-linejoin: round; }
+    .cloudtri{ fill: #91A3B0; stroke: #D7D0C4; stroke-width: 1.5; }
+    .cloudbox{ fill: #91A3B0; stroke: #D7D0C4; stroke-width: 1.5; }
+  </style>
+
+  <!-- paper -->
+  <rect width="1200" height="800" fill="#F3EDE1"/>
+
+  <!-- header -->
+  <text class="label" x="64" y="56" font-size="13">TOMEDOWN — QUICKSTART</text>
+  <text class="labelm" x="1136" y="56" font-size="13" text-anchor="end">KOReader plugin</text>
+  <text class="display" x="64" y="124" font-size="56">Optional: the cloud</text>
+  <text class="deck" x="64" y="168" font-size="19">Point it at a server once and every export rides along — or don’t, and nothing changes.</text>
+  <line class="rule" x1="64" y1="204" x2="1136" y2="204"/>
+
+  <!-- ============ column 01 — TURN IT ON ============ -->
+  <text class="display" x="64" y="256" font-size="32">01</text>
+  <text class="label" x="112" y="252" font-size="13">TURN IT ON</text>
+  <line class="hair" x1="64" y1="274" x2="408" y2="274"/>
+
+  <!-- cloud behind -->
+  <path class="cloud" d="M96 414 C82 414 74 402 77 390 C79 379 90 373 100 376 C105 357 122 347 140 352 C154 336 180 337 190 353 C208 350 220 364 217 379 C228 386 230 401 220 410 C213 416 202 416 194 414 Z"/>
+
+  <!-- settings card -->
+  <rect class="card" x="130" y="330" width="270" height="96" rx="7"/>
+  <line class="hair" x1="130" y1="362" x2="400" y2="362"/>
+  <line class="hair" x1="130" y1="394" x2="400" y2="394"/>
+  <text class="menu" x="146" y="350" font-size="11">Upload to cloud</text>
+  <!-- switch on -->
+  <rect x="348" y="339" width="36" height="17" rx="8.5" fill="#F5DE7E" stroke="#D7D0C4" stroke-width="1.5"/>
+  <circle cx="375.5" cy="347.5" r="5.5" fill="#17150F"/>
+  <text class="menu" x="146" y="382" font-size="11">Server and folder: WebDAV → /Bookshelf</text>
+  <text class="menu" x="146" y="414" font-size="11">Remote folder: /Bookshelf</text>
+
+  <text class="body" x="64" y="594" font-size="16">In Settings ▸ Cloud, switch Upload to</text>
+  <text class="body" x="64" y="616" font-size="16">cloud on and pick your server and folder:</text>
+  <text class="body" x="64" y="638" font-size="16">WebDAV, Dropbox, anything.</text>
+  <text class="labelm" x="64" y="672" font-size="11">refs: settings ▸ cloud</text>
+
+  <!-- ============ column 02 — IT SENDS ============ -->
+  <text class="display" x="448" y="256" font-size="32">02</text>
+  <text class="label" x="496" y="252" font-size="13">IT SENDS</text>
+  <line class="hair" x1="448" y1="274" x2="792" y2="274"/>
+
+  <!-- cloud -->
+  <path class="cloud" d="M556 384 C540 384 531 370 535 356 C538 344 551 338 563 342 C569 320 589 307 611 313 C627 294 657 296 670 315 C691 313 706 330 702 349 C713 357 714 374 703 381 C696 386 686 385 678 384 Z"/>
+
+  <!-- sheets going up -->
+  <rect class="card" x="556" y="414" width="54" height="64" rx="3"/>
+  <rect class="skel" x="566" y="428" width="34" height="5" rx="2.5"/>
+  <rect class="skel" x="566" y="440" width="30" height="5" rx="2.5"/>
+  <rect class="skel" x="566" y="452" width="34" height="5" rx="2.5"/>
+  <rect class="card" x="624" y="424" width="54" height="56" rx="3"/>
+  <rect class="skel" x="634" y="438" width="34" height="5" rx="2.5"/>
+  <rect class="skel" x="634" y="450" width="26" height="5" rx="2.5"/>
+
+  <!-- up arrows -->
+  <path d="M583 408 V394" fill="none" stroke="#D7D0C4" stroke-width="2"/>
+  <path class="cloudtri" d="M577 398 L583 388 L589 398 Z"/>
+  <path d="M651 418 V404" fill="none" stroke="#D7D0C4" stroke-width="2"/>
+  <path class="cloudtri" d="M645 408 L651 398 L657 408 Z"/>
+
+  <!-- progress pill -->
+  <rect class="cloudbox" x="470" y="506" width="300" height="34" rx="17"/>
+  <text class="deck" x="620" y="528" font-size="13" text-anchor="middle">“Uploading 5 files to the cloud…”</text>
+
+  <text class="body" x="448" y="594" font-size="16">Every export sends the files up with it —</text>
+  <text class="body" x="448" y="616" font-size="16">the index too. The “Uploading…” message</text>
+  <text class="body" x="448" y="638" font-size="16">stays on screen while it works.</text>
+  <text class="labelm" x="448" y="672" font-size="11">refs: upload progress</text>
+
+  <!-- ============ column 03 — OPTIONAL ============ -->
+  <text class="display" x="832" y="256" font-size="32">03</text>
+  <text class="label" x="880" y="252" font-size="13">OPTIONAL</text>
+  <line class="hair" x1="832" y1="274" x2="1136" y2="274"/>
+  <text class="label" x="984" y="306" font-size="11" text-anchor="middle">NOTHING IS LOST</text>
+
+  <!-- menu card: upload off + reload -->
+  <rect class="card" x="846" y="330" width="290" height="96" rx="7"/>
+  <line class="hair" x1="846" y1="362" x2="1136" y2="362"/>
+  <line class="hair" x1="846" y1="394" x2="1136" y2="394"/>
+  <text class="menu" x="862" y="350" font-size="11">Upload to cloud</text>
+  <!-- switch off -->
+  <rect x="1086" y="339" width="36" height="17" rx="8.5" fill="#F3EDE1" stroke="#D7D0C4" stroke-width="1.5"/>
+  <circle cx="1095.5" cy="347.5" r="5.5" fill="#17150F"/>
+  <text class="menu" x="862" y="382" font-size="11">Reload everything to the cloud</text>
+  <text class="labelm" x="862" y="414" font-size="10.5">files stay local until you do</text>
+
+  <!-- result window -->
+  <rect class="cloudbox" x="846" y="450" width="290" height="44" rx="7"/>
+  <text class="code" x="991" y="477" font-size="11" text-anchor="middle">Cloud: 5 uploaded, 0 errors</text>
+
+  <text class="body" x="832" y="594" font-size="16">No cloud? Still works — files stay local.</text>
+  <text class="body" x="832" y="616" font-size="16">A failed upload gets 3 retries, then</text>
+  <text class="body" x="832" y="638" font-size="16">Reload everything to the cloud.</text>
+  <text class="labelm" x="832" y="672" font-size="11">refs: upload retries</text>
+
+  <!-- footer -->
+  <line class="rule" x1="64" y1="730" x2="1136" y2="730"/>
+  <text class="label" x="64" y="758" font-size="12">TOMEDOWN · OPTIONAL: THE CLOUD</text>
+  <text class="labelm" x="600" y="758" font-size="12" text-anchor="middle">03 / 05</text>
+  <text class="labelm" x="1136" y="758" font-size="12" text-anchor="end">2026</text>
+</svg>

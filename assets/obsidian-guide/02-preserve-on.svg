@@ -1,0 +1,181 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1697" viewBox="0 0 1200 1697" role="img" aria-label="Tomedown Obsidian guide 02 — the book file with Preserve manual edits on: the tagged heading you can rename, two blank lines of room under it, your own lines above the begin marker, the marker and its hash, the generated block between the markers, the reading view where the comments disappear, and the settings toggle">
+  <style>
+    .display { font-family: Georgia, "Times New Roman", serif; font-weight: 700; fill: #37352F; }
+    .deck    { font-family: Georgia, "Times New Roman", serif; font-style: italic; fill: #5C5B57; }
+    .label   { font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; letter-spacing: 1.8px; fill: #37352F; }
+    .labelm  { font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; letter-spacing: 1.2px; fill: #9B9A97; }
+    .body    { font-family: Georgia, "Times New Roman", serif; fill: #37352F; }
+    .code    { font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; fill: #37352F; }
+    .comment { font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; fill: #9B9A97; }
+    .menu    { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight: 700; fill: #37352F; }
+    .ui      { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; fill: #37352F; }
+    .uim     { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; fill: #9B9A97; }
+    .rule    { stroke: #E3E1DD; stroke-width: 1; }
+    .hair    { stroke: #E3E1DD; stroke-width: 1; }
+    .dash    { stroke: #7F6DF2; stroke-width: 1.5; stroke-dasharray: 6 5; fill: none; }
+    .card    { fill: #FFFFFF; stroke: #E3E1DD; stroke-width: 1.5; }
+    .pill    { fill: #FFFFFF; stroke: #E3E1DD; stroke-width: 1.5; }
+    .accent  { fill: #7F6DF2; }
+  </style>
+
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 Q7 5 0 0 z" fill="#7F6DF2"/>
+    </marker>
+  </defs>
+
+  <!-- paper -->
+  <rect width="1200" height="1697" fill="#FFFFFF"/>
+
+  <!-- header -->
+  <text class="label" x="64" y="56" font-size="13">TOMEDOWN — OBSIDIAN GUIDE</text>
+  <text class="labelm" x="1136" y="56" font-size="13" text-anchor="end">KOReader plugin</text>
+  <text class="display" x="64" y="124" font-size="56">Preserve on</text>
+  <text class="deck" x="64" y="168" font-size="19">Flip the switch and the file grows a write zone: your heading, your room, the markers — and what they guard.</text>
+  <line class="rule" x1="64" y1="204" x2="1136" y2="204"/>
+
+  <!-- ============ the window: the file in Obsidian (source view) ============ -->
+  <rect x="366" y="260" width="770" height="713" rx="10" fill="#FFFFFF" stroke="#E3E1DD" stroke-width="1.5"/>
+  <path d="M366 270 Q366 260 376 260 H1126 Q1136 260 1136 270 V298 H366 Z" fill="#F5F5F4"/>
+  <line class="hair" x1="366" y1="298" x2="1136" y2="298"/>
+  <text class="code" x="390" y="284" font-size="12.5">Blackwater.md</text>
+  <text class="comment" x="1114" y="284" font-size="13" text-anchor="middle">×</text>
+  <path d="M406 298 H366 V963 Q366 973 376 973 H406 Z" fill="#FAFAF9"/>
+  <line class="hair" x1="406" y1="298" x2="406" y2="973"/>
+  <circle cx="386" cy="330" r="7" fill="none" stroke="#9B9A97" stroke-width="2"/>
+  <path d="M391 335 L396 340" stroke="#9B9A97" stroke-width="2"/>
+  <rect x="379" y="364" width="14" height="14" rx="3" fill="#7F6DF2"/>
+  <rect x="378" y="404" width="16" height="3" rx="1.5" fill="#9B9A97"/>
+  <rect x="378" y="411" width="16" height="3" rx="1.5" fill="#9B9A97"/>
+  <rect x="378" y="418" width="10" height="3" rx="1.5" fill="#9B9A97"/>
+
+  <!-- source lines -->
+  <text class="code" x="430" y="326" font-size="12.5">---</text>
+  <text class="code" x="430" y="347" font-size="12.5">tomedown: "1.0"</text>
+  <text class="code" x="430" y="368" font-size="12.5">title: "Blackwater"</text>
+  <text class="code" x="430" y="389" font-size="12.5">author: "Michael McDowell"</text>
+  <text class="code" x="430" y="410" font-size="12.5">exported: 2026-10-07</text>
+  <text class="code" x="430" y="431" font-size="12.5">highlights: 150</text>
+  <text class="code" x="430" y="452" font-size="12.5">special: 42</text>
+  <text class="code" x="430" y="473" font-size="12.5">tags:</text>
+  <text class="code" x="430" y="494" font-size="12.5">  - ebook</text>
+  <text class="code" x="430" y="515" font-size="12.5">  - highlights</text>
+  <text class="code" x="430" y="536" font-size="12.5">---</text>
+  <!-- heading: title in ink, the tag as the comment it is -->
+  <text x="430" y="557" font-size="12.5" font-family="SF Mono, Menlo, Consolas, monospace" fill="#37352F">## My notes... <tspan fill="#9B9A97">&lt;!-- tomedown:notes --&gt;</tspan></text>
+  <!-- the room: two blank lines, kept -->
+  <rect class="dash" x="422" y="573" width="640" height="34" rx="4"/>
+  <!-- the reader's line -->
+  <rect class="accent" x="422" y="629" width="4" height="16"/>
+  <text class="code" x="436" y="643" font-size="12.5">The ending wrecked me.</text>
+  <text class="code" x="430" y="662" font-size="12.5"> </text>
+  <!-- the begin marker -->
+  <text class="comment" x="430" y="683" font-size="10.5">&lt;!-- tomedown:begin body hash=1f3a66c5 — ⛔ generated below: do not edit inside … write your notes above --&gt;</text>
+  <text class="code" x="430" y="704" font-size="12.5"> </text>
+  <text class="code" x="430" y="725" font-size="12.5">---</text>
+  <text class="code" x="430" y="746" font-size="12.5"> </text>
+  <text class="code" x="430" y="767" font-size="12.5"># **150 highlights · ★ 42 special**</text>
+  <text class="code" x="430" y="788" font-size="12.5"> </text>
+  <text class="code" x="430" y="809" font-size="12.5">---</text>
+  <text class="code" x="430" y="830" font-size="12.5"> </text>
+  <text class="code" x="430" y="851" font-size="12.5"># L'arrivo da Nonna.</text>
+  <text class="code" x="430" y="872" font-size="12.5"> </text>
+  <text class="code" x="430" y="893" font-size="12.5">&gt; Camminiamo a lungo. La casa di Nonna è lontana dalla stazione…</text>
+  <text class="code" x="430" y="914" font-size="12.5"> </text>
+  <text class="comment" x="430" y="935" font-size="11">&lt;!-- tomedown:end body --&gt;</text>
+
+  <!-- ============ notes column: every arrow touches its target ============ -->
+  <text class="labelm" x="64" y="296" font-size="11">YOUR HEADING</text>
+  <text class="body" x="64" y="322" font-size="15">The plugin's line. Rename it</text>
+  <text class="body" x="64" y="344" font-size="15">in Settings ▸ Style — the gray</text>
+  <text class="body" x="64" y="366" font-size="15">tag after it tells Tomedown</text>
+  <text class="body" x="64" y="388" font-size="15">which line to rewrite.</text>
+  <path class="dash" marker-end="url(#ah)" d="M246 396 H300 V557 H421"/>
+
+  <text class="labelm" x="64" y="440" font-size="11">YOUR ROOM</text>
+  <text class="body" x="64" y="466" font-size="15">Two blank lines under the</text>
+  <text class="body" x="64" y="488" font-size="15">heading, kept at every export:</text>
+  <text class="body" x="64" y="510" font-size="15">start typing right here.</text>
+  <path class="dash" marker-end="url(#ah)" d="M246 516 H285 V590 H410"/>
+
+  <text class="labelm" x="64" y="560" font-size="11">YOUR LINES</text>
+  <text class="body" x="64" y="586" font-size="15">Whatever you write above</text>
+  <text class="body" x="64" y="608" font-size="15">the marker survives every</text>
+  <text class="body" x="64" y="630" font-size="15">export — this zone is yours.</text>
+  <path class="dash" marker-end="url(#ah)" d="M246 639 H426"/>
+
+  <text class="labelm" x="64" y="690" font-size="11">THE MARKER</text>
+  <text class="body" x="64" y="716" font-size="15">“⛔ generated below: do not</text>
+  <text class="body" x="64" y="738" font-size="15">edit inside or updates stop</text>
+  <text class="body" x="64" y="760" font-size="15">arriving · write your notes</text>
+  <text class="body" x="64" y="782" font-size="15">above”. The hash catches an</text>
+  <text class="body" x="64" y="804" font-size="15">edit inside: .bak first, then</text>
+  <text class="body" x="64" y="826" font-size="15">the block is rebuilt.</text>
+  <path class="dash" marker-end="url(#ah)" d="M246 704 H1050 V698"/>
+
+  <text class="labelm" x="64" y="858" font-size="11">GENERATED</text>
+  <text class="body" x="64" y="884" font-size="15">From the rule down, the block</text>
+  <text class="body" x="64" y="906" font-size="15">is rebuilt from the book.</text>
+  <path class="dash" marker-end="url(#ah)" d="M246 851 H315 V721 H421"/>
+
+  <!-- ============ reading view + settings ============ -->
+  <rect x="64" y="1010" width="620" height="300" rx="10" fill="#FFFFFF" stroke="#E3E1DD" stroke-width="1.5"/>
+  <path d="M64 1020 Q64 1010 74 1010 H674 Q684 1010 684 1020 V1044 H64 Z" fill="#F5F5F4"/>
+  <line class="hair" x1="64" y1="1044" x2="684" y2="1044"/>
+  <text class="code" x="88" y="1034" font-size="12">Blackwater.md</text>
+  <text class="comment" x="662" y="1034" font-size="12" text-anchor="middle">×</text>
+  <!-- properties, as Obsidian renders the frontmatter -->
+  <rect x="88" y="1062" width="330" height="58" rx="6" fill="#F7F7F7" stroke="#E9E9E7"/>
+  <text class="uim" x="102" y="1084" font-size="11.5">title</text>
+  <text class="ui" x="196" y="1084" font-size="11.5" font-weight="700">Blackwater</text>
+  <text class="uim" x="102" y="1106" font-size="11.5">progress</text>
+  <text class="ui" x="196" y="1106" font-size="11.5" font-weight="700">96%</text>
+  <!-- rendered content: no tag, no markers, no comments -->
+  <text class="ui" x="88" y="1160" font-size="21" font-weight="700">My notes...</text>
+  <text class="ui" x="88" y="1194" font-size="14">The ending wrecked me.</text>
+  <text class="ui" x="88" y="1236" font-size="16" font-weight="700">150 highlights · ★ 42 special</text>
+  <rect x="88" y="1254" width="3" height="42" fill="#E3E1DD"/>
+  <text class="ui" x="104" y="1272" font-size="13">Camminiamo a lungo. La casa di Nonna è lontana…</text>
+  <text class="uim" x="104" y="1294" font-size="12">p. 5 · 30/09/2026 11:16</text>
+  <text class="body" x="64" y="1338" font-size="13.5" fill="#9B9A97">READING VIEW — the comments disappear; Ctrl+E switches back to the source.</text>
+
+  <rect class="card" x="716" y="1010" width="420" height="300" rx="10" fill="#FBFBFA"/>
+  <text class="label" x="748" y="1050" font-size="13">SETTINGS ▸ BEHAVIOUR</text>
+  <rect x="748" y="1072" width="44" height="22" rx="11" fill="#7F6DF2"/>
+  <circle cx="781" cy="1083" r="8" fill="#FFFFFF"/>
+  <text class="menu" x="808" y="1088" font-size="13">Preserve manual edits</text>
+  <text class="labelm" x="808" y="1108" font-size="11">ON — THE ZONE IS KEPT</text>
+  <text class="body" x="748" y="1152" font-size="14.5">Zones and front matter survive</text>
+  <text class="body" x="748" y="1176" font-size="14.5">every export; the block below</text>
+  <text class="body" x="748" y="1200" font-size="14.5">the marker is rebuilt from the</text>
+  <text class="body" x="748" y="1224" font-size="14.5">book. A hand-edit inside the</text>
+  <text class="body" x="748" y="1248" font-size="14.5">block keeps the previous file</text>
+  <text class="body" x="748" y="1272" font-size="14.5">as .bak.</text>
+
+  <!-- ============ on every export ============ -->
+  <text class="display" x="64" y="1416" font-size="28">01</text>
+  <text class="label" x="104" y="1413" font-size="12">ON EXPORT</text>
+  <line class="hair" x1="64" y1="1436" x2="404" y2="1436"/>
+  <text class="body" x="64" y="1472" font-size="15">Your zone and the frontmatter</text>
+  <text class="body" x="64" y="1496" font-size="15">survive; the block is rebuilt.</text>
+
+  <text class="display" x="430" y="1416" font-size="28">02</text>
+  <text class="label" x="470" y="1413" font-size="12">EDITED INSIDE</text>
+  <line class="hair" x1="430" y1="1436" x2="770" y2="1436"/>
+  <text class="body" x="430" y="1472" font-size="15">The hash sees it: the previous</text>
+  <text class="body" x="430" y="1496" font-size="15">file is kept as .bak first.</text>
+
+  <text class="display" x="796" y="1416" font-size="28">03</text>
+  <text class="label" x="836" y="1413" font-size="12">SWITCHING BACK</text>
+  <line class="hair" x1="796" y1="1436" x2="1136" y2="1436"/>
+  <text class="body" x="796" y="1472" font-size="15">Off again: plain files at the</text>
+  <text class="body" x="796" y="1496" font-size="15">next export, .bak alongside.</text>
+
+  <text class="deck" x="600" y="1560" font-size="17" text-anchor="middle">Write above the marker — below it, Tomedown owns the lines.</text>
+
+  <!-- footer -->
+  <line class="rule" x1="64" y1="1620" x2="1136" y2="1620"/>
+  <text class="label" x="64" y="1655" font-size="12">TOMEDOWN · PRESERVE ON</text>
+  <text class="labelm" x="600" y="1655" font-size="12" text-anchor="middle">02 / 03</text>
+  <text class="labelm" x="1136" y="1655" font-size="12" text-anchor="end">2026</text>
+</svg>

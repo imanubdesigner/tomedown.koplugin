@@ -5,4 +5,7 @@ tests/kodata/
 *.zip
 crash.log
 
+# screenshot backups kept next to the real ones
+*.png.bak
+
 .DS_Store
