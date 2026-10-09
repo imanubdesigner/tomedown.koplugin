@@ -106,14 +106,18 @@ first export and optional Remotely Save in Obsidian — is in
    `tomedown.koplugin/` directory.
 
    **b. From a clone of this repo** — copy the folder, leaving behind what
-   KOReader does not need (`tests/`, `assets/`, `README.md`, `TUTORIAL.md`,
-   git files):
+   KOReader does not need (tests, docs, git files and the guide artwork;
+   the logo stays, the About popup shows it):
 
    ```
-   rsync -a --exclude tests --exclude assets --exclude README.md \
-         --exclude README.codeberg.md --exclude TUTORIAL.md \
-         --exclude TUTORIAL.codeberg.md --exclude .git \
-         --exclude .github --exclude .gitignore \
+   rsync -a --exclude tests --exclude .git --exclude .github \
+         --exclude .gitattributes --exclude .gitignore \
+         --exclude README.md --exclude README.codeberg.md \
+         --exclude TUTORIAL.md --exclude TUTORIAL.codeberg.md \
+         --exclude OBSIDIAN.md --exclude SYNC-DIRECTION.md \
+         --exclude assets/menu --exclude assets/obsidian \
+         --exclude assets/obsidian-guide --exclude assets/tutorials \
+         --exclude assets/banner.svg \
          tomedown.koplugin /mnt/us/koreader/plugins/
    ```
 
@@ -125,6 +129,7 @@ first export and optional Remotely Save in Obsidian — is in
    /mnt/us/koreader/plugins/tomedown.koplugin/tomedown_render.lua
    /mnt/us/koreader/plugins/tomedown.koplugin/_meta.lua
    /mnt/us/koreader/plugins/tomedown.koplugin/languages/it.po
+   /mnt/us/koreader/plugins/tomedown.koplugin/assets/logo.svg
    /mnt/us/koreader/plugins/tomedown.koplugin/LICENSE
    ```
 
