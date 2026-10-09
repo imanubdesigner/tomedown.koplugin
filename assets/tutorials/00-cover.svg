@@ -39,7 +39,7 @@
   <rect class="skel" x="110" y="392" width="96" height="6" rx="3"/>
   <rect class="skel" x="110" y="406" width="70" height="6" rx="3"/>
   <text class="body" x="80" y="466" font-size="13">Long-press the passage;</text>
-  <text class="body" x="80" y="486" font-size="13">flag it as special.</text>
+  <text class="body" x="80" y="486" font-size="13">keep it as a highlight.</text>
 
   <!-- 02 EXPORT -->
   <rect class="card" x="283" y="240" width="196" height="280" rx="7"/>
@@ -53,8 +53,8 @@
   <rect class="skel" x="323" y="370" width="74" height="5" rx="2.5"/>
   <rect class="accent" x="323" y="388" width="116" height="18" rx="9" stroke="#A1A1AA" stroke-width="1"/>
   <text class="code" x="381" y="401" font-size="8" text-anchor="middle">/clipboard/tomedown</text>
-  <text class="body" x="299" y="466" font-size="13">Close the book — the .md</text>
-  <text class="body" x="299" y="486" font-size="13">is already in the folder.</text>
+  <text class="body" x="299" y="466" font-size="13">Export it from the menu;</text>
+  <text class="body" x="299" y="486" font-size="13">the .md is in the folder</text>
 
   <!-- 03 CLOUD -->
   <rect class="card" x="502" y="240" width="196" height="280" rx="7"/>
