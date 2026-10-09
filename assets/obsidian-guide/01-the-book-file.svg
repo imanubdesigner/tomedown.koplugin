@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1697" viewBox="0 0 1200 1697" role="img" aria-label="Tomedown Obsidian guide 01 — the book file, as every export writes it by default: frontmatter, then the generated block, no heading and no markers; anything you write in the file is gone at the next export; to keep your words switch on Preserve manual edits (Settings, Markdown files, Behaviour)">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1697" viewBox="0 0 1200 1697" role="img" aria-label="Tomedown Obsidian guide 01 — the book file, as every export writes it by default: frontmatter, then the generated block, no heading and no markers; anything you write in the file is gone at the next export; to keep your words switch on Preserve manual edits (Settings, Markdown files)">
   <style>
     .display { font-family: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", "Times New Roman", "Liberation Serif", "DejaVu Serif", serif; font-weight: 700; fill: #37352F; }
     .deck    { font-family: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", "Times New Roman", "Liberation Serif", "DejaVu Serif", serif; font-style: italic; fill: #5C5B57; }
@@ -126,7 +126,7 @@
 
   <!-- ============ the fix ============ -->
   <rect class="card" x="64" y="1230" width="1072" height="180" rx="10" fill="#FBFBFA"/>
-  <text class="label" x="96" y="1274" font-size="12">SETTINGS ▸ MARKDOWN FILES ▸ BEHAVIOUR</text>
+  <text class="label" x="96" y="1274" font-size="12">SETTINGS ▸ MARKDOWN FILES</text>
   <rect x="96" y="1296" width="44" height="22" rx="11" fill="#FFFFFF" stroke="#E3E1DD" stroke-width="1.5"/>
   <circle cx="107" cy="1307" r="8" fill="#9B9A97"/>
   <text class="menu" x="156" y="1312" font-size="13">Preserve manual edits</text>

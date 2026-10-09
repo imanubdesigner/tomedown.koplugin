@@ -72,9 +72,9 @@
   <rect id="svg_51" stroke-width="1.5" stroke="#E3E1DD" fill="none" rx="10" height="136" width="252" y="250" x="64" class="note"/>
   <text id="svg_52" fill="#37352F" letter-spacing="1.5px" font-weight="600" font-family="'SF Mono', Menlo, Consolas, 'JetBrains Mono', 'Liberation Mono', 'DejaVu Sans Mono', monospace" font-size="11" y="280" x="82" class="nhead">YOUR HEADING</text>
   <text id="svg_53" fill="#37352F" font-family="Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', 'Times New Roman', 'Liberation Serif', 'DejaVu Serif', serif" font-size="14.5" y="304" x="82" class="body">The plugin's line. Rename it in</text>
-  <text id="svg_54" fill="#37352F" font-family="Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', 'Times New Roman', 'Liberation Serif', 'DejaVu Serif', serif" font-size="14.5" y="324" x="82" class="body">Settings ▸ Style — the gray tag</text>
-  <text id="svg_55" fill="#37352F" font-family="Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', 'Times New Roman', 'Liberation Serif', 'DejaVu Serif', serif" font-size="14.5" y="344" x="82" class="body">after it tells Tomedown which</text>
-  <text id="svg_56" fill="#37352F" font-family="Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', 'Times New Roman', 'Liberation Serif', 'DejaVu Serif', serif" font-size="14.5" y="364" x="82" class="body">line to rewrite.</text>
+  <text id="svg_54" fill="#37352F" font-family="Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', 'Times New Roman', 'Liberation Serif', 'DejaVu Serif', serif" font-size="14.5" y="324" x="82" class="body">Settings ▸ Markdown files - the</text>
+  <text id="svg_55" fill="#37352F" font-family="Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', 'Times New Roman', 'Liberation Serif', 'DejaVu Serif', serif" font-size="14.5" y="344" x="82" class="body">gray tag after it tells</text>
+  <text id="svg_56" fill="#37352F" font-family="Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', 'Times New Roman', 'Liberation Serif', 'DejaVu Serif', serif" font-size="14.5" y="364" x="82" class="body">Tomedown which line to rewrite.</text>
   <path id="svg_57" stroke-linecap="round" fill="none" stroke-dasharray="6 5" stroke-width="1.5" stroke="#7F6DF2" d="m316,318c53,0 1.88889,234.83333 84,235.11111" marker-end="url(#ah)" class="dash"/>
   <rect id="svg_58" stroke-width="1.5" stroke="#E3E1DD" fill="none" rx="10" height="116" width="252" y="414" x="64" class="note"/>
   <text id="svg_59" fill="#37352F" letter-spacing="1.5px" font-weight="600" font-family="'SF Mono', Menlo, Consolas, 'JetBrains Mono', 'Liberation Mono', 'DejaVu Sans Mono', monospace" font-size="11" y="444" x="82" class="nhead">YOUR ROOM</text>
@@ -119,7 +119,7 @@
   <text id="svg_98" fill="#9B9A97" font-family="'Helvetica Neue', Helvetica, Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif" font-size="12" y="1294" x="104" class="uim">p. 5 · 30/09/2026 11:16</text>
   <text id="svg_99" font-family="Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', 'Times New Roman', 'Liberation Serif', 'DejaVu Serif', serif" fill="#37352F" font-size="13.5" y="1338" x="64" class="body">READING VIEW — the comments disappear; Ctrl+E switches back to the source.</text>
   <rect id="svg_100" stroke-width="1.5" stroke="#E3E1DD" fill="#FFFFFF" rx="10" height="300" width="420" y="1010" x="716" class="card"/>
-  <text id="svg_101" fill="#37352F" letter-spacing="1.8px" font-family="'SF Mono', Menlo, Consolas, 'JetBrains Mono', 'Liberation Mono', 'DejaVu Sans Mono', monospace" font-size="12" y="1050" x="748" class="label">SETTINGS ▸ MARKDOWN FILES ▸ BEHAVIOUR</text>
+  <text id="svg_101" fill="#37352F" letter-spacing="1.8px" font-family="'SF Mono', Menlo, Consolas, 'JetBrains Mono', 'Liberation Mono', 'DejaVu Sans Mono', monospace" font-size="12" y="1050" x="748" class="label">SETTINGS ▸ MARKDOWN FILES</text>
   <rect id="svg_102" fill="#7F6DF2" rx="11" height="22" width="44" y="1072" x="748"/>
   <circle id="svg_103" fill="#FFFFFF" r="8" cy="1083" cx="781"/>
   <text id="svg_104" fill="#37352F" font-weight="700" font-family="'Helvetica Neue', Helvetica, Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif" font-size="13" y="1088" x="808" class="menu">Preserve manual edits</text>
