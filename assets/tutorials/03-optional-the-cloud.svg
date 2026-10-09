@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1740" height="1160" viewBox="0 0 1200 800" role="img" aria-label="Tomedown quickstart tutorial 03 — Optional: the cloud: switch upload on, every export sends the files, and without a cloud everything still works">
   <style>
     .display { font-family: Georgia, "Times New Roman", serif; font-weight: 700; fill: #37352F; }
-    .deck    { font-family: Georgia, "Times New Roman", serif; font-style: italic; fill: #5C5B57; }
+    .deck    { font-family: Georgia, "Times New Roman", serif; font-style: italic; fill: #37352F; }
     .label   { font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; letter-spacing: 1.8px; fill: #37352F; }
     .labelm  { font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; letter-spacing: 1.2px; fill: #9B9A97; }
     .body    { font-family: Georgia, "Times New Roman", serif; fill: #37352F; }
@@ -13,9 +13,9 @@
     .frame   { fill: #FFFFFF; stroke: #E3E1DD; stroke-width: 1.5; }
     .skel    { fill: #E3E1DD; }
     .accent  { fill: #F5DE7E; }
-    .cloud   { fill: #91A3B0; stroke: #E3E1DD; stroke-width: 2; stroke-linejoin: round; }
-    .cloudtri{ fill: #91A3B0; stroke: #E3E1DD; stroke-width: 1.5; }
-    .cloudbox{ fill: #91A3B0; stroke: #E3E1DD; stroke-width: 1.5; }
+    .cloud   { fill: #94A3B8; stroke: #E3E1DD; stroke-width: 2; stroke-linejoin: round; }
+    .cloudtri{ fill: #94A3B8; stroke: #E3E1DD; stroke-width: 1.5; }
+    .cloudbox{ fill: #94A3B8; stroke: #E3E1DD; stroke-width: 1.5; }
   </style>
 
   <!-- paper -->
