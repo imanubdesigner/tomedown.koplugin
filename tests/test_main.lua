@@ -651,6 +651,13 @@ T.check(T.contains(TextBoxWidget.last and TextBoxWidget.last.text or "",
 T.check(Button.last ~= nil
         and Button.last.text == "github.com/imanubdesigner/tomedown.koplugin",
     "about shows the GitHub URL")
+T.check(#Button.all >= 2
+        and Button.all[#Button.all - 1].text
+            == "codeberg.org/imanubdesigner/tomedown.koplugin",
+    "about shows the Codeberg URL first")
+T.check(type(Button.last.callback) == "function"
+        and type(Button.all[#Button.all - 1].callback) == "function",
+    "both repository URLs are tappable")
 -- the logo ships with the plugin and keeps its own ratio (viewBox)
 T.check(ImageWidget.last ~= nil
         and (ImageWidget.last.file or ""):find("assets/logo.svg", 1, true) ~= nil,

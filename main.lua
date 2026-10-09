@@ -1884,11 +1884,11 @@ function Tomedown:genSettingsMenu()
 end
 
 --- About: the popup Bookshelf shows - the logo, the installed version,
--- the description from _meta.lua and the tappable GitHub URL, centred
--- on the screen. No buttons; tapping outside the frame (or Back) closes
--- it. The logo lives in assets/ (SVG or PNG) and is only shown when
--- the file is there, so a copy of the plugin without it still shows
--- the rest.
+-- the description from _meta.lua and the tappable repository URLs
+-- (Codeberg first, GitHub as the mirror), centred on the screen. No
+-- buttons; tapping outside the frame (or Back) closes it. The logo
+-- lives in assets/ (SVG or PNG) and is only shown when the file is
+-- there, so a copy of the plugin without it still shows the rest.
 function Tomedown:showAbout()
     local src = debug.getinfo(1, "S").source
     local plugin_dir
@@ -1904,11 +1904,16 @@ function Tomedown:showAbout()
         end
     end
 
-    -- Hard-coded English URL; not translatable. Display form drops the
+    -- Hard-coded English URLs; not translatable. Display form drops the
     -- https:// prefix; the full URL with the scheme is what
-    -- Device:openLink and the clipboard receive on tap.
-    local GITHUB_URL_DISPLAY = "github.com/imanubdesigner/tomedown.koplugin"
-    local GITHUB_URL = "https://github.com/imanubdesigner/tomedown.koplugin"
+    -- Device:openLink and the clipboard receive on tap. Codeberg first:
+    -- it is the host that answers while the GitHub side stays a 404
+    local REPOS = {
+        { display = "codeberg.org/imanubdesigner/tomedown.koplugin",
+            url = "https://codeberg.org/imanubdesigner/tomedown.koplugin" },
+        { display = "github.com/imanubdesigner/tomedown.koplugin",
+            url = "https://github.com/imanubdesigner/tomedown.koplugin" },
+    }
 
     local Screen = Device.screen
     local Geom = require("ui/geometry")
@@ -2006,30 +2011,37 @@ function Tomedown:showAbout()
     -- Tappable URL: Device:openLink where it exists (SDL/Android); on
     -- the e-reader the URL goes to KOReader's internal clipboard with
     -- a brief Notification instead (no browser to open)
-    local function open_github()
-        local ok = false
-        if Device.openLink then
-            local ok_call, ret = pcall(function() return Device:openLink(GITHUB_URL) end)
-            if ok_call and ret then
-                ok = true
+    local function open_link(url)
+        return function()
+            local ok = false
+            if Device.openLink then
+                local ok_call, ret = pcall(function() return Device:openLink(url) end)
+                if ok_call and ret then
+                    ok = true
+                end
+            end
+            if not ok and Device.input and Device.input.setClipboardText then
+                pcall(function() Device.input.setClipboardText(url) end)
+                UIManager:show(Notification:new{
+                    text = _("Link copied to clipboard"),
+                })
             end
         end
-        if not ok and Device.input and Device.input.setClipboardText then
-            pcall(function() Device.input.setClipboardText(GITHUB_URL) end)
-            UIManager:show(Notification:new{
-                text = _("Link copied to clipboard"),
-            })
-        end
     end
-    column[#column + 1] = Button:new{
-        text = GITHUB_URL_DISPLAY,
-        bordersize = 0,
-        padding = 0,
-        margin = 0,
-        text_font_face = "cfont",
-        text_font_size = 14,
-        callback = open_github,
-    }
+    for i, repo in ipairs(REPOS) do
+        if i > 1 then
+            column[#column + 1] = VerticalSpan:new{ width = Size.padding.small }
+        end
+        column[#column + 1] = Button:new{
+            text = repo.display,
+            bordersize = 0,
+            padding = 0,
+            margin = 0,
+            text_font_face = "cfont",
+            text_font_size = 14,
+            callback = open_link(repo.url),
+        }
+    end
 
     local frame = FrameContainer:new{
         radius = Size.radius.window,
