@@ -1822,4 +1822,115 @@ T.check(T.contains(status, "3 files backed up (.bak)"),
     "status shows the backups: " .. tostring(status))
 
 BookList.registry[FILE].annotations = modernAnnotations()
+
+-- --------------- 16. the open book reads the reader's live data (v1.0)
+-- While a book is open KOReader keeps its props in memory and writes the
+-- .sdr only on close/suspend/periodic autosave: an export made in
+-- between used to read the stale flush, lose the series (the index row
+-- fell into "My books") and count highlights the flush never saw.
+
+store.tomedown.upload = false
+local rec16 = BookList.registry[FILE]
+local disk_props16, disk_annotations16 = rec16.doc_props, rec16.annotations
+
+-- the .sdr on disk: the last flush, without the series
+rec16.doc_props = { title = "Blackwater", authors = "Michael McDowell" }
+
+-- the book is open: KOReader has already read the metadata from the epub
+ui.document = { file = FILE }
+ui.doc_props = {
+    title = "Blackwater",
+    authors = "Michael McDowell",
+    series = "Wayward Pines",
+    series_index = 1,
+}
+-- and two highlights that never reached the disk
+local live16 = {}
+for __, a in ipairs(disk_annotations16) do
+    live16[#live16 + 1] = a
+end
+live16[#live16 + 1] = {
+    drawer = "underline", text = "Appena evidenziata.", pageno = 12,
+    datetime = "2026-10-13 09:00:00",
+}
+live16[#live16 + 1] = {
+    drawer = "underline", text = "L'altra appena evidenziata.", pageno = 13,
+    datetime = "2026-10-13 09:01:00",
+}
+ui.annotation = { annotations = live16 }
+
+-- the book file without the live annotations: the series still has to
+-- come from the live props (it is missing on disk)
+plugin.book_cache = nil
+local stale_book16 = plugin:buildBook(FILE)
+T.check(stale_book16 ~= nil and stale_book16.series == "Wayward Pines",
+    "buildBook: series from the live props of the open book: "
+        .. tostring(stale_book16 and stale_book16.series))
+local disk_count16 = stale_book16 and stale_book16.count or 0
+
+plugin.book_cache = nil
+local live_book16 = plugin:buildBook(FILE, live16)
+T.check(live_book16 ~= nil and live_book16.count == disk_count16 + 2,
+    "buildBook with the live annotations: "
+        .. tostring(live_book16 and live_book16.count)
+        .. " highlights, " .. (disk_count16 + 2) .. " expected")
+
+-- the index entry is built from the same live data as the book file
+local entries16 = plugin:buildIndexEntries(DIR, store.tomedown.exports)
+local entry16
+for __, e in ipairs(entries16) do
+    if e.link == BASE then
+        entry16 = e
+    end
+end
+T.check(entry16 ~= nil, "the open book is in the index entries")
+T.check(entry16 ~= nil and entry16.series == "Wayward Pines",
+    "index entry: series from the live props: "
+        .. tostring(entry16 and entry16.series))
+T.check(entry16 ~= nil and entry16.count == disk_count16 + 2,
+    "index entry counts the highlights still in memory: "
+        .. tostring(entry16 and entry16.count)
+        .. ", " .. (disk_count16 + 2) .. " expected")
+
+-- the full export puts the row in the series table, not in "My books"
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+local md16 = T.readFile(MD_PATH) or ""
+T.check(T.contains(md16, 'series: "Wayward Pines"'),
+    "book file: series from the live props")
+local index16 = T.readFile(INDEX_PATH) or ""
+T.check(T.contains(index16, "Wayward Pines #1"),
+    "index: the row lands in the series table")
+
+-- a failed index write is reported instead of passing silently (a file
+-- held open by another app: Obsidian on Windows, an editor anywhere)
+local util16 = require("util")
+local real_write16 = util16.writeToFile
+util16.writeToFile = function(data, filepath, ...)
+    if filepath == INDEX_PATH then
+        return nil, "Simulated failure"
+    end
+    return real_write16(data, filepath, ...)
+end
+plugin:runExport({ FILE }, {})
+util16.writeToFile = real_write16
+T.check(store.tomedown.last_export ~= nil
+        and store.tomedown.last_export.errors == 1,
+    "the failed index write is counted as an error: "
+        .. tostring(store.tomedown.last_export
+            and store.tomedown.last_export.errors))
+T.check(T.contains(InfoMessage.last_text or "", "Errors:")
+        and T.contains(InfoMessage.last_text or "", INDEX_PATH:match("[^/]+$")
+            .. ": Simulated failure"),
+    "the error names the index file: "
+        .. tostring(InfoMessage.last_text))
+
+-- back to the state the other tests expect
+rec16.doc_props = disk_props16
+rec16.annotations = disk_annotations16
+ui.document = nil
+ui.doc_props = nil
+ui.annotation = nil
+plugin.book_cache = nil
+
 T.finish("test_main")

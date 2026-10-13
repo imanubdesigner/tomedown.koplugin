@@ -502,6 +502,19 @@ function Tomedown:ensureCover(file, base, dir)
     return nil
 end
 
+--- The reader UI when `file` is the book currently open, else nil.
+-- While a book is open KOReader keeps its data (props, annotations,
+-- progress) in memory and writes the .sdr only on close, on suspend or
+-- with the periodic autosave: an export made mid-reading has to see what
+-- the reader itself sees, or the series column of the index comes from a
+-- flush older than the book (and the row lands in "My books").
+function Tomedown:openReader(file)
+    if self.ui and self.ui.document and self.ui.document.file == file then
+        return self.ui
+    end
+    return nil
+end
+
 function Tomedown:buildBook(file, live_annotations)
     if self.book_cache and self.book_cache[file] ~= nil then
         return self.book_cache[file]
@@ -509,6 +522,7 @@ function Tomedown:buildBook(file, live_annotations)
 
     local book
     if BookList.hasBookBeenOpened(file) then
+        local open = self:openReader(file)
         local ds = BookList.getDocSettings(file)
         if ds then
             local raw = live_annotations or ds:readSetting("annotations")
@@ -519,7 +533,12 @@ function Tomedown:buildBook(file, live_annotations)
             local bookmarks = getSetting("include_bookmarks", false)
                 and self:cleanBookmarks(raw) or {}
             if #annotations > 0 or #bookmarks > 0 then
-                local props = BookInfo.extendProps(ds:readSetting("doc_props"), file)
+                -- the open book's props are the ones KOReader read from
+                -- the file; the .sdr copy is the last flush and may not
+                -- know the series yet
+                local doc_props = (open and open.doc_props)
+                    or ds:readSetting("doc_props")
+                local props = BookInfo.extendProps(doc_props, file)
                 local title = props.display_title or file
                 local author = props.authors
                 local base = self:fileBase(file, props)
@@ -599,11 +618,8 @@ end
 function Tomedown:buildBooks(files)
     local books = {}
     for __, file in ipairs(files) do
-        local live
-        if self.ui and self.ui.document and self.ui.document.file == file
-            and self.ui.annotation then
-            live = self.ui.annotation.annotations
-        end
+        local open = self:openReader(file)
+        local live = open and open.annotation and open.annotation.annotations
         local ok, book = pcall(self.buildBook, self, file, live)
         if ok then
             if book then
@@ -623,7 +639,11 @@ function Tomedown:buildIndexEntries(dir, export_records)
     local new_covers = {}
     local with_covers = getSetting("covers", false)
     for __, file in ipairs(self:listBookFiles()) do
-        local book = self:buildBook(file)
+        -- same live data the export above writes into the book file:
+        -- the .sdr still holds the previous flush while the book is open
+        local open = self:openReader(file)
+        local live = open and open.annotation and open.annotation.annotations
+        local book = self:buildBook(file, live)
         if book and lfs.attributes(dir .. "/" .. book.base .. ".md") then
             local cover_rel = Cover.relPath(book.base)
             local has_cover = lfs.attributes(dir .. "/" .. cover_rel, "mode") == "file"
@@ -861,11 +881,8 @@ function Tomedown:runExport(files, opts)
     local backups = 0
 
     for __, file in ipairs(files) do
-        local live
-        if self.ui and self.ui.document and self.ui.document.file == file
-            and self.ui.annotation then
-            live = self.ui.annotation.annotations
-        end
+        local open = self:openReader(file)
+        local live = open and open.annotation and open.annotation.annotations
         local ok, book = pcall(self.buildBook, self, file, live)
         if not ok then
             logger.err("tomedown: cannot read annotations of", file, book)
@@ -959,7 +976,9 @@ function Tomedown:runExport(files, opts)
                     end
                 end
             end
-            if util.writeToFile(content, index_path, true, false, true) then
+            local index_ok, index_err =
+                util.writeToFile(content, index_path, true, false, true)
+            if index_ok then
                 written[#written + 1] = index_path
                 setSetting("index_regions",
                     merge.fingerprints(merge.split(index_md)))
@@ -967,6 +986,12 @@ function Tomedown:runExport(files, opts)
                 for __, path in ipairs(new_covers) do
                     written[#written + 1] = path
                 end
+            else
+                -- a silent failure here leaves the old index in place
+                -- while the export reports success (a file held open by
+                -- another app: Obsidian on Windows, an editor anywhere)
+                errors[#errors + 1] = INDEX_FILENAME .. ": "
+                    .. tostring(index_err)
             end
         end
     end
