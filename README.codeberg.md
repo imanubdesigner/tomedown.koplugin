@@ -29,6 +29,7 @@
   - [Auto-export and offline reading](#auto-export-and-offline-reading)
   - [Upload retries](#upload-retries)
   - [Preserve your edits](#preserve-your-edits)
+  - [Editing in Obsidian while the device is away](#editing-in-obsidian-while-the-device-is-away)
 - [File format](#file-format)
 - [Obsidian (optional)](#obsidian-optional)
 - [Notes and limitations](#notes-and-limitations)
@@ -174,6 +175,10 @@ first export and optional Remotely Save in Obsidian — is in
 | *Preserve manual edits* | off by default (the tomedown ≤ 0.8 behaviour): switch it on and every export folds the new render into your file, keeping your zones; switching modes rewrites every file on the next export — see *Preserve your edits* |
 | *Personal notes: %1* | the heading above your notes block — tap it to rename, leave the field empty to export without a heading; the row exists only while *Preserve manual edits* is on (with the toggle off no heading ever reaches the file) |
 
+The *Cloud* group (shown when a server is set, *Upload to cloud* is on and *Preserve manual edits* is on — the row needs a write zone to fold into) has one more row. It appears and disappears in place as you flip those toggles, without leaving the menu:
+
+| *Merge edits made in the cloud* | on by default: before folding the new highlights in, the export fetches the copy in the cloud and uses it as the base when it changed since the last upload, so notes written in Obsidian on the desktop survive — see *Editing in Obsidian while the device is away* |
+
 With *Preserve manual edits* ticked the group grows the *Personal notes*
 row at the bottom (the heading of your notes block exports under):
 
@@ -284,8 +289,11 @@ settings keys are never renamed.
   just those.
 - **Import all books from history** — exports everything found in KOReader's
   reading history.
-- **Reload everything to the cloud** — re-uploads every file already in the
-  local folder (use it after a failed upload).
+- **Upload everything to the cloud** — re-uploads every file already in the
+  local folder (use it after a failed upload). Each markdown file is compared
+  with its cloud copy first: notes written in Obsidian are folded in before
+  the push, and a copy that cannot be read keeps its file out of the push
+  and into the queue for the retry.
 - **Status** — a wide popup (90% of the screen) in a small font: one line
   per entry, labels in bold, with network, server, pending uploads and
   the last export/upload with their timestamp and outcome.
@@ -384,7 +392,7 @@ the file fails immediately, because retrying would only cost waiting.
 
 If a file still fails after the 3 attempts, a window shows
 `Cloud: X uploaded, Y errors` and everything else continues: the files stay in
-the local folder, so you can fix the problem and use **Reload everything to
+the local folder, so you can fix the problem and use **Upload everything to
 the cloud**. The attempts are also logged:
 
 ```
@@ -498,6 +506,53 @@ Good to know:
   to compare, the block counts as ours);
 - the index is treated the same way: annotate it freely outside its
   `index` block and your notes survive the next export.
+
+### Editing in Obsidian while the device is away
+
+If you export to the cloud and keep the vault in sync (WebDAV/Dropbox/FTP,
+or Nextcloud, or Remotely Save), you can write your thoughts in Obsidian on
+the desktop and keep reading on the device. The two sides write the same
+file, so the export has to know which copy is the newer one — otherwise
+every export would fold the new highlights into the older copy on the
+device and push it over the notes you just wrote.
+
+With **Merge edits made in the cloud** on (the default, it lives in
+*Settings → Cloud* right under *Upload to cloud*), an export fetches the copy
+in the cloud before folding the render in, and uses it as the base when it
+has changed since the last upload Tomedown made — so the notes you wrote in
+Obsidian survive, and the fresh highlights are folded in next to them. The
+file then goes back to the cloud, and the device is up to date. The fetch
+only happens for the files actually being exported, and only while there is
+a connection; if the download fails, the export falls back to the file on
+the device and keeps it out of the upload, so nothing is lost — your notes
+stay in the cloud copy and the file is retried at the next chance.
+
+A few things worth knowing:
+
+- with *Preserve manual edits* off (the default) every export overwrites the
+  file, so the toggle has nothing to merge and does nothing — turn preserve
+  on to let your notes ride along;
+
+- the first export into a folder that already has files adopts the cloud
+  copy as the base, so an existing vault is not overwritten on the first
+  run;
+- turn the toggle off if you would rather have the device always win
+  (for example when the cloud folder is a backup and never edited
+  elsewhere);
+- **the offline window is safe too**: an export made with no connection
+  writes the highlights into the file on the device and queues it. When the
+  connection comes back, before that file is pushed, Tomedown fetches the
+  cloud copy and compares it with the one it last sent — if you wrote in
+  Obsidian in the meantime, that copy is folded into the file first, so the
+  notes ride along with the new highlights instead of being overwritten.
+  If a transient error stops the fetch, the file is held back and retried
+  at the next chance rather than pushed blind: nothing is lost in either
+  direction. The same guard runs while you are online: an export or an
+  upload whose cloud copy cannot be read keeps that file out of the push
+  and queues it for the retry. A server that cannot download has nothing
+  to compare against and receives the local copy as it is. *Upload
+  everything to the cloud* runs this same comparison before pushing; with
+  *Merge edits made in the cloud* off, the copy on the device always wins.
 
 ## File format
 
@@ -674,7 +729,7 @@ a clickable table and every title opens that book's file.
 - Uploads go through KOReader's *Cloud storage* plugin: if it is not active,
   the local export still works, only the upload is skipped.
 - If an upload fails (missing remote folder, no connection), the files stay
-  in the local folder: fix it and use **Reload everything to the cloud**.
+  in the local folder: fix it and use **Upload everything to the cloud**.
 
 ## Languages (English / Italian)
 

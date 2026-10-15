@@ -33,6 +33,9 @@ msgstr "Cloud: %1 caricati, %2 errori"
 msgid "Cloud: %1 files uploaded"
 msgstr "Cloud: %1 file caricati"
 
+msgid "Cloud: %1 files kept back, will retry"
+msgstr "Cloud: %1 file tenuti in attesa, nuovo tentativo"
+
 msgid "Errors:"
 msgstr "Errori:"
 
@@ -111,8 +114,11 @@ msgstr "Scegli libri…"
 msgid "Import all books from history"
 msgstr "Importa tutti i libri dalla cronologia"
 
-msgid "Reload everything to the cloud"
-msgstr "Ricarica tutto sul cloud"
+msgid "Upload everything to the cloud"
+msgstr "Carica tutto sul cloud"
+
+msgid "Merge edits made in the cloud"
+msgstr "Unisci le modifiche arrivate dal cloud"
 
 msgid "Settings"
 msgstr "Impostazioni"

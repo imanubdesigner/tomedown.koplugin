@@ -6,5 +6,5 @@ return {
 with frontmatter and an index, and uploads them to your cloud.]]),
     -- the update check compares this with the GitHub release tags; bump it
     -- to the tag (without the "v") whenever a release is published
-    version = "1.0.0-beta.1",
+    version = "1.0.0-beta.2",
 }

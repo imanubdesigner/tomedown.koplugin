@@ -171,13 +171,14 @@ fakeReleases({})
 
 local settings = plugin:genSettingsMenu()
 T.check(#settings == 3, "settings groups: " .. #settings)
-local cloud = settings[1].sub_item_table
+-- Cloud is rebuilt on open; with no server the Merge row is absent
+local cloud = settings[1].sub_item_table_func()
 local files = settings[2].sub_item_table_func()
 local updates = settings[3].sub_item_table
 T.check(files[3].text == "Include page bookmarks", "page bookmarks row")
 -- Auto-export lives flat in Settings > Markdown files now
 -- (test_main checks the rows)
-T.check(#cloud == 3, "cloud rows: " .. #cloud)
+T.check(#cloud == 3, "cloud rows without a server: " .. #cloud)
 T.check(updates[1].text_func() == "Check for updates (v" .. INSTALLED .. ")",
     "check row: " .. updates[1].text_func())
 T.check(updates[2].text == "View changelog", "changelog row")

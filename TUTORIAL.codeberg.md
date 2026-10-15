@@ -131,7 +131,7 @@ shown formatted, with *Update and restart* right in the window).
   empty: run an export first.
 - **Upload fails** — the uploader retries 3 times on its own; if it still
   fails, check the server/folder in *Settings → Server and folder…*, then
-  use **Reload everything to the cloud**.
+  use **Upload everything to the cloud**.
 - **Notes don't appear in Obsidian** — in Remotely Save run *Test* /
   *Sync now*, check the address is the one of **your** server (with
   Koofr: `https://app.koofr.net/dav/Koofr`, not the plain `/dav/` root,

@@ -45,7 +45,7 @@ local FILENAME_TEMPLATE = "%A - %T"
 
 -- upload retry: up to 3 attempts, wait doubling
 -- each time (2s, 4s), to absorb transient network blips without
--- having to trigger "Reload everything to the cloud" by hand.
+-- having to trigger "Upload everything to the cloud" by hand.
 local UPLOAD_MAX_ATTEMPTS = 3
 local UPLOAD_RETRY_BASE_DELAY = 2 -- seconds
 
@@ -697,6 +697,104 @@ function Tomedown:cloudProvider(server)
     return cloud.providers[server.type]
 end
 
+-- Where our uploads live, identified by server + folder: the hashes
+-- below only make sense against the same destination.
+local function cloudScope(server)
+    local remote_folder = getSetting("remote_folder")
+    return table.concat({
+        server.type or "?",
+        server.url or server.address or "?",
+        remote_folder or "",
+    }, "|")
+end
+
+--- What each file looked like the last time we uploaded it (nil when
+-- this server/folder never saw an upload from us: a first export into
+-- an existing cloud folder, an upgrade from tomedown 0.8).
+function Tomedown:cloudBase(server)
+    local store = getSetting("cloud_base")
+    if not store or store.scope ~= cloudScope(server) then
+        return nil
+    end
+    return store.files
+end
+
+--- Remember the content just uploaded for the local file `path`: the
+-- next export compares it with the cloud copy to tell "still ours"
+-- from "edited somewhere else in between".
+function Tomedown:markUploaded(server, path, dir)
+    local rel = path:sub(1, #dir + 1) == dir .. "/" and path:sub(#dir + 2)
+    if not rel or rel:sub(-3) ~= ".md" then
+        -- only the markdown is merged back: covers are pushed whole
+        return
+    end
+    local content = readIfExists(path)
+    if not content then
+        return
+    end
+    local store = getSetting("cloud_base")
+    local scope = cloudScope(server)
+    if not store or store.scope ~= scope then
+        store = { scope = scope, files = {} }
+    end
+    store.files[rel] = md5(content)
+    setSetting("cloud_base", store)
+end
+
+--- The copy of the local file `path` currently in the cloud (nil when
+-- there is none: nothing there, no download support, any failure — the
+-- caller keeps the local file). One GET per file being exported, and
+-- only while the reader has a connection.
+--
+-- The second return value names why there is no content, and only the
+-- flush below cares: "unsupported" (this server cannot download, so a
+-- push is the only move), "absent" (nothing there to lose), "failed"
+-- (a transient error — the export keeps its local file, the flush
+-- refuses to push over a copy it never got to see). nil means a copy
+-- was returned.
+function Tomedown:fetchRemote(server, path, dir)
+    local provider = self:cloudProvider(server)
+    if not (provider and provider.downloadFile) then
+        return nil, "unsupported"
+    end
+    local srv = util.tableDeepCopy(server)
+    local remote_folder = getSetting("remote_folder")
+    if remote_folder and remote_folder ~= "" then
+        srv.url = remote_folder
+    end
+    if not srv.url and srv.address then
+        srv.url = srv.address
+    end
+    provider.base = srv
+    local rel = path:sub(1, #dir + 1) == dir .. "/" and path:sub(#dir + 2)
+        or ffiUtil.basename(path)
+    local subdir = rel:match("^(.*)/[^/]+$")
+    local url = srv.url or ""
+    if subdir then
+        url = (url:gsub("/+$", "")) .. "/" .. subdir
+    end
+    -- providers download to <url>/<basename>
+    url = (url:gsub("/+$", "")) .. "/" .. ffiUtil.basename(path)
+    local tmp = os.tmpname()
+    local ok_call, ret = pcall(provider.downloadFile, url, tmp)
+    local code = type(ret) == "number" and ret or nil
+    local ok = ok_call and (ret == nil or code == nil
+        or (code >= 200 and code < 300))
+    if not ok then
+        os.remove(tmp)
+        if ok_call and code == 404 then
+            return nil, "absent"
+        end
+        return nil, "failed"
+    end
+    local content = readIfExists(tmp)
+    os.remove(tmp)
+    if not content or content == "" then
+        return nil, "absent"
+    end
+    return content
+end
+
 -- upload through the provider (webdav/dropbox/ftp) instead of via
 -- Cloud:uploadFile, which does not exist in every KOReader version.
 --
@@ -704,7 +802,7 @@ end
 -- exponential backoff wait (UPLOAD_RETRY_BASE_DELAY * 2^(n-1))
 -- between one attempt and the next, before being marked as a
 -- permanent failure. It absorbs transient network blips (WiFi reconnecting,
--- slow DNS, etc.) without needing a "Reload everything
+-- slow DNS, etc.) without needing an "Upload everything
 -- to the cloud" by hand every time.
 function Tomedown:uploadPaths(server, paths, callback)
     local provider = self:cloudProvider(server)
@@ -766,6 +864,9 @@ function Tomedown:uploadPaths(server, paths, callback)
             local ok_call, code = pcall(provider.uploadFile, upload_url, path, nil, true)
             local success = ok_call and type(code) == "number" and code >= 200 and code < 300
             if success then
+                -- remembered, so the next export can tell the cloud copy
+                -- we wrote from one edited elsewhere in the meantime
+                self:markUploaded(server, path, dir)
                 on_done(true)
                 return
             end
@@ -880,6 +981,46 @@ function Tomedown:runExport(files, opts)
     local notes_title = getNotesTitle()
     local backups = 0
 
+    -- a reader who edits the exported file somewhere else (Obsidian on
+    -- the desktop, synced through the same cloud folder) must not lose
+    -- that text: before the merge, the cloud copy is fetched and used
+    -- as the base when it moved on from the last upload. Everything
+    -- else (upload off, offline, silent suspend export, the option
+    -- turned off) keeps the local file as the base, as before
+    local pull_server
+    if preserve and getSetting("upload", false)
+            and getSetting("cloud_merge", true) and not silent
+            and NetworkMgr:isConnected() then
+        pull_server = self:getServer()
+    end
+    -- a cloud copy that could not be read during this run must not be
+    -- pushed over: those files stay out of the upload below and are
+    -- queued for the flush, which fetches them again and folds them in
+    -- (or keeps them back) before anything goes up
+    local unread = {}
+    local function mergeBase(rel, md_path, local_old)
+        if not pull_server then
+            return local_old
+        end
+        local remote, status = self:fetchRemote(pull_server, md_path, dir)
+        if status == "failed" then
+            logger.warn("tomedown:", rel,
+                "(cloud copy not fetched, holding the upload back)")
+            unread[md_path] = true
+        end
+        if not remote or remote == local_old then
+            return local_old
+        end
+        local stored = self:cloudBase(pull_server)
+        if stored and stored[rel] and md5(remote) == stored[rel] then
+            -- still the copy we uploaded: ours is the newer file
+            return local_old
+        end
+        logger.info("tomedown:", rel,
+            "was edited elsewhere: folding the cloud copy into the merge")
+        return remote
+    end
+
     for __, file in ipairs(files) do
         local open = self:openReader(file)
         local live = open and open.annotation and open.annotation.annotations
@@ -905,7 +1046,8 @@ function Tomedown:runExport(files, opts)
                 -- fold the file on disk into the render: the reader's
                 -- zones and front matter come across, the block is rebuilt
                 local content = md
-                local old = readIfExists(md_path)
+                local old = mergeBase(book.base .. ".md", md_path,
+                    readIfExists(md_path))
                 if old then
                     local merged, info = merge.apply(old, md,
                         record and record.regions,
@@ -961,7 +1103,8 @@ function Tomedown:runExport(files, opts)
             })
             -- the index is a region too: the reader may have annotated it
             local content = index_md
-            local old_index = readIfExists(index_path)
+            local old_index = mergeBase(INDEX_FILENAME, index_path,
+                readIfExists(index_path))
             if old_index then
                 local merged, info = merge.apply(old_index, index_md,
                     getSetting("index_regions"),
@@ -1053,10 +1196,32 @@ function Tomedown:runExport(files, opts)
     reportExport(queued)
 
     if has_upload and not queued then
+        -- a file whose cloud copy could not be read stays out of this
+        -- push and is queued: the flush fetches it again and folds it
+        -- in, instead of the export overwriting a copy it never saw
+        local push, held = {}, {}
+        for __, path in ipairs(written) do
+            if unread[path] then
+                held[#held + 1] = path
+            else
+                push[#push + 1] = path
+            end
+        end
+        if #held > 0 then
+            self:markPendingUploads(held)
+        end
+        if #push == 0 then
+            -- every file was held back: say it out loud instead of
+            -- looking like a clean export
+            UIManager:show(InfoMessage:new{
+                text = T(_("Cloud: %1 files kept back, will retry"), #held),
+            })
+            return
+        end
         -- stays open for the whole upload phase, retries included
         -- with backoff: without this the screen stays silent for minutes
-        local upload_info = self:showProgress(T(_("Uploading %1 files to the cloud…"), #written))
-        self:uploadPaths(server, written, function(ok_count, fail_count, failed)
+        local upload_info = self:showProgress(T(_("Uploading %1 files to the cloud…"), #push))
+        self:uploadPaths(server, push, function(ok_count, fail_count, failed)
             UIManager:close(upload_info)
             if #failed > 0 then
                 self:markPendingUploads(failed)
@@ -1066,7 +1231,7 @@ function Tomedown:runExport(files, opts)
                 failed_set[path] = true
             end
             local ok_paths = {}
-            for __, path in ipairs(written) do
+            for __, path in ipairs(push) do
                 if not failed_set[path] then
                     ok_paths[#ok_paths + 1] = path
                 end
@@ -1266,6 +1431,90 @@ function Tomedown:schedulePendingFlush()
     end)
 end
 
+--- Decide what a push may do before it sends anything: the flush of the
+-- queued files and "Upload everything to the cloud" both run it.
+-- Returns the paths that are safe to push and the paths held back.
+--
+-- An offline export wrote the new highlights into the local file while
+-- the copy in the cloud sat still — or the other way round, when the
+-- reader edited that copy in Obsidian in the meantime. Pushing blind
+-- would throw those edits away, so before a file is uploaded the cloud
+-- copy is fetched and compared with the one we last sent:
+--   - still ours (or gone, or a server that cannot download): push;
+--   - moved on: the cloud copy becomes the merge base, so the notes it
+--     holds ride along into the file the highlights are then pushed in;
+--   - not fetched (a transient error), or a copy the merge cannot fold
+--     (broken markers): the file stays pending. Nothing is overwritten
+--     and nothing is lost — the copy is still in the cloud and the new
+--     highlights are still on the device. "Upload everything to the
+--     cloud" runs this same comparison before it pushes; a reader who
+--     wants the copy on the device to win turns the merge option off.
+-- Only a markdown file is folded, the way it works at export time, and
+-- only while the reader keeps their edits: with preserve or the merge
+-- option off the file is pushed untouched.
+function Tomedown:reconcilePending(server, paths, dir)
+    local keep_merge = getSetting("preserve", false)
+        and getSetting("cloud_merge", true)
+    local ready, held = {}, {}
+    for __, path in ipairs(paths) do
+        local rel = path:sub(1, #dir + 1) == dir .. "/" and path:sub(#dir + 2)
+        local local_md = readIfExists(path)
+        local remote, status, tried
+        if rel and rel:sub(-3) == ".md" and keep_merge and local_md then
+            remote, status = self:fetchRemote(server, path, dir)
+            tried = true
+        end
+        if tried and status == "failed" then
+            -- the cloud copy may hold the reader's notes and we could
+            -- not see it: pushing now is exactly the overwrite this
+            -- whole path exists to prevent
+            logger.warn("tomedown: holding back", rel or path,
+                "(cloud copy not fetched, will retry at the next chance)")
+            held[#held + 1] = path
+        elseif remote and remote ~= local_md then
+            -- pcall reports its own success first: merged is the text
+            -- only when the call went through
+            local call_ok, merged, info = pcall(merge.apply, remote, local_md,
+                rel == INDEX_FILENAME and getSetting("index_regions") or nil,
+                { mode = "preserve", notes_title = getNotesTitle() })
+            if call_ok and merged
+                    and (info.reason == "merged" or info.reason == "format") then
+                -- the copy in the cloud is the base the next export
+                -- will compare against: keep it whole as .bak before
+                -- the folded file replaces the local one
+                local bak = io.open(path .. ".bak", "wb")
+                if bak then
+                    bak:write(remote)
+                    bak:close()
+                end
+                logger.info("tomedown:", rel,
+                    "was edited in the cloud: folding it into the offline export")
+                local written_ok = util.writeToFile(merged, path, true, false, true)
+                if written_ok then
+                    ready[#ready + 1] = path
+                else
+                    -- the local file still holds the highlights and the
+                    -- cloud copy still holds the notes: leave both be
+                    logger.warn("tomedown: cannot fold", rel or path,
+                        "into the offline export, holding it back")
+                    held[#held + 1] = path
+                end
+            else
+                local reason = type(info) == "table" and info.reason or "error"
+                logger.warn("tomedown: the cloud copy of", rel or path,
+                    "cannot be folded (" .. tostring(reason)
+                    .. "), holding it back")
+                held[#held + 1] = path
+            end
+        else
+            -- still our copy, nothing there, no download support or the
+            -- merge is off: what is on the device goes up as it is
+            ready[#ready + 1] = path
+        end
+    end
+    return ready, held
+end
+
 function Tomedown:flushPendingUploads()
     if self._flushing or not getSetting("upload", false) then
         return
@@ -1291,11 +1540,28 @@ function Tomedown:flushPendingUploads()
     if not server then
         return
     end
+    local dir = self:getLocalDir()
     table.sort(paths)
-    logger.info(string.format("tomedown: flushing %d pending uploads", #paths))
+    -- before anything is pushed, the cloud copies are compared with the
+    -- ones this device last sent: a file edited in Obsidian meanwhile is
+    -- folded into the offline export instead of being overwritten (see
+    -- reconcilePending; the option lives in Settings → Cloud)
+    local ready, held = self:reconcilePending(server, paths, dir)
+    if #ready == 0 then
+        -- everything is held back: the notes stay in the cloud and the
+        -- highlights stay on the device, nothing to push right now
+        self._flushing = false
+        if #held > 0 then
+            UIManager:show(InfoMessage:new{
+                text = T(_("Cloud: %1 files kept back, will retry"), #held),
+            })
+        end
+        return
+    end
+    logger.info(string.format("tomedown: flushing %d pending uploads", #ready))
     self._flushing = true
-    local upload_info = self:showProgress(T(_("Uploading %1 files to the cloud…"), #paths))
-    self:uploadPaths(server, paths, function(ok_count, fail_count, failed)
+    local upload_info = self:showProgress(T(_("Uploading %1 files to the cloud…"), #ready))
+    self:uploadPaths(server, ready, function(ok_count, fail_count, failed)
         UIManager:close(upload_info)
         self._flushing = false
         local failed_set = {}
@@ -1303,7 +1569,7 @@ function Tomedown:flushPendingUploads()
             failed_set[path] = true
         end
         local ok_paths = {}
-        for __, path in ipairs(paths) do
+        for __, path in ipairs(ready) do
             if not failed_set[path] then
                 ok_paths[#ok_paths + 1] = path
             end
@@ -1325,6 +1591,12 @@ function Tomedown:flushPendingUploads()
     end)
 end
 
+--- "Upload everything to the cloud": every markdown file and leftover
+-- cover in the local folder goes up. The markdown files run through the
+-- same reconciliation as the flush first (see reconcilePending): cloud
+-- edits are folded into the push and a copy that cannot be read keeps
+-- its file out of it, queued for the retry. With preserve or the merge
+-- option off the push is blind: the reader has chosen the device to win.
 function Tomedown:reuploadAll(touchmenu)
     if touchmenu and touchmenu.closeMenu then
         touchmenu:closeMenu()
@@ -1351,7 +1623,7 @@ function Tomedown:reuploadAll(touchmenu)
         return entry:sub(-3) == ".md"
     end)
     -- covers still sitting on the device (upload was off, or the upload
-    -- failed earlier) ride along with "Reload everything"
+    -- failed earlier) ride along with "Upload everything"
     listDir(dir .. "/covers", function(entry)
         return entry:sub(-4) == ".jpg"
     end)
@@ -1364,25 +1636,53 @@ function Tomedown:reuploadAll(touchmenu)
     end
 
     table.sort(paths)
-    local info = self:showProgress(T(_("Uploading %1 files to the cloud…"), #paths))
-    self:uploadPaths(server, paths, function(ok_count, fail_count, failed)
+    if not NetworkMgr:isConnected() then
+        -- nothing can go up now: queue everything and let the flush
+        -- push it when the connection comes back
+        self:markPendingUploads(paths)
+        UIManager:show(InfoMessage:new{
+            text = T(_("Cloud: %1 files kept back, will retry"), #paths),
+        })
+        return
+    end
+    -- the same guard the flush runs: a copy edited in Obsidian meanwhile
+    -- is folded into the push, a copy that cannot be read keeps its file
+    -- back in the queue instead of being overwritten
+    local ready, held = self:reconcilePending(server, paths, dir)
+    if #held > 0 then
+        self:markPendingUploads(held)
+    end
+    if #ready == 0 then
+        UIManager:show(InfoMessage:new{
+            text = T(_("Cloud: %1 files kept back, will retry"), #held),
+        })
+        return
+    end
+    local info = self:showProgress(T(_("Uploading %1 files to the cloud…"), #ready))
+    self:uploadPaths(server, ready, function(ok_count, fail_count, failed)
         UIManager:close(info)
+        local failed_set = {}
+        for __, path in ipairs(failed) do
+            failed_set[path] = true
+        end
+        local ok_paths = {}
+        for __, path in ipairs(ready) do
+            if not failed_set[path] then
+                ok_paths[#ok_paths + 1] = path
+            end
+        end
+        self:clearPendingUploads(ok_paths)
+        if #failed > 0 then
+            -- the failures join the queue too: the flush retries them at
+            -- the next chance, the way it already does for the export
+            self:markPendingUploads(failed)
+        end
         if getSetting("covers", false) then
-            local failed_set = {}
-            for __, path in ipairs(failed) do
-                failed_set[path] = true
-            end
-            local ok_paths = {}
-            for __, path in ipairs(paths) do
-                if not failed_set[path] then
-                    ok_paths[#ok_paths + 1] = path
-                end
-            end
             Cover.deleteUploaded(ok_paths, dir)
         end
         if fail_count > 0 then
             UIManager:show(InfoMessage:new{
-                text = T(_("Cloud: %1/%2 files uploaded, %3 errors"), ok_count, #paths, fail_count),
+                text = T(_("Cloud: %1/%2 files uploaded, %3 errors"), ok_count, #ready, fail_count),
             })
         else
             UIManager:show(Notification:new{
@@ -1624,7 +1924,13 @@ function Tomedown:invalidateExportHashes()
 end
 
 function Tomedown:genSettingsMenu()
-    local cloud = {
+    -- declared before the Cloud rows below: the Upload toggle inside
+    -- them rebuilds this very table in place, and in Lua a closure can
+    -- only see a local that is already declared when it is written.
+    -- `cloud` is forward-declared too, so buildCloudRows (also written
+    -- before the rows but called only once the menu opens) can copy it.
+    local cloud_table, buildCloudRows, cloud
+    cloud = {
         {
             text = _("Upload to cloud"),
             enabled_func = function()
@@ -1634,8 +1940,22 @@ function Tomedown:genSettingsMenu()
                 return self:hasServer() and getSetting("upload", false)
             end,
             keep_menu_open = true,
-            callback = function()
+            callback = function(touchmenu)
                 setSetting("upload", not getSetting("upload", false))
+                -- the Merge row below exists only while upload is on:
+                -- rebuild the open group in place (the same way the
+                -- Preserve toggle rebuilds Markdown files), so the row
+                -- shows up or goes away without leaving the menu
+                if touchmenu and cloud_table
+                        and touchmenu.item_table == cloud_table then
+                    local fresh = buildCloudRows()
+                    for i = #cloud_table, 1, -1 do
+                        cloud_table[i] = nil
+                    end
+                    for _, item in ipairs(fresh) do
+                        cloud_table[#cloud_table + 1] = item
+                    end
+                end
             end,
         },
         {
@@ -1670,6 +1990,36 @@ function Tomedown:genSettingsMenu()
             end,
         },
     }
+    -- The Merge row folds the cloud copy back into the file before the
+    -- render, but only a cloud reader has a cloud copy to fold, and
+    -- only while preserve keeps a write zone to fold into: with no
+    -- server, no upload or preserve off the row is not shown at all,
+    -- the way Personal notes below exists only while preserve is on.
+    -- The group is rebuilt every time it opens, and in place when the
+    -- Upload or Preserve toggle flips (both rebuild below).
+    -- (cloud_table, buildCloudRows and cloud are all declared before
+    -- the Cloud rows above, so the toggles can see them; here
+    -- buildCloudRows is only assigned, after the `cloud` table exists.)
+    buildCloudRows = function()
+        local rows = {}
+        for i, item in ipairs(cloud) do
+            rows[i] = item
+        end
+        if self:hasServer() and getSetting("upload", false)
+                and getSetting("preserve", false) then
+            rows[#rows + 1] = {
+                text = _("Merge edits made in the cloud"),
+                checked_func = function()
+                    return getSetting("cloud_merge", true)
+                end,
+                keep_menu_open = true,
+                callback = function()
+                    setSetting("cloud_merge", not getSetting("cloud_merge", true))
+                end,
+            }
+        end
+        return rows
+    end
     -- The Personal notes row renames the heading of the write zone, and
     -- that heading is written only behind the merge markers: with
     -- preserve off every export overwrites the file and no heading ever
@@ -1769,6 +2119,19 @@ function Tomedown:genSettingsMenu()
                     end
                     for _, item in ipairs(fresh) do
                         files_table[#files_table + 1] = item
+                    end
+                end
+                -- the Merge row in Cloud also needs preserve on (there
+                -- is no write zone to fold into without it): rebuild
+                -- that group too, so it stays in step
+                if touchmenu and cloud_table
+                        and touchmenu.item_table == cloud_table then
+                    local fresh = buildCloudRows()
+                    for i = #cloud_table, 1, -1 do
+                        cloud_table[i] = nil
+                    end
+                    for _, item in ipairs(fresh) do
+                        cloud_table[#cloud_table + 1] = item
                     end
                 end
             end,
@@ -1897,7 +2260,10 @@ function Tomedown:genSettingsMenu()
     }
     return {
         { text = withIcon("\xEE\xB4\xBE", _("Cloud")), -- cloud-sync
-            sub_item_table = cloud },
+            sub_item_table_func = function()
+                cloud_table = buildCloudRows()
+                return cloud_table
+            end },
         { text = withIcon("\xEF\x83\xB6", _("Markdown files")), -- file-text
             sub_item_table_func = function()
                 files_table = buildFilesRows()
@@ -2454,7 +2820,7 @@ function Tomedown:addToMainMenu(menu_items)
                 separator = true,
             },
             {
-                text = withIcon("\xEE\xB4\xBE", _("Reload everything to the cloud")),
+                text = withIcon("\xEE\xB4\xBE", _("Upload everything to the cloud")),
                 enabled_func = function()
                     return self:hasServer()
                 end,
