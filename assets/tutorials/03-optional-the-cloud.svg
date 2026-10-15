@@ -25,7 +25,7 @@
   <text class="label" x="64" y="56" font-size="13">TOMEDOWN — QUICKSTART</text>
   <text class="labelm" x="1136" y="56" font-size="13" text-anchor="end">KOReader plugin</text>
   <text class="display" x="64" y="124" font-size="56">Optional: the cloud</text>
-  <text class="deck" x="64" y="168" font-size="19">Point it at a server once and every export rides along — or don’t, and nothing changes.</text>
+  <text class="deck" x="64" y="168" font-size="19">Point it at a server once and every export rides along... or don’t, and nothing changes.</text>
   <line class="rule" x1="64" y1="204" x2="1136" y2="204"/>
 
   <!-- ============ column 01 — TURN IT ON ============ -->
@@ -85,7 +85,7 @@
   <rect class="cloudbox" x="470" y="506" width="300" height="34" rx="17"/>
   <text class="deck" x="620" y="528" font-size="13" text-anchor="middle">“Uploading 5 files to the cloud…”</text>
 
-  <text class="body" x="448" y="594" font-size="16">Every export sends the files up with it —</text>
+  <text class="body" x="448" y="594" font-size="16">Every export sends the files up with it...</text>
   <text class="body" x="448" y="616" font-size="16">the index too. The “Uploading…” message</text>
   <text class="body" x="448" y="638" font-size="16">stays on screen while it works.</text>
   <text class="labelm" x="448" y="672" font-size="11">refs: upload progress</text>
@@ -111,7 +111,7 @@
   <rect class="cloudbox" x="846" y="450" width="290" height="44" rx="7"/>
   <text class="code" x="991" y="477" font-size="11" text-anchor="middle">Cloud: 5 uploaded, 0 errors</text>
 
-  <text class="body" x="832" y="594" font-size="16">No cloud? Still works — files stay local.</text>
+  <text class="body" x="832" y="594" font-size="16">No cloud? Still works (files stay local).</text>
   <text class="body" x="832" y="616" font-size="16">A failed upload gets 3 retries, then</text>
   <text class="body" x="832" y="638" font-size="16">Upload everything to the cloud.</text>
   <text class="labelm" x="832" y="672" font-size="11">refs: upload retries</text>

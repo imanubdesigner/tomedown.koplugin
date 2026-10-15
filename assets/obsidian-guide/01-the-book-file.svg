@@ -33,7 +33,7 @@
   <text class="label" x="64" y="56" font-size="13">TOMEDOWN — OBSIDIAN GUIDE</text>
   <text class="labelm" x="1136" y="56" font-size="13" text-anchor="end">KOReader plugin</text>
   <text class="display" x="64" y="124" font-size="56">The book file</text>
-  <text class="deck" x="64" y="168" font-size="19">Every export writes it from scratch — this is the default, and what it means for your words.</text>
+  <text class="deck" x="64" y="168" font-size="19">Every export writes it from scratch... this is the default, and what it means for your words.</text>
   <line class="rule" x1="64" y1="204" x2="1136" y2="204"/>
 
   <!-- ============ the window: the file in Obsidian (source view) ============ -->
@@ -80,7 +80,7 @@
   <rect class="note" x="866" y="301" width="270" height="122" rx="10"/>
   <text class="nhead" x="884" y="333" font-size="11">FRONTMATTER</text>
   <text class="body" x="884" y="359" font-size="15">Tomedown's fields on top, your</text>
-  <text class="body" x="884" y="380" font-size="15">tags merged in — the same block</text>
+  <text class="body" x="884" y="380" font-size="15">tags merged in... the same block</text>
   <text class="body" x="884" y="401" font-size="15">at every export, never yours.</text>
   <path class="dash" marker-end="url(#ah)" d="M854 362 C760 362 720 362 640 362"/>
 
@@ -114,15 +114,15 @@
   <text class="label" x="478" y="1042" font-size="13">REPLACE</text>
   <line class="hair" x1="430" y1="1070" x2="770" y2="1070"/>
   <text class="body" x="430" y="1110" font-size="15.5">The file on disk is</text>
-  <text class="body" x="430" y="1134" font-size="15.5">overwritten wholesale —</text>
-  <text class="body" x="430" y="1158" font-size="15.5">nothing is folded in.</text>
+  <text class="body" x="430" y="1134" font-size="15.5">overwritten wholesale</text>
+  <text class="body" x="430" y="1158" font-size="15.5">(nothing is folded in).</text>
 
   <text class="display" x="796" y="1046" font-size="32">03</text>
   <text class="label" x="844" y="1042" font-size="13">ANY APP</text>
   <line class="hair" x1="796" y1="1070" x2="1136" y2="1070"/>
   <text class="body" x="796" y="1110" font-size="15.5">No handles at all: plain</text>
   <text class="body" x="796" y="1134" font-size="15.5">Markdown, at home in any</text>
-  <text class="body" x="796" y="1158" font-size="15.5">editor — just don't write in it.</text>
+  <text class="body" x="796" y="1158" font-size="15.5">editor (just don't write in it).</text>
 
   <!-- ============ the fix ============ -->
   <rect class="card" x="64" y="1230" width="1072" height="180" rx="10" fill="#FBFBFA"/>
@@ -130,15 +130,15 @@
   <rect x="96" y="1296" width="44" height="22" rx="11" fill="#FFFFFF" stroke="#E3E1DD" stroke-width="1.5"/>
   <circle cx="107" cy="1307" r="8" fill="#9B9A97"/>
   <text class="menu" x="156" y="1312" font-size="13">Preserve manual edits</text>
-  <text class="labelm" x="156" y="1334" font-size="11">OFF — THE DEFAULT</text>
+  <text class="labelm" x="156" y="1334" font-size="11">OFF (THE DEFAULT)</text>
   <text class="body" x="96" y="1374" font-size="15.5">Flip it on: the next export grows the heading, the markers and your</text>
-  <text class="body" x="96" y="1398" font-size="15.5">writing space — everything sheet 02 explains.</text>
+  <text class="body" x="96" y="1398" font-size="15.5">writing space (everything sheet 02 explains).</text>
   <path class="dash" marker-end="url(#ah)" d="M720 1308 H779"/>
   <rect class="pill" x="790" y="1286" width="314" height="44" rx="22" stroke="#7F6DF2"/>
   <text class="label" x="947" y="1313" font-size="12" text-anchor="middle" fill="#7F6DF2">SEE SHEET 02 · PRESERVE ON</text>
 
   <!-- closing line -->
-  <text class="deck" x="600" y="1500" font-size="17" text-anchor="middle">The default since 0.8 — and still the default at 1.0.</text>
+  <text class="deck" x="600" y="1500" font-size="17" text-anchor="middle">The default since 0.8... and still the default at 1.0.</text>
   <text class="body" x="600" y="1534" font-size="15" text-anchor="middle" fill="#9B9A97">Switching modes rewrites every file on the next export, and keeps nothing as .bak.</text>
 
   <!-- footer -->

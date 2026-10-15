@@ -35,7 +35,7 @@
   <text class="label" x="64" y="56" font-size="13">TOMEDOWN — OBSIDIAN GUIDE</text>
   <text class="labelm" x="1136" y="56" font-size="13" text-anchor="end">KOReader plugin</text>
   <text class="display" x="64" y="124" font-size="56">The index</text>
-  <text class="deck" x="64" y="168" font-size="19">One file for the whole library — rebuilt on every export, with its own write zone and its own switch.</text>
+  <text class="deck" x="64" y="168" font-size="19">One file for the whole library... rebuilt on every export, with its own write zone and its own switch.</text>
   <line class="rule" x1="64" y1="204" x2="1136" y2="204"/>
 
   <!-- ============ the window: 00 - Index.md in Obsidian (source view) ============ -->
@@ -67,7 +67,7 @@
   <text x="128" y="462" font-size="12" font-family="SF Mono, Menlo, Consolas, JetBrains Mono, Liberation Mono, DejaVu Sans Mono, monospace" fill="#37352F">## My notes... <tspan font-size="10" fill="#9B9A97">&lt;!-- tomedown:notes --&gt;</tspan></text>
   <rect class="dash" x="128" y="476" width="420" height="30" rx="4"/>
   <rect class="accent" x="120" y="520" width="4" height="16"/>
-  <text class="code" x="134" y="530" font-size="10.5">The slow-burn one — started in the tent.</text>
+  <text class="code" x="134" y="530" font-size="10.5">The slow-burn one | started in the tent.</text>
 
   <!-- the marker and the generated block -->
   <text class="comment" x="128" y="570" font-size="10.5">&lt;!-- tomedown:begin index hash=2a50b55d — generated below: do not edit inside … write your notes above --&gt;</text>
@@ -82,7 +82,7 @@
   <text class="struct" x="128" y="832" font-size="10.5">### My books</text>
   <text class="code" x="128" y="868" font-size="9.5">| Book | Author | Status | Last read | Highlights |</text>
   <text class="code" x="128" y="886" font-size="9.5">|:---|:---|:---|:---|---:|</text>
-  <text class="code" x="128" y="904" font-size="9.5">| [[Michael McDowell - Blackwater\|Blackwater]] | Michael McDowell | Reading&lt;br&gt;▰▰▰▰▰▰▰▰▰▰&amp;nbsp;96% | 30/09/2026 | 150 · ★42 |</text>
+  <text class="code" x="128" y="904" font-size="9.5">| [[Albert Camus - Lo straniero\|Lo straniero]] | Albert Camus | Reading&lt;br&gt;▰▰▰▰▰▰▰▰▰▰&amp;nbsp;96% | 30/09/2026 | 150 · ★42 |</text>
   <text class="code" x="128" y="922" font-size="9.5">| [[Alex North - Le Ombre\|Le Ombre]] | Alex North | Complete&lt;br&gt;▰▰▰▰▰▰▰▰▰▰&amp;nbsp;100% | 01/10/2026 | 10 |</text>
   <text class="comment" x="128" y="958" font-size="10.5">&lt;!-- tomedown:end index --&gt;</text>
 
@@ -105,7 +105,7 @@
   <rect class="note" x="916" y="572" width="220" height="116" rx="10"/>
   <text class="nhead" x="934" y="602" font-size="11">THE STATS LINE</text>
   <text class="body" x="934" y="626" font-size="14.5">Books, highlights and the</text>
-  <text class="body" x="934" y="646" font-size="14.5">starred specials — one</text>
+  <text class="body" x="934" y="646" font-size="14.5">starred specials... one</text>
   <text class="body" x="934" y="666" font-size="14.5">bold line, star in front.</text>
   <path class="dash" marker-end="url(#ah)" d="M904 630 C751 630 674 648 507 648"/>
 
@@ -123,7 +123,7 @@
   <text class="menu" x="990" y="884" font-size="12">Generate the</text>
   <text class="menu" x="990" y="900" font-size="12">00 - Index.md</text>
   <text class="labelm" x="934" y="926" font-size="10">ON BY DEFAULT</text>
-  <text class="body" x="934" y="954" font-size="13">Tick it — it already is.</text>
+  <text class="body" x="934" y="954" font-size="13">Tick it (it already is).</text>
   <text class="body" x="934" y="974" font-size="13">The index is written</text>
   <text class="body" x="934" y="994" font-size="13">next to the books, every run.</text>
 
@@ -199,8 +199,8 @@
   <text class="menu" x="760" y="1392" font-size="12.5">Last read</text>
   <text class="menu" x="1104" y="1392" font-size="12.5" text-anchor="end">Highlights</text>
   <line class="hair" x1="96" y1="1402" x2="1104" y2="1402"/>
-  <text class="ui link" x="96" y="1426" font-size="13">Blackwater</text>
-  <text class="ui" x="376" y="1426" font-size="13">Michael McDowell</text>
+  <text class="ui link" x="96" y="1426" font-size="13">Lo straniero</text>
+  <text class="ui" x="376" y="1426" font-size="13">Albert Camus</text>
   <text class="ui" x="560" y="1426" font-size="13">Reading</text>
   <text class="ui" x="760" y="1426" font-size="13">30/09/2026</text>
   <text class="ui" x="1104" y="1426" font-size="13" text-anchor="end">150 · ★42</text>
@@ -236,7 +236,7 @@
   </g>
   <text class="ui" x="693" y="1488" font-size="13">100%</text>
 
-  <text class="body" x="600" y="1538" font-size="13.5" text-anchor="middle" fill="#9B9A97">READING VIEW — real tables, every title a link; covers sit in the first column when switched on.</text>
+  <text class="body" x="600" y="1538" font-size="13.5" text-anchor="middle" fill="#9B9A97">READING VIEW | real tables, every title a link; covers sit in the first column when switched on.</text>
   <text class="deck" x="600" y="1582" font-size="17" text-anchor="middle">One switch, the same rules as the books: your zone above, the library below.</text>
 
   <!-- footer -->

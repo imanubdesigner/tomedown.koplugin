@@ -21,7 +21,7 @@
   <text class="label" x="64" y="56" font-size="13">TOMEDOWN — QUICKSTART</text>
   <text class="labelm" x="1136" y="56" font-size="13" text-anchor="end">KOReader plugin</text>
   <text class="display" x="64" y="124" font-size="56">Edit, keep it</text>
-  <text class="deck" x="64" y="168" font-size="19">Write in the file itself — flip one switch and every export leaves your notes alone.</text>
+  <text class="deck" x="64" y="168" font-size="19">Write in the file itself... flip one switch and every export leaves your notes alone.</text>
   <line class="rule" x1="64" y1="204" x2="1136" y2="204"/>
 
   <!-- ============ column 01 — WRITE ============ -->
@@ -63,7 +63,7 @@
   <text class="menu" x="656" y="366" font-size="11.5" text-anchor="middle">My notes...</text>
 
   <rect x="490" y="414" width="260" height="34" rx="17" fill="#FFFFFF" stroke="#E3E1DD" stroke-width="1.5"/>
-  <text class="deck" x="620" y="436" font-size="13.5" text-anchor="middle">rename it — if you want</text>
+  <text class="deck" x="620" y="436" font-size="13.5" text-anchor="middle">rename it... if you want</text>
 
   <text class="body" x="448" y="594" font-size="16">The heading is yours: rename it in</text>
   <text class="body" x="448" y="616" font-size="16">Settings ▸ Markdown files,</text>

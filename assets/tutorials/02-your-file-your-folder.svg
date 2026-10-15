@@ -22,7 +22,7 @@
   <text class="label" x="64" y="56" font-size="13">TOMEDOWN — QUICKSTART</text>
   <text class="labelm" x="1136" y="56" font-size="13" text-anchor="end">KOReader plugin</text>
   <text class="display" x="64" y="124" font-size="56">Your file, your folder</text>
-  <text class="deck" x="64" y="168" font-size="19">Export, and the file is already in the folder you chose — plain Markdown, open with anything.</text>
+  <text class="deck" x="64" y="168" font-size="19">Export, and the file is already in the folder you chose...plain Markdown, open with anything.</text>
   <line class="rule" x1="64" y1="204" x2="1136" y2="204"/>
 
   <!-- ============ column 01 — EXPORT ============ -->
@@ -81,8 +81,8 @@
   <text class="deck" x="640" y="436" font-size="13.5" text-anchor="middle">the default — pick any folder</text>
 
   <text class="body" x="448" y="594" font-size="16">That row shows the default; pick any</text>
-  <text class="body" x="448" y="616" font-size="16">folder you like — device, USB, a synced</text>
-  <text class="body" x="448" y="638" font-size="16">one. Cloud optional.</text>
+  <text class="body" x="448" y="616" font-size="16">folder you like (device, USB, a synced</text>
+  <text class="body" x="448" y="638" font-size="16">one). Cloud optional.</text>
   <text class="labelm" x="448" y="672" font-size="11">refs: settings ▸ markdown files</text>
 
   <!-- ============ column 03 — OPEN IT ============ -->
@@ -105,7 +105,7 @@
   <text class="code" x="862" y="498" font-size="10.5"># **HIGHLIGHTS: 150**</text>
 
   <text class="body" x="832" y="594" font-size="16">Open it with any app: Obsidian, a wiki,</text>
-  <text class="body" x="832" y="616" font-size="16">a text editor — it is plain Markdown.</text>
+  <text class="body" x="832" y="616" font-size="16">a text editor... it is plain Markdown.</text>
   <text class="body" x="832" y="638" font-size="16">Your notes sit under the heading.</text>
   <text class="labelm" x="832" y="672" font-size="11">refs: preserve your edits</text>
 

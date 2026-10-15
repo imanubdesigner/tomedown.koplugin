@@ -21,7 +21,7 @@
   <text class="label" x="64" y="56" font-size="13">TOMEDOWN — QUICKSTART</text>
   <text class="labelm" x="1136" y="56" font-size="13" text-anchor="end">KOReader plugin</text>
   <text class="display" x="64" y="124" font-size="56">From highlight to note</text>
-  <text class="deck" x="64" y="168" font-size="19">Mark it, export it, sync it, read it, edit it — and your own edits survive every export.</text>
+  <text class="deck" x="64" y="168" font-size="19">Mark it, export it, sync it, read it, edit it (your own edits survive every export).</text>
   <line class="rule" x1="64" y1="204" x2="1136" y2="204"/>
 
   <!-- ============ the five sheets ============ -->
@@ -111,7 +111,7 @@
   <text class="body" x="956" y="486" font-size="13">original stays as .bak.</text>
 
   <!-- statement -->
-  <text class="deck" x="64" y="586" font-size="24">“No code, five minutes — each sheet stands alone.”</text>
+  <text class="deck" x="64" y="586" font-size="24">“No code, five minutes (each sheet stands alone).”</text>
   <text class="body" x="64" y="620" font-size="16">Read them in order, or jump straight to the sheet you need.</text>
 
   <!-- CTA -->

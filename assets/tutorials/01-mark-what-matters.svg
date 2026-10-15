@@ -22,7 +22,7 @@
   <text class="label" x="64" y="56" font-size="13">TOMEDOWN — QUICKSTART</text>
   <text class="labelm" x="1136" y="56" font-size="13" text-anchor="end">KOReader plugin</text>
   <text class="display" x="64" y="124" font-size="56">Mark what matters</text>
-  <text class="deck" x="64" y="168" font-size="19">Select a passage, say what it is — and find it written down, in the folder you chose.</text>
+  <text class="deck" x="64" y="168" font-size="19">Select a passage, say what it is... and find it written down, in the folder you chose.</text>
   <line class="rule" x1="64" y1="204" x2="1136" y2="204"/>
 
   <!-- ============ column 01 — SELECT ============ -->
@@ -57,7 +57,7 @@
   <text class="menu" x="272" y="540" font-size="11">Translate</text>
 
   <text class="body" x="64" y="594" font-size="16">Long-press the sentence you care about.</text>
-  <text class="body" x="64" y="616" font-size="16">KOReader’s menu opens — Tomedown adds</text>
+  <text class="body" x="64" y="616" font-size="16">KOReader’s menu opens > Tomedown adds</text>
   <text class="body" x="64" y="638" font-size="16">its own row to it.</text>
   <text class="labelm" x="64" y="672" font-size="11">refs: selection dialog</text>
 
@@ -117,7 +117,7 @@
   <text class="code" x="862" y="494" font-size="10.5" fill="#9B9A97">folder: the one you chose</text>
 
   <text class="body" x="832" y="594" font-size="16">Close the book. Quote, note and the</text>
-  <text class="body" x="832" y="616" font-size="16">special passage are already in the .md —</text>
+  <text class="body" x="832" y="616" font-size="16">special passage are already in the .md -</text>
   <text class="body" x="832" y="638" font-size="16">plain Markdown, any app will open it.</text>
   <text class="labelm" x="832" y="672" font-size="11">refs: &gt; [!highlight]</text>
 
