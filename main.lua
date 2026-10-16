@@ -1546,7 +1546,22 @@ function Tomedown:flushPendingUploads()
     -- ones this device last sent: a file edited in Obsidian meanwhile is
     -- folded into the offline export instead of being overwritten (see
     -- reconcilePending; the option lives in Settings → Cloud)
-    local ready, held = self:reconcilePending(server, paths, dir)
+    --
+    -- _flushing goes up before the reconcile too: it costs one network
+    -- GET per file, and with the flag still down a reconnect or a resume
+    -- landing in the middle of that stretch would schedule a second
+    -- flush over the same paths. It comes down on every exit below, the
+    -- error one included, so a failure inside the reconcile cannot leave
+    -- the flush switched off for good.
+    self._flushing = true
+    local call_ok, ready, held = pcall(self.reconcilePending, self,
+        server, paths, dir)
+    if not call_ok then
+        self._flushing = false
+        logger.warn("tomedown: reconcile failed, nothing pushed:",
+            tostring(ready))
+        return
+    end
     if #ready == 0 then
         -- everything is held back: the notes stay in the cloud and the
         -- highlights stay on the device, nothing to push right now
@@ -1559,7 +1574,6 @@ function Tomedown:flushPendingUploads()
         return
     end
     logger.info(string.format("tomedown: flushing %d pending uploads", #ready))
-    self._flushing = true
     local upload_info = self:showProgress(T(_("Uploading %1 files to the cloud…"), #ready))
     self:uploadPaths(server, ready, function(ok_count, fail_count, failed)
         UIManager:close(upload_info)

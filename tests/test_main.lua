@@ -2248,6 +2248,44 @@ UIManager:runPending()
 T.check(not T.contains(T.readFile(MD_PATH) or "", "Solo sul cloud."),
     "18: cloud_merge off: the flush does not fold, the local copy wins")
 
+-- ---------------------- 18b. the flush stays busy while it fetches
+--
+-- the reconcile costs one network GET per file: a reconnect or a resume
+-- landing in the middle of that stretch has to find _flushing already
+-- up. With the flag down, schedulePendingFlush sees a free slot, queues
+-- a second flush over the same paths and both push them at once
+uploadSetup()
+store.tomedown.preserve = true
+store.tomedown.cloud_merge = true
+store.tomedown.pending_uploads = { [MD_PATH] = true }
+NetworkMgr.connected = true
+remote_files, download_fails, downloads = {}, {}, {}
+
+local orig_reconcile = plugin.reconcilePending
+local reached, seen_busy, seen_rescheduled = false, nil, nil
+plugin.reconcilePending = function(self_plugin, server, paths, dir)
+    reached = true
+    seen_busy = self_plugin._flushing
+    -- exactly what onResume or onNetworkConnected would do right here
+    self_plugin._flush_scheduled = false
+    self_plugin:schedulePendingFlush()
+    seen_rescheduled = self_plugin._flush_scheduled
+    return orig_reconcile(self_plugin, server, paths, dir)
+end
+plugin:flushPendingUploads()
+plugin.reconcilePending = nil
+plugin._flush_scheduled = false
+UIManager:runPending()
+
+T.check(reached, "18b: the flush reaches the reconcile")
+T.check(seen_busy == true,
+    "18b: _flushing is up for the whole reconcile: " .. tostring(seen_busy))
+T.check(seen_rescheduled == false,
+    "18b: a schedule during the reconcile finds the flush busy: "
+        .. tostring(seen_rescheduled))
+T.check(next(store.tomedown.pending_uploads or {}) == nil,
+    "18b: the flush still pushes what it reconciled")
+
 -- --------------------------------- 19. "Upload everything" reconciles
 
 -- a note typed in Obsidian and synced to the cloud: pressing the button
