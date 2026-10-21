@@ -1,0 +1,129 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1740" height="1160" viewBox="0 0 1200 800" role="img" aria-label="Tomedown quickstart tutorial 01 — Mark what matters: select a passage, choose Highlight, Add note or Special Highlight, and find it in the exported file">
+  <style>
+    .display { font-family: Georgia, "Times New Roman", serif; font-weight: 700; fill: #37352F; }
+    .deck    { font-family: Georgia, "Times New Roman", serif; font-style: italic; fill: #5C5B57; }
+    .label   { font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; letter-spacing: 1.8px; fill: #37352F; }
+    .labelm  { font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; letter-spacing: 1.2px; fill: #9B9A97; }
+    .body    { font-family: Georgia, "Times New Roman", serif; fill: #37352F; }
+    .menu    { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight: 700; fill: #37352F; }
+    .code    { font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; fill: #37352F; }
+    .rule    { stroke: #E3E1DD; stroke-width: 1; }
+    .hair    { stroke: #E3E1DD; stroke-width: 1; opacity: 1; }
+    .card    { fill: #FFFFFF; stroke: #E3E1DD; stroke-width: 1.5; }
+    .frame   { fill: #FFFFFF; stroke: #E3E1DD; stroke-width: 1.5; }
+    .skel    { fill: #E3E1DD; }
+    .accent  { fill: #F5DE7E; }
+  </style>
+
+  <!-- paper -->
+  <rect width="1200" height="800" fill="#FFFFFF"/>
+
+  <!-- header -->
+  <text class="label" x="64" y="56" font-size="13">TOMEDOWN — QUICKSTART</text>
+  <text class="labelm" x="1136" y="56" font-size="13" text-anchor="end">KOReader plugin</text>
+  <text class="display" x="64" y="124" font-size="56">Mark what matters</text>
+  <text class="deck" x="64" y="168" font-size="19">Select a passage, say what it is... and find it written down, in the folder you chose.</text>
+  <line class="rule" x1="64" y1="204" x2="1136" y2="204"/>
+
+  <!-- ============ column 01 — SELECT ============ -->
+  <text class="display" x="64" y="256" font-size="32">01</text>
+  <text class="label" x="112" y="252" font-size="13">SELECT</text>
+  <line class="hair" x1="64" y1="274" x2="408" y2="274"/>
+
+  <!-- device -->
+  <rect class="frame" x="74" y="296" width="250" height="175" rx="10"/>
+  <rect class="skel" x="92" y="316" width="200" height="7" rx="3.5"/>
+  <rect class="skel" x="92" y="332" width="190" height="7" rx="3.5"/>
+  <rect class="accent" x="92" y="354" width="170" height="13" rx="2"/>
+  <circle cx="92" cy="367" r="4.5" fill="#FFFFFF" stroke="#E3E1DD" stroke-width="1.5"/>
+  <circle cx="262" cy="367" r="4.5" fill="#FFFFFF" stroke="#E3E1DD" stroke-width="1.5"/>
+  <rect class="skel" x="92" y="386" width="195" height="7" rx="3.5"/>
+  <rect class="skel" x="92" y="402" width="150" height="7" rx="3.5"/>
+
+  <!-- selection menu -->
+  <rect class="card" x="145" y="435" width="235" height="125" rx="7"/>
+  <line class="hair" x1="145" y1="447" x2="380" y2="447"/>
+  <line class="hair" x1="145" y1="473" x2="380" y2="473"/>
+  <line class="hair" x1="145" y1="499" x2="380" y2="499"/>
+  <line class="hair" x1="145" y1="525" x2="380" y2="525"/>
+  <line class="hair" x1="260" y1="435" x2="260" y2="560"/>
+  <text class="menu" x="158" y="462" font-size="11">Select</text>
+  <text class="menu" x="272" y="462" font-size="11">Highlight</text>
+  <text class="menu" x="158" y="488" font-size="11">Copy</text>
+  <text class="menu" x="272" y="488" font-size="11">Special Highlight</text>
+  <text class="menu" x="158" y="514" font-size="11">Add note</text>
+  <text class="menu" x="272" y="514" font-size="11">Wikipedia</text>
+  <text class="menu" x="158" y="540" font-size="11">Dictionary</text>
+  <text class="menu" x="272" y="540" font-size="11">Translate</text>
+
+  <text class="body" x="64" y="594" font-size="16">Long-press the sentence you care about.</text>
+  <text class="body" x="64" y="616" font-size="16">KOReader’s menu opens > Tomedown adds</text>
+  <text class="body" x="64" y="638" font-size="16">its own row to it.</text>
+  <text class="labelm" x="64" y="672" font-size="11">refs: selection dialog</text>
+
+  <!-- ============ column 02 — MARK IT ============ -->
+  <text class="display" x="448" y="256" font-size="32">02</text>
+  <text class="label" x="496" y="252" font-size="13">MARK IT</text>
+  <line class="hair" x1="448" y1="274" x2="792" y2="274"/>
+
+  <!-- menu with the special row -->
+  <rect class="card" x="470" y="296" width="300" height="120" rx="7"/>
+  <line class="hair" x1="470" y1="307" x2="770" y2="307"/>
+  <line class="hair" x1="470" y1="333" x2="770" y2="333"/>
+  <line class="hair" x1="470" y1="359" x2="770" y2="359"/>
+  <line class="hair" x1="470" y1="385" x2="770" y2="385"/>
+  <line class="hair" x1="620" y1="296" x2="620" y2="416"/>
+  <rect class="accent" x="620" y="332" width="150" height="26"/>
+  <text class="menu" x="483" y="323" font-size="11.5">Select</text>
+  <text class="menu" x="633" y="323" font-size="11.5">Highlight</text>
+  <text class="menu" x="483" y="349" font-size="11.5">Copy</text>
+  <text class="menu" x="633" y="349" font-size="11.5">Special Highlight</text>
+  <text class="menu" x="483" y="375" font-size="11.5">Add note</text>
+  <text class="menu" x="633" y="375" font-size="11.5">Wikipedia</text>
+  <text class="menu" x="483" y="401" font-size="11.5">Dictionary</text>
+  <text class="menu" x="633" y="401" font-size="11.5">Translate</text>
+
+  <!-- tap -->
+  <circle cx="750" cy="345" r="13" fill="none" stroke="#E3E1DD" stroke-width="2"/>
+  <circle cx="750" cy="345" r="3.5" fill="#37352F"/>
+  <!-- dashed route: from the flagged row, clear of the box, down to the toast -->
+  <path d="M780 345 C787 345 788 351 788 359 L788 468 C788 476 784 480 778 480" fill="none" stroke="#E3E1DD" stroke-width="2" stroke-dasharray="5 5"/>
+  <path d="M783 473 L775 480 L783 487" fill="none" stroke="#E3E1DD" stroke-width="2"/>
+
+  <!-- notification -->
+  <rect x="470" y="460" width="300" height="40" rx="20" fill="#FFFFFF" stroke="#E3E1DD" stroke-width="1.5"/>
+  <text class="deck" x="620" y="486" font-size="15" text-anchor="middle">“Highlight marked as special”</text>
+
+  <text class="body" x="448" y="594" font-size="16">Tap Special Highlight to flag it, or</text>
+  <text class="body" x="448" y="616" font-size="16">Add note to write why. Every choice</text>
+  <text class="body" x="448" y="638" font-size="16">reaches the exported file.</text>
+  <text class="labelm" x="448" y="672" font-size="11">refs: tomedown_special</text>
+
+  <!-- ============ column 03 — FIND IT ============ -->
+  <text class="display" x="832" y="256" font-size="32">03</text>
+  <text class="label" x="880" y="252" font-size="13">FIND IT</text>
+  <line class="hair" x1="832" y1="274" x2="1136" y2="274"/>
+
+  <!-- file card -->
+  <rect class="card" x="846" y="296" width="290" height="215" rx="7"/>
+  <text class="label" x="862" y="320" font-size="10">BLACKWATER.MD</text>
+  <line class="hair" x1="846" y1="332" x2="1136" y2="332"/>
+  <text class="code" x="862" y="358" font-size="11">&gt; First highlighted sentence.</text>
+  <text class="code" x="862" y="380" font-size="11">- **p. 10** · 02/09/2026</text>
+  <text class="code" x="872" y="400" font-size="11">- **NOTE:** *to reread*</text>
+  <rect class="accent" x="860" y="422" width="4" height="58"/>
+  <text class="code" x="874" y="444" font-size="11">&gt; [!highlight]</text>
+  <text class="code" x="874" y="466" font-size="11">&gt; Another highlight.</text>
+  <text class="code" x="862" y="494" font-size="10.5" fill="#9B9A97">folder: the one you chose</text>
+
+  <text class="body" x="832" y="594" font-size="16">Close the book. Quote, note and the</text>
+  <text class="body" x="832" y="616" font-size="16">special passage are already in the .md -</text>
+  <text class="body" x="832" y="638" font-size="16">plain Markdown, any app will open it.</text>
+  <text class="labelm" x="832" y="672" font-size="11">refs: &gt; [!highlight]</text>
+
+  <!-- footer -->
+  <line class="rule" x1="64" y1="730" x2="1136" y2="730"/>
+  <text class="label" x="64" y="758" font-size="12">TOMEDOWN · MARK WHAT MATTERS</text>
+  <text class="labelm" x="600" y="758" font-size="12" text-anchor="middle">01 / 05</text>
+  <text class="labelm" x="1136" y="758" font-size="12" text-anchor="end">2026</text>
+</svg>

@@ -11,13 +11,14 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/imanubdesigner/tomedown.koplugin/releases/latest"><img src="https://img.shields.io/github/v/release/imanubdesigner/tomedown.koplugin?style=for-the-badge&color=171717&labelColor=171717&logo=github&logoColor=white" alt="Latest release"></a>
-  <a href="https://github.com/imanubdesigner/tomedown.koplugin/actions/workflows/test.yml"><img src="https://img.shields.io/github/actions/workflow/status/imanubdesigner/tomedown.koplugin/test.yml?style=for-the-badge&labelColor=171717&logo=githubactions&logoColor=white&label=tests" alt="Test status"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/imanubdesigner/tomedown.koplugin?style=for-the-badge&color=171717&labelColor=171717" alt="License"></a>
+  <a href="https://codeberg.org/imanubdesigner/tomedown.koplugin"><img src="https://img.shields.io/badge/Codeberg-171717?style=for-the-badge&logo=codeberg&logoColor=white" alt="Codeberg"></a>
+  <a href="https://codeberg.org/imanubdesigner/tomedown.koplugin/releases/latest"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fcodeberg.org%2Fapi%2Fv1%2Frepos%2Fimanubdesigner%2Ftomedown.koplugin%2Freleases%2Flatest&query=%24.tag_name&label=release&color=171717&labelColor=171717&logo=codeberg&logoColor=white&style=for-the-badge" alt="Latest release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/AGPL--3.0-171717?style=for-the-badge&logo=gnu&logoColor=white" alt="License AGPL-3.0"></a>
 </p>
 
 ## Contents
 
+- [Quickstart](#quickstart)
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Configuration (one-off)](#configuration-one-off)
@@ -27,6 +28,8 @@
   - [Special highlights](#special-highlights)
   - [Auto-export and offline reading](#auto-export-and-offline-reading)
   - [Upload retries](#upload-retries)
+  - [Preserve your edits](#preserve-your-edits)
+  - [Editing in Obsidian while the device is away](#editing-in-obsidian-while-the-device-is-away)
 - [File format](#file-format)
 - [Obsidian (optional)](#obsidian-optional)
 - [Notes and limitations](#notes-and-limitations)
@@ -56,6 +59,27 @@ every volume stays separate:
 └── ...
 ```
 
+## Quickstart
+
+From the first highlight to a note you keep, in six sheets: the cover
+and one sheet per step. Start with **01**.
+
+![From highlight to note — the quickstart cover](assets/tutorials/00-cover.svg)
+
+![01 — Mark what matters: select a passage, say what it is, find it written down](assets/tutorials/01-mark-what-matters.svg)
+
+![02 — Your file, your folder: the export lands in the folder you chose, plain Markdown](assets/tutorials/02-your-file-your-folder.svg)
+
+![03 — Optional: the cloud: point Tomedown at a server once, every export rides along](assets/tutorials/03-optional-the-cloud.svg)
+
+![04 — Read it in Obsidian: Remotely Save bridges your cloud and your vault](assets/tutorials/04-read-it-in-obsidian.svg)
+
+![05 — Edit, keep it: write in the file itself, flip one switch and your edits survive every export](assets/tutorials/05-edit-keep-it.svg)
+
+Once the files are in your vault, the
+[Obsidian guide](OBSIDIAN.md) shows what you are looking at: the book
+file with and without Preserve, and the index.
+
 ## Requirements
 
 - KOReader with highlights in the modern format (old `.sdr` files, where
@@ -78,18 +102,23 @@ first export and optional Remotely Save in Obsidian — is in
 2. Get the plugin into `/mnt/us/koreader/plugins/`, either way:
 
    **a. Release zip (easiest)** — download `tomedown.koplugin-v*.zip` from the
-   [Releases](https://github.com/imanubdesigner/tomedown.koplugin/releases)
+   [Releases](https://codeberg.org/imanubdesigner/tomedown.koplugin/releases)
    page and unzip it *into* that folder: the zip already contains the
    `tomedown.koplugin/` directory.
 
    **b. From a clone of this repo** — copy the folder, leaving behind what
-   KOReader does not need (`tests/`, `assets/`, `README.md`, `TUTORIAL.md`,
-   git files):
+   KOReader does not need (tests, docs, git files and the guide artwork;
+   the logo stays, the About popup shows it):
 
    ```
-   rsync -a --exclude tests --exclude assets --exclude README.md \
-         --exclude TUTORIAL.md --exclude .git --exclude .github \
-         --exclude .gitignore \
+   rsync -a --exclude tests --exclude .git --exclude .github \
+         --exclude .gitattributes --exclude .gitignore \
+         --exclude README.md --exclude README.codeberg.md \
+         --exclude TUTORIAL.md --exclude TUTORIAL.codeberg.md \
+         --exclude OBSIDIAN.md --exclude SYNC-DIRECTION.md \
+         --exclude assets/menu --exclude assets/obsidian \
+         --exclude assets/obsidian-guide --exclude assets/tutorials \
+         --exclude assets/banner.svg \
          tomedown.koplugin /mnt/us/koreader/plugins/
    ```
 
@@ -101,6 +130,7 @@ first export and optional Remotely Save in Obsidian — is in
    /mnt/us/koreader/plugins/tomedown.koplugin/tomedown_render.lua
    /mnt/us/koreader/plugins/tomedown.koplugin/_meta.lua
    /mnt/us/koreader/plugins/tomedown.koplugin/languages/it.po
+   /mnt/us/koreader/plugins/tomedown.koplugin/assets/logo.svg
    /mnt/us/koreader/plugins/tomedown.koplugin/LICENSE
    ```
 
@@ -137,11 +167,22 @@ first export and optional Remotely Save in Obsidian — is in
 | Entry | What to do |
 |---|---|
 | *Local folder* | defaults to `clipboard/tomedown` inside KOReader's data folder; tap it to browse with KOReader's folder picker (long-press a folder to choose it) |
-| *Generate the 00 - Index.md (for Obsidian)* | builds the Obsidian table — a stats line on top (books, highlights, a link hint), then internal links, author, series, reading status, highlight count and last export date |
+| *Generate the 00 - Index.md (for Obsidian)* | builds the Obsidian tables — a stats line on top (books, highlights, starred specials), then the series books and your other books, each with the columns it actually has (internal links, author, series, highlight count with its stars, a Status column with the reading status over the progress bar and the percentage glued to it, and a Last read column with the date it was last opened) |
 | *Include page bookmarks* | off by default: adds a `# Page bookmarks` section (bookmarked page + note) after the highlights |
 | *Include book covers* | off by default: exports the cover of every book into `covers/` and embeds it in the book file and in the index; the cover is removed from the device once its upload succeeded (the vault copy is the master one). Requires **Obsidian 1.8.1 or newer** to display |
 | *All highlights as Special Highlights* | off by default: every highlight becomes an `> [!highlight]` callout instead of a plain quote; when off, only *Special Highlight* marks (see *Usage*) turn into callouts |
 | *Auto-export on close* | off by default: exports the book when you close it, and again (silently, no network) before the device suspends |
+| *Preserve manual edits* | off by default (the tomedown ≤ 0.8 behaviour): switch it on and every export folds the new render into your file, keeping your zones; switching modes rewrites every file on the next export — see *Preserve your edits* |
+| *Personal notes: %1* | the heading above your notes block — tap it to rename, leave the field empty to export without a heading; the row exists only while *Preserve manual edits* is on (with the toggle off no heading ever reaches the file) |
+
+The *Cloud* group (shown when a server is set, *Upload to cloud* is on and *Preserve manual edits* is on — the row needs a write zone to fold into) has one more row. It appears and disappears in place as you flip those toggles, without leaving the menu:
+
+| *Merge edits made in the cloud* | on by default: before folding the new highlights in, the export fetches the copy in the cloud and uses it as the base when it changed since the last upload, so notes written in Obsidian on the desktop survive — see *Editing in Obsidian while the device is away* |
+
+With *Preserve manual edits* ticked the group grows the *Personal notes*
+row at the bottom (the heading of your notes block exports under):
+
+![Markdown files settings with preserve ticked](assets/menu/settings/markdown_menu_preserve.png)
 
 Ticking or unticking *Include book covers* / *All highlights as Special Highlights*
 rewrites every already exported file on the next export (the stored hash is
@@ -248,8 +289,11 @@ settings keys are never renamed.
   just those.
 - **Import all books from history** — exports everything found in KOReader's
   reading history.
-- **Reload everything to the cloud** — re-uploads every file already in the
-  local folder (use it after a failed upload).
+- **Upload everything to the cloud** — re-uploads every file already in the
+  local folder (use it after a failed upload). Each markdown file is compared
+  with its cloud copy first: notes written in Obsidian are folded in before
+  the push, and a copy that cannot be read keeps its file out of the push
+  and into the queue for the retry.
 - **Status** — a wide popup (90% of the screen) in a small font: one line
   per entry, labels in bold, with network, server, pending uploads and
   the last export/upload with their timestamp and outcome.
@@ -296,6 +340,13 @@ you had missed.
 
 ![In Obsidian the flagged highlight renders as a callout while the plain quotes stay quotes](assets/obsidian/markdown_special_highlights.png)
 
+Callouts are an Obsidian convention. In **Notion** (and in GitHub, which
+only understands its own few alerts) the marker is imported as the
+literal text `[!highlight]` inside the quote — the quote, the page
+reference and the note all import normally, only the coloured box is
+missing; the word in brackets is the flag itself, there to be deleted or
+ignored.
+
 After every export, if *Upload to cloud* is on, the `.md` files and the index
 are uploaded to the chosen server automatically. With *Include book covers*
 ticked the `covers/` folder travels with them — it is created on the server
@@ -341,14 +392,173 @@ the file fails immediately, because retrying would only cost waiting.
 
 If a file still fails after the 3 attempts, a window shows
 `Cloud: X uploaded, Y errors` and everything else continues: the files stay in
-the local folder, so you can fix the problem and use **Reload everything to
+the local folder, so you can fix the problem and use **Upload everything to
 the cloud**. The attempts are also logged:
 
 ```
 tomedown: upload failed (attempt 1 of 3), retrying in 2 s: <path> 500
 ```
 
+### Preserve your edits
+
+Your vault is the destination, not a cache. Since 1.0 an export *can* fold
+the new render into the file that is already in your vault instead of
+overwriting it — but **Preserve manual edits** is off by default (what
+every release up to 0.8 always did), so upgrading changes nothing: switch
+it on in *Settings → Markdown files* and the file becomes a
+shared document. Every file holds one generated block. With the toggle
+on the block is wrapped in two invisible HTML comments Tomedown uses as
+handles, under the heading the plugin owns and with its tag — the plain
+export writes none of that: no comments, no tag, no heading, there is
+nothing to merge when every run overwrites:
+
+```markdown
+---
+title: "Blackwater"
+…
+---
+
+## My notes... <!-- tomedown:notes -->
+
+your own intro, links, thoughts — everything under the heading
+and outside the block is yours
+
+<!-- tomedown:begin body hash=54dc6b6b — ⛔ generated below: do not edit inside or updates stop arriving · write your notes above -->
+
+---
+
+# **150 highlights · ★ 42 special**
+
+# Chapter I
+
+> First highlighted sentence.
+
+- **p. 10** · 02/09/2026
+<!-- tomedown:end body -->
+```
+
+Obsidian and every Markdown renderer ignore the comments, so the file
+looks exactly the same. The begin comment carries the digest (`hash=…`)
+of the block it wraps — the proof Tomedown compares against to tell a
+touched block from one of its own at a glance. On every export:
+
+- text you wrote **outside** the block — under the heading, below the
+  end comment, your own frontmatter properties — is carried over
+  untouched, wherever it sits;
+- the block itself is always regenerated: new highlights, page
+  bookmarks, the highlight recap heading, the index;
+- a block you edited **inside** the comments is not a lost cause: the
+  whole previous file is kept as `<name>.md.bak` before the rewrite, so
+  your line waits in the backup while the fresh block joins in (the
+  toast reports `N files backed up (.bak)`); a file that has to be
+  rebuilt from scratch — markers broken beyond repair, an export from
+  tomedown ≤ 0.8 — comes with the same backup;
+- the frontmatter merges field by field: Tomedown's own fields
+  (`status`, `progress`, `exported`…) always show KOReader's values, your
+  tags are kept and unioned with the new ones, and a property only you
+  added (`rating: 5`, an alias…) survives — even a line the parser
+  cannot place is kept verbatim, at the end;
+- the heading is the plugin's line (with preserve on the
+  `<!-- tomedown:notes -->` tag gives it away): renamed from
+  *Personal notes: %1*
+  (*Settings → Markdown files*), it is rewritten on the
+  next export while your text below it stays put — leave the setting
+  empty and files export without a heading, and with preserve off
+  files export without one at all (the next run would take it — and
+  anything written under it — away);
+- the zone around it breathes: **two blank lines** under the heading
+  and two above the marker, so there is room to start writing —
+  nothing else is put in your way (the invitation older builds seeded
+  an empty zone with is dropped at the next merge). The
+  [Obsidian guide](OBSIDIAN.md) walks through the file as it sits in
+  the vault, with and without the toggle.
+
+One toggle in *Settings → Markdown files* controls all this:
+
+- **Preserve manual edits** — off by default: every export writes exactly
+  what was generated, which is what tomedown ≤ 0.8 always did — a plain
+  markdown file with no markers, no tag and no heading, replaced
+  wholesale on the next run. Switch it on and every export folds the new
+  render into your file; switching modes rewrites every file on the next
+  export (the plain file as it was comes along as `.bak` when the
+  handles appear).
+
+The result toast and the *Status* panel report the backups of the last
+run: `%1 files backed up (.bak)`.
+
+Good to know:
+
+- don't move or delete the `<!-- tomedown:begin … -->` comments (they
+  only exist with preserve on): a marker line you broke is repaired
+  around your zone on the next export,
+  a deleted one still recovers the zone (with a `.bak` alongside), and a
+  file with no markers at all is **adopted** — its text becomes the zone
+  above the block and the block joins in, nothing is lost (an export
+  from tomedown ≤ 0.8 is rebuilt once the same way, then behaves like
+  every other file);
+- files in the old three-region layout (preamble, highlights, bookmarks)
+  are migrated once: your zones move above and below the new single
+  block, the old generated content is dropped (the render has it again),
+  and a region you had edited survives only in the `.bak` written
+  alongside;
+- markers from older builds carry no hash: for them the fingerprint from
+  the last export decides whether the block counts as edited (with none
+  to compare, the block counts as ours);
+- the index is treated the same way: annotate it freely outside its
+  `index` block and your notes survive the next export.
+
+### Editing in Obsidian while the device is away
+
+If you export to the cloud and keep the vault in sync (WebDAV/Dropbox/FTP,
+or Nextcloud, or Remotely Save), you can write your thoughts in Obsidian on
+the desktop and keep reading on the device. The two sides write the same
+file, so the export has to know which copy is the newer one — otherwise
+every export would fold the new highlights into the older copy on the
+device and push it over the notes you just wrote.
+
+With **Merge edits made in the cloud** on (the default, it lives in
+*Settings → Cloud* right under *Upload to cloud*), an export fetches the copy
+in the cloud before folding the render in, and uses it as the base when it
+has changed since the last upload Tomedown made — so the notes you wrote in
+Obsidian survive, and the fresh highlights are folded in next to them. The
+file then goes back to the cloud, and the device is up to date. The fetch
+only happens for the files actually being exported, and only while there is
+a connection; if the download fails, the export falls back to the file on
+the device and keeps it out of the upload, so nothing is lost — your notes
+stay in the cloud copy and the file is retried at the next chance.
+
+A few things worth knowing:
+
+- with *Preserve manual edits* off (the default) every export overwrites the
+  file, so the toggle has nothing to merge and does nothing — turn preserve
+  on to let your notes ride along;
+
+- the first export into a folder that already has files adopts the cloud
+  copy as the base, so an existing vault is not overwritten on the first
+  run;
+- turn the toggle off if you would rather have the device always win
+  (for example when the cloud folder is a backup and never edited
+  elsewhere);
+- **the offline window is safe too**: an export made with no connection
+  writes the highlights into the file on the device and queues it. When the
+  connection comes back, before that file is pushed, Tomedown fetches the
+  cloud copy and compares it with the one it last sent — if you wrote in
+  Obsidian in the meantime, that copy is folded into the file first, so the
+  notes ride along with the new highlights instead of being overwritten.
+  If a transient error stops the fetch, the file is held back and retried
+  at the next chance rather than pushed blind: nothing is lost in either
+  direction. The same guard runs while you are online: an export or an
+  upload whose cloud copy cannot be read keeps that file out of the push
+  and queues it for the retry. A server that cannot download has nothing
+  to compare against and receives the local copy as it is. *Upload
+  everything to the cloud* runs this same comparison before pushing; with
+  *Merge edits made in the cloud* off, the copy on the device always wins.
+
 ## File format
+
+The file as it comes out with **Preserve manual edits** on — the plain
+export (the default) is the same document with the two comments, the
+heading and its tag left out:
 
 ```markdown
 ---
@@ -360,6 +570,7 @@ language: "it"
 pages: 1140
 exported: 2026-09-26
 highlights: 150
+special: 42
 status: "complete"
 progress: "96%"
 tags:
@@ -368,10 +579,13 @@ tags:
   - horror
   - gothic-fiction
 ---
+## My notes... <!-- tomedown:notes -->
+
+<!-- tomedown:begin body hash=9e7017ad — ⛔ generated below: do not edit inside or updates stop arriving · write your notes above -->
 
 ---
 
-# **HIGHLIGHTS: 150**
+# **150 highlights · ★ 42 special**
 
 ---
 
@@ -380,7 +594,8 @@ tags:
 > First highlighted sentence.
 > Second line of the same highlight.
 
-- **p. 10** · 02/09/2026 10:00 · note: to reread
+- **p. 10** · 02/09/2026 10:00
+  - **NOTE:** *to reread*
 
 > Another highlight.
 
@@ -393,6 +608,8 @@ tags:
 > Check the epilogue again
 
 - **p. 120** · 04/09/2026 08:15
+
+<!-- tomedown:end body -->
 ```
 
 - the frontmatter keeps what KOReader knows about the book: `series` and
@@ -411,7 +628,7 @@ tags:
 - with *Include book covers* ticked the file also carries `cover:
   "covers/Author - Title.jpg"` in the frontmatter and a centered `<img>`
   (wrapped in `<p align="center">`) right after the opening rule, with a
-  second rule between the cover and the `# **HIGHLIGHTS**` heading. The cover is the
+  second rule between the cover and the `# **150 highlights**` recap heading. The cover is the
   embedded one (or the custom cover KOReader knows), resized into a
   800×1200 JPEG and dropped from the device after a successful upload —
   the copy in the vault is the master one. Obsidian renders such images
@@ -425,7 +642,8 @@ tags:
   > First highlighted sentence.
   > Second line of the same highlight.
 
-  - **p. 10** · 02/09/2026 10:00 · note: to reread
+  - **p. 10** · 02/09/2026 10:00
+    - **NOTE:** *to reread*
   ```
 - the file name matches KOReader's standard exporter (`Author - Title`), so
   it does not clash with exports you already made
@@ -438,27 +656,34 @@ tags:
   format
 - the index uses wiki links (`[[…]]`), opened natively by Obsidian and by
   most Markdown apps; the body opens with a rule and a stats line (books,
-  highlights, a link hint) above the table, and with covers enabled the
-  first column shows the cover image (90×120 box):
+  highlights, starred specials) above the table, and with covers enabled the
+  first column shows the cover image (120×160 box):
 
   ```markdown
-  | <img src="covers/Michael McDowell - Blackwater.jpg" alt="" style="object-fit:contain;width:90px;height:120px"> | [[Michael McDowell - Blackwater\|Blackwater]] | Michael McDowell | Blackwater #1 | Complete | 150 | 26/09/2026 |
+  | <img src="covers/Michael McDowell - Blackwater.jpg" alt="" style="object-fit:contain;width:120px;height:160px"> | [[Michael McDowell - Blackwater\|Blackwater]] | Michael McDowell | Blackwater #1 | Complete<br>▰▰▰▰▰▰▰▰▰▰&nbsp;96% | 26/09/2026 | 150 · ★42 |
   ```
 
-  Without the option the cover column disappears; books without a series
-  or a reading status show a dash in those cells.
+  Without the option the cover column disappears. The Status cell holds
+  whatever the book has — the status word on the first line, the progress
+  bar under it with the percentage glued to the bar by a no-break space,
+  so Obsidian can never drop a two-digit `96%` onto a line of its own —
+  and a dash when it has none; the last read date has a column of its
+  own, the same goes for a missing series, and a book with starred
+  highlights shows them as `· ★42` next to the count.
 
 The sample above is what an English KOReader produces; with an Italian
 interface the same text comes out translated (see *Languages*).
 
-![The exported note in Obsidian: the properties, the rule and the centered cover](assets/obsidian/markdown_tags_cover.png)
+![The exported note in Obsidian: the properties, the rule, the centered cover and your notes as bullets under each highlight](assets/obsidian/markdown_tags_cover.png)
 
-![Hovering a title in the index opens a preview of the book's note: the bold HIGHLIGHTS heading, the chapter heading and the highlight](assets/obsidian/00_index_preview.png)
+![Hovering a title in the index opens a preview of the book's note: the bold highlight recap heading, the chapter heading and the highlight](assets/obsidian/00_index_preview.png)
 
 ## Obsidian (optional)
 
 Obsidian is just one way to read the notes: the files are plain Markdown,
-so any editor, reader or wiki works. If you do use Obsidian, only
+so any editor, reader or wiki works. The [Obsidian guide](OBSIDIAN.md)
+walks through the files as they appear in the vault — the book note with
+and without Preserve, and the index. If you do use Obsidian, only
 **Remotely Save** needs configuring here: the Tomedown plugin lives on
 KOReader, nothing special has to be installed in Obsidian. **Book covers
 (*Include book covers*) require Obsidian 1.8.1 or newer** — that is the
@@ -485,14 +710,15 @@ Nextcloud, ownCloud, a NAS… — substitute its address and credentials.
    vault (in this example `Bookshelf/`).
 4. Sync.
 
+One setting deserves a page of its own: Remotely Save's experimental
+**Sync Direction**. Leave it on **Bidirectional (default)** —
+[SYNC-DIRECTION.md](SYNC-DIRECTION.md) explains the five options and
+where your edits live.
+
 Result: `Bookshelf/Kindle/*.md` arrive in Obsidian, `00 - Index.md` opens as
 a clickable table and every title opens that book's file.
 
-![The book index in Obsidian: the stats line under the properties, then covers, titles, authors, highlight counts and last export in a table](assets/obsidian/index_v2_cover.png)
-
-
-https://github.com/user-attachments/assets/a345caf7-bf6d-42c7-87fa-177d601790fa
-
+![The book index in Obsidian: the stats line under the properties, then covers, titles, authors, the status word over its bar and percentage, the last read date and the highlight count](assets/obsidian/index_v2_cover.png)
 
 ## Notes and limitations
 
@@ -503,7 +729,7 @@ https://github.com/user-attachments/assets/a345caf7-bf6d-42c7-87fa-177d601790fa
 - Uploads go through KOReader's *Cloud storage* plugin: if it is not active,
   the local export still works, only the upload is skipped.
 - If an upload fails (missing remote folder, no connection), the files stay
-  in the local folder: fix it and use **Reload everything to the cloud**.
+  in the local folder: fix it and use **Upload everything to the cloud**.
 
 ## Languages (English / Italian)
 
@@ -519,7 +745,7 @@ texts. On English (or when no translation exists) the original msgid is
 used.
 
 The text inside the `.md` files is translated too (titles,
-`No chapter`, `N highlights`, `note:`, `Page bookmarks`, `Book index`, table
+`No chapter`, `N highlights`, `Page bookmarks`, `Book index`, table
 headers), so your exported notes follow KOReader's language.
 
 To fix or add a translation: edit `languages/it.po` (msgid = English source,
@@ -549,7 +775,7 @@ It covers Markdown rendering, `languages/it.po` sync, runtime translations
 and the behaviour of `main.lua` (export, menu, dialogs, fallback servers,
 uploads and retries) against a fake KOReader environment (`kostubs/`). It
 finishes with `luac5.1 -p` on the sources — the same Lua version that runs
-on the Kindle. The same suite runs on every push through GitHub Actions.
+on the Kindle.
 
 ## Project structure
 

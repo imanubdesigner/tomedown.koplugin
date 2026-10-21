@@ -79,6 +79,28 @@ function provider.uploadFile(url, local_path, etag, overwrite)
     return 200
 end
 
+-- what the cloud holds right now, per file name: the tests write the
+-- "remote copy" here to play an edit made in Obsidian and synced back
+local remote_files, download_fails, downloads = {}, {}, {}
+function provider.downloadFile(url, local_path)
+    downloads[#downloads + 1] = url
+    local name = url:match("([^/]+)$")
+    if download_fails[name] then
+        return 500
+    end
+    local content = remote_files[name]
+    if not content then
+        return 404
+    end
+    local f = io.open(local_path, "wb")
+    if not f then
+        return 404
+    end
+    f:write(content)
+    f:close()
+    return 200
+end
+
 local cloud = {
     providers = { webdav = provider },
     getServerNameType = function(_, server)
@@ -145,6 +167,20 @@ local function modernAnnotations()
     }
 end
 
+-- the same highlights plus a new one: what the reader marks while the
+-- device is away from the network
+local function modernAnnotationsWithExtra()
+    local list = modernAnnotations()
+    list[#list + 1] = {
+        drawer = "underline",
+        text = "Una frase letta offline.",
+        pageno = 12,
+        datetime = "2026-09-04 08:00:00",
+        chapter = "Capitolo I",
+    }
+    return list
+end
+
 BookList.setRegistry({
     [FILE] = {
         annotations = modernAnnotations(),
@@ -174,7 +210,7 @@ BookList.setRegistry({
     },
 })
 readhistory.hist = {
-    { file = FILE },
+    { file = FILE, time = os.time() },
     { file = FILE2 },
     { file = FILE3 },
     { file = FILE_DIM, dim = true },
@@ -198,6 +234,23 @@ end
 T.check(pre_inserted == 0,
     "init does not pre-insert into the ui chain: " .. pre_inserted)
 table.insert(ui, plugin) -- what ReaderUI/FileManager registerModule does
+
+-- the export follows the order of the text, like a paper book:
+-- positions beat page numbers, which only describe one layout
+local sorted = plugin:cleanAnnotations({
+    { drawer = "underline", text = "B", pageno = 37,
+        datetime = "2026-10-04 19:00:00",
+        pos0 = "/body/DocFragment[16]/body/p[10]/text().0" },
+    { drawer = "underline", text = "A", pageno = 39,
+        datetime = "2026-10-04 20:00:00",
+        pos0 = "/body/DocFragment[8]/body/p[2]/text().0" },
+    { drawer = "underline", text = "C", pageno = 38,
+        datetime = "2026-10-04 21:00:00",
+        pos0 = "/body/DocFragment[16]/body/p[8]/text().0" },
+})
+T.check(sorted[1].text == "A" and sorted[2].text == "C" and sorted[3].text == "B",
+    "positions in the text sort the highlights, not the page numbers: "
+    .. sorted[1].text .. sorted[2].text .. sorted[3].text)
 
 -- ------------------------------------------------------------- helpers
 
@@ -282,11 +335,11 @@ if md then
     T.check(T.contains(md, "highlights: 2"), "only the valid highlights")
     T.check(T.contains(md, "  - ebook"), "tag ebook")
     T.check(not T.contains(md, "# Blackwater"), "no h1 in the body")
-    T.check(T.contains(md, "# **HIGHLIGHTS: 2**"), "count")
+    T.check(T.contains(md, "# **2 highlights**"), "count")
     T.check(T.contains(md, "\n# Capitolo I"), "chapter 1")
     T.check(T.contains(md, "\n# Capitolo II"), "chapter 2")
     T.check(T.contains(md, "> Prima frase."), "quote")
-    T.check(T.contains(md, "- **p. 10** · 02/09/2026 10:00 · note: nota utente"), "meta with note")
+    T.check(T.contains(md, "- **p. 10** · 02/09/2026 10:00\n  - **NOTE:** *nota utente*"), "meta with note")
     T.check(T.contains(md, "nota utente"), "note present")
     T.check(not T.contains(md, "Segnalibro"), "page bookmark excluded")
     T.check(not T.contains(md, "Cancellato"), "deleted highlight excluded")
@@ -305,7 +358,10 @@ if index then
     T.check(T.contains(index, "[[Michael McDowell - Blackwater\\|Blackwater]]"),
         "wikilink in the index")
     T.check(T.contains(index, "| 2 |"), "index columns (count)")
-    T.check(T.contains(index, os.date("%d/%m/%Y")), "today's date in the index")
+    T.check(T.contains(index, os.date("%d/%m/%Y")),
+        "today's date in the index (last read)")
+    T.check(not T.contains(index, "Last export"),
+        "the export date column is gone from the index")
 end
 
 -- index with more rows after exporting every book
@@ -327,7 +383,7 @@ local legacy_md = T.readFile(DIR .. "/N_A - LibroVecchio.md")
 T.check(legacy_md ~= nil, "export of the book with the old .sdr")
 if legacy_md then
     T.check(T.contains(legacy_md, "> Vecchio evidenziato"), "highlight from a legacy .sdr")
-    T.check(T.contains(legacy_md, "note: nota vecchia"), "note from legacy bookmarks")
+    T.check(T.contains(legacy_md, "**NOTE:** *nota vecchia*"), "note from legacy bookmarks")
     T.check(T.contains(legacy_md, "**p. 3**"), "legacy page")
 end
 
@@ -421,6 +477,22 @@ if richMd then
     T.check(iSeries and iIndex and iLang and iSeries < iIndex and iIndex < iLang,
         "series, series_index, language in order")
 end
+-- the index reads what the book record carries: series, status,
+-- progress and when it was last opened
+local rich_index = T.readFile(INDEX_PATH)
+T.check(T.contains(rich_index or "", "| Blackwater #4 | Complete<br>"),
+    "the index row carries the series and the status")
+T.check(T.contains(rich_index or "", "▰▰▰▰▰▰▰▰▰▰&nbsp;96% |"),
+    "the reading bar with the percent glued to it")
+T.check(T.contains(rich_index or "", "| Status | Last read | Highlights |"),
+    "the date sits in a column of its own")
+T.check(T.contains(rich_index or "", os.date("%d/%m/%Y")),
+    "the index row carries the last read date")
+T.check(T.contains(rich_index or "", "### Series books")
+        and T.contains(rich_index or "", "### My books"),
+    "the series books and the rest sit under their own headings")
+T.check(not T.contains(rich_index or "", "Last export"),
+    "no export date column in the rich index either")
 T.check(store.tomedown.exports[FILE].hash ~= saved_hash,
     "hash changes with the new metadata")
 
@@ -445,7 +517,7 @@ T.check(sub[1].text == "\xEE\x89\xBC  Export current book", "menu item 1")
 T.check(sub[2].text == "\xEE\xA4\xB5  Export only what changed", "menu item 2")
 T.check(sub[3].text == "\xEE\xB9\x94  Choose books…", "menu item 3")
 T.check(sub[4].text == "\xEE\xA7\x99  Import all books from history", "menu item 4")
-T.check(sub[5].text == "\xEE\xB4\xBE  Reload everything to the cloud", "menu item 5")
+T.check(sub[5].text == "\xEE\xB4\xBE  Upload everything to the cloud", "menu item 5")
 T.check(sub[6].text == "\xEF\x83\xA4  Status", "menu item 6 with the dashboard")
 T.check(sub[6].separator == true, "separator before Settings")
 T.check(sub[7].text == "\xEF\x80\x93  Settings", "menu item 7 with the cog")
@@ -483,15 +555,20 @@ T.check(settings[1].text == "\xEE\xB4\xBE  Cloud", "cloud group with icon")
 T.check(settings[2].text == "\xEF\x83\xB6  Markdown files",
     "markdown files group with icon")
 T.check(settings[3].text == "\xEE\xB6\xAE  Updates", "updates group with icon")
-local cloud = settings[1].sub_item_table
-local files = settings[2].sub_item_table
+-- Cloud: rebuilt on open, the Merge row only exists with a server and
+-- upload on (no cloud copy to fold without them)
+local cloud = settings[1].sub_item_table_func()
 local updates = settings[3].sub_item_table
-T.check(#cloud == 3, "cloud rows: " .. #cloud)
-T.check(#files == 6, "markdown files rows: " .. #files)
+T.check(#cloud == 3, "cloud rows without a server: " .. #cloud)
 T.check(#updates == 4, "updates rows: " .. #updates)
 T.check(cloud[1].text == "Upload to cloud", "upload entry")
 T.check(cloud[2].text_func() == "Server and folder: not set", "server not set")
 T.check(T.contains(cloud[3].text_func(), "Remote folder: not set"), "remote folder not set")
+-- Markdown files: flat since 1.0, no Style/Behaviour submenus; the
+-- group is rebuilt on open because the Personal notes row only exists
+-- while preserve is on
+local files = settings[2].sub_item_table_func()
+T.check(#files == 7, "markdown files rows: " .. #files)
 T.check(T.contains(files[1].text_func(), "clipboard/tomedown"), "default local folder")
 T.check(files[2].text == "Generate the 00 - Index.md (for Obsidian)",
     "index entry with the file name and the Obsidian hint")
@@ -501,17 +578,109 @@ T.check(files[4].text == "Include book covers", "covers entry")
 T.check(files[4].checked_func() == false, "covers off by default")
 T.check(files[5].text == "All highlights as Special Highlights", "callout entry")
 T.check(files[5].checked_func() == false, "callout off by default")
-T.check(files[5].separator == true, "separator before the auto-export toggle")
-T.check(files[6].text == "Auto-export on close",
-    "auto-export lives in Markdown files")
+T.check(files[6].text == "Auto-export on close", "auto-export entry")
 T.check(files[6].checked_func() == false, "auto-export off by default")
+T.check(files[7].text == "Preserve manual edits", "preserve entry")
+T.check(files[7].checked_func() == false,
+    "manual edits off by default (the tomedown <= 0.8 behaviour)")
+T.check(files[8] == nil, "no personal notes row while preserve is off")
+
+-- flipping preserve shows the row in the open group, without leaving it
+local live = settings[2].sub_item_table_func()
+local open_menu = { item_table = live }
+live[7].callback(open_menu)
+T.check(store.tomedown.preserve == true, "preserve toggled on")
+T.check(#live == 8, "personal notes row appears with preserve on")
+local notes_row = live[8]
+T.check(notes_row.text_func() == "Personal notes: My notes...",
+    "notes heading entry: " .. notes_row.text_func())
+
+-- rename dialog
+plugin:editNotesTitle(nil)
+T.check(InputDialog.last ~= nil
+        and InputDialog.last.title == "Personal notes heading",
+    "notes heading dialog opened")
+InputDialog.last.input_text = "  Appunti miei  "
+InputDialog.last:simulateSave()
+T.check(store.tomedown.notes_title == "Appunti miei",
+    "heading saved and trimmed")
+T.check(notes_row.text_func() == "Personal notes: Appunti miei",
+    "menu entry updated")
+plugin:editNotesTitle(nil)
+InputDialog.last.input_text = ""
+InputDialog.last:simulateSave()
+T.check(store.tomedown.notes_title == "", "an empty title clears the heading")
+store.tomedown.notes_title = nil
+T.check(notes_row.text_func() == "Personal notes: My notes...",
+    "back to the default heading")
+
+-- back off: the row leaves the open group again
+live[7].callback(open_menu)
+T.check(store.tomedown.preserve == false, "preserve toggled back off")
+T.check(#live == 7, "personal notes row disappears with preserve off")
+T.check(files[7].checked_func() == false, "the toggle reflects the setting")
+store.tomedown.preserve = nil
+
+-- ------------- 16b. the Merge row needs the full cloud setup
+-- server + upload + preserve: without all three it is not shown at all,
+-- and the group rebuilds in place when the Upload or Preserve toggle
+-- flips (so the reader never has to leave and re-enter the group to
+-- see it appear or vanish)
+uploadSetup()
+store.tomedown.preserve = false
+local cloud_live = settings[1].sub_item_table_func()
+T.check(#cloud_live == 3,
+    "no Merge row with preserve off: " .. #cloud_live)
+
+-- flip Preserve on while the Cloud group is open: the row appears
+-- in place, without leaving the menu
+local cloud_menu = { item_table = cloud_live }
+-- (Preserve lives in the Markdown files group, but its callback
+-- rebuilds Cloud too when Cloud is the open group)
+files[7].callback(cloud_menu)
+T.check(store.tomedown.preserve == true, "preserve on from the Cloud group")
+T.check(#cloud_live == 4,
+    "Merge row appears with preserve on: " .. #cloud_live)
+T.check(cloud_live[4].text == "Merge edits made in the cloud",
+    "the Merge row itself")
+
+-- flip Upload off while the Merge row is visible: it leaves the open
+-- group in place, without the reader having to re-enter it
+cloud_live[1].callback(cloud_menu)
+T.check(store.tomedown.upload == false, "upload toggled off")
+T.check(#cloud_live == 3,
+    "Merge row leaves the open group when upload goes off: "
+        .. #cloud_live)
+
+-- flip Preserve off while upload is still on: same in-place rebuild
+cloud_live[1].callback(cloud_menu) -- upload back on
+files[7].callback(cloud_menu)      -- preserve off
+T.check(store.tomedown.preserve == false, "preserve off again")
+T.check(#cloud_live == 3,
+    "Merge row leaves the open group when preserve goes off: "
+        .. #cloud_live)
+
+-- put the shared store back the way the sections below expect it: a
+-- server, upload not chosen yet, preserve off (nothing above leaks)
+uploadSetup()
+store.tomedown.upload = nil
+store.tomedown.preserve = nil
+cloud_live = nil
+cloud_menu = nil
+cloud_menu = nil
+
+-- the rows that used to sit in the Style and Behaviour submenus, kept
+-- under the names the sections below toggle (all flat in `files` now)
+local behaviour = { [1] = files[6], [2] = files[7] }
+local style = { [2] = files[5] }
 T.check(updates[1].text_func() == "Check for updates (v"
         .. Update.getInstalledVersion() .. ")",
     "check row carries the installed version: " .. updates[1].text_func())
 T.check(updates[2].text == "View changelog", "changelog entry")
 T.check(updates[2].separator == true, "separator after the changelog entry")
 T.check(updates[3].text == "Check for updates in background", "background entry")
-T.check(updates[4].text == "Developer updates", "developer updates entry")
+T.check(updates[4].text == "\xEF\x84\xA6  Developer updates",
+    "developer updates entry with icon")
 local developer = updates[4].sub_item_table_func()
 T.check(#developer == 3, "beta check hidden by default: " .. #developer)
 T.check(developer[1].text == "Beta Releases", "beta releases entry")
@@ -544,6 +713,7 @@ T.check(#developer == 3, "beta check hidden again: " .. #developer)
 T.check(developer[1].separator == true, "separator back under the toggle")
 
 -- checkable rows must keep the menu open so KOReader refreshes them
+-- (the rows of the old Style and Behaviour submenus are in `files`)
 for _, group in ipairs({ sub, cloud, files, updates, developer }) do
     for i, row in ipairs(group) do
         if row.checked_func then
@@ -567,6 +737,13 @@ T.check(T.contains(TextBoxWidget.last and TextBoxWidget.last.text or "",
 T.check(Button.last ~= nil
         and Button.last.text == "github.com/imanubdesigner/tomedown.koplugin",
     "about shows the GitHub URL")
+T.check(#Button.all >= 2
+        and Button.all[#Button.all - 1].text
+            == "codeberg.org/imanubdesigner/tomedown.koplugin",
+    "about shows the Codeberg URL first")
+T.check(type(Button.last.callback) == "function"
+        and type(Button.all[#Button.all - 1].callback) == "function",
+    "both repository URLs are tappable")
 -- the logo ships with the plugin and keeps its own ratio (viewBox)
 T.check(ImageWidget.last ~= nil
         and (ImageWidget.last.file or ""):find("assets/logo.svg", 1, true) ~= nil,
@@ -843,7 +1020,7 @@ local onlyBmMd = T.readFile(DIR .. "/Autore B - SoloBookmark.md")
 T.check(onlyBmMd ~= nil, "bookmark-only book exported")
 if onlyBmMd then
     T.check(T.contains(onlyBmMd, "highlights: 0"), "frontmatter count zero")
-    T.check(not T.contains(onlyBmMd, "# **HIGHLIGHTS: 0**"), "no zero count line in the body")
+    T.check(not T.contains(onlyBmMd, "# **0 highlight"), "no zero count line in the body")
     T.check(T.contains(onlyBmMd, "\n# Page bookmarks"), "bookmark-only section")
     T.check(T.contains(onlyBmMd, "> Solo un segnalibro"), "bookmark-only quote")
 end
@@ -1028,7 +1205,7 @@ T.check(attempt_count[INDEX_PATH] == 1, "301 is not a success, but not transient
     .. tostring(attempt_count[INDEX_PATH]))
 T.check(#positives() == 0, "no delay on 301: " .. listStr(positives()))
 
--- ------------------------------------------------- 9. Reload everything
+-- ------------------------------------------------- 9. Upload everything
 
 uploadSetup()
 store.tomedown.upload = false
@@ -1037,7 +1214,7 @@ plugin:runExport({ FILE }, {})
 T.check(#uploads == 0, "first phase: export only")
 T.check(T.fileExists(MD_PATH) and T.fileExists(INDEX_PATH), "local files present")
 
--- a leftover cover rides along with "Reload everything"
+-- a leftover cover rides along with "Upload everything"
 os.execute('mkdir -p "' .. DIR .. '/covers" && printf x > "' .. DIR .. '/covers/copertina.jpg"')
 
 resetUpload()
@@ -1170,10 +1347,10 @@ T.check(#uploads == 0 and Notification.last_text == nil,
 ui.document = nil
 
 -- toggle on: the close exports after 1s and uploads right away
-files[6].callback()
-T.check(files[6].checked_func() == true, "auto-export toggled on")
+behaviour[1].callback()
+T.check(behaviour[1].checked_func() == true, "auto-export toggled on")
 uploadSetup()
-files[6].callback() -- uploadSetup wiped the setting
+behaviour[1].callback() -- uploadSetup wiped the setting
 ui.document = { file = FILE }
 plugin:onCloseDocument()
 T.check(UIManager:pendingCount() == 1, "toggle on: close schedules the export")
@@ -1200,7 +1377,7 @@ ui.document = nil
 -- without the cloud at all: one notification, right after the export
 uploadSetup()
 store.tomedown.upload = false
-files[6].callback() -- uploadSetup wiped the auto-export setting too
+behaviour[1].callback() -- uploadSetup wiped the auto-export setting too
 ui.document = { file = FILE }
 plugin:onCloseDocument()
 UIManager:runPending()
@@ -1221,7 +1398,7 @@ ui.document = nil
 
 -- offline close: exported locally, queued, the network is not touched
 uploadSetup()
-files[6].callback()
+behaviour[1].callback()
 NetworkMgr.connected = false
 ui.document = { file = FILE }
 plugin:onCloseDocument()
@@ -1273,7 +1450,7 @@ T.check(next(store.tomedown.pending_uploads or {}) == nil,
 
 -- suspend: local only and totally silent, even with the network up
 uploadSetup()
-files[6].callback()
+behaviour[1].callback()
 ui.document = { file = FILE }
 plugin:onSuspend()
 T.check(UIManager:pendingCount() == 0, "suspend schedules nothing")
@@ -1382,11 +1559,11 @@ files[4].callback()
 T.check(store.tomedown.covers == false, "covers toggled off again")
 plugin:runExport({ FILE }, {})
 T.check(store.tomedown.exports[FILE].hash ~= nil, "hash back after the export")
-files[5].callback()
+style[2].callback()
 T.check(store.tomedown.callout == true, "callout toggled on")
 T.check(store.tomedown.exports[FILE].hash == nil,
     "the callout toggle invalidates the stored hash too")
-files[5].callback()
+style[2].callback()
 
 -- extraction: capped to the 800x1200 box, quality 50, colours kept
 uploadSetup()
@@ -1406,9 +1583,10 @@ T.check(T.contains(md_content or "", '<p align="center"><img src="' .. COVER_REL
     "the body embeds the cover centered")
 local index_content = T.readFile(INDEX_PATH)
 T.check(T.contains(index_content or "", COVER_REL), "the index row shows the cover")
-T.check(T.contains(index_content or "", "width:90px;height:120px"),
-    "the index cover is sized 90x120")
-T.check(T.contains(index_content or "", "click a title to open its note."),
+T.check(T.contains(index_content or "", "width:120px;height:160px"),
+    "the index cover is sized 120x160")
+T.check((index_content or ""):match(
+    "%*%*%d+ books?%*%* · %*%*%d+ highlights?%*%*") ~= nil,
     "the exported index carries the stats line")
 
 -- extraction always forces colour rendering on, and puts the flags
@@ -1622,5 +1800,668 @@ ui.annotation = nil
 ui.highlight = nil
 ui.doc_settings = nil
 BookInfo.cover_bb = nil
+
+-- ------------------------------- 15. preserve manual edits (v1.0)
+
+store.tomedown.upload = false
+-- with preserve off (the default, and every export so far) the file
+-- on disk is plain markdown: no heading, no marker, nothing the next
+-- run could not replace wholesale
+T.check(not T.contains(special_md, "## My notes...")
+        and not T.contains(special_md, "tomedown:begin"),
+    "preserve off: no heading and no marker in the plain export")
+T.check(not T.contains(special_md, "Write your thoughts"),
+    "preserve off: no invitation either")
+-- preserve is opt-in since 1.0: switch it on the way a reader would
+behaviour[2].callback()
+T.check(behaviour[2].checked_func() == true, "preserve switched on for this section")
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+local clean_md = T.readFile(MD_PATH)
+T.check(clean_md ~= nil and T.contains(clean_md, "<!-- tomedown:begin body"),
+    "baseline export with the region markers before the edit: "
+        .. tostring(clean_md ~= nil))
+T.check(clean_md ~= nil
+        and T.contains(clean_md, "## My notes... <!-- tomedown:notes -->"),
+    "baseline export opens the zone with the default heading")
+T.check(clean_md ~= nil
+        and clean_md:find("## My notes... <!-- tomedown:notes -->\n\n\n"
+            .. "<!-- tomedown:begin body", 1, true) ~= nil,
+    "the zone opens with the heading and two blank lines of room")
+T.check(clean_md ~= nil
+        and not T.contains(clean_md,
+            "Write your thoughts, your emotions, your questions."),
+    "preserve on seeds the room, never the invitation")
+
+-- the reader writes a line inside the generated body region
+local user_line = "Riga scritta a mano in Obsidian.\n"
+local edited_md = (clean_md or ""):gsub(
+    "(<!%-%- tomedown:begin body[^\n]*%-%->\n)", "%1" .. user_line)
+local edit_file = io.open(MD_PATH, "wb")
+edit_file:write(edited_md)
+edit_file:close()
+
+-- a new annotation changes the render: the block is rebuilt and the
+-- previous file is kept whole, as .bak
+BookList.registry[FILE].annotations = modernAnnotations()
+table.insert(BookList.registry[FILE].annotations, {
+    drawer = "underline", text = "Aggiunta in seguito.", pageno = 12,
+    datetime = "2026-09-04 10:00:00",
+})
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+local rebuilt_md = T.readFile(MD_PATH)
+T.check(rebuilt_md ~= nil and not T.contains(rebuilt_md, user_line),
+    "the rebuilt block drops the line written inside it")
+T.check(rebuilt_md ~= nil and T.contains(rebuilt_md, "Aggiunta in seguito."),
+    "the rebuilt block takes the new annotation")
+T.check(rebuilt_md ~= nil
+        and T.contains(rebuilt_md, "## My notes... <!-- tomedown:notes -->"),
+    "the rebuild keeps the heading")
+T.check(T.contains(Notification.last_text or "", "1 files backed up (.bak)"),
+    "the toast reports the backup: " .. tostring(Notification.last_text))
+local bak_md = T.readFile(MD_PATH .. ".bak")
+T.check(bak_md ~= nil and T.contains(bak_md, user_line),
+    "the previous file is kept as .bak with the hand-written line")
+local kept_record = store.tomedown.exports[FILE]
+T.check(kept_record and kept_record.regions and kept_record.regions.body,
+    "fingerprints stored for the next export")
+
+-- a clean export of the same file needs no second backup
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+T.check(not T.contains(Notification.last_text or "", ".bak"),
+    "a clean file is not backed up again: " .. tostring(Notification.last_text))
+
+-- text in the write zone (above the marker) survives while preserving
+local zone_line = "Appunto nella zona note.\n"
+local zoned_md = (T.readFile(MD_PATH) or ""):gsub(
+    "(<!%-%- tomedown:begin body)", zone_line .. "%1")
+local zone_file = io.open(MD_PATH, "wb")
+zone_file:write(zoned_md)
+zone_file:close()
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+T.check(T.readFile(MD_PATH) ~= nil
+        and T.contains(T.readFile(MD_PATH), zone_line),
+    "the zone above the marker survives the export")
+
+-- preservation off: the next export regenerates everything
+behaviour[2].callback()
+T.check(behaviour[2].checked_func() == false, "preservation toggled off")
+T.check(store.tomedown.exports[FILE].hash == nil,
+    "switching modes invalidates the hashes")
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+local regen_md = T.readFile(MD_PATH)
+T.check(regen_md ~= nil and not T.contains(regen_md, zone_line),
+    "overwrite mode drops the write zone too")
+behaviour[2].callback()
+T.check(behaviour[2].checked_func() == true, "preservation back on for the next runs")
+
+-- the status panel reports the backups of the last run
+store.tomedown.last_export = {
+    at = os.time(), exported = 2, skipped = 1, errors = 0, backups = 3,
+}
+local status = table.concat(plugin:statusLines(), "\n")
+T.check(T.contains(status, "3 files backed up (.bak)"),
+    "status shows the backups: " .. tostring(status))
+
+BookList.registry[FILE].annotations = modernAnnotations()
+
+-- --------------- 16. the open book reads the reader's live data (v1.0)
+-- While a book is open KOReader keeps its props in memory and writes the
+-- .sdr only on close/suspend/periodic autosave: an export made in
+-- between used to read the stale flush, lose the series (the index row
+-- fell into "My books") and count highlights the flush never saw.
+
+store.tomedown.upload = false
+local rec16 = BookList.registry[FILE]
+local disk_props16, disk_annotations16 = rec16.doc_props, rec16.annotations
+
+-- the .sdr on disk: the last flush, without the series
+rec16.doc_props = { title = "Blackwater", authors = "Michael McDowell" }
+
+-- the book is open: KOReader has already read the metadata from the epub
+ui.document = { file = FILE }
+ui.doc_props = {
+    title = "Blackwater",
+    authors = "Michael McDowell",
+    series = "Wayward Pines",
+    series_index = 1,
+}
+-- and two highlights that never reached the disk
+local live16 = {}
+for __, a in ipairs(disk_annotations16) do
+    live16[#live16 + 1] = a
+end
+live16[#live16 + 1] = {
+    drawer = "underline", text = "Appena evidenziata.", pageno = 12,
+    datetime = "2026-10-13 09:00:00",
+}
+live16[#live16 + 1] = {
+    drawer = "underline", text = "L'altra appena evidenziata.", pageno = 13,
+    datetime = "2026-10-13 09:01:00",
+}
+ui.annotation = { annotations = live16 }
+
+-- the book file without the live annotations: the series still has to
+-- come from the live props (it is missing on disk)
+plugin.book_cache = nil
+local stale_book16 = plugin:buildBook(FILE)
+T.check(stale_book16 ~= nil and stale_book16.series == "Wayward Pines",
+    "buildBook: series from the live props of the open book: "
+        .. tostring(stale_book16 and stale_book16.series))
+local disk_count16 = stale_book16 and stale_book16.count or 0
+
+plugin.book_cache = nil
+local live_book16 = plugin:buildBook(FILE, live16)
+T.check(live_book16 ~= nil and live_book16.count == disk_count16 + 2,
+    "buildBook with the live annotations: "
+        .. tostring(live_book16 and live_book16.count)
+        .. " highlights, " .. (disk_count16 + 2) .. " expected")
+
+-- the index entry is built from the same live data as the book file
+local entries16 = plugin:buildIndexEntries(DIR, store.tomedown.exports)
+local entry16
+for __, e in ipairs(entries16) do
+    if e.link == BASE then
+        entry16 = e
+    end
+end
+T.check(entry16 ~= nil, "the open book is in the index entries")
+T.check(entry16 ~= nil and entry16.series == "Wayward Pines",
+    "index entry: series from the live props: "
+        .. tostring(entry16 and entry16.series))
+T.check(entry16 ~= nil and entry16.count == disk_count16 + 2,
+    "index entry counts the highlights still in memory: "
+        .. tostring(entry16 and entry16.count)
+        .. ", " .. (disk_count16 + 2) .. " expected")
+
+-- the full export puts the row in the series table, not in "My books"
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+local md16 = T.readFile(MD_PATH) or ""
+T.check(T.contains(md16, 'series: "Wayward Pines"'),
+    "book file: series from the live props")
+local index16 = T.readFile(INDEX_PATH) or ""
+T.check(T.contains(index16, "Wayward Pines #1"),
+    "index: the row lands in the series table")
+
+-- a failed index write is reported instead of passing silently (a file
+-- held open by another app: Obsidian on Windows, an editor anywhere)
+local util16 = require("util")
+local real_write16 = util16.writeToFile
+util16.writeToFile = function(data, filepath, ...)
+    if filepath == INDEX_PATH then
+        return nil, "Simulated failure"
+    end
+    return real_write16(data, filepath, ...)
+end
+plugin:runExport({ FILE }, {})
+util16.writeToFile = real_write16
+T.check(store.tomedown.last_export ~= nil
+        and store.tomedown.last_export.errors == 1,
+    "the failed index write is counted as an error: "
+        .. tostring(store.tomedown.last_export
+            and store.tomedown.last_export.errors))
+T.check(T.contains(InfoMessage.last_text or "", "Errors:")
+        and T.contains(InfoMessage.last_text or "", INDEX_PATH:match("[^/]+$")
+            .. ": Simulated failure"),
+    "the error names the index file: "
+        .. tostring(InfoMessage.last_text))
+
+-- back to the state the other tests expect
+rec16.doc_props = disk_props16
+rec16.annotations = disk_annotations16
+ui.document = nil
+ui.doc_props = nil
+ui.annotation = nil
+plugin.book_cache = nil
+
+-- ------------- 17. the cloud copy edited elsewhere (v1.0)
+-- The reader edits an exported file in Obsidian, synced back through
+-- the same cloud folder: the next export has to fold that text in,
+-- instead of overwriting the cloud copy with a merge made against the
+-- older file on the device.
+
+local MD_NAME, INDEX_NAME = BASE .. ".md", "00 - Index.md"
+uploadSetup() -- fresh store: server set, upload on
+store.tomedown.preserve = true
+store.tomedown.cloud_merge = true
+store.tomedown.covers = false
+NetworkMgr.connected = true
+remote_files, download_fails, downloads = {}, {}, {}
+BookList.registry[FILE].annotations = modernAnnotations()
+
+-- first export: the file reaches the cloud and its hash is remembered
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+local md1 = T.readFile(MD_PATH)
+T.check(md1 ~= nil and #uploads > 0, "first export uploaded the book file")
+local stored1 = plugin:cloudBase(SERVER)
+T.check(stored1 ~= nil and stored1[MD_NAME] == md5(md1),
+    "the uploaded content is remembered: "
+        .. tostring(stored1 and stored1[MD_NAME]))
+
+-- a thought typed in Obsidian has reached the cloud copy
+remote_files[MD_NAME] = md1 .. "\nA thought typed in Obsidian.\n"
+downloads = {}
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+local md2 = T.readFile(MD_PATH) or ""
+local fetched_book, fetched_index = false, false
+for __, url in ipairs(downloads) do
+    if url:sub(-#MD_NAME) == MD_NAME then fetched_book = true end
+    if url:sub(-#INDEX_NAME) == INDEX_NAME then fetched_index = true end
+end
+T.check(fetched_book and fetched_index,
+    "book and index copies are both fetched before the merge: "
+        .. table.concat(downloads, ", "))
+T.check(T.contains(md2, "A thought typed in Obsidian."),
+    "the thought from Obsidian survives the export")
+T.check(T.contains(md2, "series:"), "the fresh render is in the file too")
+T.check(plugin:cloudBase(SERVER)[MD_NAME] == md5(md2),
+    "the new upload is remembered")
+
+-- the same story for the index: the edit exists only in the cloud
+-- (typed in Obsidian on the desktop), never on the device
+local index_cloud = (T.readFile(INDEX_PATH) or "")
+    .. "\nUna riga scritta nell'indice.\n"
+T.check(index_cloud ~= "", "the cloud index really differs")
+remote_files[INDEX_NAME] = index_cloud
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+T.check(T.contains(T.readFile(INDEX_PATH) or "", "Una riga scritta nell'indice."),
+    "an index edited only in the cloud survives the export")
+
+-- an untouched cloud copy adds nothing: the file on the device stays
+-- the base and the export comes out byte-identical
+local md3 = T.readFile(MD_PATH)
+remote_files[MD_NAME] = md3
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+T.check(T.readFile(MD_PATH) == md3, "untouched cloud copy: stable export")
+
+-- a failed fetch falls back to the file on the device, quietly
+download_fails[MD_NAME] = true
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+T.check(store.tomedown.last_export and store.tomedown.last_export.errors == 0,
+    "a failed fetch is not an export error: "
+        .. tostring(store.tomedown.last_export
+            and store.tomedown.last_export.errors))
+T.check(T.contains(T.readFile(MD_PATH) or "", "A thought typed in Obsidian."),
+    "the note is still there, from the file on the device")
+download_fails[MD_NAME] = nil
+
+-- the reader can switch the whole thing off
+store.tomedown.cloud_merge = false
+remote_files[MD_NAME] = (T.readFile(MD_PATH) or "")
+    .. "\nUn pensiero soltanto sul cloud.\n"
+downloads = {}
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+T.check(#downloads == 0, "cloud_merge off: nothing is fetched: " .. #downloads)
+T.check(not T.contains(T.readFile(MD_PATH) or "", "Un pensiero soltanto sul cloud."),
+    "cloud_merge off: the file on the device stays the only base")
+store.tomedown.cloud_merge = true
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+T.check(T.contains(T.readFile(MD_PATH) or "", "Un pensiero soltanto sul cloud."),
+    "cloud_merge back on: the cloud text is folded in")
+
+-- the hashes follow the destination: another server or folder starts
+-- from a clean slate instead of trusting the old ones
+T.check(plugin:cloudBase({ name = "Koofr", type = "webdav",
+        url = "/Bookshelf/Kindle" }) == plugin:cloudBase(SERVER),
+    "the same destination keeps the hashes")
+T.check(plugin:cloudBase({ name = "Other", type = "webdav",
+        url = "/Other/Folder" }) == nil, "another folder starts clean")
+
+-- ------------- 18. pending uploads folded at the flush (v1.0)
+-- The reader exports with no connection: the new highlights land in the
+-- local file, the copy in the cloud still holds whatever was typed in
+-- Obsidian. When the connection comes back the flush must not push the
+-- device copy over the cloud one blindly — it fetches it, and when it
+-- moved on from the last upload it folds it in first.
+
+uploadSetup()
+store.tomedown.preserve = true
+store.tomedown.cloud_merge = true
+store.tomedown.covers = false
+NetworkMgr.connected = true
+remote_files, download_fails, downloads = {}, {}, {}
+BookList.registry[FILE].annotations = modernAnnotations()
+
+-- an export that reached the cloud: the hash is remembered
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+local base_md = T.readFile(MD_PATH)
+T.check(base_md ~= nil and plugin:cloudBase(SERVER)[MD_NAME] == md5(base_md),
+    "18: seed export uploaded and remembered")
+
+-- meanwhile a thought is typed in Obsidian and synced to the cloud copy
+remote_files[MD_NAME] = base_md .. "\nA thought from Obsidian, offline.\n"
+
+-- the reader adds a highlight and exports with the network down: the
+-- file is written locally and queued, the cloud copy is never fetched
+NetworkMgr.connected = false
+BookList.registry[FILE].annotations = modernAnnotationsWithExtra()
+downloads = {}
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+T.check(#downloads == 0, "18: offline export fetches nothing: " .. #downloads)
+T.check(store.tomedown.pending_uploads
+        and store.tomedown.pending_uploads[MD_PATH] == true,
+    "18: the offline export is queued as pending")
+
+-- connection back: the flush folds the cloud copy before pushing
+NetworkMgr.connected = true
+remote_files[MD_NAME] = base_md .. "\nA thought from Obsidian, offline.\n"
+plugin:flushPendingUploads()
+UIManager:runPending()
+local folded = T.readFile(MD_PATH) or ""
+T.check(T.contains(folded, "A thought from Obsidian, offline."),
+    "18: the note typed offline in Obsidian survives the flush")
+T.check(next(store.tomedown.pending_uploads or {}) == nil,
+    "18: flush clears pending after the fold")
+
+-- the cloud copy that could not be fetched is never overwritten: the
+-- file stays pending, so nothing is lost
+uploadSetup()
+store.tomedown.preserve = true
+store.tomedown.cloud_merge = true
+NetworkMgr.connected = true
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+local md_before = T.readFile(MD_PATH)
+remote_files[MD_NAME] = md_before .. "\nUn pensiero non ancora visto.\n"
+NetworkMgr.connected = false
+BookList.registry[FILE].annotations = modernAnnotationsWithExtra()
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+NetworkMgr.connected = true
+download_fails[MD_NAME] = true
+uploads = {}
+plugin:flushPendingUploads()
+UIManager:runPending()
+local pushed_book = false
+for __, u in ipairs(uploads) do
+    if u.path and u.path:sub(-#MD_NAME) == MD_NAME then pushed_book = true end
+end
+T.check(not pushed_book,
+    "18: a failed fetch never pushes the book ("
+        .. #uploads .. " other uploads are fine)")
+T.check(store.tomedown.pending_uploads
+        and store.tomedown.pending_uploads[MD_PATH] == true,
+    "18: the file is held back as pending when the copy cannot be fetched")
+download_fails[MD_NAME] = nil
+plugin:flushPendingUploads()
+UIManager:runPending()
+T.check(T.contains(T.readFile(MD_PATH) or "", "Un pensiero non ancora visto."),
+    "18: once the fetch works the note is folded in")
+
+-- a server that cannot download keeps the old behaviour: the local copy
+-- is pushed as it is (nothing to compare against)
+uploadSetup()
+store.tomedown.preserve = true
+store.tomedown.cloud_merge = true
+NetworkMgr.connected = true
+local dl = provider.downloadFile
+provider.downloadFile = nil
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+NetworkMgr.connected = false
+BookList.registry[FILE].annotations = modernAnnotationsWithExtra()
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+NetworkMgr.connected = true
+uploads = {}
+plugin:flushPendingUploads()
+UIManager:runPending()
+local pushed_book = false
+for __, u in ipairs(uploads) do
+    if u.path and u.path:sub(-#MD_NAME) == MD_NAME then pushed_book = true end
+end
+T.check(pushed_book,
+    "18: no download support still pushes the book as it is: "
+        .. #uploads .. " uploads")
+provider.downloadFile = dl
+
+-- with the merge option off the flush pushes blind, as before
+uploadSetup()
+store.tomedown.preserve = true
+store.tomedown.cloud_merge = false
+NetworkMgr.connected = true
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+local md_off = T.readFile(MD_PATH)
+remote_files[MD_NAME] = md_off .. "\nSolo sul cloud.\n"
+NetworkMgr.connected = false
+BookList.registry[FILE].annotations = modernAnnotationsWithExtra()
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+NetworkMgr.connected = true
+plugin:flushPendingUploads()
+UIManager:runPending()
+T.check(not T.contains(T.readFile(MD_PATH) or "", "Solo sul cloud."),
+    "18: cloud_merge off: the flush does not fold, the local copy wins")
+
+-- ---------------------- 18b. the flush stays busy while it fetches
+--
+-- the reconcile costs one network GET per file: a reconnect or a resume
+-- landing in the middle of that stretch has to find _flushing already
+-- up. With the flag down, schedulePendingFlush sees a free slot, queues
+-- a second flush over the same paths and both push them at once
+uploadSetup()
+store.tomedown.preserve = true
+store.tomedown.cloud_merge = true
+store.tomedown.pending_uploads = { [MD_PATH] = true }
+NetworkMgr.connected = true
+remote_files, download_fails, downloads = {}, {}, {}
+
+local orig_reconcile = plugin.reconcilePending
+local reached, seen_busy, seen_rescheduled = false, nil, nil
+plugin.reconcilePending = function(self_plugin, server, paths, dir)
+    reached = true
+    seen_busy = self_plugin._flushing
+    -- exactly what onResume or onNetworkConnected would do right here
+    self_plugin._flush_scheduled = false
+    self_plugin:schedulePendingFlush()
+    seen_rescheduled = self_plugin._flush_scheduled
+    return orig_reconcile(self_plugin, server, paths, dir)
+end
+plugin:flushPendingUploads()
+plugin.reconcilePending = nil
+plugin._flush_scheduled = false
+UIManager:runPending()
+
+T.check(reached, "18b: the flush reaches the reconcile")
+T.check(seen_busy == true,
+    "18b: _flushing is up for the whole reconcile: " .. tostring(seen_busy))
+T.check(seen_rescheduled == false,
+    "18b: a schedule during the reconcile finds the flush busy: "
+        .. tostring(seen_rescheduled))
+T.check(next(store.tomedown.pending_uploads or {}) == nil,
+    "18b: the flush still pushes what it reconciled")
+
+-- --------------------------------- 19. "Upload everything" reconciles
+
+-- a note typed in Obsidian and synced to the cloud: pressing the button
+-- folds it into the push instead of overwriting it
+uploadSetup()
+store.tomedown.preserve = true
+store.tomedown.cloud_merge = true
+store.tomedown.covers = false
+NetworkMgr.connected = true
+remote_files, download_fails, downloads = {}, {}, {}
+BookList.registry[FILE].annotations = modernAnnotations()
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+local seed_md = T.readFile(MD_PATH)
+T.check(seed_md ~= nil and plugin:cloudBase(SERVER)[MD_NAME] == md5(seed_md),
+    "19: seed export uploaded and remembered")
+remote_files[MD_NAME] = seed_md .. "\nA thought from Obsidian.\n"
+resetUpload()
+downloads = {}
+plugin:reuploadAll(nil)
+UIManager:runPending()
+local pushed_book = false
+for __, u in ipairs(uploads) do
+    if u.path == MD_PATH then
+        pushed_book = true
+    end
+end
+T.check(pushed_book, "19: the book goes up after the fold")
+T.check(T.contains(T.readFile(MD_PATH) or "", "A thought from Obsidian."),
+    "19: the cloud copy is folded into the local file before the push")
+T.check(T.fileExists(MD_PATH .. ".bak"),
+    "19: the cloud copy is kept whole as .bak")
+T.check(#downloads == 2, "19: both markdown copies are fetched first: " .. #downloads)
+
+-- a cloud copy that cannot be fetched: the file stays out of the push
+-- and is queued for the automatic retry
+remote_files[MD_NAME] = (T.readFile(MD_PATH) or "") .. "\nAppunto mai visto prima d'ora.\n"
+download_fails[MD_NAME] = true
+resetUpload()
+plugin:reuploadAll(nil)
+UIManager:runPending()
+pushed_book = false
+for __, u in ipairs(uploads) do
+    if u.path == MD_PATH then
+        pushed_book = true
+    end
+end
+T.check(not pushed_book, "19: an unfetchable cloud copy is never pushed blind")
+T.check(store.tomedown.pending_uploads
+        and store.tomedown.pending_uploads[MD_PATH] == true,
+    "19: the held file is queued for the automatic flush")
+T.check(not T.contains(T.readFile(MD_PATH) or "", "Appunto mai visto prima d'ora."),
+    "19: the local file is left alone while it is held back")
+
+-- with every copy unreadable the button pushes nothing and says so
+download_fails[INDEX_NAME] = true
+resetUpload()
+plugin:reuploadAll(nil)
+UIManager:runPending()
+T.check(#uploads == 0, "19: nothing goes up while every copy is unreadable")
+T.check(InfoMessage.last_text
+        and T.contains(InfoMessage.last_text, "files kept back"),
+    "19: the kept-back message is shown: " .. tostring(InfoMessage.last_text))
+T.check(store.tomedown.pending_uploads[MD_PATH] == true
+        and store.tomedown.pending_uploads[INDEX_PATH] == true,
+    "19: both held files are queued")
+
+-- offline the button queues everything for the flush instead of
+-- failing attempt by attempt
+NetworkMgr.connected = false
+resetUpload()
+plugin:reuploadAll(nil)
+UIManager:runPending()
+T.check(#uploads == 0, "19: offline: nothing is attempted")
+T.check(InfoMessage.last_text
+        and T.contains(InfoMessage.last_text, "files kept back"),
+    "19: offline: the button says the files are kept back")
+NetworkMgr.connected = true
+
+-- with the merge option off the button pushes as it is: the reader has
+-- chosen the copy on the device to win
+store.tomedown.cloud_merge = false
+remote_files[MD_NAME] = (T.readFile(MD_PATH) or "") .. "\nA thought from Obsidian, again.\n"
+download_fails = {}
+resetUpload()
+downloads = {}
+plugin:reuploadAll(nil)
+UIManager:runPending()
+T.check(#downloads == 0, "19: merge off: no fetch happens")
+pushed_book = false
+for __, u in ipairs(uploads) do
+    if u.path == MD_PATH then
+        pushed_book = true
+    end
+end
+T.check(pushed_book, "19: merge off: the device copy goes up untouched")
+T.check(not T.contains(T.readFile(MD_PATH) or "", "Obsidian, again."),
+    "19: merge off: the note in the cloud is not folded in")
+T.check(next(store.tomedown.pending_uploads or {}) == nil,
+    "19: everything that went up leaves the queue")
+store.tomedown.cloud_merge = true
+
+-- ------------------------------ 20. an export with an unreadable copy
+
+-- the note reached the cloud but its download fails this time: the
+-- export writes the highlight locally and keeps the book out of the
+-- upload instead of pushing over the copy it could not read
+uploadSetup()
+store.tomedown.preserve = true
+store.tomedown.cloud_merge = true
+store.tomedown.covers = false
+NetworkMgr.connected = true
+remote_files, download_fails, downloads = {}, {}, {}
+BookList.registry[FILE].annotations = modernAnnotations()
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+local seed20 = T.readFile(MD_PATH)
+T.check(seed20 ~= nil and plugin:cloudBase(SERVER)[MD_NAME] == md5(seed20),
+    "20: seed export uploaded and remembered")
+remote_files[MD_NAME] = seed20 .. "\nNota sincronizzata sul cloud adesso.\n"
+download_fails[MD_NAME] = true
+BookList.registry[FILE].annotations = modernAnnotationsWithExtra()
+resetUpload()
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+local book_pushed, index_pushed = false, false
+for __, u in ipairs(uploads) do
+    if u.path == MD_PATH then
+        book_pushed = true
+    end
+    if u.path == INDEX_PATH then
+        index_pushed = true
+    end
+end
+T.check(not book_pushed, "20: the export does not push a cloud copy it could not read")
+T.check(index_pushed, "20: the rest of the export still goes up")
+T.check(store.tomedown.pending_uploads
+        and store.tomedown.pending_uploads[MD_PATH] == true,
+    "20: the book is queued for the flush")
+T.check(not T.contains(T.readFile(MD_PATH) or "", "Nota sincronizzata sul cloud adesso."),
+    "20: the local file comes from its own base, without the note")
+
+-- the fetch works again: the flush folds the note in and pushes the book
+download_fails = {}
+resetUpload()
+plugin:flushPendingUploads()
+UIManager:runPending()
+book_pushed = false
+for __, u in ipairs(uploads) do
+    if u.path == MD_PATH then
+        book_pushed = true
+    end
+end
+T.check(book_pushed, "20: the queued book reaches the cloud after the fold")
+T.check(T.contains(T.readFile(MD_PATH) or "", "Nota sincronizzata sul cloud adesso."),
+    "20: the flush folds the note into the queued file")
+T.check(next(store.tomedown.pending_uploads or {}) == nil,
+    "20: the queue is empty after the flush")
+
+-- with every cloud copy unreadable the export pushes nothing at all
+-- and says the files are kept back
+download_fails[MD_NAME] = true
+download_fails[INDEX_NAME] = true
+resetUpload()
+plugin:runExport({ FILE }, {})
+UIManager:runPending()
+T.check(#uploads == 0, "20: nothing goes up while every copy is unreadable")
+T.check(InfoMessage.last_text
+        and T.contains(InfoMessage.last_text, "files kept back"),
+    "20: the export says the files are kept back: "
+        .. tostring(InfoMessage.last_text))
+T.check(store.tomedown.pending_uploads[MD_PATH] == true
+        and store.tomedown.pending_uploads[INDEX_PATH] == true,
+    "20: both held files are queued")
+
+store.tomedown.preserve = false
+store.tomedown.upload = false
 
 T.finish("test_main")

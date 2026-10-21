@@ -33,6 +33,9 @@ msgstr "Cloud: %1 caricati, %2 errori"
 msgid "Cloud: %1 files uploaded"
 msgstr "Cloud: %1 file caricati"
 
+msgid "Cloud: %1 files kept back, will retry"
+msgstr "Cloud: %1 file tenuti in attesa, nuovo tentativo"
+
 msgid "Errors:"
 msgstr "Errori:"
 
@@ -111,8 +114,11 @@ msgstr "Scegli libri…"
 msgid "Import all books from history"
 msgstr "Importa tutti i libri dalla cronologia"
 
-msgid "Reload everything to the cloud"
-msgstr "Ricarica tutto sul cloud"
+msgid "Upload everything to the cloud"
+msgstr "Carica tutto sul cloud"
+
+msgid "Merge edits made in the cloud"
+msgstr "Unisci le modifiche arrivate dal cloud"
 
 msgid "Settings"
 msgstr "Impostazioni"
@@ -136,9 +142,6 @@ msgstr ""
 msgid "highlights"
 msgstr "evidenziati"
 
-msgid "note: "
-msgstr "nota: "
-
 msgid "index"
 msgstr "indice"
 
@@ -157,9 +160,6 @@ msgstr "%1 evidenziazione"
 msgid "%1 highlights"
 msgstr "%1 evidenziazioni"
 
-msgid "— click a title to open its note."
-msgstr "— clicca un titolo per aprire la sua nota."
-
 # index table cells (v0.8.0: cover/series/status columns)
 msgid "Cover"
 msgstr "Copertina"
@@ -173,11 +173,20 @@ msgstr "Autore"
 msgid "Series"
 msgstr "Serie"
 
+msgid "Last read"
+msgstr "Ultima lettura"
+
 msgid "Highlights"
 msgstr "Evidenziati"
 
-msgid "Last export"
-msgstr "Ultimo export"
+msgid "%1 special"
+msgstr "%1 special"
+
+msgid "Series books"
+msgstr "Libri in serie"
+
+msgid "My books"
+msgstr "I miei libri"
 
 msgid "Reading"
 msgstr "In lettura"
@@ -420,3 +429,24 @@ msgstr "Chiusura"
 
 msgid "Manual"
 msgstr "Manuale"
+
+msgid "Preserve manual edits"
+msgstr "Conserva le modifiche manuali"
+
+msgid "%1 files backed up (.bak)"
+msgstr "%1 file salvati in .bak"
+
+msgid "My notes..."
+msgstr "Le mie note..."
+
+msgid "Personal notes: %1"
+msgstr "Note personali: %1"
+
+msgid "Personal notes heading"
+msgstr "Intestazione note personali"
+
+msgid "leave empty to export no heading"
+msgstr "lascia vuoto per non esportare l'intestazione"
+
+msgid "Write your thoughts, your emotions, your questions."
+msgstr "Scrivi i tuoi pensieri, le tue emozioni, le tue domande."

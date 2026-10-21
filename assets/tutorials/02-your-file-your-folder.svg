@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1740" height="1160" viewBox="0 0 1200 800" role="img" aria-label="Tomedown quickstart tutorial 02 — Your file, your folder: export from the menu, the file lands in the folder you chose, open it with any app">
+  <style>
+    .display { font-family: Georgia, "Times New Roman", serif; font-weight: 700; fill: #37352F; }
+    .deck    { font-family: Georgia, "Times New Roman", serif; font-style: italic; fill: #5C5B57; }
+    .label   { font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; letter-spacing: 1.8px; fill: #37352F; }
+    .labelm  { font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; letter-spacing: 1.2px; fill: #9B9A97; }
+    .body    { font-family: Georgia, "Times New Roman", serif; fill: #37352F; }
+    .menu    { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight: 700; fill: #37352F; }
+    .code    { font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; fill: #37352F; }
+    .rule    { stroke: #E3E1DD; stroke-width: 1; }
+    .hair    { stroke: #E3E1DD; stroke-width: 1; opacity: 1; }
+    .card    { fill: #FFFFFF; stroke: #E3E1DD; stroke-width: 1.5; }
+    .frame   { fill: #FFFFFF; stroke: #E3E1DD; stroke-width: 1.5; }
+    .skel    { fill: #E3E1DD; }
+    .accent  { fill: #F5DE7E; }
+  </style>
+
+  <!-- paper -->
+  <rect width="1200" height="800" fill="#FFFFFF"/>
+
+  <!-- header -->
+  <text class="label" x="64" y="56" font-size="13">TOMEDOWN — QUICKSTART</text>
+  <text class="labelm" x="1136" y="56" font-size="13" text-anchor="end">KOReader plugin</text>
+  <text class="display" x="64" y="124" font-size="56">Your file, your folder</text>
+  <text class="deck" x="64" y="168" font-size="19">Export, and the file is already in the folder you chose...plain Markdown, open with anything.</text>
+  <line class="rule" x1="64" y1="204" x2="1136" y2="204"/>
+
+  <!-- ============ column 01 — EXPORT ============ -->
+  <text class="display" x="64" y="256" font-size="32">01</text>
+  <text class="label" x="112" y="252" font-size="13">EXPORT</text>
+  <line class="hair" x1="64" y1="274" x2="408" y2="274"/>
+
+  <!-- device + menu -->
+  <rect class="frame" x="74" y="296" width="140" height="170" rx="10"/>
+  <rect class="skel" x="90" y="316" width="96" height="7" rx="3.5"/>
+  <rect class="skel" x="90" y="332" width="88" height="7" rx="3.5"/>
+  <rect class="skel" x="90" y="348" width="96" height="7" rx="3.5"/>
+  <rect class="skel" x="90" y="364" width="70" height="7" rx="3.5"/>
+
+  <rect class="card" x="170" y="330" width="230" height="96" rx="7"/>
+  <line class="hair" x1="170" y1="362" x2="400" y2="362"/>
+  <line class="hair" x1="170" y1="394" x2="400" y2="394"/>
+  <text class="menu" x="184" y="350" font-size="11.5">Export current book</text>
+  <text class="menu" x="184" y="382" font-size="11.5">Export only what changed</text>
+  <text class="menu" x="184" y="414" font-size="11.5">Upload to cloud</text>
+
+  <!-- export confirmation -->
+  <rect x="170" y="442" width="230" height="34" rx="17" fill="#FFFFFF" stroke="#E3E1DD" stroke-width="1.5"/>
+  <text class="deck" x="285" y="464" font-size="13.5" text-anchor="middle">“5 files exported locally”</text>
+
+  <text class="body" x="64" y="594" font-size="16">Open the menu, tap Export current book:</text>
+  <text class="body" x="64" y="616" font-size="16">one .md per book (plus the index) is</text>
+  <text class="body" x="64" y="638" font-size="16">written right away.</text>
+  <text class="labelm" x="64" y="672" font-size="11">refs: menu ▸ export current book</text>
+
+  <!-- ============ column 02 — YOUR FOLDER ============ -->
+  <text class="display" x="448" y="256" font-size="32">02</text>
+  <text class="label" x="496" y="252" font-size="13">YOUR FOLDER</text>
+  <line class="hair" x1="448" y1="274" x2="792" y2="274"/>
+
+  <!-- settings row -->
+  <text class="label" x="620" y="306" font-size="11" text-anchor="middle">SETTINGS ▸ LOCAL FOLDER</text>
+
+  <!-- mini folder -->
+  <rect x="456" y="354" width="34" height="14" rx="3" fill="#F5F5F4" stroke="#E3E1DD" stroke-width="1.5"/>
+  <rect x="456" y="364" width="88" height="76" rx="6" fill="#F5F5F4" stroke="#E3E1DD" stroke-width="1.5"/>
+  <rect class="card" x="484" y="330" width="44" height="70" rx="3"/>
+  <rect class="skel" x="492" y="344" width="28" height="5" rx="2.5"/>
+  <rect class="skel" x="492" y="356" width="24" height="5" rx="2.5"/>
+  <rect class="skel" x="492" y="368" width="28" height="5" rx="2.5"/>
+  <rect class="card" x="456" y="400" width="88" height="40" rx="6"/>
+
+  <!-- the row -->
+  <rect class="card" x="510" y="336" width="260" height="52" rx="7"/>
+  <rect class="accent" x="620" y="349" width="140" height="24" rx="12" stroke="#E3E1DD" stroke-width="1.5"/>
+  <text class="menu" x="526" y="367" font-size="12">Local folder:</text>
+  <text class="menu" x="690" y="366" font-size="11.5" text-anchor="middle">/clipboard/tomedown</text>
+
+  <!-- default note -->
+  <rect x="510" y="414" width="260" height="34" rx="17" fill="#FFFFFF" stroke="#E3E1DD" stroke-width="1.5"/>
+  <text class="deck" x="640" y="436" font-size="13.5" text-anchor="middle">the default — pick any folder</text>
+
+  <text class="body" x="448" y="594" font-size="16">That row shows the default; pick any</text>
+  <text class="body" x="448" y="616" font-size="16">folder you like (device, USB, a synced</text>
+  <text class="body" x="448" y="638" font-size="16">one). Cloud optional.</text>
+  <text class="labelm" x="448" y="672" font-size="11">refs: settings ▸ markdown files</text>
+
+  <!-- ============ column 03 — OPEN IT ============ -->
+  <text class="display" x="832" y="256" font-size="32">03</text>
+  <text class="label" x="880" y="252" font-size="13">OPEN IT</text>
+  <line class="hair" x1="832" y1="274" x2="1136" y2="274"/>
+
+  <!-- file card -->
+  <rect class="card" x="846" y="296" width="290" height="218" rx="7"/>
+  <line class="hair" x1="846" y1="334" x2="1136" y2="334"/>
+  <text class="code" x="862" y="324" font-size="10.5" fill="#9B9A97">BLACKWATER.MD</text>
+  <text class="code" x="862" y="356" font-size="10.5">---</text>
+  <text class="code" x="862" y="374" font-size="10.5">title: "Blackwater"</text>
+  <text class="code" x="862" y="392" font-size="10.5">tags: [ebook, highlights]</text>
+  <text class="code" x="862" y="410" font-size="10.5">---</text>
+  <text class="code" x="862" y="434" font-size="10.5">## My notes... &lt;!-- tomedown:notes --&gt;</text>
+  <rect class="accent" x="860" y="444" width="4" height="17"/>
+  <text class="code" x="874" y="457" font-size="10.5">your note, written by you</text>
+  <text class="code" x="862" y="480" font-size="10" fill="#9B9A97">&lt;!-- tomedown:begin ... --&gt;</text>
+  <text class="code" x="862" y="498" font-size="10.5"># **HIGHLIGHTS: 150**</text>
+
+  <text class="body" x="832" y="594" font-size="16">Open it with any app: Obsidian, a wiki,</text>
+  <text class="body" x="832" y="616" font-size="16">a text editor... it is plain Markdown.</text>
+  <text class="body" x="832" y="638" font-size="16">Your notes sit under the heading.</text>
+  <text class="labelm" x="832" y="672" font-size="11">refs: preserve your edits</text>
+
+  <!-- footer -->
+  <line class="rule" x1="64" y1="730" x2="1136" y2="730"/>
+  <text class="label" x="64" y="758" font-size="12">TOMEDOWN · YOUR FILE, YOUR FOLDER</text>
+  <text class="labelm" x="600" y="758" font-size="12" text-anchor="middle">02 / 05</text>
+  <text class="labelm" x="1136" y="758" font-size="12" text-anchor="end">2026</text>
+</svg>

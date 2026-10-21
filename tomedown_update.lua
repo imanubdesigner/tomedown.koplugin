@@ -14,15 +14,18 @@ downloads the release zip, unpacks it over the plugin folder and asks
 to restart KOReader - any failure falls back to opening the releases
 page so the zip can be taken by hand.
 
-Everything goes through the GitHub releases API of this repository.
-The release LIST is fetched (not just the latest) so that someone on
-0.2.0 who updates to 1.0 sees the notes of 0.3.0, 0.3.1 and 1.0 in one
-window; per_page=100 keeps those intermediate notes from falling past
-GitHub's default page of 30.
+Everything goes through the releases API of this repository: GitHub
+first, the Codeberg mirror second - both answer with the same release
+shape, so a check keeps working while the GitHub side is unreachable
+or has published no release yet. The release LIST is fetched (not just
+the latest) so that someone on 0.2.0 who updates to 1.0 sees the notes
+of 0.3.0, 0.3.1 and 1.0 in one window; per_page=100 keeps those
+intermediate notes from falling past GitHub's default page of 30.
 
 Compatibility rules for future versions (so the updater keeps working
 from every old install):
-  - repository and API URL never change;
+  - repositories and API URLs never change (a host may be added, never
+    renamed or removed, so an old install always reaches one);
   - tags are always vX.Y.Z, prereleases vX.Y.Z-beta.N;
   - release zips keep the tomedown.koplugin/ top-level folder;
   - settings keys are never renamed (add a migration instead).
@@ -39,8 +42,22 @@ local _ = require("tomedown_i18n")
 
 local Update = {}
 
-local RELEASES_URL = "https://api.github.com/repos/imanubdesigner/tomedown.koplugin/releases?per_page=100"
-local RELEASES_PAGE = "https://github.com/imanubdesigner/tomedown.koplugin/releases"
+-- Where the release list is asked for, in order. The Codeberg mirror
+-- of the repository answers the same question with the same release
+-- shape (tag_name, body, draft, prerelease, assets), so a check keeps
+-- working while the GitHub side is unreachable or has published no
+-- release at all. api = the JSON list, page = the human page we open
+-- when a check fails and the zip has to be taken by hand.
+local HOSTS = {
+    {
+        api = "https://api.github.com/repos/imanubdesigner/tomedown.koplugin/releases?per_page=100",
+        page = "https://github.com/imanubdesigner/tomedown.koplugin/releases",
+    },
+    {
+        api = "https://codeberg.org/api/v1/repos/imanubdesigner/tomedown.koplugin/releases?limit=50",
+        page = "https://codeberg.org/imanubdesigner/tomedown.koplugin/releases",
+    },
+}
 local CHECK_INTERVAL = 3600 -- background check throttle, seconds
 
 -- session-only state (nothing persisted)
@@ -48,6 +65,28 @@ local installed_version -- cache of getInstalledVersion()
 local cached_version -- newest version newer than the installed one, or nil
 local last_bg_check -- os.time() of the last background attempt
 local bg_in_flight = false
+local active_host -- HOSTS entry the last list came from, or nil
+
+--- The release list: hosts are tried in order and the first that
+-- answers with something wins, which also remembers where the list
+-- came from. Every call runs behind pcall: an unexpected error in one
+-- host must not cost us the others.
+local function fetchReleases()
+    for __, host in ipairs(HOSTS) do
+        local ok, releases = pcall(Update.httpGetJSON, host.api)
+        if ok and type(releases) == "table" and #releases > 0 then
+            active_host = host
+            return releases
+        end
+    end
+    return nil
+end
+
+--- The releases page to offer in a browser: the host that answered,
+-- or the project home while no host ever has.
+local function releasesPage()
+    return active_host and active_host.page or HOSTS[1].page
+end
 
 local function pluginDir()
     local src = debug.getinfo(1, "S").source
@@ -224,7 +263,7 @@ function Update.offerReleasesPage(message)
             text = message .. "\n\n" .. _("Open the releases page in a browser?"),
             ok_text = _("Open"),
             ok_callback = function()
-                Device:openLink(RELEASES_PAGE)
+                Device:openLink(releasesPage())
             end,
         })
     else
@@ -487,7 +526,7 @@ function changelogFetchShow()
         -- safety net: a scheduled body must not take the reader down
         local shown = false
         local ok_run = pcall(function()
-            local releases = Update.httpGetJSON(RELEASES_URL)
+            local releases = fetchReleases()
             if type(releases) ~= "table" or #releases == 0 then
                 return
             end
@@ -525,7 +564,7 @@ end
 -- row promise something its own check would not find.
 local function checkBody(include_beta)
     local installed = Update.getInstalledVersion()
-    local releases = Update.httpGetJSON(RELEASES_URL)
+    local releases = fetchReleases()
     last_bg_check = os.time()
     if type(releases) ~= "table" or #releases == 0 then
         Update.offerReleasesPage(_("Could not check for updates."))
@@ -624,11 +663,11 @@ end
 
 --- Body of the reset, behind pcall from the caller (see
 -- Update._resetFetchStable): fetch the release list, take the first
--- stable one (GitHub returns them newest first) and install it even
+-- stable one (both APIs return them newest first) and install it even
 -- when it is OLDER than a beta install - Update.check only ever
 -- offers newer versions, so a beta tester would have no way back.
 local function resetBody()
-    local releases = Update.httpGetJSON(RELEASES_URL)
+    local releases = fetchReleases()
     if type(releases) ~= "table" or #releases == 0 then
         Update.offerReleasesPage(_("Could not fetch latest release."))
         return
@@ -935,7 +974,7 @@ function Update.checkBackground()
         -- reader down for a transient error
         pcall(function()
             local installed = Update.getInstalledVersion()
-            local releases = Update.httpGetJSON(RELEASES_URL)
+            local releases = fetchReleases()
             if type(releases) ~= "table" then
                 return
             end
@@ -959,6 +998,7 @@ function Update._resetState()
     cached_version = nil
     last_bg_check = nil
     bg_in_flight = false
+    active_host = nil
 end
 
 --- Forget the cached "newer version" and the background throttle, so a

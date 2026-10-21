@@ -101,7 +101,8 @@ Markdown app — they are plain `.md` wherever they are.
    | Password | the **app password** from step 1 |
 
 3. Point it at the same folder you chose in step 2 (if you keep the notes
-   in a subfolder of the account), choose your sync direction/interval —
+   in a subfolder of the account), leave the sync direction on
+   **Bidirectional** ([why?](SYNC-DIRECTION.md)) and pick an interval —
    or just hit **Sync now** once to try.
 4. If AnnotationSync's `.json` files share the folder, add `*.json` to
    Remotely Save's **Ignore list** so only the notes reach Obsidian.
@@ -130,7 +131,7 @@ shown formatted, with *Update and restart* right in the window).
   empty: run an export first.
 - **Upload fails** — the uploader retries 3 times on its own; if it still
   fails, check the server/folder in *Settings → Server and folder…*, then
-  use **Reload everything to the cloud**.
+  use **Upload everything to the cloud**.
 - **Notes don't appear in Obsidian** — in Remotely Save run *Test* /
   *Sync now*, check the address is the one of **your** server (with
   Koofr: `https://app.koofr.net/dav/Koofr`, not the plain `/dav/` root,
@@ -148,7 +149,7 @@ shown formatted, with *Update and restart* right in the window).
 ## Links
 
 - [README](README.md) — every setting, the file format, update policy
-- [Releases](https://github.com/imanubdesigner/tomedown.koplugin/releases) —
+- [Releases](https://codeberg.org/imanubdesigner/tomedown.koplugin/releases) —
   zips and release notes
-- [Issues](https://github.com/imanubdesigner/tomedown.koplugin/issues) —
+- [Issues](https://codeberg.org/imanubdesigner/tomedown.koplugin/issues) —
   something wrong or missing? Tell me there

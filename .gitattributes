@@ -1,3 +1,18 @@
+# Everything KOReader does not load at runtime: the release zip carries
+# only the Lua modules, languages/, and the logo the About popup shows.
+.github export-ignore
+.gitattributes export-ignore
+.gitignore export-ignore
+tests export-ignore
+tools export-ignore
+README.md export-ignore
+README.codeberg.md export-ignore
+TUTORIAL.md export-ignore
+TUTORIAL.codeberg.md export-ignore
+OBSIDIAN.md export-ignore
+SYNC-DIRECTION.md export-ignore
 assets/banner.svg export-ignore
 assets/menu export-ignore
 assets/obsidian export-ignore
+assets/obsidian-guide export-ignore
+assets/tutorials export-ignore
