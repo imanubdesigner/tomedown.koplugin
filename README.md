@@ -11,9 +11,9 @@
 </p>
 
 <p align="center">
-  <a href="https://codeberg.org/imanubdesigner/tomedown.koplugin"><img src="https://img.shields.io/badge/Codeberg-171717?style=for-the-badge&logo=codeberg&logoColor=white" alt="Codeberg"></a>
-  <a href="https://codeberg.org/imanubdesigner/tomedown.koplugin/releases/latest"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fcodeberg.org%2Fapi%2Fv1%2Frepos%2Fimanubdesigner%2Ftomedown.koplugin%2Freleases%2Flatest&query=%24.tag_name&label=release&color=171717&labelColor=171717&logo=codeberg&logoColor=white&style=for-the-badge" alt="Latest release"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/AGPL--3.0-171717?style=for-the-badge&logo=gnu&logoColor=white" alt="License AGPL-3.0"></a>
+  <a href="https://github.com/imanubdesigner/tomedown.koplugin/releases/latest"><img src="https://img.shields.io/github/v/release/imanubdesigner/tomedown.koplugin?style=for-the-badge&color=171717&labelColor=171717&logo=github&logoColor=white" alt="Latest release"></a>
+  <a href="https://github.com/imanubdesigner/tomedown.koplugin/actions/workflows/test.yml"><img src="https://img.shields.io/github/actions/workflow/status/imanubdesigner/tomedown.koplugin/test.yml?style=for-the-badge&labelColor=171717&logo=githubactions&logoColor=white&label=tests" alt="Test status"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/imanubdesigner/tomedown.koplugin?style=for-the-badge&color=171717&labelColor=171717" alt="License"></a>
 </p>
 
 ## Contents
@@ -102,7 +102,7 @@ first export and optional Remotely Save in Obsidian — is in
 2. Get the plugin into `/mnt/us/koreader/plugins/`, either way:
 
    **a. Release zip (easiest)** — download `tomedown.koplugin-v*.zip` from the
-   [Releases](https://codeberg.org/imanubdesigner/tomedown.koplugin/releases)
+   [Releases](https://github.com/imanubdesigner/tomedown.koplugin/releases)
    page and unzip it *into* that folder: the zip already contains the
    `tomedown.koplugin/` directory.
 
@@ -775,7 +775,7 @@ It covers Markdown rendering, `languages/it.po` sync, runtime translations
 and the behaviour of `main.lua` (export, menu, dialogs, fallback servers,
 uploads and retries) against a fake KOReader environment (`kostubs/`). It
 finishes with `luac5.1 -p` on the sources — the same Lua version that runs
-on the Kindle.
+on the Kindle. The same suite runs on every push through GitHub Actions.
 
 ## Project structure
 
