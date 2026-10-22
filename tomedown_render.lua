@@ -188,6 +188,87 @@ function render.coverImg(rel, w, h)
         rel, w, h)
 end
 
+--- Stable Obsidian block ID of a highlight, built from `seed`.
+-- Only letters, digits and "-" survive in a block ID. The result is
+-- "hl-" plus eight hex digits of md5(seed): at six, a long book would
+-- start to collide, and the numeric suffix below depends on rendering
+-- order, so it has to stay practically unreachable.
+function render.blockId(seed)
+    return "hl-" .. md5(tostring(seed)):sub(1, 8)
+end
+
+--- Assign `a.id` to every annotation (in place), deterministically.
+-- The seed is the highlight's creation time (a.id_seed), which never
+-- changes, so an ID stays tied to its highlight across exports, however
+-- many other highlights come or go. Highlights that share a creation
+-- time (imports, sync): the first, in rendering order, keeps the plain
+-- ID, the others add their position to the seed. Without a creation
+-- time the position and text stand in (stable until the highlight is
+-- reshaped). A residual clash gets a numeric suffix.
+function render.assignBlockIds(annotations)
+    local seen_seed, taken = {}, {}
+    for __, a in ipairs(annotations) do
+        local seed
+        if a.id_seed ~= nil and tostring(a.id_seed) ~= "" then
+            seed = tostring(a.id_seed)
+        else
+            seed = "pos:" .. tostring(a.id_pos or "") .. "|"
+                .. tostring(a.id_text or a.text or "")
+        end
+        if seen_seed[seed] then
+            seed = seed .. "|" .. tostring(a.id_pos or "")
+        else
+            seen_seed[seed] = true
+        end
+        local id = render.blockId(seed)
+        if taken[id] then
+            local n = 2
+            while taken[id .. "-" .. n] do
+                n = n + 1
+            end
+            id = id .. "-" .. n
+        end
+        taken[id] = true
+        a.id = id
+    end
+end
+
+local function ltrim(s) return (s:gsub("^%s+", "")) end
+local function rtrim(s) return (s:gsub("%s+$", "")) end
+
+-- Wrap the quote in bold, paragraph by paragraph: emphasis spans a soft
+-- line break but never an empty line, so a quote holding one is wrapped
+-- once per paragraph. The edges are trimmed first (CommonMark does not
+-- open "** text" nor close "text **"). A paragraph that already carries
+-- asterisks at its edges or a "**" inside is left plain: wrapping it
+-- would break the emphasis, and the star in the heading and the index
+-- still marks it. Works on `lines` in place.
+local function wrapBold(lines)
+    local i = 1
+    while i <= #lines do
+        if lines[i]:match("^%s*$") then
+            i = i + 1
+        else
+            local j = i
+            while j < #lines and not lines[j + 1]:match("^%s*$") do
+                j = j + 1
+            end
+            local first, last = ltrim(lines[i]), rtrim(lines[j])
+            local joined = table.concat(lines, "\n", i, j)
+            if not joined:find("**", 1, true)
+                and first:sub(1, 1) ~= "*" and last:sub(-1) ~= "*" then
+                if i == j then
+                    lines[i] = "**" .. rtrim(first) .. "**"
+                else
+                    lines[i] = "**" .. first
+                    lines[j] = last .. "**"
+                end
+            end
+            i = j + 1
+        end
+    end
+end
+
 local function annotationChapter(a, no_chapter_label)
     if type(a.chapter) == "string" and a.chapter ~= "" then
         return a.chapter
@@ -227,7 +308,11 @@ book = {
 }
 opts = { no_chapter_label = _("No chapter"),
          cover = "covers/x.jpg",               -- extracted during export
-         callout = false }                     -- every highlight as [!highlight]
+         callout = false,                      -- every highlight as [!highlight]
+         block_ids = false,                    -- stable ^hl-xxxxxxxx ending each quote
+         special_marker = "callout" }          -- or "bold" / "none", while callout is off
+-- annotations also carry, for block_ids: id_seed (creation time),
+-- id_pos, id_text (fallback seed)
 ]]
 function render.buildBookMd(book, opts)
     opts = opts or {}
@@ -243,8 +328,15 @@ function render.buildBookMd(book, opts)
         end
     end
     local out = {}
+    local marker_global = opts.special_marker
+    if marker_global ~= "bold" and marker_global ~= "none" then
+        marker_global = "callout"
+    end
     local function add(s)
         out[#out + 1] = s
+    end
+    if opts.block_ids then
+        render.assignBlockIds(annotations)
     end
 
     add("---")
@@ -361,14 +453,32 @@ function render.buildBookMd(book, opts)
         end
 
         add("")
-        -- Special Highlight always renders as a callout; the global
-        -- setting turns every remaining highlight into one
-        if opts.callout or a.special then
+        -- A Special Highlight is a callout unless the reader chose
+        -- another marker (bold, none); the global setting turns every
+        -- highlight into a callout and wins over that choice
+        local marker = marker_global
+        local as_callout = opts.callout or (a.special and marker == "callout")
+        local as_bold = a.special and not opts.callout and marker == "bold"
+        if as_callout then
             add("> [!highlight]")
         end
         local text = tostring(a.text or ""):gsub("\r\n", "\n"):gsub("\r", "\n")
+        local quote_lines = {}
         for line in (text .. "\n"):gmatch("(.-)\n") do
+            quote_lines[#quote_lines + 1] = line
+        end
+        if as_bold then
+            wrapBold(quote_lines)
+        end
+        for __, line in ipairs(quote_lines) do
             add("> " .. line)
+        end
+        -- Obsidian block ID: the end of the last line of the quote (or
+        -- of the callout), after any closing emphasis. Checked in
+        -- Obsidian: a link jumps to, and an embed shows, the whole
+        -- quote, multi-paragraph and callout included.
+        if opts.block_ids and a.id then
+            out[#out] = out[#out] .. " ^" .. a.id
         end
         add("")
 

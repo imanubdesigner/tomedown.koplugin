@@ -20,6 +20,7 @@
 
 - [Quickstart](#quickstart)
 - [Requirements](#requirements)
+- [Compatibility](#compatibility)
 - [Installation](#installation)
 - [Configuration (one-off)](#configuration-one-off)
   - [If you already use AnnotationSync](#if-you-already-use-annotationsync)
@@ -91,6 +92,21 @@ file with and without Preserve, and the index.
   **No cloud at all?** The local export works anyway
 - Optional, to read the notes in Obsidian: **Remotely Save** with a WebDAV
   server (free) — any other Markdown app works too
+
+## Compatibility
+
+Tested on:
+
+- **Kindle Paperwhite 5** — KOReader 2026.07.2, daily use
+- **Kindle 4 Non-Touch** — KOReader 2026.07.1 with Nextcloud WebDAV and
+  Obsidian, [tested and reported by Tewel](https://codeberg.org/imanubdesigner/tomedown.koplugin/issues/1#issuecomment-25359526):
+  online merge, the offline round trip and the Obsidian edits, all
+  verified on beta 2, with the merge code unchanged since
+
+The plugin is plain Lua: it runs wherever KOReader runs and touches no
+hardware. Cloud upload needs the **Cloud storage** plugin that ships with
+KOReader, with any server it supports; the local export needs no network
+at all.
 
 ## Installation
 

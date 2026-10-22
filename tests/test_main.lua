@@ -568,7 +568,7 @@ T.check(T.contains(cloud[3].text_func(), "Remote folder: not set"), "remote fold
 -- group is rebuilt on open because the Personal notes row only exists
 -- while preserve is on
 local files = settings[2].sub_item_table_func()
-T.check(#files == 7, "markdown files rows: " .. #files)
+T.check(#files == 9, "markdown files rows: " .. #files)
 T.check(T.contains(files[1].text_func(), "clipboard/tomedown"), "default local folder")
 T.check(files[2].text == "Generate the 00 - Index.md (for Obsidian)",
     "index entry with the file name and the Obsidian hint")
@@ -578,20 +578,26 @@ T.check(files[4].text == "Include book covers", "covers entry")
 T.check(files[4].checked_func() == false, "covers off by default")
 T.check(files[5].text == "All highlights as Special Highlights", "callout entry")
 T.check(files[5].checked_func() == false, "callout off by default")
-T.check(files[6].text == "Auto-export on close", "auto-export entry")
-T.check(files[6].checked_func() == false, "auto-export off by default")
-T.check(files[7].text == "Preserve manual edits", "preserve entry")
-T.check(files[7].checked_func() == false,
+T.check(type(files[6].text_func) == "function", "special marker row present")
+T.check(T.contains(files[6].text_func(), "Callout"), "special marker default Callout")
+T.check(files[6].enabled_func() == true, "special marker enabled when callout off")
+T.check(files[6].sub_item_table and #files[6].sub_item_table == 3, "special marker submenu has 3 items")
+T.check(files[7].text == "Block IDs for highlights", "block ids entry")
+T.check(files[7].checked_func() == false, "block ids off by default")
+T.check(files[8].text == "Auto-export on close", "auto-export entry")
+T.check(files[8].checked_func() == false, "auto-export off by default")
+T.check(files[9].text == "Preserve manual edits", "preserve entry")
+T.check(files[9].checked_func() == false,
     "manual edits off by default (the tomedown <= 0.8 behaviour)")
-T.check(files[8] == nil, "no personal notes row while preserve is off")
+T.check(files[10] == nil, "no personal notes row while preserve is off")
 
 -- flipping preserve shows the row in the open group, without leaving it
 local live = settings[2].sub_item_table_func()
 local open_menu = { item_table = live }
-live[7].callback(open_menu)
+live[9].callback(open_menu)
 T.check(store.tomedown.preserve == true, "preserve toggled on")
-T.check(#live == 8, "personal notes row appears with preserve on")
-local notes_row = live[8]
+T.check(#live == 10, "personal notes row appears with preserve on")
+local notes_row = live[10]
 T.check(notes_row.text_func() == "Personal notes: My notes...",
     "notes heading entry: " .. notes_row.text_func())
 
@@ -615,10 +621,10 @@ T.check(notes_row.text_func() == "Personal notes: My notes...",
     "back to the default heading")
 
 -- back off: the row leaves the open group again
-live[7].callback(open_menu)
+live[9].callback(open_menu)
 T.check(store.tomedown.preserve == false, "preserve toggled back off")
-T.check(#live == 7, "personal notes row disappears with preserve off")
-T.check(files[7].checked_func() == false, "the toggle reflects the setting")
+T.check(#live == 9, "personal notes row disappears with preserve off")
+T.check(files[9].checked_func() == false, "the toggle reflects the setting")
 store.tomedown.preserve = nil
 
 -- ------------- 16b. the Merge row needs the full cloud setup
@@ -637,7 +643,7 @@ T.check(#cloud_live == 3,
 local cloud_menu = { item_table = cloud_live }
 -- (Preserve lives in the Markdown files group, but its callback
 -- rebuilds Cloud too when Cloud is the open group)
-files[7].callback(cloud_menu)
+files[9].callback(cloud_menu)
 T.check(store.tomedown.preserve == true, "preserve on from the Cloud group")
 T.check(#cloud_live == 4,
     "Merge row appears with preserve on: " .. #cloud_live)
@@ -654,7 +660,7 @@ T.check(#cloud_live == 3,
 
 -- flip Preserve off while upload is still on: same in-place rebuild
 cloud_live[1].callback(cloud_menu) -- upload back on
-files[7].callback(cloud_menu)      -- preserve off
+files[9].callback(cloud_menu)      -- preserve off
 T.check(store.tomedown.preserve == false, "preserve off again")
 T.check(#cloud_live == 3,
     "Merge row leaves the open group when preserve goes off: "
@@ -671,8 +677,8 @@ cloud_menu = nil
 
 -- the rows that used to sit in the Style and Behaviour submenus, kept
 -- under the names the sections below toggle (all flat in `files` now)
-local behaviour = { [1] = files[6], [2] = files[7] }
-local style = { [2] = files[5] }
+local behaviour = { [1] = files[8], [2] = files[9] }
+local style = { [1] = files[5], [2] = files[6] }
 T.check(updates[1].text_func() == "Check for updates (v"
         .. Update.getInstalledVersion() .. ")",
     "check row carries the installed version: " .. updates[1].text_func())
@@ -1559,11 +1565,11 @@ files[4].callback()
 T.check(store.tomedown.covers == false, "covers toggled off again")
 plugin:runExport({ FILE }, {})
 T.check(store.tomedown.exports[FILE].hash ~= nil, "hash back after the export")
-style[2].callback()
+files[5].callback()
 T.check(store.tomedown.callout == true, "callout toggled on")
 T.check(store.tomedown.exports[FILE].hash == nil,
     "the callout toggle invalidates the stored hash too")
-style[2].callback()
+files[5].callback()
 
 -- extraction: capped to the 800x1200 box, quality 50, colours kept
 uploadSetup()

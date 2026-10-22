@@ -337,6 +337,12 @@ function Tomedown:cleanAnnotations(raw)
                     sort_page = tonumber(item.pageno) or 0,
                     sort_time = tostring(datetime or ""),
                     special = item.tomedown_special or nil,
+                    -- block ID seed: the CREATION time never changes (an
+                    -- edited note or a resized highlight only moves
+                    -- datetime_updated), so the ID outlives every edit
+                    id_seed = item.datetime,
+                    id_pos = pos,
+                    id_text = text,
                 }
             end
         end
@@ -1040,6 +1046,8 @@ function Tomedown:runExport(files, opts)
                     no_chapter_label = _("No chapter"),
                     cover = cover_rel,
                     callout = getSetting("callout", false),
+                    block_ids = getSetting("block_ids", false),
+                    special_marker = getSetting("special_marker", "callout"),
                     notes_title = notes_title,
                     markers = preserve,
                 })
@@ -2092,6 +2100,74 @@ function Tomedown:genSettingsMenu()
             keep_menu_open = true,
             callback = function()
                 setSetting("callout", not getSetting("callout", false))
+                self:invalidateExportHashes()
+            end,
+        },
+        {
+            -- how a Special Highlight is marked in the note; meaningful
+            -- only while "All highlights as Special Highlights" is off,
+            -- because that one makes every highlight a callout
+            text_func = function()
+                local labels = {
+                    callout = _("Callout"),
+                    bold = _("Bold"),
+                    none = _("None"),
+                }
+                return T(_("Special highlight marker: %1"),
+                    labels[getSetting("special_marker", "callout")]
+                        or labels.callout)
+            end,
+            enabled_func = function()
+                return not getSetting("callout", false)
+            end,
+            keep_menu_open = true,
+            sub_item_table = {
+                {
+                    text = _("Callout"),
+                    radio = true,
+                    checked_func = function()
+                        return getSetting("special_marker", "callout") == "callout"
+                    end,
+                    keep_menu_open = true,
+                    callback = function()
+                        setSetting("special_marker", "callout")
+                        self:invalidateExportHashes()
+                    end,
+                },
+                {
+                    text = _("Bold"),
+                    radio = true,
+                    checked_func = function()
+                        return getSetting("special_marker", "callout") == "bold"
+                    end,
+                    keep_menu_open = true,
+                    callback = function()
+                        setSetting("special_marker", "bold")
+                        self:invalidateExportHashes()
+                    end,
+                },
+                {
+                    text = _("None"),
+                    radio = true,
+                    checked_func = function()
+                        return getSetting("special_marker", "callout") == "none"
+                    end,
+                    keep_menu_open = true,
+                    callback = function()
+                        setSetting("special_marker", "none")
+                        self:invalidateExportHashes()
+                    end,
+                },
+            },
+        },
+        {
+            text = _("Block IDs for highlights"),
+            checked_func = function()
+                return getSetting("block_ids", false)
+            end,
+            keep_menu_open = true,
+            callback = function()
+                setSetting("block_ids", not getSetting("block_ids", false))
                 self:invalidateExportHashes()
             end,
         },

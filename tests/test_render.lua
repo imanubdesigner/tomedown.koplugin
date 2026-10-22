@@ -651,4 +651,147 @@ T.check(render.progressPct("0%") == "0%" and render.progressPct("4%") == "4%"
 T.check(render.progressPct("") == nil and render.progressPct(nil) == nil,
     "no percentage without a progress")
 
+-- Block ID and special marker cases for tests/test_render.lua: paste this
+-- block before the final T.finish("test_render"). It only needs `render`
+-- and `T`, both already in scope there (the md5 stub gives deterministic
+-- ids). The existing test that pins `> [!highlight]` for a special stays
+-- valid: callout is still the default marker.
+
+do
+    local function ann(text, seed, pos, extra)
+        local a = { text = text, page = 1, date = "15/10/2026 11:59",
+            id_seed = seed, id_pos = pos, id_text = text }
+        for k, v in pairs(extra or {}) do a[k] = v end
+        return a
+    end
+    local function book(list)
+        return { title = "T", author = "A", annotations = list }
+    end
+    local function ids(md)
+        local out = {}
+        for id in md:gmatch(" %^(hl%-[%w%-]+)\n") do
+            out[#out + 1] = id
+        end
+        return out
+    end
+
+    local A = function() return ann("one", "2026-10-15 11:59:23", "/p1") end
+    local B = function() return ann("two", "2026-10-15 12:10:00", "/p2") end
+    local C = function() return ann("three", "2026-10-16 09:00:00", "/p3") end
+
+    -- 1. option off: no ids
+    local off = render.buildBookMd(book({ A(), B() }), {})
+    T.check(not off:find("%^hl%-"), "block ids: none when the option is off")
+
+    -- 9. option off: the output is what it always was
+    local nil_opt = render.buildBookMd(book({ A(), B() }), {})
+    local false_opt = render.buildBookMd(book({ A(), B() }), { block_ids = false })
+    T.check(nil_opt == false_opt, "block ids: absent and false options render the same")
+    T.check(T.contains(nil_opt, "> one\n\n- **p. 1**"),
+        "block ids: option off keeps the quote followed by a blank line and the metadata")
+
+    -- 2. option on: one id per highlight, `hl-` plus eight hex digits
+    local on = render.buildBookMd(book({ A(), B() }), { block_ids = true })
+    local first = ids(on)
+    T.check(#first == 2, "block ids: one per highlight")
+    T.check(first[1]:match("^hl%-%x%x%x%x%x%x%x%x$") ~= nil,
+        "block ids: hl- followed by eight hex digits")
+    T.check(T.contains(on, "> one ^" .. first[1] .. "\n\n- **p. 1**"),
+        "block ids: the id ends the last line of the quote")
+
+    -- 3. identical between two exports
+    local again = ids(render.buildBookMd(book({ A(), B() }), { block_ids = true }))
+    T.check(again[1] == first[1] and again[2] == first[2],
+        "block ids: identical across exports")
+
+    -- 4. unchanged when other highlights come or go
+    local plus = ids(render.buildBookMd(book({ A(), B(), C() }), { block_ids = true }))
+    local minus = ids(render.buildBookMd(book({ B() }), { block_ids = true }))
+    T.check(plus[1] == first[1] and plus[2] == first[2],
+        "block ids: unchanged when a highlight is added")
+    T.check(minus[1] == first[2], "block ids: unchanged when another is removed")
+
+    -- 5. same creation time: distinct ids; the one holding the plain id
+    --    is the first in rendering order, and the other takes it when
+    --    that one goes away (accepted)
+    local X = function() return ann("x", "2026-10-15 11:59:23", "/a") end
+    local Y = function() return ann("y", "2026-10-15 11:59:23", "/b") end
+    local both = ids(render.buildBookMd(book({ X(), Y() }), { block_ids = true }))
+    T.check(both[1] ~= both[2], "block ids: same creation time, distinct ids")
+    local only_x = ids(render.buildBookMd(book({ X() }), { block_ids = true }))
+    local only_y = ids(render.buildBookMd(book({ Y() }), { block_ids = true }))
+    T.check(only_x[1] == both[1], "block ids: the first keeps the plain id")
+    T.check(only_y[1] == only_x[1],
+        "block ids: the survivor takes the plain id when the first is gone")
+
+    -- 6. no creation time: still stable
+    local F = function() return ann("no date", nil, "/z") end
+    local f1 = ids(render.buildBookMd(book({ F() }), { block_ids = true }))
+    local f2 = ids(render.buildBookMd(book({ F(), A() }), { block_ids = true }))
+    T.check(f1[1] == f2[1], "block ids: stable without a creation time")
+
+    -- 7. same time and same position: numeric suffix
+    local P = ann("p", "2026-10-15 11:59:23", "/s")
+    local Q = ann("q", "2026-10-15 11:59:23", "/s")
+    local R = ann("r", "2026-10-15 11:59:23", "/s")
+    local s = ids(render.buildBookMd(book({ P, Q, R }), { block_ids = true }))
+    T.check(s[1] ~= s[2] and s[2] ~= s[3] and s[3]:match("%-2$") ~= nil,
+        "block ids: residual clash gets a numeric suffix")
+
+    -- 8. callout: the id ends the last line inside the callout
+    local sp = render.buildBookMd(book({ ann("spec", "2026-10-15 11:59:23", "/p1",
+        { special = true }) }), { block_ids = true })
+    T.check(sp:match("> %[!highlight%]\n> spec %^hl%-%x+\n\n%- %*%*p%. 1%*%*") ~= nil,
+        "block ids: in a callout the id ends the last quote line")
+    local multi = render.buildBookMd(book({ ann("one\ntwo", "2026-10-15 11:59:23", "/p1") }),
+        { block_ids = true, callout = true })
+    T.check(T.contains(multi, "> one\n> two ^hl-"),
+        "block ids: multi-line quote, id on the last line only")
+
+    -- the ids live inside the generated region, so the digest covers them
+    T.check(on:find("^hl-", 1, true) > on:find("tomedown:begin body", 1, true),
+        "block ids: inside the generated region")
+end
+
+-- special marker: callout (default), bold, none
+do
+    local function sbook(text, special)
+        return { title = "T", author = "A", annotations = { {
+            text = text, page = 1, date = "15/10/2026 11:59", special = special,
+            id_seed = "2026-10-15 11:59:23", id_pos = "/p", id_text = text } } }
+    end
+    local function quote(md)
+        return md:match("(> .-)\n\n%- %*%*p%. 1%*%*")
+    end
+
+    T.check(quote(render.buildBookMd(sbook("one", true), {})) == "> [!highlight]\n> one",
+        "special marker: callout is the default")
+    T.check(quote(render.buildBookMd(sbook("one", true), { special_marker = "callout" }))
+        == "> [!highlight]\n> one", "special marker: callout when chosen")
+    T.check(quote(render.buildBookMd(sbook("one\ntwo", true), { special_marker = "bold" }))
+        == "> **one\n> two**", "special marker: bold wraps the quote as a whole")
+    T.check(quote(render.buildBookMd(sbook("one\ntwo\n\nthree", true), { special_marker = "bold" }))
+        == "> **one\n> two**\n> \n> **three**",
+        "special marker: bold wraps paragraph by paragraph across a blank line")
+    T.check(quote(render.buildBookMd(sbook("  one  ", true), { special_marker = "bold" }))
+        == "> **one**", "special marker: bold trims the edges of a paragraph")
+    T.check(quote(render.buildBookMd(sbook("a **b** c", true), { special_marker = "bold" }))
+        == "> a **b** c", "special marker: bold leaves a paragraph with ** inside plain")
+    T.check(quote(render.buildBookMd(sbook("*note* text", true), { special_marker = "bold" }))
+        == "> *note* text", "special marker: bold leaves a paragraph with * at the edge plain")
+    T.check(quote(render.buildBookMd(sbook("one\ntwo", true), { special_marker = "none" }))
+        == "> one\n> two", "special marker: none leaves a plain quote")
+    T.check(quote(render.buildBookMd(sbook("one", true), { callout = true, special_marker = "bold" }))
+        == "> [!highlight]\n> one", "special marker: the global callout wins")
+    T.check(quote(render.buildBookMd(sbook("one", false), { special_marker = "bold" }))
+        == "> one", "special marker: a normal highlight is never wrapped")
+    local with_id = render.buildBookMd(sbook("one\ntwo", true),
+        { special_marker = "bold", block_ids = true })
+    T.check(T.contains(with_id, "> **one\n> two** ^hl-"),
+        "special marker: the block id follows the closing emphasis")
+    local counted = render.buildBookMd(sbook("one", true), { special_marker = "none" })
+    T.check(T.contains(counted, "special: 1") and T.contains(counted, "★ 1 special"),
+        "special marker: counts stay whatever the marker")
+end
+
 T.finish("test_render")
