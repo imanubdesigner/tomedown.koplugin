@@ -310,7 +310,7 @@ opts = { no_chapter_label = _("No chapter"),
          cover = "covers/x.jpg",               -- extracted during export
          callout = false,                      -- every highlight as [!highlight]
          block_ids = false,                    -- stable ^hl-xxxxxxxx ending each quote
-         special_marker = "callout" }          -- or "bold" / "none", while callout is off
+         special_marker = "callout" }          -- or "bold", while callout is off
 -- annotations also carry, for block_ids: id_seed (creation time),
 -- id_pos, id_text (fallback seed)
 ]]
@@ -329,7 +329,7 @@ function render.buildBookMd(book, opts)
     end
     local out = {}
     local marker_global = opts.special_marker
-    if marker_global ~= "bold" and marker_global ~= "none" then
+    if marker_global ~= "bold" then
         marker_global = "callout"
     end
     local function add(s)
@@ -453,9 +453,9 @@ function render.buildBookMd(book, opts)
         end
 
         add("")
-        -- A Special Highlight is a callout unless the reader chose
-        -- another marker (bold, none); the global setting turns every
-        -- highlight into a callout and wins over that choice
+        -- A Special Highlight is a callout unless the reader chose the
+        -- other marker (bold); the global setting turns every highlight
+        -- into a callout and wins over that choice
         local marker = marker_global
         local as_callout = opts.callout or (a.special and marker == "callout")
         local as_bold = a.special and not opts.callout and marker == "bold"

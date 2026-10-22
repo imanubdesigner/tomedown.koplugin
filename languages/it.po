@@ -216,9 +216,6 @@ msgstr "Callout"
 msgid "Bold"
 msgstr "Grassetto"
 
-msgid "None"
-msgstr "Nessuno"
-
 # Special Highlight (v0.8.0)
 msgid "Special Highlight"
 msgstr "Evidenziazione speciale"

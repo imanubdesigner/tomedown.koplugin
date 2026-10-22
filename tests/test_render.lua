@@ -753,7 +753,7 @@ do
         "block ids: inside the generated region")
 end
 
--- special marker: callout (default), bold, none
+-- special marker: callout (default), bold
 do
     local function sbook(text, special)
         return { title = "T", author = "A", annotations = { {
@@ -779,8 +779,11 @@ do
         == "> a **b** c", "special marker: bold leaves a paragraph with ** inside plain")
     T.check(quote(render.buildBookMd(sbook("*note* text", true), { special_marker = "bold" }))
         == "> *note* text", "special marker: bold leaves a paragraph with * at the edge plain")
+    -- "none" was a real choice until 1.1: a stored value must fall back
+    -- to the callout, never render as a plain quote the reader never chose
     T.check(quote(render.buildBookMd(sbook("one\ntwo", true), { special_marker = "none" }))
-        == "> one\n> two", "special marker: none leaves a plain quote")
+        == "> [!highlight]\n> one\n> two",
+        "special marker: any value but bold falls back to the callout")
     T.check(quote(render.buildBookMd(sbook("one", true), { callout = true, special_marker = "bold" }))
         == "> [!highlight]\n> one", "special marker: the global callout wins")
     T.check(quote(render.buildBookMd(sbook("one", false), { special_marker = "bold" }))
@@ -789,7 +792,7 @@ do
         { special_marker = "bold", block_ids = true })
     T.check(T.contains(with_id, "> **one\n> two** ^hl-"),
         "special marker: the block id follows the closing emphasis")
-    local counted = render.buildBookMd(sbook("one", true), { special_marker = "none" })
+    local counted = render.buildBookMd(sbook("one", true), { special_marker = "bold" })
     T.check(T.contains(counted, "special: 1") and T.contains(counted, "★ 1 special"),
         "special marker: counts stay whatever the marker")
 end
