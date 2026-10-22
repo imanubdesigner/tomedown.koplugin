@@ -550,15 +550,17 @@ ui.document = { file = nil }
 T.check(sub[4].enabled_func() == true, "all books enabled")
 
 local settings = plugin:genSettingsMenu()
-T.check(#settings == 3, "settings groups: " .. #settings)
+T.check(#settings == 4, "settings groups: " .. #settings)
 T.check(settings[1].text == "\xEE\xB4\xBE  Cloud", "cloud group with icon")
 T.check(settings[2].text == "\xEF\x83\xB6  Markdown files",
     "markdown files group with icon")
-T.check(settings[3].text == "\xEE\xB6\xAE  Updates", "updates group with icon")
+T.check(settings[3].text == "\xEE\xB5\x91  Highlights",
+    "highlights group with icon")
+T.check(settings[4].text == "\xEE\xB6\xAE  Updates", "updates group with icon")
 -- Cloud: rebuilt on open, the Merge row only exists with a server and
 -- upload on (no cloud copy to fold without them)
 local cloud = settings[1].sub_item_table_func()
-local updates = settings[3].sub_item_table
+local updates = settings[4].sub_item_table
 T.check(#cloud == 3, "cloud rows without a server: " .. #cloud)
 T.check(#updates == 4, "updates rows: " .. #updates)
 T.check(cloud[1].text == "Upload to cloud", "upload entry")
@@ -568,7 +570,7 @@ T.check(T.contains(cloud[3].text_func(), "Remote folder: not set"), "remote fold
 -- group is rebuilt on open because the Personal notes row only exists
 -- while preserve is on
 local files = settings[2].sub_item_table_func()
-T.check(#files == 7, "markdown files rows: " .. #files)
+T.check(#files == 6, "markdown files rows: " .. #files)
 T.check(T.contains(files[1].text_func(), "clipboard/tomedown"), "default local folder")
 T.check(files[2].text == "Generate the 00 - Index.md (for Obsidian)",
     "index entry with the file name and the Obsidian hint")
@@ -576,22 +578,52 @@ T.check(files[3].text == "Include page bookmarks", "page bookmarks entry")
 T.check(files[3].checked_func() == false, "page bookmarks off by default")
 T.check(files[4].text == "Include book covers", "covers entry")
 T.check(files[4].checked_func() == false, "covers off by default")
-T.check(files[5].text == "All highlights as Special Highlights", "callout entry")
-T.check(files[5].checked_func() == false, "callout off by default")
-T.check(files[6].text == "Auto-export on close", "auto-export entry")
-T.check(files[6].checked_func() == false, "auto-export off by default")
-T.check(files[7].text == "Preserve manual edits", "preserve entry")
-T.check(files[7].checked_func() == false,
+T.check(files[5].text == "Auto-export on close", "auto-export entry")
+T.check(files[5].checked_func() == false, "auto-export off by default")
+T.check(files[6].text == "Preserve manual edits", "preserve entry")
+T.check(files[6].checked_func() == false,
     "manual edits off by default (the tomedown <= 0.8 behaviour)")
-T.check(files[8] == nil, "no personal notes row while preserve is off")
+T.check(files[7] == nil, "no personal notes row while preserve is off")
+
+-- Highlights: its own group since 1.1 — the three rows that speak about
+-- the highlights themselves, which would make the Markdown files group
+-- carry nine rows (six here, plus the marker rows, plus notes)
+local highlights = settings[3].sub_item_table
+T.check(#highlights == 3, "highlights rows: " .. #highlights)
+T.check(highlights[1].text == "All highlights as Special Highlights",
+    "callout entry")
+T.check(highlights[1].checked_func() == false, "callout off by default")
+T.check(type(highlights[2].text_func) == "function", "special marker row present")
+T.check(T.contains(highlights[2].text_func(), "Callout"),
+    "special marker default Callout")
+T.check(highlights[2].enabled_func() == true,
+    "special marker enabled while every highlight is not a callout yet")
+T.check(highlights[2].sub_item_table
+        and #highlights[2].sub_item_table == 2,
+    "special marker submenu has 2 items: callout and bold")
+local marker_items = highlights[2].sub_item_table
+T.check(marker_items[1].text == "Callout" and marker_items[1].checked_func(),
+    "the callout choice is the one on")
+T.check(marker_items[2].text == "Bold" and marker_items[2].checked_func() == false,
+    "the bold choice starts off")
+T.check(highlights[3].text == "Block IDs for highlights", "block ids entry")
+T.check(highlights[3].checked_func() == false, "block ids off by default")
+-- with every highlight becoming a callout the marker row has nothing
+-- left to choose, and graying it out is the only way to say so
+highlights[1].callback()
+T.check(highlights[2].enabled_func() == false,
+    "special marker row disabled while every highlight is a callout")
+highlights[1].callback()
+T.check(highlights[2].enabled_func() == true,
+    "special marker row back once the callout option is off")
 
 -- flipping preserve shows the row in the open group, without leaving it
 local live = settings[2].sub_item_table_func()
 local open_menu = { item_table = live }
-live[7].callback(open_menu)
+live[6].callback(open_menu)
 T.check(store.tomedown.preserve == true, "preserve toggled on")
-T.check(#live == 8, "personal notes row appears with preserve on")
-local notes_row = live[8]
+T.check(#live == 7, "personal notes row appears with preserve on")
+local notes_row = live[7]
 T.check(notes_row.text_func() == "Personal notes: My notes...",
     "notes heading entry: " .. notes_row.text_func())
 
@@ -615,10 +647,10 @@ T.check(notes_row.text_func() == "Personal notes: My notes...",
     "back to the default heading")
 
 -- back off: the row leaves the open group again
-live[7].callback(open_menu)
+live[6].callback(open_menu)
 T.check(store.tomedown.preserve == false, "preserve toggled back off")
-T.check(#live == 7, "personal notes row disappears with preserve off")
-T.check(files[7].checked_func() == false, "the toggle reflects the setting")
+T.check(#live == 6, "personal notes row disappears with preserve off")
+T.check(files[6].checked_func() == false, "the toggle reflects the setting")
 store.tomedown.preserve = nil
 
 -- ------------- 16b. the Merge row needs the full cloud setup
@@ -637,7 +669,7 @@ T.check(#cloud_live == 3,
 local cloud_menu = { item_table = cloud_live }
 -- (Preserve lives in the Markdown files group, but its callback
 -- rebuilds Cloud too when Cloud is the open group)
-files[7].callback(cloud_menu)
+files[6].callback(cloud_menu)
 T.check(store.tomedown.preserve == true, "preserve on from the Cloud group")
 T.check(#cloud_live == 4,
     "Merge row appears with preserve on: " .. #cloud_live)
@@ -654,7 +686,7 @@ T.check(#cloud_live == 3,
 
 -- flip Preserve off while upload is still on: same in-place rebuild
 cloud_live[1].callback(cloud_menu) -- upload back on
-files[7].callback(cloud_menu)      -- preserve off
+files[6].callback(cloud_menu)      -- preserve off
 T.check(store.tomedown.preserve == false, "preserve off again")
 T.check(#cloud_live == 3,
     "Merge row leaves the open group when preserve goes off: "
@@ -670,9 +702,9 @@ cloud_menu = nil
 cloud_menu = nil
 
 -- the rows that used to sit in the Style and Behaviour submenus, kept
--- under the names the sections below toggle (all flat in `files` now)
-local behaviour = { [1] = files[6], [2] = files[7] }
-local style = { [2] = files[5] }
+-- under the names the sections below toggle: auto-export and preserve
+-- in Markdown files, the callout toggle in Highlights
+local behaviour = { [1] = files[5], [2] = files[6] }
 T.check(updates[1].text_func() == "Check for updates (v"
         .. Update.getInstalledVersion() .. ")",
     "check row carries the installed version: " .. updates[1].text_func())
@@ -1559,11 +1591,34 @@ files[4].callback()
 T.check(store.tomedown.covers == false, "covers toggled off again")
 plugin:runExport({ FILE }, {})
 T.check(store.tomedown.exports[FILE].hash ~= nil, "hash back after the export")
-style[2].callback()
+highlights[1].callback()
 T.check(store.tomedown.callout == true, "callout toggled on")
 T.check(store.tomedown.exports[FILE].hash == nil,
     "the callout toggle invalidates the stored hash too")
-style[2].callback()
+highlights[1].callback()
+
+-- the same for the two rows the Highlights group took over: neither
+-- special_marker nor block_ids is part of hashBook, so choosing one has
+-- to wipe the stored hashes or the book would never be rewritten
+plugin:runExport({ FILE }, {})
+T.check(store.tomedown.exports[FILE].hash ~= nil, "hash back before the next flip")
+highlights[3].callback()
+T.check(store.tomedown.block_ids == true, "block ids toggled on")
+T.check(store.tomedown.exports[FILE].hash == nil,
+    "the block ids toggle invalidates the stored hash too")
+highlights[3].callback()
+plugin:runExport({ FILE }, {})
+T.check(store.tomedown.exports[FILE].hash ~= nil, "hash back once again")
+marker_items[2].callback()
+T.check(store.tomedown.special_marker == "bold",
+    "the bold marker sticks")
+T.check(store.tomedown.exports[FILE].hash == nil,
+    "the special marker choice invalidates the stored hash too")
+marker_items[1].callback()
+T.check(store.tomedown.special_marker == "callout",
+    "back to the default callout marker")
+T.check(highlights[2].text_func() == "Special highlight marker: Callout",
+    "the row label follows the choice: " .. highlights[2].text_func())
 
 -- extraction: capped to the 800x1200 box, quality 50, colours kept
 uploadSetup()

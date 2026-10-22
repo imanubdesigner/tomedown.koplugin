@@ -204,6 +204,18 @@ msgstr "Includi le copertine"
 msgid "All highlights as Special Highlights"
 msgstr "Tutte le evidenziazioni come Special Highlights"
 
+msgid "Block IDs for highlights"
+msgstr "ID di blocco per le evidenziazioni"
+
+msgid "Special highlight marker: %1"
+msgstr "Marcatore delle evidenziazioni speciali: %1"
+
+msgid "Callout"
+msgstr "Callout"
+
+msgid "Bold"
+msgstr "Grassetto"
+
 # Special Highlight (v0.8.0)
 msgid "Special Highlight"
 msgstr "Evidenziazione speciale"

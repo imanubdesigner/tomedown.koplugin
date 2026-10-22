@@ -20,12 +20,14 @@
 
 - [Quickstart](#quickstart)
 - [Requirements](#requirements)
+- [Compatibility](#compatibility)
 - [Installation](#installation)
 - [Configuration (one-off)](#configuration-one-off)
   - [If you already use AnnotationSync](#if-you-already-use-annotationsync)
   - [Updates](#updates)
 - [Usage](#usage)
   - [Special highlights](#special-highlights)
+  - [Block IDs and linking](#block-ids-and-linking)
   - [Auto-export and offline reading](#auto-export-and-offline-reading)
   - [Upload retries](#upload-retries)
   - [Preserve your edits](#preserve-your-edits)
@@ -92,6 +94,21 @@ file with and without Preserve, and the index.
 - Optional, to read the notes in Obsidian: **Remotely Save** with a WebDAV
   server (free) — any other Markdown app works too
 
+## Compatibility
+
+Tested on:
+
+- **Kindle Paperwhite 5** — KOReader 2026.07.2, daily use
+- **Kindle 4 Non-Touch** — KOReader 2026.07.1 with Nextcloud WebDAV and
+  Obsidian, [tested and reported by Tewel](https://codeberg.org/imanubdesigner/tomedown.koplugin/issues/1#issuecomment-25359526):
+  online merge, the offline round trip and the Obsidian edits, all
+  verified on beta 2, with the merge code unchanged since
+
+The plugin is plain Lua: it runs wherever KOReader runs and touches no
+hardware. Cloud upload needs the **Cloud storage** plugin that ships with
+KOReader, with any server it supports; the local export needs no network
+at all.
+
 ## Installation
 
 A full walkthrough — cloud account and app password (Koofr as the example),
@@ -146,9 +163,9 @@ first export and optional Remotely Save in Obsidian — is in
 
 ## Configuration (one-off)
 
-☰ menu → **Tomedown** → **Settings**, in three groups:
+☰ menu → **Tomedown** → **Settings**, in four groups:
 
-![The three Tomedown settings groups](assets/menu/settings/settings_menu.png)
+![The four Tomedown settings groups](assets/menu/settings/settings_menu.png)
 
 **Cloud**
 
@@ -170,7 +187,6 @@ first export and optional Remotely Save in Obsidian — is in
 | *Generate the 00 - Index.md (for Obsidian)* | builds the Obsidian tables — a stats line on top (books, highlights, starred specials), then the series books and your other books, each with the columns it actually has (internal links, author, series, highlight count with its stars, a Status column with the reading status over the progress bar and the percentage glued to it, and a Last read column with the date it was last opened) |
 | *Include page bookmarks* | off by default: adds a `# Page bookmarks` section (bookmarked page + note) after the highlights |
 | *Include book covers* | off by default: exports the cover of every book into `covers/` and embeds it in the book file and in the index; the cover is removed from the device once its upload succeeded (the vault copy is the master one). Requires **Obsidian 1.8.1 or newer** to display |
-| *All highlights as Special Highlights* | off by default: every highlight becomes an `> [!highlight]` callout instead of a plain quote; when off, only *Special Highlight* marks (see *Usage*) turn into callouts |
 | *Auto-export on close* | off by default: exports the book when you close it, and again (silently, no network) before the device suspends |
 | *Preserve manual edits* | off by default (the tomedown ≤ 0.8 behaviour): switch it on and every export folds the new render into your file, keeping your zones; switching modes rewrites every file on the next export — see *Preserve your edits* |
 | *Personal notes: %1* | the heading above your notes block — tap it to rename, leave the field empty to export without a heading; the row exists only while *Preserve manual edits* is on (with the toggle off no heading ever reaches the file) |
@@ -184,12 +200,26 @@ row at the bottom (the heading of your notes block exports under):
 
 ![Markdown files settings with preserve ticked](assets/menu/settings/markdown_menu_preserve.png)
 
-Ticking or unticking *Include book covers* / *All highlights as Special Highlights*
-rewrites every already exported file on the next export (the stored hash is
-invalidated, so *Export only what changed* re-sends everything once).
+Ticking or unticking *Include book covers* rewrites every already
+exported file on the next export (the stored hash is invalidated, so
+*Export only what changed* re-sends everything once).
 
 Covers are always exported in full colour, whatever the device: the
 extraction forces colour rendering even on greyscale e-ink screens.
+
+**Highlights**
+
+![Highlights settings](assets/menu/settings/settings_highlights_menu.png)
+
+| Entry | What to do |
+|---|---|
+| *All highlights as Special Highlights* | off by default: every highlight becomes an `> [!highlight]` callout instead of a plain quote; when off, only *Special Highlight* marks (see *Usage*) turn into callouts |
+| *Special highlight marker: %1* | only while the row above is off, since with every highlight a callout there is nothing left to choose (the row is grayed out): **Callout** is the default and keeps the box on the marked highlights alone, **Bold** writes them as `> **quote**` instead, for the readers that do not know callouts |
+| *Block IDs for highlights* | off by default: writes a stable `^hl-xxxxxxxx` id at the end of every quote, so Obsidian can link to one single highlight and embed it (see *Block IDs and linking*) |
+
+All three rows rewrite every already exported file on the next export:
+none of them is part of the book's hash, so flipping one invalidates the
+stored hashes, the way *Include book covers* does above.
 
 **Updates**
 
@@ -313,9 +343,11 @@ Every book has a handful of highlights that really matter: the quote you
 want to open first, the line you will come back to. **Special Highlight**
 is the flag for those and only those. The mark lives inside the book's
 own settings and is part of the book's hash, so the next export rewrites
-that file; the flagged highlight is always exported as an `> [!highlight]`
-callout — even when *All highlights as Special Highlights* is off — so it stays
-visually apart in Obsidian. A notification confirms every change.
+that file; the flagged highlight always keeps a marker of its own: the
+`> [!highlight]` callout by default, or `> **quote**` once you pick *Bold*
+under *Settings → Highlights*. Either way it stays visually apart from
+the plain quotes, even when *All highlights as Special Highlights* is
+off. A notification confirms every change.
 
 Marking it costs a single tap wherever you already are. **Selecting
 text** puts the row right under *Highlight*: one tap creates the
@@ -354,6 +386,34 @@ on the first upload, when it does not exist yet —; every cover is deleted
 from the device right after its upload succeeded (offline, it waits in the
 pending list and goes up with the next connection; with the option off, no
 image folder is created at all).
+
+### Block IDs and linking
+
+*Block IDs for highlights* (Settings → Highlights) writes a short id at
+the end of every quote:
+
+```md
+> First highlighted sentence. ^hl-4f2a9c31
+```
+
+The id belongs to the highlight, not to the export, so it never moves:
+the same quote keeps the same `^hl-` on every re-export, and a link
+written today still lands on it tomorrow. Obsidian can then point at one
+single quote of the whole library:
+
+- `[[Book title#^hl-4f2a9c31]]` opens that book's note at the quote;
+- `![[Book title#^hl-4f2a9c31]]` pulls the quote into the page you are
+  writing, wherever that page sits in the vault.
+
+Inside an `> [!highlight]` callout the anchor stays out of sight while
+you read, tucked away by the box: click the quote to edit it and
+`^hl-4f2a9c31` is there at the end of the line. Reading or editing, the
+links find it the same.
+
+Off by default: the apps that do not know ids show `^hl-4f2a9c31` as
+plain text at the end of the quote, the same way Notion shows
+`[!highlight]`, so leave the toggle off if you read the notes anywhere
+but Obsidian.
 
 ### Auto-export and offline reading
 

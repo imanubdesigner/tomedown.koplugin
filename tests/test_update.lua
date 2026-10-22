@@ -170,11 +170,11 @@ resetWidgets()
 fakeReleases({})
 
 local settings = plugin:genSettingsMenu()
-T.check(#settings == 3, "settings groups: " .. #settings)
+T.check(#settings == 4, "settings groups: " .. #settings)
 -- Cloud is rebuilt on open; with no server the Merge row is absent
 local cloud = settings[1].sub_item_table_func()
 local files = settings[2].sub_item_table_func()
-local updates = settings[3].sub_item_table
+local updates = settings[4].sub_item_table
 T.check(files[3].text == "Include page bookmarks", "page bookmarks row")
 -- Auto-export lives flat in Settings > Markdown files now
 -- (test_main checks the rows)
@@ -265,7 +265,7 @@ T.check(T.contains(viewer.text, "issue #12"), "inline #12 kept: " .. tostring(vi
 T.check(Update.getAvailableVersion() == MAJOR,
     "cached available version: " .. tostring(Update.getAvailableVersion()))
 
-local check_row = plugin:genSettingsMenu()[3].sub_item_table[1]
+local check_row = plugin:genSettingsMenu()[4].sub_item_table[1]
 T.check(check_row.text_func() == "Update available: v" .. INSTALLED
         .. " → v" .. MAJOR,
     "check row shows the update: " .. check_row.text_func())
@@ -542,8 +542,8 @@ resetWidgets()
 Update._resetState()
 NetworkMgr.connected = true
 settings = plugin:genSettingsMenu()
-T.check(#settings == 3, "settings groups with the beta row: " .. #settings)
-updates = settings[3].sub_item_table
+T.check(#settings == 4, "settings groups with the beta row: " .. #settings)
+updates = settings[4].sub_item_table
 developer = updates[4].sub_item_table_func()
 T.check(developer[1].text == "Beta Releases", "beta releases row")
 T.check(developer[1].checked_func() == false, "beta releases off by default")
