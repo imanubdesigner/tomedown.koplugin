@@ -80,15 +80,29 @@ local function setSetting(key, value)
     G_reader_settings:saveSetting(SETTINGS_KEY, settings)
 end
 
--- Title of the heading that names the writable zone in every exported
--- file: translated default until the reader renames it from the
--- Markdown menu, "" when they asked for no heading at all.
-local function getNotesTitle()
+-- Title of the heading that names the writable zone in an exported
+-- file: the book's own title when it asked for one, the global one
+-- otherwise (translated default until the reader renames it from the
+-- Markdown menu, "" when they asked for no heading at all). Keyed the
+-- same way as "preserve_books": the book file path.
+local function getNotesTitle(file)
+    if file then
+        local titles = getSetting("notes_titles", {})
+        if titles[file] ~= nil then
+            return titles[file]
+        end
+    end
     local value = getSetting("notes_title", nil)
     if value == nil then
         return _("My notes...")
     end
     return value
+end
+
+local function setBookNotesTitle(file, title)
+    local titles = getSetting("notes_titles", {})
+    titles[file] = title
+    setSetting("notes_titles", titles)
 end
 
 -- preserve per book: a book with its own choice wins over the global
@@ -109,21 +123,18 @@ local function setBookPreserve(file, on)
     setSetting("preserve_books", choices)
 end
 
--- The index belongs to no book, yet it carries the same heading and the
--- same markers a preserved book file carries, and the reader may have
--- written in it: it stays behind preserve while the global switch is on
--- or while any book chose to keep its zone, so exporting any book never
--- takes the notes in the index away.
-local function preserveAnywhere()
-    if getSetting("preserve", false) then
-        return true
+-- The index is a file like the others, and since 1.1 it carries its
+-- own switch: it keeps its zone when the reader asks for it, and
+-- otherwise follows the global default. It used to ride along with
+-- whatever any book had chosen, which switched the index on behind
+-- the reader's back; now nothing turns it on but the global switch or
+-- this choice.
+local function getIndexPreserve()
+    local choice = getSetting("preserve_index", nil)
+    if choice ~= nil then
+        return choice
     end
-    for __, on in pairs(getSetting("preserve_books", {})) do
-        if on then
-            return true
-        end
-    end
-    return false
+    return getSetting("preserve", false)
 end
 
 local function readIfExists(path)
@@ -1018,7 +1029,9 @@ function Tomedown:runExport(files, opts)
     -- Off by default: tomedown ≤ 0.8 always overwrote every file, and
     -- an upgrade must not change that under the reader's feet. Since
     -- 1.1 each book may hold its own choice, which wins over the
-    -- global default (getBookPreserve)
+    -- global default (getBookPreserve), and may name its zone itself
+    -- (getNotesTitle with the book's file): the index keeps the
+    -- global title and its own switch (getIndexPreserve)
     local notes_title = getNotesTitle()
     local backups = 0
 
@@ -1087,7 +1100,7 @@ function Tomedown:runExport(files, opts)
                     callout = getSetting("callout", false),
                     block_ids = getSetting("block_ids", false),
                     special_marker = getSetting("special_marker", "callout"),
-                    notes_title = notes_title,
+                    notes_title = getNotesTitle(file),
                     markers = preserve,
                 })
                 -- fold the file on disk into the render: the reader's
@@ -1098,7 +1111,7 @@ function Tomedown:runExport(files, opts)
                 if old then
                     local merged, info = merge.apply(old, md,
                         record and record.regions,
-                        { mode = mode, notes_title = notes_title })
+                        { mode = mode, notes_title = getNotesTitle(file) })
                     content = merged
                     if info.backup then
                         -- the reader had written inside the block: the
@@ -1140,10 +1153,10 @@ function Tomedown:runExport(files, opts)
     if with_index then
         local index_path = dir .. "/" .. INDEX_FILENAME
         if exported > 0 or not lfs.attributes(index_path) then
-            -- the index follows no book, yet it keeps its zone while
-            -- any book keeps one: its notes ride along with the next
-            -- export instead of being rewritten away
-            local index_preserve = preserveAnywhere()
+            -- the index keeps its zone when its own switch says so, or
+            -- when the global switch covers it: no book choice turns it
+            -- on behind the reader's back any more
+            local index_preserve = getIndexPreserve()
             local entries, new_covers = self:buildIndexEntries(dir, export_records)
             local index_md = render.buildIndexMd(entries, {
                 title = _("Book index"),
@@ -1163,6 +1176,17 @@ function Tomedown:runExport(files, opts)
                       notes_title = notes_title })
                 content = merged
                 if info.backup then
+                    local bak = io.open(index_path .. ".bak", "wb")
+                    if bak then
+                        bak:write(old_index)
+                        bak:close()
+                        backups = backups + 1
+                    end
+                elseif not index_preserve
+                        and old_index:find("tomedown:begin", 1, true) then
+                    -- the index goes from zoned to plain: the notes the
+                    -- reader wrote in it do not survive the rewrite, so
+                    -- the file as it was is kept whole as .bak first
                     local bak = io.open(index_path .. ".bak", "wb")
                     if bak then
                         bak:write(old_index)
@@ -1510,21 +1534,28 @@ function Tomedown:reconcilePending(server, paths, dir)
     local cloud_merge = getSetting("cloud_merge", true)
     local default_preserve = getSetting("preserve", false)
     local choices = getSetting("preserve_books", {})
-    -- md path -> book file, so a path can find the choice its book made
+    -- md path -> book file, so a path can find both the choice its book
+    -- made and the name it gave its zone
     local books_by_base = {}
     for file, record in pairs(getSetting("exports", {})) do
         if type(record) == "table" and record.base then
             books_by_base[record.base] = file
         end
     end
+    local function bookFor(rel)
+        if not rel or rel == INDEX_FILENAME then
+            return nil
+        end
+        return books_by_base[rel:sub(1, -4)]
+    end
     local function keepMerge(rel)
         if not cloud_merge then
             return false
         end
         if rel == INDEX_FILENAME then
-            return preserveAnywhere()
+            return getIndexPreserve()
         end
-        local file = books_by_base[rel:sub(1, -4)]
+        local file = bookFor(rel)
         if not file then
             return default_preserve
         end
@@ -1555,7 +1586,9 @@ function Tomedown:reconcilePending(server, paths, dir)
             -- only when the call went through
             local call_ok, merged, info = pcall(merge.apply, remote, local_md,
                 rel == INDEX_FILENAME and getSetting("index_regions") or nil,
-                { mode = "preserve", notes_title = getNotesTitle() })
+                -- the zone is named the way the export names it: the
+                -- book's own title, the global one for the index
+                { mode = "preserve", notes_title = getNotesTitle(bookFor(rel)) })
             if call_ok and merged
                     and (info.reason == "merged" or info.reason == "format") then
                 -- the copy in the cloud is the base the next export
@@ -1856,14 +1889,23 @@ function Tomedown:editLocalDir(touchmenu)
     })
 end
 
--- heading of the notes zone: a rename must reach every file, so the
--- saved value invalidates the export hashes and the next run rewrites
--- the heading of each one (the blocks themselves do not change)
-function Tomedown:editNotesTitle(touchmenu)
+-- Name the writable zone: the global heading from the Markdown menu, or
+-- one book's own heading when the file is given (the row inside the
+-- book's menu). A rename must reach the files it names: the global one
+-- invalidates every export hash, a book's only its own (the blocks
+-- themselves do not change, only the heading above them). A book title
+-- set to "" names its zone with nothing at all, while the global
+-- heading keeps applying to every other file.
+function Tomedown:editNotesTitle(touchmenu, file)
     local dialog
+    -- the field shows the heading this file will actually export: the
+    -- book's own when it asked for one ("" included, truthy in Lua),
+    -- the global one otherwise
+    local current = file and getNotesTitle(file)
+        or getSetting("notes_title", nil) or _("My notes...")
     dialog = InputDialog:new{
         title = _("Personal notes heading"),
-        input = getSetting("notes_title", nil) or _("My notes..."),
+        input = current,
         hint = _("leave empty to export no heading"),
         buttons = {
             {
@@ -1880,9 +1922,37 @@ function Tomedown:editNotesTitle(touchmenu)
                     text = _("Save"),
                     callback = function()
                         local value = dialog:getInputText() or ""
-                        setSetting("notes_title",
-                            value:gsub("^%s+", ""):gsub("%s+$", ""))
-                        self:invalidateExportHashes()
+                        value = value:gsub("^%s+", ""):gsub("%s+$", "")
+                        if file then
+                            -- the field starts on the heading this book
+                            -- exports today: its own when it has one, the
+                            -- global one otherwise. Saving a book that
+                            -- never chose, with that global title still
+                            -- in the field, must not store a copy of it:
+                            -- the book would stop following the global
+                            -- one, and a later rename in Settings would
+                            -- leave it behind with no way to see it. A
+                            -- choice is only made by typing over it.
+                            local global = getSetting("notes_title", nil)
+                                or _("My notes...")
+                            local had_own =
+                                getSetting("notes_titles", {})[file] ~= nil
+                            if not had_own and value == global then
+                                UIManager:close(dialog)
+                                if touchmenu and touchmenu.updateItems then
+                                    touchmenu:updateItems()
+                                end
+                                return
+                            end
+                            setBookNotesTitle(file, value)
+                            -- this book's file carries the old heading:
+                            -- the next export has to rewrite it, and
+                            -- only it
+                            self:invalidateExportHash(file)
+                        else
+                            setSetting("notes_title", value)
+                            self:invalidateExportHashes()
+                        end
                         UIManager:close(dialog)
                         if touchmenu and touchmenu.updateItems then
                             touchmenu:updateItems()
@@ -2140,6 +2210,24 @@ function Tomedown:genSettingsMenu()
     -- the toggle's callback can reach them.
     local files_table
     local buildFilesRows
+    -- rebuild the Markdown files group in place: the index row below
+    -- depends on Generate, the heading row on Preserve, so they show
+    -- up or go away as those switches flip, without the reader
+    -- leaving the menu (the same in-place refresh the Developer
+    -- submenu uses)
+    local function rebuildFilesRows(touchmenu)
+        if not touchmenu or not files_table
+            or touchmenu.item_table ~= files_table then
+            return
+        end
+        local fresh = buildFilesRows()
+        for i = #files_table, 1, -1 do
+            files_table[i] = nil
+        end
+        for _, item in ipairs(fresh) do
+            files_table[#files_table + 1] = item
+        end
+    end
     local files = {
         {
             text_func = function()
@@ -2155,8 +2243,11 @@ function Tomedown:genSettingsMenu()
                 return getSetting("with_index", true)
             end,
             keep_menu_open = true,
-            callback = function()
+            callback = function(touchmenu)
                 setSetting("with_index", not getSetting("with_index", true))
+                -- the index preserve row below exists only while an
+                -- index is generated at all
+                rebuildFilesRows(touchmenu)
             end,
         },
         {
@@ -2210,16 +2301,7 @@ function Tomedown:genSettingsMenu()
                 -- preserve is on: rebuild the open group in place, the
                 -- way the Developer submenu does, so the row shows up
                 -- or goes away without leaving the menu
-                if touchmenu and files_table
-                        and touchmenu.item_table == files_table then
-                    local fresh = buildFilesRows()
-                    for i = #files_table, 1, -1 do
-                        files_table[i] = nil
-                    end
-                    for _, item in ipairs(fresh) do
-                        files_table[#files_table + 1] = item
-                    end
-                end
+                rebuildFilesRows(touchmenu)
                 -- the Merge row in Cloud also needs preserve on (there
                 -- is no write zone to fold into without it): rebuild
                 -- that group too, so it stays in step
@@ -2240,6 +2322,27 @@ function Tomedown:genSettingsMenu()
         local rows = {}
         for i, item in ipairs(files) do
             rows[i] = item
+        end
+        -- the index is a file like the others: since 1.1 it gets its
+        -- own switch, right below the global one. It is shown only
+        -- while an index is generated at all, and its checked state is
+        -- the effective one: the reader's own choice when they made
+        -- one, the global switch otherwise
+        if getSetting("with_index", true) then
+            rows[#rows + 1] = {
+                text = _("Preserve manual edits in the index"),
+                checked_func = function()
+                    return getIndexPreserve()
+                end,
+                keep_menu_open = true,
+                callback = function()
+                    setSetting("preserve_index",
+                        not getIndexPreserve())
+                    -- the index on disk was written the other way
+                    -- round: the next export has to rewrite it
+                    self:invalidateExportHashes()
+                end,
+            }
         end
         if getSetting("preserve", false) then
             rows[#rows + 1] = {
@@ -2929,6 +3032,158 @@ local function pinToTop(order_module, group_id)
     table.insert(group, 1, "tomedown")
 end
 
+-- The rows of the book's own menu, rebuilt every time the menu opens
+-- (and in place when the preserve toggle flips, so the heading row
+-- below appears or goes away without the reader leaving the menu).
+-- Nine rows normally, ten while the open book keeps a write zone:
+-- that is when a heading to name it with makes any sense at all.
+function Tomedown:genBookMenu()
+    local file = self:getCurrentFile()
+    local rows = {
+        {
+            text = withIcon("\xEE\x89\xBC", _("Export current book")),
+            enabled_func = function()
+                local current = self:getCurrentFile()
+                return current ~= nil
+                    and BookList.hasBookBeenOpened(current)
+            end,
+            callback = function(touchmenu)
+                local current = self:getCurrentFile()
+                if not current then
+                    return
+                end
+                if touchmenu and touchmenu.closeMenu then
+                    touchmenu:closeMenu()
+                end
+                self:runExport({ current }, {})
+            end,
+        },
+        {
+            text = withIcon("\xEE\xA4\xB5", _("Export only what changed")),
+            enabled_func = function()
+                return #self:listBookFiles() > 0
+            end,
+            callback = function(touchmenu)
+                if touchmenu and touchmenu.closeMenu then
+                    touchmenu:closeMenu()
+                end
+                self:runExport(self:listBookFiles(), { only_updated = true })
+            end,
+        },
+        {
+            -- per book since 1.1: the global switch in Settings
+            -- stays the default, this choice wins over it for the
+            -- open book and outlives any later flip of the global
+            -- (the pencil, the hand edits the zone keeps)
+            text = withIcon("\xEF\x81\x80",
+                _("Preserve manual edits for this book")),
+            enabled_func = function()
+                return self:getCurrentFile() ~= nil
+            end,
+            checked_func = function()
+                local current = self:getCurrentFile()
+                return current ~= nil and getBookPreserve(current)
+            end,
+            keep_menu_open = true,
+            callback = function(touchmenu)
+                local current = self:getCurrentFile()
+                if not current then
+                    return
+                end
+                setBookPreserve(current, not getBookPreserve(current))
+                -- the file on disk was written the other way round:
+                -- the next export has to rewrite it, so its stored
+                -- hash goes, and only its hash
+                self:invalidateExportHash(current)
+                -- the heading row below exists only while this book
+                -- keeps a zone to name
+                self:rebuildBookMenu(touchmenu)
+            end,
+        },
+    }
+    -- since 1.1 a book that keeps a zone names it itself, so its
+    -- heading sits here, under its own switch, and the global one in
+    -- Settings stays with the files that follow the global switch
+    if file and getBookPreserve(file) then
+        rows[#rows + 1] = {
+            text_func = function()
+                return T(_("Personal notes for this book: %1"),
+                    getNotesTitle(file))
+            end,
+            callback = function(touchmenu)
+                self:editNotesTitle(touchmenu, file)
+            end,
+        }
+    end
+    rows[#rows + 1] = {
+        text = withIcon("\xEE\xB9\x94", _("Choose books…")),
+        sub_item_table_func = function()
+            return self:genPickerMenu()
+        end,
+    }
+    rows[#rows + 1] = {
+        text = withIcon("\xEE\xA7\x99", _("Import all books from history")),
+        enabled_func = function()
+            return #self:listBookFiles() > 0
+        end,
+        callback = function(touchmenu)
+            if touchmenu and touchmenu.closeMenu then
+                touchmenu:closeMenu()
+            end
+            self:runExport(self:listBookFiles(), {})
+        end,
+        separator = true,
+    }
+    rows[#rows + 1] = {
+        text = withIcon("\xEE\xB4\xBE", _("Upload everything to the cloud")),
+        enabled_func = function()
+            return self:hasServer()
+        end,
+        callback = function(touchmenu)
+            self:reuploadAll(touchmenu)
+        end,
+    }
+    rows[#rows + 1] = {
+        text = withIcon("\xEF\x83\xA4", _("Status")),
+        callback = function()
+            self:showStatus()
+        end,
+        separator = true,
+    }
+    rows[#rows + 1] = {
+        text = withIcon("\xEF\x80\x93", _("Settings")),
+        sub_item_table_func = function()
+            return self:genSettingsMenu()
+        end,
+        separator = true,
+    }
+    rows[#rows + 1] = {
+        text = withIcon("\xEE\xA7\xBC", _("About")),
+        callback = function()
+            self:showAbout()
+        end,
+    }
+    return rows
+end
+
+-- Rebuild the open book menu in place, the way the Markdown files
+-- group does: TouchMenu keeps a reference to the table it is showing,
+-- so filling it with the fresh rows swaps the content and leaves the
+-- menu where it is.
+function Tomedown:rebuildBookMenu(touchmenu)
+    local live = self.book_menu_table
+    if not touchmenu or not live or touchmenu.item_table ~= live then
+        return
+    end
+    local fresh = self:genBookMenu()
+    for i = #live, 1, -1 do
+        live[i] = nil
+    end
+    for _, item in ipairs(fresh) do
+        live[#live + 1] = item
+    end
+end
+
 function Tomedown:addToMainMenu(menu_items)
     if getSetting("update_check", false) then
         UIManager:scheduleIn(0.1, function()
@@ -2942,114 +3197,14 @@ function Tomedown:addToMainMenu(menu_items)
     -- nerdfonts/symbols.ttf, KOReader's own fallback font). Settings
     -- keeps its word plus the icon; inside, group labels and submenu
     -- rows are iconified - plain setting rows stay text-only.
+    -- The rows are built on open, not once: the heading row of a book
+    -- that keeps a zone only exists while that book is ticked.
     menu_items.tomedown = {
         text = "Tomedown",
-        sub_item_table = {
-            {
-                text = withIcon("\xEE\x89\xBC", _("Export current book")),
-                enabled_func = function()
-                    local file = self:getCurrentFile()
-                    return file ~= nil and BookList.hasBookBeenOpened(file)
-                end,
-                callback = function(touchmenu)
-                    local file = self:getCurrentFile()
-                    if not file then
-                        return
-                    end
-                    if touchmenu and touchmenu.closeMenu then
-                        touchmenu:closeMenu()
-                    end
-                    self:runExport({ file }, {})
-                end,
-            },
-            {
-                text = withIcon("\xEE\xA4\xB5", _("Export only what changed")),
-                enabled_func = function()
-                    return #self:listBookFiles() > 0
-                end,
-                callback = function(touchmenu)
-                    if touchmenu and touchmenu.closeMenu then
-                        touchmenu:closeMenu()
-                    end
-                    self:runExport(self:listBookFiles(), { only_updated = true })
-                end,
-            },
-            {
-                -- per book since 1.1: the global switch in Settings
-                -- stays the default, this choice wins over it for the
-                -- open book and outlives any later flip of the global
-                -- (the pencil, the hand edits the zone keeps)
-                text = withIcon("\xEF\x81\x80",
-                    _("Preserve manual edits for this book")),
-                enabled_func = function()
-                    return self:getCurrentFile() ~= nil
-                end,
-                checked_func = function()
-                    local file = self:getCurrentFile()
-                    return file ~= nil and getBookPreserve(file)
-                end,
-                keep_menu_open = true,
-                callback = function()
-                    local file = self:getCurrentFile()
-                    if not file then
-                        return
-                    end
-                    setBookPreserve(file, not getBookPreserve(file))
-                    -- the file on disk was written the other way round:
-                    -- the next export has to rewrite it, so its stored
-                    -- hash goes, and only its hash
-                    self:invalidateExportHash(file)
-                end,
-            },
-            {
-                text = withIcon("\xEE\xB9\x94", _("Choose books…")),
-                sub_item_table_func = function()
-                    return self:genPickerMenu()
-                end,
-            },
-            {
-                text = withIcon("\xEE\xA7\x99", _("Import all books from history")),
-                enabled_func = function()
-                    return #self:listBookFiles() > 0
-                end,
-                callback = function(touchmenu)
-                    if touchmenu and touchmenu.closeMenu then
-                        touchmenu:closeMenu()
-                    end
-                    self:runExport(self:listBookFiles(), {})
-                end,
-                separator = true,
-            },
-            {
-                text = withIcon("\xEE\xB4\xBE", _("Upload everything to the cloud")),
-                enabled_func = function()
-                    return self:hasServer()
-                end,
-                callback = function(touchmenu)
-                    self:reuploadAll(touchmenu)
-                end,
-            },
-            {
-                text = withIcon("\xEF\x83\xA4", _("Status")),
-                callback = function()
-                    self:showStatus()
-                end,
-                separator = true,
-            },
-            {
-                text = withIcon("\xEF\x80\x93", _("Settings")),
-                sub_item_table_func = function()
-                    return self:genSettingsMenu()
-                end,
-                separator = true,
-            },
-            {
-                text = withIcon("\xEE\xA7\xBC", _("About")),
-                callback = function()
-                    self:showAbout()
-                end,
-            },
-        },
+        sub_item_table_func = function()
+            self.book_menu_table = self:genBookMenu()
+            return self.book_menu_table
+        end,
     }
 end
 

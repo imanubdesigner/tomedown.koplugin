@@ -518,7 +518,11 @@ T.check(newProgressMd and T.contains(newProgressMd, 'progress: "50%"'),
 local menu_items = {}
 plugin:addToMainMenu(menu_items)
 T.check(menu_items.tomedown ~= nil, "menu entry registered")
-local sub = menu_items.tomedown.sub_item_table
+-- the rows are built on open (v1.1): the heading row of a preserved
+-- book only exists while that book is ticked
+T.check(type(menu_items.tomedown.sub_item_table_func) == "function",
+    "the book menu builds its rows on open")
+local sub = menu_items.tomedown.sub_item_table_func()
 T.check(#sub == 9, "main menu entries: " .. #sub)
 T.check(sub[1].text == "\xEE\x89\xBC  Export current book", "menu item 1")
 T.check(sub[2].text == "\xEE\xA4\xB5  Export only what changed", "menu item 2")
@@ -586,10 +590,10 @@ T.check(cloud[1].text == "Upload to cloud", "upload entry")
 T.check(cloud[2].text_func() == "Server and folder: not set", "server not set")
 T.check(T.contains(cloud[3].text_func(), "Remote folder: not set"), "remote folder not set")
 -- Markdown files: flat since 1.0, no Style/Behaviour submenus; the
--- group is rebuilt on open because the Personal notes row only exists
--- while preserve is on
+-- group is rebuilt on open because two rows depend on the switches in
+-- it: the index one on Generate, the heading one on Preserve
 local files = settings[2].sub_item_table_func()
-T.check(#files == 6, "markdown files rows: " .. #files)
+T.check(#files == 7, "markdown files rows: " .. #files)
 T.check(T.contains(files[1].text_func(), "clipboard/tomedown"), "default local folder")
 T.check(files[2].text == "Generate the 00 - Index.md (for Obsidian)",
     "index entry with the file name and the Obsidian hint")
@@ -602,7 +606,13 @@ T.check(files[5].checked_func() == false, "auto-export off by default")
 T.check(files[6].text == "Preserve manual edits", "preserve entry")
 T.check(files[6].checked_func() == false,
     "manual edits off by default (the tomedown <= 0.8 behaviour)")
-T.check(files[7] == nil, "no personal notes row while preserve is off")
+-- the index is a file like the others (v1.1): its own switch, right
+-- under the global one, following it until the reader flips it
+T.check(files[7].text == "Preserve manual edits in the index",
+    "the index preserve entry")
+T.check(files[7].checked_func() == false,
+    "the index follows the global switch by default")
+T.check(files[8] == nil, "no personal notes row while preserve is off")
 
 -- Highlights: its own group since 1.1 — the three rows that speak about
 -- the highlights themselves, which would make the Markdown files group
@@ -641,8 +651,8 @@ local live = settings[2].sub_item_table_func()
 local open_menu = { item_table = live }
 live[6].callback(open_menu)
 T.check(store.tomedown.preserve == true, "preserve toggled on")
-T.check(#live == 7, "personal notes row appears with preserve on")
-local notes_row = live[7]
+T.check(#live == 8, "personal notes row appears with preserve on: " .. #live)
+local notes_row = live[8]
 T.check(notes_row.text_func() == "Personal notes: My notes...",
     "notes heading entry: " .. notes_row.text_func())
 
@@ -668,9 +678,20 @@ T.check(notes_row.text_func() == "Personal notes: My notes...",
 -- back off: the row leaves the open group again
 live[6].callback(open_menu)
 T.check(store.tomedown.preserve == false, "preserve toggled back off")
-T.check(#live == 6, "personal notes row disappears with preserve off")
+T.check(#live == 7, "personal notes row disappears with preserve off")
 T.check(files[6].checked_func() == false, "the toggle reflects the setting")
 store.tomedown.preserve = nil
+
+-- Generate off takes the index preserve row away too, and back on
+-- brings it (v1.1): there is no index to keep edits in without it
+live[2].callback(open_menu)
+T.check(store.tomedown.with_index == false, "index generation toggled off")
+T.check(#live == 6, "the index row leaves with the index: " .. #live)
+live[2].callback(open_menu)
+T.check(store.tomedown.with_index == true, "index generation back on")
+T.check(#live == 7, "the index row comes back with the index: " .. #live)
+T.check(live[7].checked_func() == false,
+    "the index switch still follows the global one")
 
 -- ------------- 16b. the Merge row needs the full cloud setup
 -- server + upload + preserve: without all three it is not shown at all,
@@ -2006,7 +2027,8 @@ do
     -- The global switch stays the default, but one book may keep its own
     -- choice: tapping the row in the book menu stores it for that book
     -- alone, and it outlives any later flip of the global switch. The
-    -- index rides along: it keeps its zone while any book keeps one.
+    -- index follows its own switch (v1.1): no book turns it on behind
+    -- the reader's back any more.
     ui.document = { file = FILE }
     behaviour[2].callback() -- global preserve off, the tomedown 0.8 way
     T.check(store.tomedown.preserve == false, "15b: the global switch is off")
@@ -2018,6 +2040,16 @@ do
         "15b: the row shows the book's own choice")
     T.check(store.tomedown.preserve == false,
         "15b: the global default is untouched")
+    -- the book menu is built on open: a book that keeps a zone gets its
+    -- own heading row, right under the switch that keeps it
+    sub = menu_items.tomedown.sub_item_table_func()
+    T.check(#sub == 10, "15b: the heading row joins the menu: " .. #sub)
+    T.check(sub[4].text_func()
+            == "Personal notes for this book: My notes...",
+        "15b: the heading row names this book's zone: "
+            .. sub[4].text_func())
+    T.check(sub[5].text == "\xEE\xB9\x94  Choose books…",
+        "15b: the heading row sits right under the preserve switch")
     plugin:runExport({ FILE, FILE2 }, {})
     UIManager:runPending()
     local per_book_md = T.readFile(MD_PATH)
@@ -2037,10 +2069,13 @@ do
     -- sections from 19 on count the files of the upload: leave the
     -- folder the way this block found it
     os.remove(other_path)
+    -- the index follows its own switch, not the books: with the global
+    -- off and no choice of its own it exports plain, even while the
+    -- book above keeps its zone
     local per_book_index = T.readFile(INDEX_PATH)
     T.check(per_book_index ~= nil
-            and T.contains(per_book_index, "<!-- tomedown:begin index"),
-        "15b: the index keeps its zone while a book keeps one")
+            and not T.contains(per_book_index, "tomedown:begin"),
+        "15b: the index no longer rides along with the books")
 
     -- the global switch comes back on and goes off again: the book keeps
     -- what it chose, its own choice wins over the default
@@ -2054,8 +2089,127 @@ do
             and T.contains(T.readFile(MD_PATH), "## My notes..."),
         "15b: the book's own choice survives the flips of the global")
 
-    -- tapping the row again stores an explicit off: the file goes back
-    -- to a plain export, and its own hash goes so the next run rewrites
+    -- --------------- 15c. the heading of one book (v1.1)
+    -- A book that keeps a zone names it itself: the row under the
+    -- switch opens the dialog, and the title is stored for that book
+    -- alone. The index, when it has a zone, keeps the global heading.
+    sub[4].callback()
+    T.check(InputDialog.last ~= nil
+            and InputDialog.last.title == "Personal notes heading",
+        "15c: the heading dialog opened")
+    InputDialog.last.input_text = "  The Witch theory  "
+    InputDialog.last:simulateSave()
+    T.check(store.tomedown.notes_titles
+            and store.tomedown.notes_titles[FILE] == "The Witch theory",
+        "15c: the title is stored for this book, trimmed")
+    T.check(store.tomedown.notes_title == nil,
+        "15c: the global heading is left alone")
+    T.check(store.tomedown.exports[FILE].hash == nil,
+        "15c: the book's hash goes: its file has to be rewritten")
+    T.check(sub[4].text_func()
+            == "Personal notes for this book: The Witch theory",
+        "15c: the row shows the new name: " .. sub[4].text_func())
+    -- a book that never named its zone, saved back with the global title
+    -- still in the field, keeps following the global one: a copy of it
+    -- would freeze the book on today's heading, and a later rename in
+    -- Settings would leave it behind for good
+    ui.document = { file = FILE2 }
+    sub = menu_items.tomedown.sub_item_table_func()
+    sub[3].callback({ item_table = sub })
+    sub[4].callback()
+    T.check(InputDialog.last ~= nil
+            and InputDialog.last.input_text == "My notes...",
+        "15c: the field starts on the heading the book exports today: "
+            .. tostring(InputDialog.last and InputDialog.last.input_text))
+    InputDialog.last:simulateSave()
+    T.check(store.tomedown.notes_titles == nil
+            or store.tomedown.notes_titles[FILE2] == nil,
+        "15c: saving it back untouched stores no choice of its own")
+    ui.document = { file = FILE }
+    sub = menu_items.tomedown.sub_item_table_func()
+    plugin:runExport({ FILE }, {})
+    UIManager:runPending()
+    per_book_md = T.readFile(MD_PATH)
+    T.check(per_book_md ~= nil
+            and T.contains(per_book_md,
+                "## The Witch theory <!-- tomedown:notes -->"),
+        "15c: the book's zone carries its own heading")
+    T.check(per_book_md ~= nil
+            and not T.contains(per_book_md, "## My notes..."),
+        "15c: and not the global one")
+    -- another book keeps the global heading: the title belongs to the
+    -- book that asked for it, and to no other file. FILE2 keeps a zone
+    -- already (the toggle above that brought its heading row up)
+    ui.document = { file = FILE2 }
+    plugin:runExport({ FILE2 }, {})
+    UIManager:runPending()
+    other_path = DIR .. "/"
+        .. (store.tomedown.exports[FILE2] or {}).base .. ".md"
+    other_md = T.readFile(other_path)
+    T.check(other_md ~= nil
+            and T.contains(other_md, "## My notes... <!-- tomedown:notes -->"),
+        "15c: the other book still names its zone the global way")
+    os.remove(other_path)
+    ui.document = { file = FILE }
+
+    -- --------------- 15d. the index has its own switch (v1.1)
+    -- It follows the global switch until the reader flips its own, and
+    -- once switched off it stays off: no book turns it back on. When it
+    -- goes from zoned to plain the file is kept whole as .bak, because
+    -- the notes in it do not survive the rewrite.
+    local index_row
+    for __, row in ipairs(plugin:genSettingsMenu()[2].sub_item_table_func()) do
+        if row.text == "Preserve manual edits in the index" then
+            index_row = row
+            break
+        end
+    end
+    T.check(index_row ~= nil, "15d: the index preserve row exists")
+    T.check(index_row.checked_func() == false,
+        "15d: it follows the global switch, which is off")
+    index_row.callback() -- the index asks for its own zone
+    T.check(store.tomedown.preserve_index == true,
+        "15d: the choice is stored for the index")
+    T.check(index_row.checked_func() == true,
+        "15d: the row shows the index's own choice")
+    plugin:runExport({ FILE }, {})
+    UIManager:runPending()
+    per_book_index = T.readFile(INDEX_PATH)
+    T.check(per_book_index ~= nil
+            and T.contains(per_book_index, "<!-- tomedown:begin index"),
+        "15d: the index keeps its zone with the global switch off")
+    T.check(per_book_index ~= nil
+            and T.contains(per_book_index,
+                "## My notes... <!-- tomedown:notes -->"),
+        "15d: and names it with the global heading, not the book's")
+    -- a note written in the index survives the next export of a book
+    index_file = io.open(INDEX_PATH, "wb")
+    if index_file then
+        index_file:write(per_book_index .. "\nA note of mine\n")
+        index_file:close()
+    end
+    plugin:runExport({ FILE }, {})
+    UIManager:runPending()
+    T.check(T.contains(T.readFile(INDEX_PATH) or "", "A note of mine"),
+        "15d: the note in the index survives an export")
+    -- switched off again: the file goes back to plain, and the version
+    -- that held the notes is kept whole as .bak
+    index_row.callback()
+    T.check(store.tomedown.preserve_index == false,
+        "15d: an explicit off is stored for the index")
+    plugin:runExport({ FILE }, {})
+    UIManager:runPending()
+    per_book_index = T.readFile(INDEX_PATH)
+    T.check(per_book_index ~= nil
+            and not T.contains(per_book_index, "tomedown:begin"),
+        "15d: the index comes out plain again")
+    other_md = T.readFile(INDEX_PATH .. ".bak")
+    T.check(other_md ~= nil
+            and T.contains(other_md, "A note of mine"),
+        "15d: the zoned index is kept whole as .bak before it is rewritten")
+    os.remove(INDEX_PATH .. ".bak")
+    -- the book's own choice is off too, and everything goes the way the
+    -- sections below expect it
     sub[3].callback()
     T.check(store.tomedown.preserve_books[FILE] == false,
         "15b: an explicit off is stored for the book")
@@ -2063,34 +2217,36 @@ do
         "15b: the book's hash goes: its file has to be rewritten")
     plugin:runExport({ FILE }, {})
     UIManager:runPending()
-    local plain_again = T.readFile(MD_PATH)
-    T.check(plain_again ~= nil
-            and not T.contains(plain_again, "## My notes...")
-            and not T.contains(plain_again, "tomedown:begin"),
+    per_book_md = T.readFile(MD_PATH)
+    T.check(per_book_md ~= nil
+            and not T.contains(per_book_md, "## The Witch theory")
+            and not T.contains(per_book_md, "tomedown:begin"),
         "15b: the file comes out plain again")
     T.check(T.readFile(INDEX_PATH) ~= nil
             and not T.contains(T.readFile(INDEX_PATH), "tomedown:begin"),
-        "15b: the index goes plain with every book plain")
+        "15b: the index stays plain with every switch off")
 
     -- the settings rows speak about the global switch only: a book's
     -- own choice lives in the book's own menu, so a preserved book
     -- brings no Personal notes row while the global toggle is off
     sub[3].callback() -- the book keeps its zone again
-    local files15b = plugin:genSettingsMenu()[2].sub_item_table_func()
-    T.check(#files15b == 6,
+    live = plugin:genSettingsMenu()[2].sub_item_table_func()
+    T.check(#live == 7,
         "15b: a preserved book brings no Personal notes row: "
-            .. #files15b)
+            .. #live)
     behaviour[2].callback() -- the global switch on: the row appears
-    files15b = plugin:genSettingsMenu()[2].sub_item_table_func()
-    T.check(#files15b == 7,
+    live = plugin:genSettingsMenu()[2].sub_item_table_func()
+    T.check(#live == 8,
         "15b: the Personal notes row appears with preserve on: "
-            .. #files15b)
-    T.check(files15b[7].text_func() == "Personal notes: My notes...",
+            .. #live)
+    T.check(live[8].text_func() == "Personal notes: My notes...",
         "15b: and it renames the heading of the zone")
     behaviour[2].callback() -- and off again, the way the sections below want it
 
     -- everything back the way the sections below expect it
     store.tomedown.preserve_books = nil
+    store.tomedown.preserve_index = nil
+    store.tomedown.notes_titles = nil
     store.tomedown.preserve = nil
     ui.document = { file = nil }
 

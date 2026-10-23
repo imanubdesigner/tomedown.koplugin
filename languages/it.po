@@ -448,6 +448,9 @@ msgstr "Manuale"
 msgid "Preserve manual edits"
 msgstr "Conserva le modifiche manuali"
 
+msgid "Preserve manual edits in the index"
+msgstr "Conserva le modifiche manuali nell'indice"
+
 msgid "%1 files backed up (.bak)"
 msgstr "%1 file salvati in .bak"
 
@@ -456,6 +459,9 @@ msgstr "Le mie note..."
 
 msgid "Personal notes: %1"
 msgstr "Note personali: %1"
+
+msgid "Personal notes for this book: %1"
+msgstr "Note personali di questo libro: %1"
 
 msgid "Personal notes heading"
 msgstr "Intestazione note personali"
