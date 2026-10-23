@@ -921,6 +921,14 @@ T.check(flushes == flushes_before_choice + 1, "closing the picker without choosi
 PathChooser.last.onConfirm("/")
 T.check(plugin:getLocalDir() == "/", "root folder kept as-is")
 T.check(flushes == flushes_before_choice + 2, "every confirmed choice flushes once")
+-- a KOReader exposing no flush() must not break the choice itself
+local saved_flush = G_reader_settings.flush
+G_reader_settings.flush = nil
+PathChooser.last.onConfirm(DATA .. "/out-nofush")
+T.check(plugin:getLocalDir() == DATA .. "/out-nofush",
+    "the folder is stored even without flush()")
+T.check(flushes == flushes_before_choice + 2, "nothing to flush when flush() is absent")
+G_reader_settings.flush = saved_flush
 store.tomedown.local_dir = nil
 T.check(plugin:getLocalDir() == DIR, "local folder back to default")
 

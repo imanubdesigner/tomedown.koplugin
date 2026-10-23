@@ -1908,7 +1908,9 @@ function Tomedown:editLocalDir(touchmenu)
             -- the exports back to the folder the reader just left.
             -- One write makes the choice stick at once, the way
             -- FileManager:onClose() does before going away.
-            G_reader_settings:flush()
+            if G_reader_settings.flush then
+                G_reader_settings:flush()
+            end
             if touchmenu and touchmenu.updateItems then
                 touchmenu:updateItems()
             end
