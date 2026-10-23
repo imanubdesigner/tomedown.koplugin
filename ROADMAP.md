@@ -43,10 +43,16 @@ writing them down here too.
   book*, in the book's own menu: the choice wins over the global one
   and outlives later flips of it, the book's own stored hash goes so
   its file is rewritten at the next *Export only what changed* while
-  the rest of the library is left alone, and `00 - Index.md` keeps its
-  zone while any book keeps one. The rows of *Settings* keep speaking
-  about the global switch only: the per book choice lives in the
-  book's own menu.
+  the rest of the library is left alone. A book that keeps a zone also
+  names it itself, with *Personal notes for this book: %1*, the row
+  under the switch: the title is stored for that book alone and only
+  its hash goes. The index became a file like the others: its own
+  switch, *Preserve manual edits in the index*, under the global one in
+  *Settings → Markdown files*, which follows the global until the
+  reader flips it, and no book turns it on any more. Turning it off
+  keeps the zoned index as `.bak` before the plain one replaces it. The
+  rows of *Settings* keep speaking about the global switch only: the
+  per book choice, and its title, live in the book's own menu.
 
 ### Next
 

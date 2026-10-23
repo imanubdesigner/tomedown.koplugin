@@ -188,8 +188,9 @@ first export and optional Remotely Save in Obsidian — is in
 | *Include page bookmarks* | off by default: adds a `# Page bookmarks` section (bookmarked page + note) after the highlights |
 | *Include book covers* | off by default: exports the cover of every book into `covers/` and embeds it in the book file and in the index; the cover is removed from the device once its upload succeeded (the vault copy is the master one). Requires **Obsidian 1.8.1 or newer** to display |
 | *Auto-export on close* | off by default: exports the book when you close it, and again (silently, no network) before the device suspends |
-| *Preserve manual edits* | off by default (the tomedown ≤ 0.8 behaviour): switch it on and every export folds the new render into your file, keeping your zones; it stays the default for every book, and one book may ask for its own choice from its own menu (*Preserve manual edits for this book*, see *Usage*); switching modes rewrites every file on the next export — see *Preserve your edits* |
-| *Personal notes: %1* | the heading above your notes block: tap it to rename, leave the field empty to export without a heading; the row exists only while *Preserve manual edits* is on (with the toggle off no heading ever reaches the file). The settings rows speak about the global switch only: a book's own choice lives in the book's own menu |
+| *Preserve manual edits* | off by default (the tomedown ≤ 0.8 behaviour): switch it on and every export folds the new render into your file, keeping your zones; it stays the default for every file that has no choice of its own (books and index), and one book may ask for its own choice from its own menu (*Preserve manual edits for this book*, see *Usage*); switching modes rewrites every file on the next export — see *Preserve your edits* |
+| *Preserve manual edits in the index* | the same switch for `00 - Index.md` alone, right below the global one and shown only while *Generate the 00 - Index.md (for Obsidian)* is ticked; it follows the global switch until you flip it, and no book turns it on any more. Turning it off keeps the index you have as `00 - Index.md.bak` before the next export rewrites it plain, because the notes in it do not come back |
+| *Personal notes: %1* | the heading above your notes block: tap it to rename, leave the field empty to export without a heading; the row exists only while *Preserve manual edits* is on (with the toggle off no heading ever reaches the file). The settings rows speak about the global switch only: a book's own choice, and its own heading, live in the book's own menu |
 
 The *Cloud* group (shown when a server is set, *Upload to cloud* is on and *Preserve manual edits* is on — the row needs a write zone to fold into) has one more row. It appears and disappears in place as you flip those toggles, without leaving the menu:
 
@@ -322,6 +323,14 @@ settings keys are never renamed.
   any later flip of the global switch. The stored hash of that one book
   goes with it, so the next *Export only what changed* rewrites its
   file and leaves the rest of the library alone.
+- **Personal notes for this book: %1** — the same heading, but for this
+  book alone, right below the switch and only while that book keeps a
+  zone to name. Tap it to give the book its own heading ("The Witch
+  theory", "Julian Carax Dixit", …), leave the field empty to export
+  that book's zone without a heading at all. It is stored for that book
+  only: every other file, `00 - Index.md` included, keeps the global
+  heading from *Settings → Markdown files*. Only that book's hash goes,
+  so only its file is rewritten on the next export.
 - **Choose books…** — a list with checkboxes: tick the volumes and export
   just those.
 - **Import all books from history** — exports everything found in KOReader's
@@ -480,12 +489,20 @@ this book*, in the open book's own menu, keeps the zone for that book
 alone, whatever the global switch says, and it outlives later flips of
 the global one: the global switch stays the default for the books that
 never chose. Tapping it again stores an explicit off, and the next
-export writes that file plain. The rows of *Settings → Markdown files*
+export writes that file plain. While a book keeps a zone its menu grows
+a second row, *Personal notes for this book: %1*, which names that
+book's zone and no other file's. The rows of *Settings → Markdown files*
 keep speaking about the global switch only: *Personal notes: %1*
 appears while it is ticked, whatever the books chose, because a book's
-own choice lives in the book's own menu. `00 - Index.md` follows the
-rule of the books: it keeps its zone while any book keeps one, so
-exporting any book never takes the notes you wrote in the index away.
+own choice lives in the book's own menu.
+
+`00 - Index.md` follows the same shape: its own switch, *Preserve
+manual edits in the index*, in *Settings → Markdown files* right under
+the global one. It follows the global switch until you flip it, and no
+book turns it on any more, so exporting a book never takes the notes
+you wrote in the index away by surprise. Turn it off and the index
+exports plain from the next export on, with the one you had kept whole
+as `00 - Index.md.bak` first, because those notes do not come back.
 
 Every file holds one generated block. With the toggle
 on the block is wrapped in two invisible HTML comments Tomedown uses as
