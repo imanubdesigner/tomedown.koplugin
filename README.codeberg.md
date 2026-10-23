@@ -314,6 +314,10 @@ settings keys are never renamed.
 
 ![The Tomedown menu](assets/menu/reader/tomedown_reader_menu.png)
 
+The menu itself, with a book open, where every row is on show:
+
+![The Tomedown menu with a book open](assets/menu/reader/tomedown_reader_menu_1_1.png)
+
 Three of these rows name a book, and they are only built while one is
 open: *Export current book*, *Preserve: this book* and *Book notes: %1*.
 From the file browser the menu starts at *Export only what changed*,
