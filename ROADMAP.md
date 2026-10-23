@@ -4,6 +4,28 @@ What has landed, what comes next, and what waits for release day. This
 file exists because the plan used to live in a chat thread and we nearly
 lost it.
 
+## Working on the roadmap
+
+Reminders for myself. I used to keep the plan in a chat thread and
+nearly lost it, and these rules lived in the same thread, so I am
+writing them down here too.
+
+- **I open a branch and a pull request before I start.** The work
+  happens there, in the open, and nothing reaches `main` before that.
+- **I merge only when I have looked at everything and it is in order.**
+  Until then `main` stays exactly where it is.
+- **I get my green before I push.** The suite runs locally with the same
+  interpreter CI uses (`LUA=lua5.4 ./tests/run.sh` plus `luac5.1 -p`),
+  so the CI result is a confirmation, never a surprise.
+- **I do one feature at a time.** One branch, one pull request, one
+  merge. A feature that does not convince me does not get merged, and
+  `main` keeps only what I approved.
+- **I do not release until I decide it is release day.** No version
+  bump, no tag, no zip, no release before that.
+- **I let the numbers tell the truth.** New features mean a minor bump
+  (1.1.0), fixes only mean a patch (1.0.1). I make that choice when I
+  release.
+
 ## 1.1
 
 ### Done
