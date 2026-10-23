@@ -91,6 +91,41 @@ local function getNotesTitle()
     return value
 end
 
+-- preserve per book: a book with its own choice wins over the global
+-- switch, which stays the default for books that never chose anything
+-- (whoever turned it on under 1.0 keeps it on for every one of them).
+-- The map is keyed the same way as "exports", the book file path.
+local function getBookPreserve(file)
+    local choice = getSetting("preserve_books", {})[file]
+    if choice ~= nil then
+        return choice
+    end
+    return getSetting("preserve", false)
+end
+
+local function setBookPreserve(file, on)
+    local choices = getSetting("preserve_books", {})
+    choices[file] = on and true or false
+    setSetting("preserve_books", choices)
+end
+
+-- The index belongs to no book, yet it carries the same heading and the
+-- same markers a preserved book file carries, and the reader may have
+-- written in it: it stays behind preserve while the global switch is on
+-- or while any book chose to keep its zone, so exporting any book never
+-- takes the notes in the index away.
+local function preserveAnywhere()
+    if getSetting("preserve", false) then
+        return true
+    end
+    for __, on in pairs(getSetting("preserve_books", {})) do
+        if on then
+            return true
+        end
+    end
+    return false
+end
+
 local function readIfExists(path)
     local f = io.open(path, "rb")
     if not f then
@@ -981,9 +1016,9 @@ function Tomedown:runExport(files, opts)
     -- rebuilt), "overwrite" writes what was generated; a file whose
     -- block held hand edits is kept as .bak before it is rewritten.
     -- Off by default: tomedown ≤ 0.8 always overwrote every file, and
-    -- an upgrade must not change that under the reader's feet
-    local preserve = getSetting("preserve", false)
-    local mode = preserve and "preserve" or "overwrite"
+    -- an upgrade must not change that under the reader's feet. Since
+    -- 1.1 each book may hold its own choice, which wins over the
+    -- global default (getBookPreserve)
     local notes_title = getNotesTitle()
     local backups = 0
 
@@ -992,20 +1027,20 @@ function Tomedown:runExport(files, opts)
     -- that text: before the merge, the cloud copy is fetched and used
     -- as the base when it moved on from the last upload. Everything
     -- else (upload off, offline, silent suspend export, the option
-    -- turned off) keeps the local file as the base, as before
-    local pull_server
-    if preserve and getSetting("upload", false)
-            and getSetting("cloud_merge", true) and not silent
-            and NetworkMgr:isConnected() then
-        pull_server = self:getServer()
-    end
+    -- turned off) keeps the local file as the base, as before. Since
+    -- 1.1 preserve is per book, so the fetch runs per file, only for
+    -- the ones that keep a write zone (the `pull` flag below)
+    local cloud_pull = getSetting("upload", false)
+        and getSetting("cloud_merge", true) and not silent
+        and NetworkMgr:isConnected()
+    local pull_server = cloud_pull and self:getServer() or nil
     -- a cloud copy that could not be read during this run must not be
     -- pushed over: those files stay out of the upload below and are
     -- queued for the flush, which fetches them again and folds them in
     -- (or keeps them back) before anything goes up
     local unread = {}
-    local function mergeBase(rel, md_path, local_old)
-        if not pull_server then
+    local function mergeBase(rel, md_path, local_old, pull)
+        if not pull_server or not pull then
             return local_old
         end
         local remote, status = self:fetchRemote(pull_server, md_path, dir)
@@ -1037,6 +1072,10 @@ function Tomedown:runExport(files, opts)
         elseif book then
             local md_path = dir .. "/" .. book.base .. ".md"
             local record = export_records[file]
+            -- what this book chose (or the global default): its file is
+            -- folded or rewritten on its own, never on its neighbours'
+            local preserve = getBookPreserve(file)
+            local mode = preserve and "preserve" or "overwrite"
             if opts.only_updated and record and record.hash == book.hash
                 and lfs.attributes(md_path) then
                 skipped = skipped + 1
@@ -1055,7 +1094,7 @@ function Tomedown:runExport(files, opts)
                 -- zones and front matter come across, the block is rebuilt
                 local content = md
                 local old = mergeBase(book.base .. ".md", md_path,
-                    readIfExists(md_path))
+                    readIfExists(md_path), preserve)
                 if old then
                     local merged, info = merge.apply(old, md,
                         record and record.regions,
@@ -1101,22 +1140,27 @@ function Tomedown:runExport(files, opts)
     if with_index then
         local index_path = dir .. "/" .. INDEX_FILENAME
         if exported > 0 or not lfs.attributes(index_path) then
+            -- the index follows no book, yet it keeps its zone while
+            -- any book keeps one: its notes ride along with the next
+            -- export instead of being rewritten away
+            local index_preserve = preserveAnywhere()
             local entries, new_covers = self:buildIndexEntries(dir, export_records)
             local index_md = render.buildIndexMd(entries, {
                 title = _("Book index"),
                 exported = os.date("%Y-%m-%d"),
                 show_covers = getSetting("covers", false),
                 notes_title = notes_title,
-                markers = preserve,
+                markers = index_preserve,
             })
             -- the index is a region too: the reader may have annotated it
             local content = index_md
             local old_index = mergeBase(INDEX_FILENAME, index_path,
-                readIfExists(index_path))
+                readIfExists(index_path), index_preserve)
             if old_index then
                 local merged, info = merge.apply(old_index, index_md,
                     getSetting("index_regions"),
-                    { mode = mode, notes_title = notes_title })
+                    { mode = index_preserve and "preserve" or "overwrite",
+                      notes_title = notes_title })
                 content = merged
                 if info.backup then
                     local bak = io.open(index_path .. ".bak", "wb")
@@ -1459,16 +1503,43 @@ end
 --     wants the copy on the device to win turns the merge option off.
 -- Only a markdown file is folded, the way it works at export time, and
 -- only while the reader keeps their edits: with preserve or the merge
--- option off the file is pushed untouched.
+-- option off the file is pushed untouched. Preserve follows the book
+-- behind each file (its own choice, else the global default) and the
+-- index follows the same rule the export uses.
 function Tomedown:reconcilePending(server, paths, dir)
-    local keep_merge = getSetting("preserve", false)
-        and getSetting("cloud_merge", true)
+    local cloud_merge = getSetting("cloud_merge", true)
+    local default_preserve = getSetting("preserve", false)
+    local choices = getSetting("preserve_books", {})
+    -- md path -> book file, so a path can find the choice its book made
+    local books_by_base = {}
+    for file, record in pairs(getSetting("exports", {})) do
+        if type(record) == "table" and record.base then
+            books_by_base[record.base] = file
+        end
+    end
+    local function keepMerge(rel)
+        if not cloud_merge then
+            return false
+        end
+        if rel == INDEX_FILENAME then
+            return preserveAnywhere()
+        end
+        local file = books_by_base[rel:sub(1, -4)]
+        if not file then
+            return default_preserve
+        end
+        local choice = choices[file]
+        if choice ~= nil then
+            return choice
+        end
+        return default_preserve
+    end
     local ready, held = {}, {}
     for __, path in ipairs(paths) do
         local rel = path:sub(1, #dir + 1) == dir .. "/" and path:sub(#dir + 2)
         local local_md = readIfExists(path)
         local remote, status, tried
-        if rel and rel:sub(-3) == ".md" and keep_merge and local_md then
+        if rel and rel:sub(-3) == ".md" and keepMerge(rel) and local_md then
             remote, status = self:fetchRemote(server, path, dir)
             tried = true
         end
@@ -1945,6 +2016,19 @@ function Tomedown:invalidateExportHashes()
     end
 end
 
+-- the same drop for a single book: flipping preserve for one book must
+-- rewrite that one file at the next "Export only what changed" (its
+-- zone appears or disappears), and must leave every other book's hash
+-- alone, so the rest of the library is not exported again for nothing
+function Tomedown:invalidateExportHash(file)
+    local records = getSetting("exports", {})
+    local record = records[file]
+    if record and record.hash ~= nil then
+        record.hash = nil
+        setSetting("exports", records)
+    end
+end
+
 function Tomedown:genSettingsMenu()
     -- declared before the Cloud rows below: the Upload toggle inside
     -- them rebuilds this very table in place, and in Lua a closure can
@@ -2014,9 +2098,10 @@ function Tomedown:genSettingsMenu()
     }
     -- The Merge row folds the cloud copy back into the file before the
     -- render, but only a cloud reader has a cloud copy to fold, and
-    -- only while preserve keeps a write zone to fold into: with no
-    -- server, no upload or preserve off the row is not shown at all,
-    -- the way Personal notes below exists only while preserve is on.
+    -- only while a write zone exists to fold into: with no server,
+    -- no upload or preserve off everywhere the row is not shown at
+    -- all, the way Personal notes below exists only while some file
+    -- exports with its zone.
     -- The group is rebuilt every time it opens, and in place when the
     -- Upload or Preserve toggle flips (both rebuild below).
     -- (cloud_table, buildCloudRows and cloud are all declared before
@@ -2028,7 +2113,7 @@ function Tomedown:genSettingsMenu()
             rows[i] = item
         end
         if self:hasServer() and getSetting("upload", false)
-                and getSetting("preserve", false) then
+                and preserveAnywhere() then
             rows[#rows + 1] = {
                 text = _("Merge edits made in the cloud"),
                 checked_func = function()
@@ -2045,11 +2130,12 @@ function Tomedown:genSettingsMenu()
     -- The Personal notes row renames the heading of the write zone, and
     -- that heading is written only behind the merge markers: with
     -- preserve off every export overwrites the file and no heading ever
-    -- reaches it, so the row exists solely while the preserve toggle
-    -- below is on. The group is therefore rebuilt every time it opens
-    -- instead of being a fixed table: files_table is the live copy the
-    -- open group shows, buildFilesRows assembles it — both declared
-    -- before the table so the toggle's callback can reach them.
+    -- reaches it, so the row exists solely while some file exports with
+    -- its zone, the global switch below or a book's own choice. The
+    -- group is therefore rebuilt every time it opens instead of being a
+    -- fixed table: files_table is the live copy the open group shows,
+    -- buildFilesRows assembles it, both declared before the table so
+    -- the toggle's callback can reach them.
     local files_table
     local buildFilesRows
     local files = {
@@ -2119,9 +2205,10 @@ function Tomedown:genSettingsMenu()
                 -- every file
                 self:invalidateExportHashes()
                 -- the Personal notes row below exists only while
-                -- preserve is on: rebuild the open group in place, the
-                -- way the Developer submenu does, so the row shows up
-                -- or goes away without leaving the menu
+                -- preserve is on somewhere (the global default, or a
+                -- book's own choice): rebuild the open group in place,
+                -- the way the Developer submenu does, so the row shows
+                -- up or goes away without leaving the menu
                 if touchmenu and files_table
                         and touchmenu.item_table == files_table then
                     local fresh = buildFilesRows()
@@ -2153,7 +2240,7 @@ function Tomedown:genSettingsMenu()
         for i, item in ipairs(files) do
             rows[i] = item
         end
-        if getSetting("preserve", false) then
+        if preserveAnywhere() then
             rows[#rows + 1] = {
                 text_func = function()
                     return T(_("Personal notes: %1"), getNotesTitle())
@@ -2884,6 +2971,33 @@ function Tomedown:addToMainMenu(menu_items)
                         touchmenu:closeMenu()
                     end
                     self:runExport(self:listBookFiles(), { only_updated = true })
+                end,
+            },
+            {
+                -- per book since 1.1: the global switch in Settings
+                -- stays the default, this choice wins over it for the
+                -- open book and outlives any later flip of the global
+                -- (the pencil, the hand edits the zone keeps)
+                text = withIcon("\xEF\x81\x80",
+                    _("Preserve manual edits for this book")),
+                enabled_func = function()
+                    return self:getCurrentFile() ~= nil
+                end,
+                checked_func = function()
+                    local file = self:getCurrentFile()
+                    return file ~= nil and getBookPreserve(file)
+                end,
+                keep_menu_open = true,
+                callback = function()
+                    local file = self:getCurrentFile()
+                    if not file then
+                        return
+                    end
+                    setBookPreserve(file, not getBookPreserve(file))
+                    -- the file on disk was written the other way round:
+                    -- the next export has to rewrite it, so its stored
+                    -- hash goes, and only its hash
+                    self:invalidateExportHash(file)
                 end,
             },
             {

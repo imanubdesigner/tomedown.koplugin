@@ -519,17 +519,19 @@ local menu_items = {}
 plugin:addToMainMenu(menu_items)
 T.check(menu_items.tomedown ~= nil, "menu entry registered")
 local sub = menu_items.tomedown.sub_item_table
-T.check(#sub == 8, "main menu entries: " .. #sub)
+T.check(#sub == 9, "main menu entries: " .. #sub)
 T.check(sub[1].text == "\xEE\x89\xBC  Export current book", "menu item 1")
 T.check(sub[2].text == "\xEE\xA4\xB5  Export only what changed", "menu item 2")
-T.check(sub[3].text == "\xEE\xB9\x94  Choose books…", "menu item 3")
-T.check(sub[4].text == "\xEE\xA7\x99  Import all books from history", "menu item 4")
-T.check(sub[5].text == "\xEE\xB4\xBE  Upload everything to the cloud", "menu item 5")
-T.check(sub[6].text == "\xEF\x83\xA4  Status", "menu item 6 with the dashboard")
-T.check(sub[6].separator == true, "separator before Settings")
-T.check(sub[7].text == "\xEF\x80\x93  Settings", "menu item 7 with the cog")
-T.check(sub[7].separator == true, "separator before About")
-T.check(sub[8].text == "\xEE\xA7\xBC  About", "menu item 8")
+T.check(sub[3].text == "\xEF\x81\x80  Preserve manual edits for this book",
+    "menu item 3, the per book preserve row")
+T.check(sub[4].text == "\xEE\xB9\x94  Choose books…", "menu item 4")
+T.check(sub[5].text == "\xEE\xA7\x99  Import all books from history", "menu item 5")
+T.check(sub[6].text == "\xEE\xB4\xBE  Upload everything to the cloud", "menu item 6")
+T.check(sub[7].text == "\xEF\x83\xA4  Status", "menu item 7 with the dashboard")
+T.check(sub[7].separator == true, "separator before Settings")
+T.check(sub[8].text == "\xEF\x80\x93  Settings", "menu item 8 with the cog")
+T.check(sub[8].separator == true, "separator before About")
+T.check(sub[9].text == "\xEE\xA7\xBC  About", "menu item 9")
 
 local cover_entry = false
 local function scanCover(items)
@@ -554,7 +556,17 @@ T.check(sub[1].enabled_func() == true, "export current enabled via lastfile")
 store.lastfile = nil
 T.check(sub[1].enabled_func() == false, "export current disabled without a file")
 ui.document = { file = nil }
-T.check(sub[4].enabled_func() == true, "all books enabled")
+T.check(sub[5].enabled_func() == true, "all books enabled")
+
+-- the per book preserve row (v1.1): it is greyed out with no book to
+-- choose for, and with a book open it shows what that book will get,
+-- the global default until the book taps it (section 15b taps it)
+T.check(sub[3].enabled_func() == false, "preserve row disabled without a file")
+ui.document = { file = FILE }
+T.check(sub[3].enabled_func() == true, "preserve row enabled with the book open")
+T.check(sub[3].checked_func() == false,
+    "the row shows the global default until the book chooses")
+ui.document = { file = nil }
 
 local settings = plugin:genSettingsMenu()
 T.check(#settings == 4, "settings groups: " .. #settings)
@@ -671,6 +683,17 @@ local cloud_live = settings[1].sub_item_table_func()
 T.check(#cloud_live == 3,
     "no Merge row with preserve off: " .. #cloud_live)
 
+-- the row exists the same way while one single book keeps its zone,
+-- the global switch still off (the choice is cleared again below)
+store.tomedown.preserve_books = { [FILE] = true }
+cloud_live = settings[1].sub_item_table_func()
+T.check(#cloud_live == 4,
+    "one preserved book is enough for the Merge row: " .. #cloud_live)
+store.tomedown.preserve_books = nil
+cloud_live = settings[1].sub_item_table_func()
+T.check(#cloud_live == 3,
+    "no Merge row once the book's choice is cleared: " .. #cloud_live)
+
 -- flip Preserve on while the Cloud group is open: the row appears
 -- in place, without leaving the menu
 local cloud_menu = { item_table = cloud_live }
@@ -763,7 +786,7 @@ for _, group in ipairs({ sub, cloud, files, updates, developer }) do
 end
 -- the About row opens the Bookshelf-style popup
 local shown_before = #UIManager.shown
-sub[8].callback()
+sub[9].callback()
 T.check(#UIManager.shown == shown_before + 1, "about popup shown")
 local dialog = UIManager.shown[#UIManager.shown]
 T.check(dialog ~= nil and dialog.__widget == "InputContainer",
@@ -1976,6 +1999,95 @@ do
         "status shows the backups: " .. tostring(status))
 
     BookList.registry[FILE].annotations = modernAnnotations()
+
+    -- --------------- 15b. preserve for one book (v1.1)
+    -- The global switch stays the default, but one book may keep its own
+    -- choice: tapping the row in the book menu stores it for that book
+    -- alone, and it outlives any later flip of the global switch. The
+    -- index rides along: it keeps its zone while any book keeps one.
+    ui.document = { file = FILE }
+    behaviour[2].callback() -- global preserve off, the tomedown 0.8 way
+    T.check(store.tomedown.preserve == false, "15b: the global switch is off")
+    sub[3].callback() -- the open book asks for its own zone
+    T.check(store.tomedown.preserve_books
+            and store.tomedown.preserve_books[FILE] == true,
+        "15b: the choice is stored for this book")
+    T.check(sub[3].checked_func() == true,
+        "15b: the row shows the book's own choice")
+    T.check(store.tomedown.preserve == false,
+        "15b: the global default is untouched")
+    plugin:runExport({ FILE, FILE2 }, {})
+    UIManager:runPending()
+    local per_book_md = T.readFile(MD_PATH)
+    T.check(per_book_md ~= nil
+            and T.contains(per_book_md, "## My notes... <!-- tomedown:notes -->"),
+        "15b: with the global off the book exports its own zone")
+    T.check(per_book_md ~= nil
+            and T.contains(per_book_md, "<!-- tomedown:begin body"),
+        "15b: and the markers with it")
+    local other_path = DIR .. "/"
+        .. (store.tomedown.exports[FILE2] or {}).base .. ".md"
+    local other_md = T.readFile(other_path)
+    T.check(other_md ~= nil
+            and not T.contains(other_md, "tomedown:begin"),
+        "15b: the other book never chose anything and stays plain")
+    -- the export above brought its file back into the folder, and the
+    -- sections from 19 on count the files of the upload: leave the
+    -- folder the way this block found it
+    os.remove(other_path)
+    local per_book_index = T.readFile(INDEX_PATH)
+    T.check(per_book_index ~= nil
+            and T.contains(per_book_index, "<!-- tomedown:begin index"),
+        "15b: the index keeps its zone while a book keeps one")
+
+    -- the global switch comes back on and goes off again: the book keeps
+    -- what it chose, its own choice wins over the default
+    behaviour[2].callback()
+    T.check(store.tomedown.preserve == true, "15b: the global switch is on")
+    behaviour[2].callback()
+    T.check(store.tomedown.preserve == false, "15b: and off again")
+    plugin:runExport({ FILE }, {})
+    UIManager:runPending()
+    T.check(T.readFile(MD_PATH) ~= nil
+            and T.contains(T.readFile(MD_PATH), "## My notes..."),
+        "15b: the book's own choice survives the flips of the global")
+
+    -- tapping the row again stores an explicit off: the file goes back
+    -- to a plain export, and its own hash goes so the next run rewrites
+    sub[3].callback()
+    T.check(store.tomedown.preserve_books[FILE] == false,
+        "15b: an explicit off is stored for the book")
+    T.check(store.tomedown.exports[FILE].hash == nil,
+        "15b: the book's hash goes: its file has to be rewritten")
+    plugin:runExport({ FILE }, {})
+    UIManager:runPending()
+    local plain_again = T.readFile(MD_PATH)
+    T.check(plain_again ~= nil
+            and not T.contains(plain_again, "## My notes...")
+            and not T.contains(plain_again, "tomedown:begin"),
+        "15b: the file comes out plain again")
+    T.check(T.readFile(INDEX_PATH) ~= nil
+            and not T.contains(T.readFile(INDEX_PATH), "tomedown:begin"),
+        "15b: the index goes plain with every book plain")
+
+    -- the settings rows follow the same rule: the heading and the cloud
+    -- merge exist while some file exports its zone, global or per book
+    local files15b = plugin:genSettingsMenu()[2].sub_item_table_func()
+    T.check(#files15b == 6,
+        "15b: no Personal notes row with preserve off everywhere: "
+            .. #files15b)
+    sub[3].callback() -- the book keeps its zone again
+    files15b = plugin:genSettingsMenu()[2].sub_item_table_func()
+    T.check(#files15b == 7,
+        "15b: the Personal notes row appears for one preserved book: "
+            .. #files15b)
+    T.check(files15b[7].text_func() == "Personal notes: My notes...",
+        "15b: and it renames the heading of the zone")
+
+    -- everything back the way the sections below expect it
+    store.tomedown.preserve_books = nil
+    store.tomedown.preserve = nil
+    ui.document = { file = nil }
 
     -- --------------- 16. the open book reads the reader's live data (v1.0)
     -- While a book is open KOReader keeps its props in memory and writes the

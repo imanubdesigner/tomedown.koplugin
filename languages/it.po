@@ -108,6 +108,9 @@ msgstr "Esporta libro corrente"
 msgid "Export only what changed"
 msgstr "Esporta solo i cambiamenti"
 
+msgid "Preserve manual edits for this book"
+msgstr "Conserva le modifiche manuali di questo libro"
+
 msgid "Choose books…"
 msgstr "Scegli libri…"
 
