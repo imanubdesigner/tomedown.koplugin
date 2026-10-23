@@ -314,6 +314,11 @@ settings keys are never renamed.
 
 ![The Tomedown menu](assets/menu/reader/tomedown_reader_menu.png)
 
+Three of these rows name a book, and they are only built while one is
+open: *Export current book*, *Preserve: this book* and *Book notes: %1*.
+From the file browser the menu starts at *Export only what changed*,
+since there no book is open to speak about.
+
 - **Export current book** — only the open book.
 - **Export only what changed** — exports only the books whose highlights changed since
   the last export (per-book hash).
