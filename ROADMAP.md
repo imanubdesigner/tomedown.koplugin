@@ -44,7 +44,9 @@ writing them down here too.
   and outlives later flips of it, the book's own stored hash goes so
   its file is rewritten at the next *Export only what changed* while
   the rest of the library is left alone, and `00 - Index.md` keeps its
-  zone while any book keeps one.
+  zone while any book keeps one. The rows of *Settings* keep speaking
+  about the global switch only: the per book choice lives in the
+  book's own menu.
 
 ### Next
 

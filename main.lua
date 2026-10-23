@@ -2098,10 +2098,11 @@ function Tomedown:genSettingsMenu()
     }
     -- The Merge row folds the cloud copy back into the file before the
     -- render, but only a cloud reader has a cloud copy to fold, and
-    -- only while a write zone exists to fold into: with no server,
-    -- no upload or preserve off everywhere the row is not shown at
-    -- all, the way Personal notes below exists only while some file
-    -- exports with its zone.
+    -- only while preserve keeps a write zone to fold into: with no
+    -- server, no upload or preserve off the row is not shown at all.
+    -- It belongs to the global switch: the per book choice lives in the
+    -- book's own menu, not in the settings (the way Personal notes
+    -- below exists only while preserve is on).
     -- The group is rebuilt every time it opens, and in place when the
     -- Upload or Preserve toggle flips (both rebuild below).
     -- (cloud_table, buildCloudRows and cloud are all declared before
@@ -2113,7 +2114,7 @@ function Tomedown:genSettingsMenu()
             rows[i] = item
         end
         if self:hasServer() and getSetting("upload", false)
-                and preserveAnywhere() then
+                and getSetting("preserve", false) then
             rows[#rows + 1] = {
                 text = _("Merge edits made in the cloud"),
                 checked_func = function()
@@ -2130,10 +2131,11 @@ function Tomedown:genSettingsMenu()
     -- The Personal notes row renames the heading of the write zone, and
     -- that heading is written only behind the merge markers: with
     -- preserve off every export overwrites the file and no heading ever
-    -- reaches it, so the row exists solely while some file exports with
-    -- its zone, the global switch below or a book's own choice. The
-    -- group is therefore rebuilt every time it opens instead of being a
-    -- fixed table: files_table is the live copy the open group shows,
+    -- reaches it, so the row exists solely while the preserve toggle
+    -- below is on. The settings speak about the global switch only: a
+    -- book's own choice lives in the book's own menu. The group is
+    -- therefore rebuilt every time it opens instead of being a fixed
+    -- table: files_table is the live copy the open group shows,
     -- buildFilesRows assembles it, both declared before the table so
     -- the toggle's callback can reach them.
     local files_table
@@ -2205,10 +2207,9 @@ function Tomedown:genSettingsMenu()
                 -- every file
                 self:invalidateExportHashes()
                 -- the Personal notes row below exists only while
-                -- preserve is on somewhere (the global default, or a
-                -- book's own choice): rebuild the open group in place,
-                -- the way the Developer submenu does, so the row shows
-                -- up or goes away without leaving the menu
+                -- preserve is on: rebuild the open group in place, the
+                -- way the Developer submenu does, so the row shows up
+                -- or goes away without leaving the menu
                 if touchmenu and files_table
                         and touchmenu.item_table == files_table then
                     local fresh = buildFilesRows()
@@ -2240,7 +2241,7 @@ function Tomedown:genSettingsMenu()
         for i, item in ipairs(files) do
             rows[i] = item
         end
-        if preserveAnywhere() then
+        if getSetting("preserve", false) then
             rows[#rows + 1] = {
                 text_func = function()
                     return T(_("Personal notes: %1"), getNotesTitle())

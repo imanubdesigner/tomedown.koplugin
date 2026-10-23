@@ -683,12 +683,14 @@ local cloud_live = settings[1].sub_item_table_func()
 T.check(#cloud_live == 3,
     "no Merge row with preserve off: " .. #cloud_live)
 
--- the row exists the same way while one single book keeps its zone,
--- the global switch still off (the choice is cleared again below)
+-- the settings speak about the global switch only: a book's own choice
+-- lives in its own menu, so a preserved book brings no Merge row here
+-- (the choice is cleared again below)
 store.tomedown.preserve_books = { [FILE] = true }
 cloud_live = settings[1].sub_item_table_func()
-T.check(#cloud_live == 4,
-    "one preserved book is enough for the Merge row: " .. #cloud_live)
+T.check(#cloud_live == 3,
+    "no Merge row for a preserved book while the global is off: "
+        .. #cloud_live)
 store.tomedown.preserve_books = nil
 cloud_live = settings[1].sub_item_table_func()
 T.check(#cloud_live == 3,
@@ -2070,19 +2072,22 @@ do
             and not T.contains(T.readFile(INDEX_PATH), "tomedown:begin"),
         "15b: the index goes plain with every book plain")
 
-    -- the settings rows follow the same rule: the heading and the cloud
-    -- merge exist while some file exports its zone, global or per book
+    -- the settings rows speak about the global switch only: a book's
+    -- own choice lives in the book's own menu, so a preserved book
+    -- brings no Personal notes row while the global toggle is off
+    sub[3].callback() -- the book keeps its zone again
     local files15b = plugin:genSettingsMenu()[2].sub_item_table_func()
     T.check(#files15b == 6,
-        "15b: no Personal notes row with preserve off everywhere: "
+        "15b: a preserved book brings no Personal notes row: "
             .. #files15b)
-    sub[3].callback() -- the book keeps its zone again
+    behaviour[2].callback() -- the global switch on: the row appears
     files15b = plugin:genSettingsMenu()[2].sub_item_table_func()
     T.check(#files15b == 7,
-        "15b: the Personal notes row appears for one preserved book: "
+        "15b: the Personal notes row appears with preserve on: "
             .. #files15b)
     T.check(files15b[7].text_func() == "Personal notes: My notes...",
         "15b: and it renames the heading of the zone")
+    behaviour[2].callback() -- and off again, the way the sections below want it
 
     -- everything back the way the sections below expect it
     store.tomedown.preserve_books = nil
