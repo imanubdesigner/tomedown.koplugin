@@ -38,28 +38,33 @@ writing them down here too.
 - **A Highlights group in Settings.** All three rows live together now,
   with an icon of their own.
 - **Docs and screenshots** for the three rows and for the new menu.
-- **Preserve per book.** The global switch stays the default, and one
-  book may ask for its own choice from *Preserve manual edits for this
-  book*, in the book's own menu: the choice wins over the global one
-  and outlives later flips of it, the book's own stored hash goes so
-  its file is rewritten at the next *Export only what changed* while
-  the rest of the library is left alone. A book that keeps a zone also
-  names it itself, with *Personal notes for this book: %1*, the row
-  under the switch: the title is stored for that book alone and only
-  its hash goes. The index became a file like the others: its own
-  switch, *Preserve manual edits in the index*, under the global one in
-  *Settings → Markdown files*, which follows the global until the
-  reader flips it, and no book turns it on any more. Turning it off
-  keeps the zoned index as `.bak` before the plain one replaces it. The
-  rows of *Settings* keep speaking about the global switch only: the
-  per book choice, and its title, live in the book's own menu.
+- **Preserve per book.** With the global switch off, one book may ask
+  for its own choice from *Preserve: this book*, in the book's own
+  menu: the choice stays stored through later flips of the global
+  switch, the book's own stored hash goes so its file is rewritten at
+  the next *Export only what changed* while the rest of the library is
+  left alone. A book that keeps a zone also names it itself, with
+  *Book notes: %1*, the row under the switch: the title is stored for
+  that book alone and only its hash goes. The index became a file like
+  the others: its own switch, *Preserve: index*, under the global one
+  in *Settings → Markdown files*, with *Index notes: %1* under it to
+  name the index zone (renaming it goes with every export hash, since
+  the index is only rebuilt along with the books), and no book turns
+  the switch on any more. Turning it off keeps the zoned index as
+  `.bak` before the plain one replaces it. With the global switch on
+  it alone is in charge of every file: all of them keep a zone,
+  *Notes: %1* names all of them, and the per file rows are not built
+  at all (their stored choices wait, untouched, until it goes off
+  again). The rows of *Settings* otherwise keep speaking about the
+  global switch only: the per book choice, and its title, live in the
+  book's own menu.
 
 ### Next
 
 #### Turn preserve off for a book
 
 For the reader who took their notes back out and wants the book to go
-back to plain exports. Tapping *Preserve manual edits for this book*
+back to plain exports. Tapping *Preserve: this book*
 again already stores the explicit off and rewrites the file plain at
 the next export; what is left is the safety around it.
 
