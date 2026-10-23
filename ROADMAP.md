@@ -6,27 +6,25 @@ lost it.
 
 ## Working on the roadmap
 
-The rules that move this plan into `main`. The plan itself once lived in
-a chat thread and was nearly lost, and the rules lived in the same
-thread, so they are written down here too.
+Reminders for myself. I used to keep the plan in a chat thread and
+nearly lost it, and these rules lived in the same thread, so I am
+writing them down here too.
 
-- **A branch and a pull request come first.** Every piece of work starts
-  on its own branch, with its own pull request, and the work happens
-  there, in the open, before anything reaches `main`.
-- **`main` changes only on Manuel's word.** A pull request merges only
-  after he has looked at it and said that everything is in order. Until
-  then `main` stays exactly where it is.
-- **Green comes from the local run.** Before a push, the suite runs
-  locally with the same interpreter CI uses (`LUA=lua5.4
-  ./tests/run.sh` plus `luac5.1 -p`), so the CI result is a confirmation,
-  never a surprise.
-- **One feature at a time.** One branch, one pull request, one merge. A
-  feature that does not convince is simply not merged, and `main` keeps
-  only what has been approved.
-- **No release without the word.** No version bump, no tag, no zip, no
-  release until Manuel asks for it.
-- **Numbers tell the truth.** New features mean a minor bump (1.1.0),
-  fixes only mean a patch (1.0.1). The choice is made at release time.
+- **I open a branch and a pull request before I start.** The work
+  happens there, in the open, and nothing reaches `main` before that.
+- **I merge only when I have looked at everything and it is in order.**
+  Until then `main` stays exactly where it is.
+- **I get my green before I push.** The suite runs locally with the same
+  interpreter CI uses (`LUA=lua5.4 ./tests/run.sh` plus `luac5.1 -p`),
+  so the CI result is a confirmation, never a surprise.
+- **I do one feature at a time.** One branch, one pull request, one
+  merge. A feature that does not convince me does not get merged, and
+  `main` keeps only what I approved.
+- **I do not release until I decide it is release day.** No version
+  bump, no tag, no zip, no release before that.
+- **I let the numbers tell the truth.** New features mean a minor bump
+  (1.1.0), fixes only mean a patch (1.0.1). I make that choice when I
+  release.
 
 ## 1.1
 
