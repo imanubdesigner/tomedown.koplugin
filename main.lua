@@ -3105,14 +3105,20 @@ end
 -- The rows of the book's own menu, rebuilt every time the menu opens
 -- (and in place when a switch in it or in Settings flips, so a row
 -- appears or goes away without the reader leaving the menu). Nine rows
--- normally, ten while the open book keeps a write zone (that is when a
--- heading to name it with makes any sense at all), eight while the
--- global switch in Settings is on: it governs every file itself, so
--- both per book rows stay away.
+-- inside a book, ten while the open book keeps a write zone (that is
+-- when a heading to name it with makes any sense at all), eight while
+-- the global switch in Settings is on: it governs every file itself,
+-- so both per book rows stay away. On the dashboard, with no book
+-- open, the three rows that need one are not built at all, so seven.
 function Tomedown:genBookMenu()
     local file = self:getCurrentFile()
-    local rows = {
-        {
+    local rows = {}
+    -- This row needs a book open, which means the document itself: in
+    -- the file manager KOReader hands the plugin the FileManager as ui,
+    -- which carries no document, and "lastfile" would then name the
+    -- last book read over a book nobody has open.
+    if self.ui and self.ui.document then
+        rows[#rows + 1] = {
             text = withIcon("\xEE\x89\xBC", _("Export current book")),
             enabled_func = function()
                 local current = self:getCurrentFile()
@@ -3129,19 +3135,19 @@ function Tomedown:genBookMenu()
                 end
                 self:runExport({ current }, {})
             end,
-        },
-        {
-            text = withIcon("\xEE\xA4\xB5", _("Export only what changed")),
-            enabled_func = function()
-                return #self:listBookFiles() > 0
-            end,
-            callback = function(touchmenu)
-                if touchmenu and touchmenu.closeMenu then
-                    touchmenu:closeMenu()
-                end
-                self:runExport(self:listBookFiles(), { only_updated = true })
-            end,
-        },
+        }
+    end
+    rows[#rows + 1] = {
+        text = withIcon("\xEE\xA4\xB5", _("Export only what changed")),
+        enabled_func = function()
+            return #self:listBookFiles() > 0
+        end,
+        callback = function(touchmenu)
+            if touchmenu and touchmenu.closeMenu then
+                touchmenu:closeMenu()
+            end
+            self:runExport(self:listBookFiles(), { only_updated = true })
+        end,
     }
     -- Since 1.1 a book chooses for itself, but only while the global
     -- switch in Settings is off: with that switch on it covers every

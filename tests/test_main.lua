@@ -561,9 +561,16 @@ T.check(not cover_entry, "no menu entry about covers")
 ui.document = { file = FILE }
 T.check(sub[1].enabled_func() == true, "export current enabled with the book open")
 ui.document = nil
+-- the row needs an open book: "lastfile" names the last one read, and
+-- must not bring the row back onto the dashboard with it
 store.lastfile = FILE
-T.check(sub[1].enabled_func() == true, "export current enabled via lastfile")
+local dashboard = menu_items.tomedown.sub_item_table_func()
+T.check(#dashboard == 7,
+    "no export current row on the dashboard: " .. #dashboard)
+T.check(dashboard[1].text == "\xEE\xA4\xB5  Export only what changed",
+    "the dashboard menu starts on the first row that needs no book")
 store.lastfile = nil
+ui.document = { file = nil }
 T.check(sub[1].enabled_func() == false, "export current disabled without a file")
 ui.document = { file = nil }
 T.check(sub[5].enabled_func() == true, "all books enabled")
@@ -578,22 +585,28 @@ T.check(sub[3].checked_func() == false,
     "the row shows the global default until the book chooses")
 ui.document = { file = nil }
 
--- the row belongs to an open book alone: in the file manager KOReader
--- hands the plugin the FileManager as ui, which carries no document,
--- so "lastfile" alone must not drag the row (nor the heading that
--- names the zone) onto the dashboard
+-- the three rows that belong to an open book alone: in the file
+-- manager KOReader hands the plugin the FileManager as ui, which
+-- carries no document, so "lastfile" alone must not drag any of them
+-- (nor the heading that names the zone) onto the dashboard
 do
     ui.document = nil
     store.lastfile = FILE
-    local dashboard = menu_items.tomedown.sub_item_table_func()
-    T.check(#dashboard == 8, "no preserve row on the dashboard: " .. #dashboard)
-    local offered = false
-    for _, item in ipairs(dashboard) do
-        if item.text and item.text:find("Preserve", 1, true) then
-            offered = true
+    local shelf = menu_items.tomedown.sub_item_table_func()
+    T.check(#shelf == 7, "three book rows kept off the dashboard: " .. #shelf)
+    local offered = {}
+    for _, item in ipairs(shelf) do
+        if item.text then
+            for _, name in ipairs({ "Export current book", "Preserve" }) do
+                if item.text:find(name, 1, true) then
+                    offered[name] = true
+                end
+            end
         end
     end
-    T.check(not offered,
+    T.check(not offered["Export current book"],
+        "the current book row is not offered without a book open")
+    T.check(not offered["Preserve"],
         "the per book preserve row is not offered without a book open")
     store.lastfile = nil
     ui.document = { file = nil }
