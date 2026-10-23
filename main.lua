@@ -3150,7 +3150,15 @@ function Tomedown:genBookMenu()
     -- the reader left it when the switch goes off again). The pencil
     -- keeps the hand edits of the open book, the row under it names
     -- that zone.
-    if not getSetting("preserve", false) then
+    --
+    -- Both rows belong to a book that is open: without one there is no
+    -- file to choose for. In the file manager KOReader hands the plugin
+    -- the FileManager itself as ui, which carries no document, and
+    -- getCurrentFile() would then fall back to "lastfile" (always set,
+    -- it is the last book read) and drag these rows onto the dashboard
+    -- pointing at a book nobody has open. ReaderUI instead passes the
+    -- document, so inside a book both rows are there.
+    if self.ui and self.ui.document and not getSetting("preserve", false) then
         rows[#rows + 1] = {
             text = withIcon("\xEF\x81\x80", _("Preserve: this book")),
             enabled_func = function()

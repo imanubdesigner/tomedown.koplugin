@@ -578,6 +578,27 @@ T.check(sub[3].checked_func() == false,
     "the row shows the global default until the book chooses")
 ui.document = { file = nil }
 
+-- the row belongs to an open book alone: in the file manager KOReader
+-- hands the plugin the FileManager as ui, which carries no document,
+-- so "lastfile" alone must not drag the row (nor the heading that
+-- names the zone) onto the dashboard
+do
+    ui.document = nil
+    store.lastfile = FILE
+    local dashboard = menu_items.tomedown.sub_item_table_func()
+    T.check(#dashboard == 8, "no preserve row on the dashboard: " .. #dashboard)
+    local offered = false
+    for _, item in ipairs(dashboard) do
+        if item.text and item.text:find("Preserve", 1, true) then
+            offered = true
+        end
+    end
+    T.check(not offered,
+        "the per book preserve row is not offered without a book open")
+    store.lastfile = nil
+    ui.document = { file = nil }
+end
+
 local settings = plugin:genSettingsMenu()
 T.check(#settings == 4, "settings groups: " .. #settings)
 T.check(settings[1].text == "\xEE\xB4\xBE  Cloud", "cloud group with icon")
