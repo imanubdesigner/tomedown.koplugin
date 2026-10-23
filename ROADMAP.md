@@ -38,32 +38,36 @@ writing them down here too.
 - **A Highlights group in Settings.** All three rows live together now,
   with an icon of their own.
 - **Docs and screenshots** for the three rows and for the new menu.
+- **Preserve per book.** With the global switch off, one book may ask
+  for its own choice from *Preserve: this book*, in the book's own
+  menu: the choice stays stored through later flips of the global
+  switch, the book's own stored hash goes so its file is rewritten at
+  the next *Export only what changed* while the rest of the library is
+  left alone. A book that keeps a zone also names it itself, with
+  *Book notes: %1*, the row under the switch: the title is stored for
+  that book alone and only its hash goes. The index became a file like
+  the others: its own switch, *Preserve: index*, under the global one
+  in *Settings → Markdown files*, with *Index notes: %1* under it to
+  name the index zone (renaming it goes with every export hash, since
+  the index is only rebuilt along with the books), and no book turns
+  the switch on any more. Turning it off keeps the zoned index as
+  `.bak` before the plain one replaces it. With the global switch on
+  it alone is in charge of every file: all of them keep a zone,
+  *Notes: %1* names all of them, and the per file rows are not built
+  at all (their stored choices wait, untouched, until it goes off
+  again). The rows of *Settings* otherwise keep speaking about the
+  global switch only: the per book choice, and its title, live in the
+  book's own menu.
 
 ### Next
-
-#### Preserve per book
-
-Right now preserve is a single global switch, read once at the start of
-each export (`main.lua:985`) and then used for every book in the loop.
-Here is what changes.
-
-- A `preserve_books` map, keyed exactly like `export_records[file]`
-  (`main.lua:1039`) which already tracks every book. When a book has its
-  own choice, that one wins.
-- The global switch stays as the default for books that never chose
-  anything. Whoever turned it on under 1.0 keeps it on, and anyone else
-  can turn it on for a single book.
-- A new row in the book menu: *Preserve manual edits for this book*.
-- The rows that depend on preserve (*Merge edits made in the cloud*, *My
-  notes...*) follow the book being exported instead of following the
-  global value.
 
 #### Turn preserve off for a book
 
 For the reader who took their notes back out and wants the book to go
-back to plain exports.
+back to plain exports. Tapping *Preserve: this book*
+again already stores the explicit off and rewrites the file plain at
+the next export; what is left is the safety around it.
 
-- It drops the book's own choice, so the global default applies again.
 - It asks for confirmation first, and says what is about to happen. With
   preserve off, `merge.apply` hands back the generated render straight
   away (`tomedown_merge.lua:537`) and the file gets replaced with no
