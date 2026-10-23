@@ -1901,6 +1901,14 @@ function Tomedown:editLocalDir(touchmenu)
         onConfirm = function(folder)
             folder = (folder == "/") and "/" or folder:gsub("/+$", "")
             setSetting("local_dir", folder)
+            -- The folder decides where every export lands, but
+            -- saveSetting only writes to memory: KOReader reaches
+            -- flush() on suspend, on its 15 minutes autosave and when
+            -- the reader UI closes, so dying in between would bring
+            -- the exports back to the folder the reader just left.
+            -- One write makes the choice stick at once, the way
+            -- FileManager:onClose() does before going away.
+            G_reader_settings:flush()
             if touchmenu and touchmenu.updateItems then
                 touchmenu:updateItems()
             end

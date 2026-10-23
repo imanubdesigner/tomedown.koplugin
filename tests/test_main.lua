@@ -19,6 +19,9 @@ local T = require("common")
 -- --------------------------------------------------------------- environment
 
 local store = {}
+-- how many times the settings reached the disk: the local folder
+-- picker must flush on its own, KOReader only saves every 15 minutes
+local flushes = 0
 G_reader_settings = {
     readSetting = function(_, key, default)
         if store[key] == nil then
@@ -28,6 +31,9 @@ G_reader_settings = {
     end,
     saveSetting = function(_, key, value)
         store[key] = value
+    end,
+    flush = function()
+        flushes = flushes + 1
     end,
     isTrue = function()
         return false
@@ -905,12 +911,16 @@ T.check(T.contains(chooser.path, "clipboard/tomedown"),
     "default path as start: " .. tostring(chooser and chooser.path))
 plugin:editLocalDir(nil)
 T.check(plugin:getLocalDir() == DIR, "unchanged when closed without choosing")
+local flushes_before_choice = flushes
 PathChooser.last.onConfirm(DATA .. "/out-customi/")
 T.check(plugin:getLocalDir() == DATA .. "/out-customi", "local folder changed")
+T.check(flushes == flushes_before_choice + 1, "the folder choice is written to disk at once")
 plugin:editLocalDir(nil)
 T.check(plugin:getLocalDir() == DATA .. "/out-customi", "reopen without choosing keeps the value")
+T.check(flushes == flushes_before_choice + 1, "closing the picker without choosing flushes nothing")
 PathChooser.last.onConfirm("/")
 T.check(plugin:getLocalDir() == "/", "root folder kept as-is")
+T.check(flushes == flushes_before_choice + 2, "every confirmed choice flushes once")
 store.tomedown.local_dir = nil
 T.check(plugin:getLocalDir() == DIR, "local folder back to default")
 
