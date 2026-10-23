@@ -38,32 +38,23 @@ writing them down here too.
 - **A Highlights group in Settings.** All three rows live together now,
   with an icon of their own.
 - **Docs and screenshots** for the three rows and for the new menu.
+- **Preserve per book.** The global switch stays the default, and one
+  book may ask for its own choice from *Preserve manual edits for this
+  book*, in the book's own menu: the choice wins over the global one
+  and outlives later flips of it, the book's own stored hash goes so
+  its file is rewritten at the next *Export only what changed* while
+  the rest of the library is left alone, and `00 - Index.md` keeps its
+  zone while any book keeps one.
 
 ### Next
-
-#### Preserve per book
-
-Right now preserve is a single global switch, read once at the start of
-each export (`main.lua:985`) and then used for every book in the loop.
-Here is what changes.
-
-- A `preserve_books` map, keyed exactly like `export_records[file]`
-  (`main.lua:1039`) which already tracks every book. When a book has its
-  own choice, that one wins.
-- The global switch stays as the default for books that never chose
-  anything. Whoever turned it on under 1.0 keeps it on, and anyone else
-  can turn it on for a single book.
-- A new row in the book menu: *Preserve manual edits for this book*.
-- The rows that depend on preserve (*Merge edits made in the cloud*, *My
-  notes...*) follow the book being exported instead of following the
-  global value.
 
 #### Turn preserve off for a book
 
 For the reader who took their notes back out and wants the book to go
-back to plain exports.
+back to plain exports. Tapping *Preserve manual edits for this book*
+again already stores the explicit off and rewrites the file plain at
+the next export; what is left is the safety around it.
 
-- It drops the book's own choice, so the global default applies again.
 - It asks for confirmation first, and says what is about to happen. With
   preserve off, `merge.apply` hands back the generated render straight
   away (`tomedown_merge.lua:537`) and the file gets replaced with no

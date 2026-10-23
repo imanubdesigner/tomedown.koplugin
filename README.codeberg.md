@@ -188,15 +188,16 @@ first export and optional Remotely Save in Obsidian — is in
 | *Include page bookmarks* | off by default: adds a `# Page bookmarks` section (bookmarked page + note) after the highlights |
 | *Include book covers* | off by default: exports the cover of every book into `covers/` and embeds it in the book file and in the index; the cover is removed from the device once its upload succeeded (the vault copy is the master one). Requires **Obsidian 1.8.1 or newer** to display |
 | *Auto-export on close* | off by default: exports the book when you close it, and again (silently, no network) before the device suspends |
-| *Preserve manual edits* | off by default (the tomedown ≤ 0.8 behaviour): switch it on and every export folds the new render into your file, keeping your zones; switching modes rewrites every file on the next export — see *Preserve your edits* |
-| *Personal notes: %1* | the heading above your notes block — tap it to rename, leave the field empty to export without a heading; the row exists only while *Preserve manual edits* is on (with the toggle off no heading ever reaches the file) |
+| *Preserve manual edits* | off by default (the tomedown ≤ 0.8 behaviour): switch it on and every export folds the new render into your file, keeping your zones; it stays the default for every book, and one book may ask for its own choice from its own menu (*Preserve manual edits for this book*, see *Usage*); switching modes rewrites every file on the next export — see *Preserve your edits* |
+| *Personal notes: %1* | the heading above your notes block: tap it to rename, leave the field empty to export without a heading; the row exists while some file exports with its zone, the toggle above on or a book's own choice (with preserve off everywhere no heading ever reaches the file) |
 
-The *Cloud* group (shown when a server is set, *Upload to cloud* is on and *Preserve manual edits* is on — the row needs a write zone to fold into) has one more row. It appears and disappears in place as you flip those toggles, without leaving the menu:
+The *Cloud* group (shown when a server is set, *Upload to cloud* is on and preserve is on somewhere, the global switch or a book's own choice: the row needs a write zone to fold into) has one more row. It appears and disappears in place as you flip those toggles, without leaving the menu:
 
 | *Merge edits made in the cloud* | on by default: before folding the new highlights in, the export fetches the copy in the cloud and uses it as the base when it changed since the last upload, so notes written in Obsidian on the desktop survive — see *Editing in Obsidian while the device is away* |
 
-With *Preserve manual edits* ticked the group grows the *Personal notes*
-row at the bottom (the heading of your notes block exports under):
+While some file exports with its zone (the *Preserve manual edits*
+toggle ticked, or one book's own choice) the group grows the *Personal
+notes* row at the bottom (the heading of your notes block exports under):
 
 ![Markdown files settings with preserve ticked](assets/menu/settings/markdown_menu_preserve.png)
 
@@ -315,6 +316,13 @@ settings keys are never renamed.
 - **Export current book** — only the open book.
 - **Export only what changed** — exports only the books whose highlights changed since
   the last export (per-book hash).
+- **Preserve manual edits for this book** — the per-book switch of
+  *Preserve manual edits*: it shows what the open book gets (the global
+  default from *Settings → Markdown files*, until the book chooses),
+  and tapping it stores that book's own choice, which then wins over
+  any later flip of the global switch. The stored hash of that one book
+  goes with it, so the next *Export only what changed* rewrites its
+  file and leaves the rest of the library alone.
 - **Choose books…** — a list with checkboxes: tick the volumes and export
   just those.
 - **Import all books from history** — exports everything found in KOReader's
@@ -466,7 +474,18 @@ the new render into the file that is already in your vault instead of
 overwriting it — but **Preserve manual edits** is off by default (what
 every release up to 0.8 always did), so upgrading changes nothing: switch
 it on in *Settings → Markdown files* and the file becomes a
-shared document. Every file holds one generated block. With the toggle
+shared document.
+
+Since 1.1 the choice is also **per book**. *Preserve manual edits for
+this book*, in the open book's own menu, keeps the zone for that book
+alone, whatever the global switch says, and it outlives later flips of
+the global one: the global switch stays the default for the books that
+never chose. Tapping it again stores an explicit off, and the next
+export writes that file plain. `00 - Index.md` follows the same rule:
+it keeps its zone while any book keeps one, so exporting any book never
+takes the notes you wrote in the index away.
+
+Every file holds one generated block. With the toggle
 on the block is wrapped in two invisible HTML comments Tomedown uses as
 handles, under the heading the plugin owns and with its tag — the plain
 export writes none of that: no comments, no tag, no heading, there is
