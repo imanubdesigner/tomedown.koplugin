@@ -3034,11 +3034,12 @@ function Tomedown:onReaderReady()
     self:_installSpecialEditRow()
 end
 
--- first-run onboarding: offer to import the whole reading history
--- in one tap. Runs when the menu is first built (KOReader calls
--- addToMainMenu lazily on the first menu open of a session), so the
--- reader is already interacting with the UI. The prompt appears once
--- in a lifetime: both "Export" and "Not now" set the flag.
+-- first-run onboarding: offer to export every book's highlights in one
+-- tap, taken from KOReader's reading history. Runs when the menu is
+-- first built (KOReader calls addToMainMenu lazily on the first menu
+-- open of a session), so the reader is already interacting with the UI.
+-- The prompt appears once in a lifetime: both "Export" and "Not now"
+-- set the flag.
 function Tomedown:maybePromptLibraryImport()
     if getSetting("import_prompt_done", false) then
         return
@@ -3183,7 +3184,7 @@ function Tomedown:genBookMenu()
         end,
     }
     rows[#rows + 1] = {
-        text = withIcon("\xEE\xA7\x99", _("Import all books from history")),
+        text = withIcon("\xEE\xA7\x99", _("Export every book's highlights")),
         enabled_func = function()
             return #self:listBookFiles() > 0
         end,

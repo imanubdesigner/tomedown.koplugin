@@ -114,8 +114,8 @@ msgstr "Conserva: questo libro"
 msgid "Choose books…"
 msgstr "Scegli libri…"
 
-msgid "Import all books from history"
-msgstr "Importa tutti i libri dalla cronologia"
+msgid "Export every book's highlights"
+msgstr "Esporta le evidenziazioni di ogni libro"
 
 msgid "Upload everything to the cloud"
 msgstr "Carica tutto sul cloud"

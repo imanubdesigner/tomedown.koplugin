@@ -337,7 +337,7 @@ settings keys are never renamed.
   so only its file is rewritten on the next export.
 - **Choose books…** — a list with checkboxes: tick the volumes and export
   just those.
-- **Import all books from history** — exports everything found in KOReader's
+- **Export every book's highlights** — exports everything found in KOReader's
   reading history.
 - **Upload everything to the cloud** — re-uploads every file already in the
   local folder (use it after a failed upload). Each markdown file is compared
@@ -354,7 +354,7 @@ settings keys are never renamed.
   and the GitHub link (tap the link to open it or copy it).
 
 On a fresh install, the first time you open the menu, Tomedown offers to
-import your whole KOReader reading history in one tap (*Export* / *Not now* — the
+export the highlights of your whole KOReader reading history in one tap (*Export* / *Not now* — the
 offer is made only once; the menu entry stays available anyway).
 
 ### Special highlights

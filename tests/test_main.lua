@@ -529,7 +529,7 @@ T.check(sub[2].text == "\xEE\xA4\xB5  Export only what changed", "menu item 2")
 T.check(sub[3].text == "\xEF\x81\x80  Preserve: this book",
     "menu item 3, the per book preserve row")
 T.check(sub[4].text == "\xEE\xB9\x94  Choose books…", "menu item 4")
-T.check(sub[5].text == "\xEE\xA7\x99  Import all books from history", "menu item 5")
+T.check(sub[5].text == "\xEE\xA7\x99  Export every book's highlights", "menu item 5")
 T.check(sub[6].text == "\xEE\xB4\xBE  Upload everything to the cloud", "menu item 6")
 T.check(sub[7].text == "\xEF\x83\xA4  Status", "menu item 7 with the dashboard")
 T.check(sub[7].separator == true, "separator before Settings")
