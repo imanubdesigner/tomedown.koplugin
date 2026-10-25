@@ -108,11 +108,23 @@ msgstr "Esporta libro corrente"
 msgid "Export only what changed"
 msgstr "Esporta solo i cambiamenti"
 
+msgid "Preserve: this book"
+msgstr "Conserva: questo libro"
+
+msgid "Turn preserve off for %1? Your notes will not be lost. A .bak copy is created."
+msgstr "Spegnere la conservazione per %1? Le tue note non andranno perse. Verrà creato un file .bak."
+
+msgid "Turn off"
+msgstr "Spegni"
+
+msgid "Keep it on"
+msgstr "Tienila accesa"
+
 msgid "Choose books…"
 msgstr "Scegli libri…"
 
-msgid "Import all books from history"
-msgstr "Importa tutti i libri dalla cronologia"
+msgid "Export every book's highlights"
+msgstr "Esporta le evidenziazioni di ogni libro"
 
 msgid "Upload everything to the cloud"
 msgstr "Carica tutto sul cloud"
@@ -442,8 +454,11 @@ msgstr "Chiusura"
 msgid "Manual"
 msgstr "Manuale"
 
-msgid "Preserve manual edits"
-msgstr "Conserva le modifiche manuali"
+msgid "Preserve: global"
+msgstr "Conserva: globale"
+
+msgid "Preserve: index"
+msgstr "Conserva: indice"
 
 msgid "%1 files backed up (.bak)"
 msgstr "%1 file salvati in .bak"
@@ -451,8 +466,14 @@ msgstr "%1 file salvati in .bak"
 msgid "My notes..."
 msgstr "Le mie note..."
 
-msgid "Personal notes: %1"
-msgstr "Note personali: %1"
+msgid "Notes: %1"
+msgstr "Note: %1"
+
+msgid "Book notes: %1"
+msgstr "Note del libro: %1"
+
+msgid "Index notes: %1"
+msgstr "Note dell'indice: %1"
 
 msgid "Personal notes heading"
 msgstr "Intestazione note personali"

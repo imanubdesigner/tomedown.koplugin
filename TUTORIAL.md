@@ -78,7 +78,7 @@ toggles there are worth knowing about (both off by default):
 - On a **fresh install**, the first time you open the menu Tomedown offers
   to export your whole reading history in one tap (*Export* / *Not now*).
 - Later: **Export current book** for the open one, **Export only what changed** for
-  whatever changed, **Import all books from history** if you skipped the
+  whatever changed, **Export every book's highlights** if you skipped the
   offer.
 
 The files appear in KOReader's local folder first, then the upload
@@ -137,8 +137,8 @@ shown formatted, with *Update and restart* right in the window).
   Koofr: `https://app.koofr.net/dav/Koofr`, not the plain `/dav/` root,
   which is not writable), and that the same folder is selected on both
   sides.
-- **The first-run import offer doesn't show** — it appears only when
-  nothing has ever been exported; use **Import all books from history**
+- **The first-run export offer doesn't show** — it appears only when
+  nothing has ever been exported; use **Export every book's highlights**
   from the menu instead.
 - **`.json` files cluttering the vault** — add `*.json` to Remotely
   Save's ignore list (see step 4).

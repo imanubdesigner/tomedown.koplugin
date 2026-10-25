@@ -188,14 +188,16 @@ first export and optional Remotely Save in Obsidian — is in
 | *Include page bookmarks* | off by default: adds a `# Page bookmarks` section (bookmarked page + note) after the highlights |
 | *Include book covers* | off by default: exports the cover of every book into `covers/` and embeds it in the book file and in the index; the cover is removed from the device once its upload succeeded (the vault copy is the master one). Requires **Obsidian 1.8.1 or newer** to display |
 | *Auto-export on close* | off by default: exports the book when you close it, and again (silently, no network) before the device suspends |
-| *Preserve manual edits* | off by default (the tomedown ≤ 0.8 behaviour): switch it on and every export folds the new render into your file, keeping your zones; switching modes rewrites every file on the next export — see *Preserve your edits* |
-| *Personal notes: %1* | the heading above your notes block — tap it to rename, leave the field empty to export without a heading; the row exists only while *Preserve manual edits* is on (with the toggle off no heading ever reaches the file) |
+| *Preserve: global* | off by default (the tomedown ≤ 0.8 behaviour): switch it on and every export folds the new render into your file, keeping your zones. While it is on it alone is in charge of every file: the rows that choose for one single file are not shown (the index ones here, the book's own in its menu), every file keeps its zone, and *Notes: %1* names all of them. Switch it off again and each file follows the choice it stored (books default to off, see *Usage*); switching modes rewrites every file on the next export — see *Preserve your edits* |
+| *Preserve: index* | the same switch for `00 - Index.md` alone, right below the global one, shown only while *Generate the 00 - Index.md (for Obsidian)* is ticked and *Preserve: global* is off; it follows the global switch until you flip it, and no book turns it on any more. Turning it off keeps the index you have as `00 - Index.md.bak` before the next export rewrites it plain, and turning it on again brings that copy back |
+| *Index notes: %1* | the heading of the index zone, right below *Preserve: index* and only while the index keeps one; tap it to rename, leave the field empty to export without a heading. It is stored for `00 - Index.md` alone (every other file keeps its own heading), and while *Preserve: global* is on the global heading names it again |
+| *Notes: %1* | the heading above your notes block: tap it to rename, leave the field empty to export without a heading; the row exists only while *Preserve: global* is on (with the toggle off no heading ever reaches the file). The settings rows speak about the global switch only: a book's own choice, and its own heading, live in the book's own menu |
 
-The *Cloud* group (shown when a server is set, *Upload to cloud* is on and *Preserve manual edits* is on — the row needs a write zone to fold into) has one more row. It appears and disappears in place as you flip those toggles, without leaving the menu:
+The *Cloud* group (shown when a server is set, *Upload to cloud* is on and *Preserve: global* is on — the row needs a write zone to fold into) has one more row. It appears and disappears in place as you flip those toggles, without leaving the menu:
 
 | *Merge edits made in the cloud* | on by default: before folding the new highlights in, the export fetches the copy in the cloud and uses it as the base when it changed since the last upload, so notes written in Obsidian on the desktop survive — see *Editing in Obsidian while the device is away* |
 
-With *Preserve manual edits* ticked the group grows the *Personal notes*
+With *Preserve: global* ticked the group grows the *Notes*
 row at the bottom (the heading of your notes block exports under):
 
 ![Markdown files settings with preserve ticked](assets/menu/settings/markdown_menu_preserve.png)
@@ -312,12 +314,43 @@ settings keys are never renamed.
 
 ![The Tomedown menu](assets/menu/reader/tomedown_reader_menu.png)
 
+The menu itself, with a book open, where every row is on show:
+
+![The Tomedown menu with a book open](assets/menu/reader/tomedown_reader_menu_1_1.png)
+
+Three of these rows name a book, and they are only built while one is
+open: *Export current book*, *Preserve: this book* and *Book notes: %1*.
+From the file browser the menu starts at *Export only what changed*,
+since there no book is open to speak about.
+
 - **Export current book** — only the open book.
 - **Export only what changed** — exports only the books whose highlights changed since
   the last export (per-book hash).
+- **Preserve: this book** — the per-book switch of *Preserve: global*:
+  it shows what the open book gets (the global default from *Settings →
+  Markdown files*, until the book chooses), and tapping it stores that
+  book's own choice. Turning it on is immediate; turning it **off**
+  asks first, with a box that says the file goes back to a plain
+  export, and confirming rewrites it there and then instead of waiting
+  for the next export, keeping the one you had whole as `.bak` beside
+  it; turning preserve on again brings that copy back into the file.
+  The stored hash of that one book goes with it, so only its file
+  is rewritten and the rest of the library is left alone. The row is
+  not built at all while *Preserve: global* is on: with the global switch
+  on every file follows it, and the book's own choice stays stored
+  until the global switch goes off again.
+- **Book notes: %1** — the same heading, but for this book alone, right
+  below the switch and only while that book keeps a zone to name (so
+  this row, like the switch above it, only exists while *Preserve:
+  global* is off). Tap it to give the book its own heading ("The Witch
+  theory", "Julian Carax Dixit", …), leave the field empty to export
+  that book's zone without a heading at all. It is stored for that book
+  only: every other file, `00 - Index.md` included, keeps the global
+  heading from *Settings → Markdown files*. Only that book's hash goes,
+  so only its file is rewritten on the next export.
 - **Choose books…** — a list with checkboxes: tick the volumes and export
   just those.
-- **Import all books from history** — exports everything found in KOReader's
+- **Export every book's highlights** — exports everything found in KOReader's
   reading history.
 - **Upload everything to the cloud** — re-uploads every file already in the
   local folder (use it after a failed upload). Each markdown file is compared
@@ -334,7 +367,7 @@ settings keys are never renamed.
   and the GitHub link (tap the link to open it or copy it).
 
 On a fresh install, the first time you open the menu, Tomedown offers to
-import your whole KOReader reading history in one tap (*Export* / *Not now* — the
+export the highlights of your whole KOReader reading history in one tap (*Export* / *Not now* — the
 offer is made only once; the menu entry stays available anyway).
 
 ### Special highlights
@@ -463,10 +496,44 @@ tomedown: upload failed (attempt 1 of 3), retrying in 2 s: <path> 500
 
 Your vault is the destination, not a cache. Since 1.0 an export *can* fold
 the new render into the file that is already in your vault instead of
-overwriting it — but **Preserve manual edits** is off by default (what
+overwriting it — but **Preserve: global** is off by default (what
 every release up to 0.8 always did), so upgrading changes nothing: switch
 it on in *Settings → Markdown files* and the file becomes a
-shared document. Every file holds one generated block. With the toggle
+shared document.
+
+While it is on there is nothing else to decide: it alone is in charge of
+every file, every file keeps its zone and *Notes: %1* names all of them.
+The rows that would choose for one single file are not even shown, and
+the choices behind them stay stored, waiting for the switch to go off
+again.
+
+Since 1.1 the choice is also **per book**, with the global switch off.
+*Preserve: this book*, in the open book's own menu, keeps the zone for
+that book alone, and that choice stays stored through later flips of the
+global switch: whatever the book asked for is what it gets again as soon
+as the global switch is off. Tapping it again asks first, saying the file
+goes back to a plain export, and confirming stores an explicit off and
+writes that file plain there and then, with the one you had kept whole as
+`.bak` first — and that copy comes back into the file the next time you
+turn preserve on, which is what makes the box's promise true. While a book keeps a zone its
+menu grows a second row, *Book notes: %1*, which names that book's zone
+and no other file's. The rows of *Settings → Markdown files* keep
+speaking about the global switch only: *Notes: %1* appears while it is
+ticked, whatever the books chose, because a book's own choice lives in
+the book's own menu.
+
+`00 - Index.md` follows the same shape: with the global switch off, its
+own switch, *Preserve: index*, sits in *Settings → Markdown files* right
+under the global one, with *Index notes: %1* under it to name the zone.
+The index starts out the way the global switch is set, and no book turns
+it on behind your back any more, so exporting a book never takes the
+notes you wrote in the index away by surprise. Turn its switch off and
+the index exports plain from the next export on, with the one you had
+kept whole as `00 - Index.md.bak` first, and turning preserve on again brings that
+copy back into the file. With the global switch on the index is covered like every other
+file, and both of its rows are hidden.
+
+Every file holds one generated block. With the toggle
 on the block is wrapped in two invisible HTML comments Tomedown uses as
 handles, under the heading the plugin owns and with its tag — the plain
 export writes none of that: no comments, no tag, no heading, there is
@@ -513,6 +580,24 @@ touched block from one of its own at a glance. On every export:
   toast reports `N files backed up (.bak)`); a file that has to be
   rebuilt from scratch — markers broken beyond repair, an export from
   tomedown ≤ 0.8 — comes with the same backup;
+- an older backup is never thrown away by a newer one. There are at
+  most two copies beside the file: the newest as `<name>.md.bak`, the
+  one before it as `<name>.md.bak.1`. A backup worth little (a plain
+  export, which the next run writes again anyway) can therefore never
+  take the place of the one holding what you wrote by hand;
+- a file Tomedown itself wrote is never copied. When an export finds
+  the very bytes the last run left there, nothing of yours sits in
+  them, so no backup is taken and no slot is used: this is what stops
+  a later export from replacing the copy holding your notes with a
+  plain file you never touched. (The first run after an upgrade has
+  not seen your file yet and keeps one copy, just in case);
+- turning preserve back on brings the backup back. When the file is the
+  plain export Tomedown wrote itself (nothing of yours in it) and a
+  zoned `.bak` sits beside it from the moment preserve went off, that
+  copy becomes the base of the next export: your notes are in the file
+  again, and the `.bak` stays where it was. If you wrote into the plain
+  file meanwhile, nothing is brought back and nothing is thrown away
+  either: your text comes across as it is and the copy is left alone;
 - the frontmatter merges field by field: Tomedown's own fields
   (`status`, `progress`, `exported`…) always show KOReader's values, your
   tags are kept and unioned with the new ones, and a property only you
@@ -520,7 +605,7 @@ touched block from one of its own at a glance. On every export:
   cannot place is kept verbatim, at the end;
 - the heading is the plugin's line (with preserve on the
   `<!-- tomedown:notes -->` tag gives it away): renamed from
-  *Personal notes: %1*
+  *Notes: %1*
   (*Settings → Markdown files*), it is rewritten on the
   next export while your text below it stays put — leave the setting
   empty and files export without a heading, and with preserve off
@@ -535,7 +620,7 @@ touched block from one of its own at a glance. On every export:
 
 One toggle in *Settings → Markdown files* controls all this:
 
-- **Preserve manual edits** — off by default: every export writes exactly
+- **Preserve: global** — off by default: every export writes exactly
   what was generated, which is what tomedown ≤ 0.8 always did — a plain
   markdown file with no markers, no tag and no heading, replaced
   wholesale on the next run. Switch it on and every export folds the new
@@ -589,7 +674,7 @@ stay in the cloud copy and the file is retried at the next chance.
 
 A few things worth knowing:
 
-- with *Preserve manual edits* off (the default) every export overwrites the
+- with *Preserve: global* off (the default) every export overwrites the
   file, so the toggle has nothing to merge and does nothing — turn preserve
   on to let your notes ride along;
 
@@ -616,7 +701,7 @@ A few things worth knowing:
 
 ## File format
 
-The file as it comes out with **Preserve manual edits** on — the plain
+The file as it comes out with **Preserve: global** on — the plain
 export (the default) is the same document with the two comments, the
 heading and its tag left out:
 
