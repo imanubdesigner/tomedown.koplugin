@@ -2479,6 +2479,11 @@ do
     behaviour[2].callback()
     T.check(store.tomedown.preserve == true,
         "15b: preserve back on, ready to bring the copy back")
+    -- nothing may be written by what follows: the copy it reads is the
+    -- one already there, so no rotation can happen and no second slot
+    -- may show up (the case he reported while testing)
+    os.remove(MD_PATH .. ".bak.1")
+    os.remove(INDEX_PATH .. ".bak.1")
     plugin:runExport({ FILE }, {})
     UIManager:runPending()
     per_book_md = T.readFile(MD_PATH)
@@ -2496,6 +2501,9 @@ do
     T.check(other_md ~= nil and T.contains(other_md, zone_line),
         "15b: the backup it came from is left where it was: "
             .. tostring(other_md ~= nil))
+    T.check(not T.fileExists(MD_PATH .. ".bak.1")
+            and not T.fileExists(INDEX_PATH .. ".bak.1"),
+        "15b: and the restore writes no copy of its own")
     T.check(T.readFile(INDEX_PATH) ~= nil
             and T.contains(T.readFile(INDEX_PATH), "tomedown:begin"),
         "15b: the index comes back from its own copy too")
@@ -2524,6 +2532,36 @@ do
     T.check(live[8] == nil,
         "15b: the index rows are hidden while the switch is on")
     behaviour[2].callback() -- and off again, the way the sections below want it
+
+    -- His sequence from the device: the global switch goes off with no
+    -- export in between, the book's own switch is on again (it was set
+    -- at the start of this section), and one export follows. The book
+    -- keeps its zone and takes no new copy at all: the copy that shows
+    -- up belongs to 00 - Index.md, which follows the global switch and
+    -- goes plain here, so its previous version rotates one slot back.
+    -- There is no "copy of the global switch" for a book: the pair
+    -- beside a book's .md is always that book's own.
+    behaviour[2].callback() -- global on: every file preserved again
+    plugin:runExport({ FILE }, {})
+    UIManager:runPending()
+    os.remove(MD_PATH .. ".bak.1")
+    os.remove(INDEX_PATH .. ".bak.1")
+    behaviour[2].callback() -- global off, still no export, as he did it
+    plugin:runExport({ FILE }, {})
+    UIManager:runPending()
+    per_book_md = T.readFile(MD_PATH)
+    T.check(per_book_md ~= nil
+            and T.contains(per_book_md, "tomedown:begin"),
+        "15b: the book keeps its zone while its own switch is on")
+    T.check(per_book_md ~= nil and T.contains(per_book_md, zone_line),
+        "15b: and its note comes back with it")
+    T.check(not T.fileExists(MD_PATH .. ".bak.1"),
+        "15b: and no new copy is taken for the book")
+    T.check(T.readFile(INDEX_PATH) ~= nil
+            and not T.contains(T.readFile(INDEX_PATH), "tomedown:begin"),
+        "15b: the index goes plain with the global switch off")
+    T.check(T.fileExists(INDEX_PATH .. ".bak.1"),
+        "15b: the copy that appears is the index's own, rotated back")
 
     -- everything back the way the sections below expect it
     store.tomedown.preserve_books = nil
