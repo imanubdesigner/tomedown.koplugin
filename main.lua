@@ -1009,6 +1009,15 @@ function Tomedown:clearPendingUploads(paths)
     end
 end
 
+-- whether the file to replace is byte for byte what the last export
+-- wrote: nothing of the reader's sits in it, the next run rebuilds it
+-- anyway, so there is no point in a copy of it (and no point in letting
+-- it take the slot of a copy worth keeping). A record from before this
+-- was remembered answers false, which keeps the backup.
+local function ownCopy(stored, content)
+    return stored ~= nil and stored == md5(content)
+end
+
 -- keeps a file as it was before it is overwritten. Two slots at most
 -- per file: an existing .bak moves to .bak.1 first, so a copy holding
 -- what the reader wrote by hand is never thrown away by a later backup
@@ -1151,7 +1160,8 @@ function Tomedown:runExport(files, opts)
                         record and record.regions,
                         { mode = mode, notes_title = getNotesTitle(file) })
                     content = merged
-                    if info.backup then
+                    if info.backup and not ownCopy(record and record.disk,
+                            old) then
                         -- the reader had written inside the block: the
                         -- previous file is kept whole, as .bak, before
                         -- the rebuilt one replaces it
@@ -1185,6 +1195,9 @@ function Tomedown:runExport(files, opts)
                         -- what we would have generated: the proof the
                         -- next export compares the regions against
                         regions = merge.fingerprints(merge.split(md)),
+                        -- the file as it left our hands: proof that the
+                        -- next run needs no copy of it (ownCopy above)
+                        disk = md5(content),
                     }
                 else
                     errors[#errors + 1] = book.base .. ": " .. tostring(err)
@@ -1202,6 +1215,9 @@ function Tomedown:runExport(files, opts)
             -- when the global switch covers it: no book choice turns it
             -- on behind the reader's back any more
             local index_preserve = getIndexPreserve()
+            -- what the last export left in the file, to tell our own
+            -- output from anything the reader wrote in it
+            local index_disk = getSetting("index_disk")
             local entries, new_covers = self:buildIndexEntries(dir, export_records)
             local index_md = render.buildIndexMd(entries, {
                 title = _("Book index"),
@@ -1220,7 +1236,7 @@ function Tomedown:runExport(files, opts)
                     { mode = index_preserve and "preserve" or "overwrite",
                       notes_title = index_title })
                 content = merged
-                if info.backup then
+                if info.backup and not ownCopy(index_disk, old_index) then
                     if keepBackup(index_path, old_index) then
                         backups = backups + 1
                     end
@@ -1240,6 +1256,7 @@ function Tomedown:runExport(files, opts)
                 written[#written + 1] = index_path
                 setSetting("index_regions",
                     merge.fingerprints(merge.split(index_md)))
+                setSetting("index_disk", md5(content))
                 -- covers pulled in by the backfill above join the upload
                 for __, path in ipairs(new_covers) do
                     written[#written + 1] = path
@@ -2348,7 +2365,7 @@ function Tomedown:genSettingsMenu()
             -- file follows the choice it stored. On, this switch alone
             -- governs every file and names every zone, and no other
             -- row is built to choose for one file
-            text = _("Preserve edits"),
+            text = _("Preserve: global"),
             checked_func = function()
                 return getSetting("preserve", false)
             end,

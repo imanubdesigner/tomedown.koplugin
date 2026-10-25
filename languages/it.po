@@ -454,8 +454,8 @@ msgstr "Chiusura"
 msgid "Manual"
 msgstr "Manuale"
 
-msgid "Preserve edits"
-msgstr "Conserva modifiche"
+msgid "Preserve: global"
+msgstr "Conserva: globale"
 
 msgid "Preserve: index"
 msgstr "Conserva: indice"

@@ -1,8 +1,8 @@
 # Obsidian guide: the files as they sit in the vault
 
 Three sheets on what Tomedown writes into your vault: the book file as
-every export produces it by default, the same file with *Preserve
-edits* on, and the index that ties the library together. A last section
+every export produces it by default, the same file with *Preserve:
+global* on, and the index that ties the library together. A last section
 shows how a quote gets an id of its own and can be linked on its own. The
 [quickstart](README.md#quickstart) shows the flow end to end; this page
 zooms into the file itself. Nothing here needs anything installed in
@@ -10,16 +10,16 @@ Obsidian — the files are plain Markdown either way.
 
 ## The book file, as exported (default)
 
-![01 — The book file: plain Markdown with no heading and no markers; anything you write in it is gone at the next export; switch on Preserve edits to keep your words](assets/obsidian-guide/01-the-book-file.svg)
+![01 — The book file: plain Markdown with no heading and no markers; anything you write in it is gone at the next export; switch on Preserve: global to keep your words](assets/obsidian-guide/01-the-book-file.svg)
 
 The frontmatter, then straight into the generated block: no heading, no
 markers, no comments — nothing to hide from any Markdown app, which is
 the point of the default. The flip side is in the sheet's second callout:
 every export rebuilds the file from scratch, so anything you write in it
-is gone at the next run. If you want to write, flip *Preserve
-edits* (Settings → Markdown files) and read sheet 02 before the next export.
+is gone at the next run. If you want to write, flip *Preserve: global*
+(Settings → Markdown files) and read sheet 02 before the next export.
 
-## With Preserve edits on
+## With *Preserve: global* on
 
 ![02 — Preserve on: the tagged heading, two blank lines of room, your words above the marker, and the generated block below it](assets/obsidian-guide/02-preserve-on.svg)
 

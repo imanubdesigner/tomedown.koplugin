@@ -188,16 +188,16 @@ first export and optional Remotely Save in Obsidian — is in
 | *Include page bookmarks* | off by default: adds a `# Page bookmarks` section (bookmarked page + note) after the highlights |
 | *Include book covers* | off by default: exports the cover of every book into `covers/` and embeds it in the book file and in the index; the cover is removed from the device once its upload succeeded (the vault copy is the master one). Requires **Obsidian 1.8.1 or newer** to display |
 | *Auto-export on close* | off by default: exports the book when you close it, and again (silently, no network) before the device suspends |
-| *Preserve edits* | off by default (the tomedown ≤ 0.8 behaviour): switch it on and every export folds the new render into your file, keeping your zones. While it is on it alone is in charge of every file: the rows that choose for one single file are not shown (the index ones here, the book's own in its menu), every file keeps its zone, and *Notes: %1* names all of them. Switch it off again and each file follows the choice it stored (books default to off, see *Usage*); switching modes rewrites every file on the next export — see *Preserve your edits* |
-| *Preserve: index* | the same switch for `00 - Index.md` alone, right below the global one, shown only while *Generate the 00 - Index.md (for Obsidian)* is ticked and *Preserve edits* is off; it follows the global switch until you flip it, and no book turns it on any more. Turning it off keeps the index you have as `00 - Index.md.bak` before the next export rewrites it plain, because the notes in it do not come back |
-| *Index notes: %1* | the heading of the index zone, right below *Preserve: index* and only while the index keeps one; tap it to rename, leave the field empty to export without a heading. It is stored for `00 - Index.md` alone (every other file keeps its own heading), and while *Preserve edits* is on the global heading names it again |
-| *Notes: %1* | the heading above your notes block: tap it to rename, leave the field empty to export without a heading; the row exists only while *Preserve edits* is on (with the toggle off no heading ever reaches the file). The settings rows speak about the global switch only: a book's own choice, and its own heading, live in the book's own menu |
+| *Preserve: global* | off by default (the tomedown ≤ 0.8 behaviour): switch it on and every export folds the new render into your file, keeping your zones. While it is on it alone is in charge of every file: the rows that choose for one single file are not shown (the index ones here, the book's own in its menu), every file keeps its zone, and *Notes: %1* names all of them. Switch it off again and each file follows the choice it stored (books default to off, see *Usage*); switching modes rewrites every file on the next export — see *Preserve your edits* |
+| *Preserve: index* | the same switch for `00 - Index.md` alone, right below the global one, shown only while *Generate the 00 - Index.md (for Obsidian)* is ticked and *Preserve: global* is off; it follows the global switch until you flip it, and no book turns it on any more. Turning it off keeps the index you have as `00 - Index.md.bak` before the next export rewrites it plain, because the notes in it do not come back |
+| *Index notes: %1* | the heading of the index zone, right below *Preserve: index* and only while the index keeps one; tap it to rename, leave the field empty to export without a heading. It is stored for `00 - Index.md` alone (every other file keeps its own heading), and while *Preserve: global* is on the global heading names it again |
+| *Notes: %1* | the heading above your notes block: tap it to rename, leave the field empty to export without a heading; the row exists only while *Preserve: global* is on (with the toggle off no heading ever reaches the file). The settings rows speak about the global switch only: a book's own choice, and its own heading, live in the book's own menu |
 
-The *Cloud* group (shown when a server is set, *Upload to cloud* is on and *Preserve edits* is on — the row needs a write zone to fold into) has one more row. It appears and disappears in place as you flip those toggles, without leaving the menu:
+The *Cloud* group (shown when a server is set, *Upload to cloud* is on and *Preserve: global* is on — the row needs a write zone to fold into) has one more row. It appears and disappears in place as you flip those toggles, without leaving the menu:
 
 | *Merge edits made in the cloud* | on by default: before folding the new highlights in, the export fetches the copy in the cloud and uses it as the base when it changed since the last upload, so notes written in Obsidian on the desktop survive — see *Editing in Obsidian while the device is away* |
 
-With *Preserve edits* ticked the group grows the *Notes*
+With *Preserve: global* ticked the group grows the *Notes*
 row at the bottom (the heading of your notes block exports under):
 
 ![Markdown files settings with preserve ticked](assets/menu/settings/markdown_menu_preserve.png)
@@ -326,7 +326,7 @@ since there no book is open to speak about.
 - **Export current book** — only the open book.
 - **Export only what changed** — exports only the books whose highlights changed since
   the last export (per-book hash).
-- **Preserve: this book** — the per-book switch of *Preserve edits*:
+- **Preserve: this book** — the per-book switch of *Preserve: global*:
   it shows what the open book gets (the global default from *Settings →
   Markdown files*, until the book chooses), and tapping it stores that
   book's own choice. Turning it on is immediate; turning it **off**
@@ -335,13 +335,13 @@ since there no book is open to speak about.
   for the next export, keeping the one you had whole as `.bak` beside
   it. The stored hash of that one book goes with it, so only its file
   is rewritten and the rest of the library is left alone. The row is
-  not built at all while *Preserve edits* is on: with the global switch
+  not built at all while *Preserve: global* is on: with the global switch
   on every file follows it, and the book's own choice stays stored
   until the global switch goes off again.
 - **Book notes: %1** — the same heading, but for this book alone, right
   below the switch and only while that book keeps a zone to name (so
-  this row, like the switch above it, only exists while *Preserve
-  edits* is off). Tap it to give the book its own heading ("The Witch
+  this row, like the switch above it, only exists while *Preserve:
+  global* is off). Tap it to give the book its own heading ("The Witch
   theory", "Julian Carax Dixit", …), leave the field empty to export
   that book's zone without a heading at all. It is stored for that book
   only: every other file, `00 - Index.md` included, keeps the global
@@ -495,7 +495,7 @@ tomedown: upload failed (attempt 1 of 3), retrying in 2 s: <path> 500
 
 Your vault is the destination, not a cache. Since 1.0 an export *can* fold
 the new render into the file that is already in your vault instead of
-overwriting it — but **Preserve edits** is off by default (what
+overwriting it — but **Preserve: global** is off by default (what
 every release up to 0.8 always did), so upgrading changes nothing: switch
 it on in *Settings → Markdown files* and the file becomes a
 shared document.
@@ -583,6 +583,12 @@ touched block from one of its own at a glance. On every export:
   one before it as `<name>.md.bak.1`. A backup worth little (a plain
   export, which the next run writes again anyway) can therefore never
   take the place of the one holding what you wrote by hand;
+- a file Tomedown itself wrote is never copied. When an export finds
+  the very bytes the last run left there, nothing of yours sits in
+  them, so no backup is taken and no slot is used: this is what stops
+  a later export from replacing the copy holding your notes with a
+  plain file you never touched. (The first run after an upgrade has
+  not seen your file yet and keeps one copy, just in case);
 - the frontmatter merges field by field: Tomedown's own fields
   (`status`, `progress`, `exported`…) always show KOReader's values, your
   tags are kept and unioned with the new ones, and a property only you
@@ -605,7 +611,7 @@ touched block from one of its own at a glance. On every export:
 
 One toggle in *Settings → Markdown files* controls all this:
 
-- **Preserve edits** — off by default: every export writes exactly
+- **Preserve: global** — off by default: every export writes exactly
   what was generated, which is what tomedown ≤ 0.8 always did — a plain
   markdown file with no markers, no tag and no heading, replaced
   wholesale on the next run. Switch it on and every export folds the new
@@ -659,7 +665,7 @@ stay in the cloud copy and the file is retried at the next chance.
 
 A few things worth knowing:
 
-- with *Preserve edits* off (the default) every export overwrites the
+- with *Preserve: global* off (the default) every export overwrites the
   file, so the toggle has nothing to merge and does nothing — turn preserve
   on to let your notes ride along;
 
@@ -686,7 +692,7 @@ A few things worth knowing:
 
 ## File format
 
-The file as it comes out with **Preserve edits** on — the plain
+The file as it comes out with **Preserve: global** on — the plain
 export (the default) is the same document with the two comments, the
 heading and its tag left out:
 

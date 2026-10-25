@@ -76,6 +76,16 @@ writing them down here too.
   so there are two copies at most per file and the older one always
   survives. The same shape for the books, the index and the cloud
   fold, which had four copies of that block and now call one helper.
+- **Our own file is not backed up any more.** The copy that broke the
+  rule above was our own: turning the global switch back on found the
+  plain export on disk, `rebuildable()` claimed it
+  (`tomedown_merge.lua:308`) and `merge.apply` returned `legacy` with
+  `backup = true` (line 561), so a file we had written a run earlier
+  took the slot of the copy holding the reader's notes. Every write
+  now stores its bytes (`export_records[file].disk`, `index_disk` for
+  the index) and `ownCopy()` skips the backup while the file still
+  holds them, when nothing of the reader's can be in it. A file from
+  before this field existed is still backed up, on the safe side.
 
 ### Next
 

@@ -644,7 +644,7 @@ T.check(files[4].text == "Include book covers", "covers entry")
 T.check(files[4].checked_func() == false, "covers off by default")
 T.check(files[5].text == "Auto-export on close", "auto-export entry")
 T.check(files[5].checked_func() == false, "auto-export off by default")
-T.check(files[6].text == "Preserve edits", "preserve entry")
+T.check(files[6].text == "Preserve: global", "preserve entry")
 T.check(files[6].checked_func() == false,
     "manual edits off by default (the tomedown <= 0.8 behaviour)")
 -- the index is a file like the others (v1.1): its own switch, right
@@ -2394,21 +2394,19 @@ do
         "15b: the global switch is on and decides for every file")
     plugin:runExport({ FILE }, {})
     UIManager:runPending()
-    -- the file on disk was plain at this export, so it is backed up
-    -- again: the copy the confirmation wrote must not be thrown away,
-    -- it is the one holding the reader's notes (the whole reason the
-    -- box promises they will not be lost)
-    other_md = T.readFile(MD_PATH .. ".bak.1")
+    -- The file on disk is the plain export this very plugin wrote a
+    -- moment ago: there is nothing in it worth copying, and above all
+    -- the copy the confirmation wrote must stay where it is, since it
+    -- is the one holding the reader's notes (the whole reason the box
+    -- promises they will not be lost)
+    other_md = T.readFile(MD_PATH .. ".bak")
     T.check(other_md ~= nil
             and T.contains(other_md, "## The Witch theory")
             and T.contains(other_md, "tomedown:begin"),
-        "15b: the older .bak survives a later backup: "
+        "15b: our own plain file takes no copy of itself: "
             .. tostring(other_md ~= nil))
-    other_md = T.readFile(MD_PATH .. ".bak")
-    T.check(other_md ~= nil
-            and not T.contains(other_md, "## The Witch theory"),
-        "15b: and the fresh copy takes its slot: "
-            .. tostring(other_md ~= nil))
+    T.check(not T.fileExists(MD_PATH .. ".bak.1"),
+        "15b: and no second slot is opened for it")
     per_book_md = T.readFile(MD_PATH)
     T.check(per_book_md ~= nil
             and T.contains(per_book_md,
@@ -2424,6 +2422,34 @@ do
     T.check(T.readFile(INDEX_PATH) ~= nil
             and T.contains(T.readFile(INDEX_PATH), "tomedown:begin"),
         "15b: the index keeps its zone too, stored off as it is")
+
+    -- A second backup that is worth taking rotates instead of
+    -- replacing: the reader writes a line in the zone, the file is no
+    -- longer our own output, so it is copied and the copy from the
+    -- confirmation moves one slot back rather than into the bin. The
+    -- locals of the zone test above are reused: the file has hit the
+    -- 200 local limit of the interpreter that runs the tests
+    zone_line = "Riga scritta a mano nella zona.\n"
+    zoned_md = (T.readFile(MD_PATH) or ""):gsub(
+        "(<!%-%- tomedown:begin body[^\n]*%-%->\n)", "%1" .. zone_line)
+    zone_file = io.open(MD_PATH, "wb")
+    zone_file:write(zoned_md)
+    zone_file:close()
+    plugin:runExport({ FILE }, {})
+    UIManager:runPending()
+    other_md = T.readFile(MD_PATH .. ".bak.1")
+    T.check(other_md ~= nil
+            and T.contains(other_md, "## The Witch theory")
+            and T.contains(other_md, "tomedown:begin"),
+        "15b: the older .bak survives a later backup: "
+            .. tostring(other_md ~= nil))
+    other_md = T.readFile(MD_PATH .. ".bak")
+    T.check(other_md ~= nil
+            and T.contains(other_md, zone_line)
+            and not T.contains(other_md, "## The Witch theory"),
+        "15b: and the fresh copy takes its slot: "
+            .. tostring(other_md ~= nil))
+
     behaviour[2].callback()
     T.check(store.tomedown.preserve == false,
         "15b: off again, and every file back to what it chose")
