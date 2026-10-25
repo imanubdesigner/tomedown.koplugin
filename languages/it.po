@@ -111,8 +111,8 @@ msgstr "Esporta solo i cambiamenti"
 msgid "Preserve: this book"
 msgstr "Conserva: questo libro"
 
-msgid "Turn preserve off for %1? Its file is rewritten as a plain export; anything you wrote inside it is copied to .bak first."
-msgstr "Spegnere la conservazione per %1? Il suo file viene riscritto come un'esportazione semplice; tutto quello che hai scritto dentro viene prima copiato in .bak."
+msgid "Turn preserve off for %1? Your notes will not be lost. A .bak copy is created."
+msgstr "Spegnere la conservazione per %1? Le tue note non andranno perse. Verrà creato un file .bak."
 
 msgid "Turn off"
 msgstr "Spegni"

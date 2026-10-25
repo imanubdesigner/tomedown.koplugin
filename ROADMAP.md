@@ -66,13 +66,23 @@ writing them down here too.
   the index already did: with preserve off `merge.apply` hands back the
   generated render straight (`tomedown_merge.lua:537`) and never flags
   a backup, so nothing was written for a book until here.
+- **A backup never eats another one.** Every `.bak` went to the same
+  fixed name, so the next backup overwrote the last one, and the copy
+  thrown away could be the one holding what the reader wrote by hand:
+  turning the global switch back on exported a file that
+  `merge.apply` flags with `backup = true` (`tomedown_merge.lua:561`),
+  the plain content replaced the note in the older `.bak`, and it was
+  gone. `keepBackup()` now moves an existing `.bak` to `.bak.1` first,
+  so there are two copies at most per file and the older one always
+  survives. The same shape for the books, the index and the cloud
+  fold, which had four copies of that block and now call one helper.
 
 ### Next
 
 #### Managing the .bak copies
 
-The copies are bounded already: the name is fixed and every write
-overwrites the previous one, so there is one per book at most, and the
+The copies are bounded: two at most beside each file, `.bak` and
+`.bak.1`, rotated so a newer one never throws the older away, and the
 upload never takes them (it collects `*.md` and `covers/*.jpg`). What
 is missing is seeing them from inside the plugin.
 

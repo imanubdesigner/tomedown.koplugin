@@ -2329,6 +2329,7 @@ do
     -- whatever earlier exports left behind goes: what follows has to
     -- find the copy the confirmation itself writes
     os.remove(MD_PATH .. ".bak")
+    os.remove(MD_PATH .. ".bak.1")
     ConfirmBox.last = nil
     sub[3].callback()
     UIManager:runPending()
@@ -2393,6 +2394,21 @@ do
         "15b: the global switch is on and decides for every file")
     plugin:runExport({ FILE }, {})
     UIManager:runPending()
+    -- the file on disk was plain at this export, so it is backed up
+    -- again: the copy the confirmation wrote must not be thrown away,
+    -- it is the one holding the reader's notes (the whole reason the
+    -- box promises they will not be lost)
+    other_md = T.readFile(MD_PATH .. ".bak.1")
+    T.check(other_md ~= nil
+            and T.contains(other_md, "## The Witch theory")
+            and T.contains(other_md, "tomedown:begin"),
+        "15b: the older .bak survives a later backup: "
+            .. tostring(other_md ~= nil))
+    other_md = T.readFile(MD_PATH .. ".bak")
+    T.check(other_md ~= nil
+            and not T.contains(other_md, "## The Witch theory"),
+        "15b: and the fresh copy takes its slot: "
+            .. tostring(other_md ~= nil))
     per_book_md = T.readFile(MD_PATH)
     T.check(per_book_md ~= nil
             and T.contains(per_book_md,

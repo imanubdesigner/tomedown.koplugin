@@ -578,6 +578,11 @@ touched block from one of its own at a glance. On every export:
   toast reports `N files backed up (.bak)`); a file that has to be
   rebuilt from scratch — markers broken beyond repair, an export from
   tomedown ≤ 0.8 — comes with the same backup;
+- an older backup is never thrown away by a newer one. There are at
+  most two copies beside the file: the newest as `<name>.md.bak`, the
+  one before it as `<name>.md.bak.1`. A backup worth little (a plain
+  export, which the next run writes again anyway) can therefore never
+  take the place of the one holding what you wrote by hand;
 - the frontmatter merges field by field: Tomedown's own fields
   (`status`, `progress`, `exported`…) always show KOReader's values, your
   tags are kept and unioned with the new ones, and a property only you

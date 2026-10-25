@@ -1009,6 +1009,28 @@ function Tomedown:clearPendingUploads(paths)
     end
 end
 
+-- keeps a file as it was before it is overwritten. Two slots at most
+-- per file: an existing .bak moves to .bak.1 first, so a copy holding
+-- what the reader wrote by hand is never thrown away by a later backup
+-- worth less than it is (a plain export, for instance, which the next
+-- run regenerates anyway). Returns whether the copy was written.
+local function keepBackup(path, content)
+    local bak_path = path .. ".bak"
+    local existing = io.open(bak_path, "rb")
+    if existing then
+        existing:close()
+        os.remove(bak_path .. ".1")
+        os.rename(bak_path, bak_path .. ".1")
+    end
+    local bak = io.open(bak_path, "wb")
+    if not bak then
+        return false
+    end
+    bak:write(content)
+    bak:close()
+    return true
+end
+
 function Tomedown:runExport(files, opts)
     opts = opts or {}
     if opts.auto then
@@ -1133,10 +1155,7 @@ function Tomedown:runExport(files, opts)
                         -- the reader had written inside the block: the
                         -- previous file is kept whole, as .bak, before
                         -- the rebuilt one replaces it
-                        local bak = io.open(md_path .. ".bak", "wb")
-                        if bak then
-                            bak:write(old)
-                            bak:close()
+                        if keepBackup(md_path, old) then
                             backups = backups + 1
                         end
                     elseif not preserve
@@ -1146,10 +1165,7 @@ function Tomedown:runExport(files, opts)
                         -- reader wrote in it do not survive the rewrite,
                         -- so the file as it was is kept whole as .bak
                         -- first, the way the index below already does
-                        local bak = io.open(md_path .. ".bak", "wb")
-                        if bak then
-                            bak:write(old)
-                            bak:close()
+                        if keepBackup(md_path, old) then
                             backups = backups + 1
                         end
                     end
@@ -1205,10 +1221,7 @@ function Tomedown:runExport(files, opts)
                       notes_title = index_title })
                 content = merged
                 if info.backup then
-                    local bak = io.open(index_path .. ".bak", "wb")
-                    if bak then
-                        bak:write(old_index)
-                        bak:close()
+                    if keepBackup(index_path, old_index) then
                         backups = backups + 1
                     end
                 elseif not index_preserve
@@ -1216,10 +1229,7 @@ function Tomedown:runExport(files, opts)
                     -- the index goes from zoned to plain: the notes the
                     -- reader wrote in it do not survive the rewrite, so
                     -- the file as it was is kept whole as .bak first
-                    local bak = io.open(index_path .. ".bak", "wb")
-                    if bak then
-                        bak:write(old_index)
-                        bak:close()
+                    if keepBackup(index_path, old_index) then
                         backups = backups + 1
                     end
                 end
@@ -1626,11 +1636,7 @@ function Tomedown:reconcilePending(server, paths, dir)
                 -- the copy in the cloud is the base the next export
                 -- will compare against: keep it whole as .bak before
                 -- the folded file replaces the local one
-                local bak = io.open(path .. ".bak", "wb")
-                if bak then
-                    bak:write(remote)
-                    bak:close()
-                end
+                keepBackup(path, remote)
                 logger.info("tomedown:", rel,
                     "was edited in the cloud: folding it into the offline export")
                 local written_ok = util.writeToFile(merged, path, true, false, true)
@@ -3202,7 +3208,7 @@ function Tomedown:genBookMenu()
                     -- the box lands on top of the just-opened menu
                     UIManager:scheduleIn(0.1, function()
                         UIManager:show(ConfirmBox:new{
-                            text = T(_("Turn preserve off for %1? Its file is rewritten as a plain export; anything you wrote inside it is copied to .bak first."), ffiUtil.basename(current)),
+                            text = T(_("Turn preserve off for %1? Your notes will not be lost. A .bak copy is created."), ffiUtil.basename(current)),
                             ok_text = _("Turn off"),
                             cancel_text = _("Keep it on"),
                             -- nothing has been touched yet, so closing
