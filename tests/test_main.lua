@@ -2450,6 +2450,16 @@ do
         "15b: and the fresh copy takes its slot: "
             .. tostring(other_md ~= nil))
 
+    -- the reader's note sits in the zone, above the marker, the way the
+    -- guide tells them to write: this is the line that has to come back
+    -- when preserve returns, so it is written before it goes off
+    zone_line = "Appunto nella zona, quello che deve tornare.\n"
+    zoned_md = (T.readFile(MD_PATH) or ""):gsub(
+        "(<!%-%- tomedown:begin body)", zone_line .. "%1")
+    zone_file = io.open(MD_PATH, "wb")
+    zone_file:write(zoned_md)
+    zone_file:close()
+
     behaviour[2].callback()
     T.check(store.tomedown.preserve == false,
         "15b: off again, and every file back to what it chose")
@@ -2461,6 +2471,40 @@ do
     T.check(T.readFile(INDEX_PATH) ~= nil
             and not T.contains(T.readFile(INDEX_PATH), "tomedown:begin"),
         "15b: the index goes plain again too")
+
+    -- Preserve back on, the case from the first test on the device: the
+    -- file on disk is the plain export this plugin wrote itself and the
+    -- copy beside it is zoned, so what the reader had in it comes back
+    -- into the file instead of waiting in the .bak
+    behaviour[2].callback()
+    T.check(store.tomedown.preserve == true,
+        "15b: preserve back on, ready to bring the copy back")
+    plugin:runExport({ FILE }, {})
+    UIManager:runPending()
+    per_book_md = T.readFile(MD_PATH)
+    T.check(per_book_md ~= nil and T.contains(per_book_md, zone_line),
+        "15b: the note from the .bak is back in the file: "
+            .. tostring(per_book_md ~= nil))
+    T.check(per_book_md ~= nil
+            and T.contains(per_book_md, "tomedown:begin"),
+        "15b: and the file is zoned again")
+    T.check(per_book_md ~= nil
+            and T.contains(per_book_md,
+                "## My notes... <!-- tomedown:notes -->"),
+        "15b: under the heading the global switch names")
+    other_md = T.readFile(MD_PATH .. ".bak")
+    T.check(other_md ~= nil and T.contains(other_md, zone_line),
+        "15b: the backup it came from is left where it was: "
+            .. tostring(other_md ~= nil))
+    T.check(T.readFile(INDEX_PATH) ~= nil
+            and T.contains(T.readFile(INDEX_PATH), "tomedown:begin"),
+        "15b: the index comes back from its own copy too")
+    behaviour[2].callback()
+    plugin:runExport({ FILE }, {})
+    UIManager:runPending()
+    T.check(T.readFile(MD_PATH) ~= nil
+            and not T.contains(T.readFile(MD_PATH), "tomedown:begin"),
+        "15b: off again, the way the sections below want it")
 
     -- the settings rows speak about the global switch only: a book's
     -- own choice lives in the book's own menu, so a preserved book

@@ -86,6 +86,15 @@ writing them down here too.
   the index) and `ownCopy()` skips the backup while the file still
   holds them, when nothing of the reader's can be in it. A file from
   before this field existed is still backed up, on the safe side.
+- **Preserve coming back on brings the backup back.** Whoever turns
+  preserve on again used to find a clean file, with their notes waiting
+  in the `.bak` and nothing reading it. The export now folds that copy
+  back in, for the books and for the index, but only when the file on
+  disk is the plain export this plugin wrote itself (`ownCopy()`) and
+  the copy is zoned: a file edited meanwhile is never replaced by an
+  older snapshot, it is merged as it is and the copy is left alone.
+  Silent, no new box, no new string, and nothing to decide in the
+  Discussion about it after all.
 
 ### Next
 

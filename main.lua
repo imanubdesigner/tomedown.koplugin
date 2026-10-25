@@ -1155,13 +1155,32 @@ function Tomedown:runExport(files, opts)
                 local content = md
                 local old = mergeBase(book.base .. ".md", md_path,
                     readIfExists(md_path), preserve)
+                -- Preserve coming back on brings the backup back with it:
+                -- the file on disk is the plain export this plugin wrote
+                -- itself, so nothing of the reader's sits in it, while the
+                -- .bak from the moment preserve went off is the file that
+                -- held their notes. Both switches take this road (ownCopy
+                -- above), so the global one brings back every book that
+                -- has a copy to bring back.
+                local restored = false
+                if old and preserve and ownCopy(record and record.disk,
+                        old) and not old:find("tomedown:begin", 1, true) then
+                    local snapshot = readIfExists(md_path .. ".bak")
+                    if snapshot
+                            and snapshot:find("tomedown:begin", 1, true) then
+                        old = snapshot
+                        restored = true
+                    end
+                end
                 if old then
                     local merged, info = merge.apply(old, md,
                         record and record.regions,
                         { mode = mode, notes_title = getNotesTitle(file) })
                     content = merged
-                    if info.backup and not ownCopy(record and record.disk,
-                            old) then
+                    -- a file restored from its own copy takes no new one:
+                    -- the .bak it came from is still there, untouched
+                    if info.backup and not restored
+                            and not ownCopy(record and record.disk, old) then
                         -- the reader had written inside the block: the
                         -- previous file is kept whole, as .bak, before
                         -- the rebuilt one replaces it
@@ -1230,13 +1249,27 @@ function Tomedown:runExport(files, opts)
             local content = index_md
             local old_index = mergeBase(INDEX_FILENAME, index_path,
                 readIfExists(index_path), index_preserve)
+            -- the same road as the books: the index comes back from its
+            -- own copy when preserve returns and the file is ours
+            local restored_index = false
+            if old_index and index_preserve and ownCopy(index_disk,
+                    old_index)
+                    and not old_index:find("tomedown:begin", 1, true) then
+                local snapshot = readIfExists(index_path .. ".bak")
+                if snapshot
+                        and snapshot:find("tomedown:begin", 1, true) then
+                    old_index = snapshot
+                    restored_index = true
+                end
+            end
             if old_index then
                 local merged, info = merge.apply(old_index, index_md,
                     getSetting("index_regions"),
                     { mode = index_preserve and "preserve" or "overwrite",
                       notes_title = index_title })
                 content = merged
-                if info.backup and not ownCopy(index_disk, old_index) then
+                if info.backup and not restored_index
+                        and not ownCopy(index_disk, old_index) then
                     if keepBackup(index_path, old_index) then
                         backups = backups + 1
                     end

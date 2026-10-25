@@ -189,7 +189,7 @@ first export and optional Remotely Save in Obsidian — is in
 | *Include book covers* | off by default: exports the cover of every book into `covers/` and embeds it in the book file and in the index; the cover is removed from the device once its upload succeeded (the vault copy is the master one). Requires **Obsidian 1.8.1 or newer** to display |
 | *Auto-export on close* | off by default: exports the book when you close it, and again (silently, no network) before the device suspends |
 | *Preserve: global* | off by default (the tomedown ≤ 0.8 behaviour): switch it on and every export folds the new render into your file, keeping your zones. While it is on it alone is in charge of every file: the rows that choose for one single file are not shown (the index ones here, the book's own in its menu), every file keeps its zone, and *Notes: %1* names all of them. Switch it off again and each file follows the choice it stored (books default to off, see *Usage*); switching modes rewrites every file on the next export — see *Preserve your edits* |
-| *Preserve: index* | the same switch for `00 - Index.md` alone, right below the global one, shown only while *Generate the 00 - Index.md (for Obsidian)* is ticked and *Preserve: global* is off; it follows the global switch until you flip it, and no book turns it on any more. Turning it off keeps the index you have as `00 - Index.md.bak` before the next export rewrites it plain, because the notes in it do not come back |
+| *Preserve: index* | the same switch for `00 - Index.md` alone, right below the global one, shown only while *Generate the 00 - Index.md (for Obsidian)* is ticked and *Preserve: global* is off; it follows the global switch until you flip it, and no book turns it on any more. Turning it off keeps the index you have as `00 - Index.md.bak` before the next export rewrites it plain, and turning it on again brings that copy back |
 | *Index notes: %1* | the heading of the index zone, right below *Preserve: index* and only while the index keeps one; tap it to rename, leave the field empty to export without a heading. It is stored for `00 - Index.md` alone (every other file keeps its own heading), and while *Preserve: global* is on the global heading names it again |
 | *Notes: %1* | the heading above your notes block: tap it to rename, leave the field empty to export without a heading; the row exists only while *Preserve: global* is on (with the toggle off no heading ever reaches the file). The settings rows speak about the global switch only: a book's own choice, and its own heading, live in the book's own menu |
 
@@ -333,7 +333,8 @@ since there no book is open to speak about.
   asks first, with a box that says the file goes back to a plain
   export, and confirming rewrites it there and then instead of waiting
   for the next export, keeping the one you had whole as `.bak` beside
-  it. The stored hash of that one book goes with it, so only its file
+  it; turning preserve on again brings that copy back into the file.
+  The stored hash of that one book goes with it, so only its file
   is rewritten and the rest of the library is left alone. The row is
   not built at all while *Preserve: global* is on: with the global switch
   on every file follows it, and the book's own choice stays stored
@@ -513,7 +514,8 @@ global switch: whatever the book asked for is what it gets again as soon
 as the global switch is off. Tapping it again asks first, saying the file
 goes back to a plain export, and confirming stores an explicit off and
 writes that file plain there and then, with the one you had kept whole as
-`.bak` first (those notes do not come back). While a book keeps a zone its
+`.bak` first — and that copy comes back into the file the next time you
+turn preserve on, which is what makes the box's promise true. While a book keeps a zone its
 menu grows a second row, *Book notes: %1*, which names that book's zone
 and no other file's. The rows of *Settings → Markdown files* keep
 speaking about the global switch only: *Notes: %1* appears while it is
@@ -527,8 +529,8 @@ The index starts out the way the global switch is set, and no book turns
 it on behind your back any more, so exporting a book never takes the
 notes you wrote in the index away by surprise. Turn its switch off and
 the index exports plain from the next export on, with the one you had
-kept whole as `00 - Index.md.bak` first, because those notes do not come
-back. With the global switch on the index is covered like every other
+kept whole as `00 - Index.md.bak` first, and turning preserve on again brings that
+copy back into the file. With the global switch on the index is covered like every other
 file, and both of its rows are hidden.
 
 Every file holds one generated block. With the toggle
@@ -589,6 +591,13 @@ touched block from one of its own at a glance. On every export:
   a later export from replacing the copy holding your notes with a
   plain file you never touched. (The first run after an upgrade has
   not seen your file yet and keeps one copy, just in case);
+- turning preserve back on brings the backup back. When the file is the
+  plain export Tomedown wrote itself (nothing of yours in it) and a
+  zoned `.bak` sits beside it from the moment preserve went off, that
+  copy becomes the base of the next export: your notes are in the file
+  again, and the `.bak` stays where it was. If you wrote into the plain
+  file meanwhile, nothing is brought back and nothing is thrown away
+  either: your text comes across as it is and the copy is left alone;
 - the frontmatter merges field by field: Tomedown's own fields
   (`status`, `progress`, `exported`…) always show KOReader's values, your
   tags are kept and unioned with the new ones, and a property only you
