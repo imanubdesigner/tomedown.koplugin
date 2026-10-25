@@ -2323,19 +2323,62 @@ do
         "15d: the zoned index is kept whole as .bak before it is rewritten")
     os.remove(INDEX_PATH .. ".bak")
     -- the book's own choice is off too, and everything goes the way the
-    -- sections below expect it
+    -- sections below expect it. Turning preserve off replaces a file
+    -- the reader may have written in, so it is asked first (v1.1)
+    UIManager:runPending() -- anything left queued by the sections above
+    -- whatever earlier exports left behind goes: what follows has to
+    -- find the copy the confirmation itself writes
+    os.remove(MD_PATH .. ".bak")
+    ConfirmBox.last = nil
     sub[3].callback()
+    UIManager:runPending()
+    T.check(ConfirmBox.last ~= nil,
+        "15b: turning preserve off asks for confirmation first")
+    T.check(ConfirmBox.last ~= nil
+            and T.contains(ConfirmBox.last.text or "", "Blackwater.epub"),
+        "15b: the box names the book: "
+            .. tostring(ConfirmBox.last and ConfirmBox.last.text))
+    T.check(ConfirmBox.last ~= nil and ConfirmBox.last.ok_text == "Turn off",
+        "15b: the ok button says what it will do")
+    T.check(ConfirmBox.last ~= nil
+            and ConfirmBox.last.cancel_text == "Keep it on",
+        "15b: and the cancel button offers the other way")
+    T.check(store.tomedown.preserve_books[FILE] == true,
+        "15b: nothing changes until the reader confirms")
+    -- cancelling leaves the book alone, and its file stays zoned
+    ConfirmBox.last.cancel_callback()
+    T.check(store.tomedown.preserve_books[FILE] == true,
+        "15b: cancelling keeps the book preserved")
+    T.check(T.readFile(MD_PATH) ~= nil
+            and T.contains(T.readFile(MD_PATH), "tomedown:begin"),
+        "15b: and leaves the file zoned")
+    -- confirming stores the off, rewrites the file plain there and then,
+    -- and keeps what it held as .bak
+    ConfirmBox.last = nil
+    sub[3].callback()
+    UIManager:runPending()
+    T.check(ConfirmBox.last ~= nil, "15b: the box comes back")
+    ConfirmBox.last.ok_callback()
+    UIManager:runPending()
     T.check(store.tomedown.preserve_books[FILE] == false,
         "15b: an explicit off is stored for the book")
-    T.check(store.tomedown.exports[FILE].hash == nil,
-        "15b: the book's hash goes: its file has to be rewritten")
-    plugin:runExport({ FILE }, {})
-    UIManager:runPending()
     per_book_md = T.readFile(MD_PATH)
     T.check(per_book_md ~= nil
             and not T.contains(per_book_md, "## The Witch theory")
             and not T.contains(per_book_md, "tomedown:begin"),
-        "15b: the file comes out plain again")
+        "15b: the file comes out plain again, right away")
+    other_md = T.readFile(MD_PATH .. ".bak")
+    T.check(other_md ~= nil
+            and T.contains(other_md, "## The Witch theory")
+            and T.contains(other_md, "tomedown:begin"),
+        "15b: the zoned file is kept whole as .bak: "
+            .. tostring(other_md ~= nil))
+    plugin:runExport({ FILE }, {})
+    UIManager:runPending()
+    per_book_md = T.readFile(MD_PATH)
+    T.check(per_book_md ~= nil
+            and not T.contains(per_book_md, "tomedown:begin"),
+        "15b: the plain file survives the next export too")
     T.check(T.readFile(INDEX_PATH) ~= nil
             and not T.contains(T.readFile(INDEX_PATH), "tomedown:begin"),
         "15b: the index stays plain with every switch off")

@@ -58,22 +58,33 @@ writing them down here too.
   again). The rows of *Settings* otherwise keep speaking about the
   global switch only: the per book choice, and its title, live in the
   book's own menu.
+- **Turning preserve off for one book asks first.** The row says what
+  it is about to do before doing it, and confirming rewrites the file
+  plain there and then instead of waiting for the next export, keeping
+  what the file held as `.bak`. The copy is now written by the export
+  itself for every book that goes from zoned to plain, which is what
+  the index already did: with preserve off `merge.apply` hands back the
+  generated render straight (`tomedown_merge.lua:537`) and never flags
+  a backup, so nothing was written for a book until here.
 
 ### Next
 
-#### Turn preserve off for a book
+#### Managing the .bak copies
 
-For the reader who took their notes back out and wants the book to go
-back to plain exports. Tapping *Preserve: this book*
-again already stores the explicit off and rewrites the file plain at
-the next export; what is left is the safety around it.
+The copies are bounded already: the name is fixed and every write
+overwrites the previous one, so there is one per book at most, and the
+upload never takes them (it collects `*.md` and `covers/*.jpg`). What
+is missing is seeing them from inside the plugin.
 
-- It asks for confirmation first, and says what is about to happen. With
-  preserve off, `merge.apply` hands back the generated render straight
-  away (`tomedown_merge.lua:537`) and the file gets replaced with no
-  `.bak`, so anything written in it is lost.
-- Then it rewrites the file clean right away and keeps the old copy as
-  `.bak`, rather than waiting for the next export.
+- One row inside the book, for the reader who is already in it: it
+  shows that book's copy and deletes it, one confirmation at a time.
+  Never all of them together, they may be the only copy of what was
+  written by hand.
+- One row in *Markdown files* that lists every `.bak` of the folder,
+  so they can be reviewed and removed from outside any book.
+- Uploading them and moving them around waits: KOReader's file browser
+  already does both, and the copies travel along anyway if the vault
+  is synced.
 
 ### At release
 

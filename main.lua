@@ -1139,6 +1139,19 @@ function Tomedown:runExport(files, opts)
                             bak:close()
                             backups = backups + 1
                         end
+                    elseif not preserve
+                            and old:find("tomedown:begin", 1, true) then
+                        -- the book goes from zoned to plain, which is
+                        -- what turning preserve off does: the notes the
+                        -- reader wrote in it do not survive the rewrite,
+                        -- so the file as it was is kept whole as .bak
+                        -- first, the way the index below already does
+                        local bak = io.open(md_path .. ".bak", "wb")
+                        if bak then
+                            bak:write(old)
+                            bak:close()
+                            backups = backups + 1
+                        end
                     end
                 end
                 local written_ok, err =
@@ -3180,7 +3193,46 @@ function Tomedown:genBookMenu()
                 if not current then
                     return
                 end
-                setBookPreserve(current, not getBookPreserve(current))
+                if getBookPreserve(current) then
+                    -- the file on disk holds a zone the reader may have
+                    -- written in, and turning preserve off hands the
+                    -- render straight back to the writer: the file is
+                    -- replaced with no merge and no .bak. So it is asked
+                    -- first, deferred the way the import prompt is, so
+                    -- the box lands on top of the just-opened menu
+                    UIManager:scheduleIn(0.1, function()
+                        UIManager:show(ConfirmBox:new{
+                            text = T(_("Turn preserve off for %1? Its file is rewritten as a plain export; anything you wrote inside it is copied to .bak first."), ffiUtil.basename(current)),
+                            ok_text = _("Turn off"),
+                            cancel_text = _("Keep it on"),
+                            -- nothing has been touched yet, so closing
+                            -- is all cancel has to do (the box says so
+                            -- itself, and the work waits for OK)
+                            cancel_callback = function() end,
+                            ok_callback = function()
+                                setBookPreserve(current, false)
+                                -- the stored hash goes with it: the
+                                -- file was written the other way round
+                                self:invalidateExportHash(current)
+                                -- and the file is rewritten plain right
+                                -- away instead of waiting for the next
+                                -- export: runExport keeps the zoned copy
+                                -- as .bak before the plain one lands
+                                self:runExport({ current }, {})
+                                -- the heading row below exists only
+                                -- while this book keeps a zone to name,
+                                -- and the menu sat open behind the box:
+                                -- redraw the group, tick included
+                                self:refreshBookMenu()
+                                if touchmenu and touchmenu.updateItems then
+                                    touchmenu:updateItems()
+                                end
+                            end,
+                        })
+                    end)
+                    return
+                end
+                setBookPreserve(current, true)
                 -- the file on disk was written the other way round:
                 -- the next export has to rewrite it, so its stored
                 -- hash goes, and only its hash

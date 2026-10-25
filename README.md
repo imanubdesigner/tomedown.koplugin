@@ -329,12 +329,15 @@ since there no book is open to speak about.
 - **Preserve: this book** — the per-book switch of *Preserve edits*:
   it shows what the open book gets (the global default from *Settings →
   Markdown files*, until the book chooses), and tapping it stores that
-  book's own choice. The stored hash of that one book goes with it, so
-  the next *Export only what changed* rewrites its file and leaves the
-  rest of the library alone. The row is not built at all while
-  *Preserve edits* is on: with the global switch on every file follows
-  it, and the book's own choice stays stored until the global switch
-  goes off again.
+  book's own choice. Turning it on is immediate; turning it **off**
+  asks first, with a box that says the file goes back to a plain
+  export, and confirming rewrites it there and then instead of waiting
+  for the next export, keeping the one you had whole as `.bak` beside
+  it. The stored hash of that one book goes with it, so only its file
+  is rewritten and the rest of the library is left alone. The row is
+  not built at all while *Preserve edits* is on: with the global switch
+  on every file follows it, and the book's own choice stays stored
+  until the global switch goes off again.
 - **Book notes: %1** — the same heading, but for this book alone, right
   below the switch and only while that book keeps a zone to name (so
   this row, like the switch above it, only exists while *Preserve
@@ -507,8 +510,10 @@ Since 1.1 the choice is also **per book**, with the global switch off.
 *Preserve: this book*, in the open book's own menu, keeps the zone for
 that book alone, and that choice stays stored through later flips of the
 global switch: whatever the book asked for is what it gets again as soon
-as the global switch is off. Tapping it again stores an explicit off, and
-the next export writes that file plain. While a book keeps a zone its
+as the global switch is off. Tapping it again asks first, saying the file
+goes back to a plain export, and confirming stores an explicit off and
+writes that file plain there and then, with the one you had kept whole as
+`.bak` first (those notes do not come back). While a book keeps a zone its
 menu grows a second row, *Book notes: %1*, which names that book's zone
 and no other file's. The rows of *Settings → Markdown files* keep
 speaking about the global switch only: *Notes: %1* appears while it is
