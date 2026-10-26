@@ -1079,6 +1079,52 @@ end
 --                 copy that moved on). One slot, overwritten by the
 --                 next one; it never takes the place of the parked file.
 
+-- The beta.1 rotated every copy from .bak into .bak.1, so on a card
+-- that has run it the file with the notes can sit in .bak.1 behind a
+-- newer copy without a zone. The slots now have fixed jobs: when .bak
+-- holds no zone and .bak.1 does, the two trade places (once: afterwards
+-- .bak is the zoned one and the swap no longer applies). Three renames,
+-- undone if one of them is refused, so nothing is ever lost halfway.
+local function normalizeBackups(path)
+    local bak, bak1, tmp = path .. ".bak", path .. ".bak.1", path .. ".bak.swap"
+    -- a swap cut short between its renames: the copy waiting in .bak.swap
+    -- goes back to the slot it came from, so the swap below sees both
+    local waiting = readIfExists(tmp)
+    if waiting then
+        if not readIfExists(bak) then
+            os.rename(tmp, bak)
+        elseif not readIfExists(bak1) then
+            os.rename(tmp, bak1)
+        elseif waiting == readIfExists(bak) or waiting == readIfExists(bak1) then
+            -- a duplicate left by a swap that did finish: no information
+            -- in it, the slot already has the same bytes
+            os.remove(tmp)
+        else
+            logger.warn("tomedown: a temporary copy is left beside", path,
+                "(.bak.swap), both slots are taken")
+        end
+    end
+    local first, second = readIfExists(bak), readIfExists(bak1)
+    if not first or not second or isZoned(first) or not isZoned(second) then
+        return
+    end
+    if not os.rename(bak, tmp) then
+        return
+    end
+    if not os.rename(bak1, bak) then
+        os.rename(tmp, bak)
+        return
+    end
+    if not os.rename(tmp, bak1) then
+        -- .bak.1 is gone from its place and the old .bak waits in tmp:
+        -- put the notes copy back where it was and the other beside it
+        os.rename(bak, bak1)
+        os.rename(tmp, bak)
+        return
+    end
+    logger.info("tomedown: swapped the slots of", path, "(beta.1 layout)")
+end
+
 -- Parks the zoned file `content` in .bak. Returns whether the copy is
 -- there when the call ends. An older .bak that holds no zone (written
 -- before this rule) is moved to .bak.1 first rather than overwritten.
@@ -1235,6 +1281,7 @@ function Tomedown:runExport(files, opts)
                 -- come across by itself: it is kept as the safety copy.
                 local restored = false
                 local hold
+                normalizeBackups(md_path)
                 if old and preserve and not isZoned(old) then
                     local snapshot = readIfExists(md_path .. ".bak")
                     if isZoned(snapshot) then
@@ -1339,6 +1386,7 @@ function Tomedown:runExport(files, opts)
             -- parked file when preserve returns
             local restored_index = false
             local hold_index
+            normalizeBackups(index_path)
             if old_index and index_preserve and not isZoned(old_index) then
                 local snapshot = readIfExists(index_path .. ".bak")
                 if isZoned(snapshot) then

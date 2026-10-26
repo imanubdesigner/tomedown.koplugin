@@ -3338,4 +3338,60 @@ do
     store.tomedown.preserve = false
 end
 
+
+-- ---------------------------- 22. a card that has run the beta.1
+--
+-- The beta.1 rotated .bak into .bak.1, so the file with the notes can sit
+-- in .bak.1 behind a newer copy with no zone: the slots trade places once,
+-- the notes come back and a later park does not destroy them.
+do
+    local function wr(path, data)
+        local f = io.open(path, "wb"); f:write(data); f:close()
+    end
+    local function exportNow()
+        plugin:runExport({ FILE }, {})
+        UIManager:runPending()
+    end
+    local function has(s, path)
+        return T.contains(T.readFile(path or MD_PATH) or "", s)
+    end
+    for __, p in ipairs({ MD_PATH, MD_PATH .. ".bak", MD_PATH .. ".bak.1" }) do
+        os.remove(p)
+    end
+    store.tomedown.preserve_books = nil
+    store.tomedown.upload = false
+    store.tomedown.exports = nil
+    BookList.registry[FILE].annotations = modernAnnotations()
+    store.tomedown.preserve = true;  exportNow()
+    local zoned = (T.readFile(MD_PATH) or ""):gsub(
+        "(<!%-%- tomedown:begin body)", "NOTE-L\n\n%1", 1)
+    store.tomedown.preserve = false; exportNow()
+    os.remove(MD_PATH .. ".bak")
+    os.remove(MD_PATH .. ".bak.1")
+    wr(MD_PATH .. ".bak", "PLAIN-LEGACY copy\n")
+    wr(MD_PATH .. ".bak.1", zoned)
+    store.tomedown.preserve = true;  exportNow()
+    T.check(has("NOTE-L"),
+        "22: the note kept in .bak.1 by the beta.1 comes back into the file")
+    T.check(has("NOTE-L", MD_PATH .. ".bak"),
+        "22: and the slots traded places: the zoned copy is the .bak")
+    T.check(has("PLAIN-LEGACY", MD_PATH .. ".bak.1"),
+        "22: while the newer copy without a zone is kept as .bak.1")
+    store.tomedown.preserve = false; exportNow()
+    T.check(has("NOTE-L", MD_PATH .. ".bak")
+            and has("PLAIN-LEGACY", MD_PATH .. ".bak.1"),
+        "22: parking afterwards loses neither of the two")
+    T.check(not T.fileExists(MD_PATH .. ".bak.swap"),
+        "22: no temporary file is left behind")
+    -- a swap cut short between its renames leaves the parked copy in
+    -- .bak.swap with no .bak beside it: the next export puts it back
+    -- before reading the slots
+    os.rename(MD_PATH .. ".bak", MD_PATH .. ".bak.swap")
+    store.tomedown.preserve = true;  exportNow()
+    T.check(has("NOTE-L"), "22: a copy left in .bak.swap comes back")
+    T.check(not T.fileExists(MD_PATH .. ".bak.swap"),
+        "22: and the temporary name is gone")
+    store.tomedown.preserve = false
+end
+
 T.finish("test_main")
