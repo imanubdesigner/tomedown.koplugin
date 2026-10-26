@@ -580,24 +580,34 @@ touched block from one of its own at a glance. On every export:
   toast reports `N files backed up (.bak)`); a file that has to be
   rebuilt from scratch — markers broken beyond repair, an export from
   tomedown ≤ 0.8 — comes with the same backup;
-- an older backup is never thrown away by a newer one. There are at
-  most two copies beside the file: the newest as `<name>.md.bak`, the
-  one before it as `<name>.md.bak.1`. A backup worth little (a plain
-  export, which the next run writes again anyway) can therefore never
-  take the place of the one holding what you wrote by hand;
+- **the `.bak` is your file, parked.** When preserve goes off, the file
+  as it stood, your notes included, is kept as `<n>.md.bak` while the
+  plain export takes its place. There is one `.bak` and it is always the
+  latest: turning preserve on again makes it the base of the next export,
+  so your notes are back in the file, and whatever you add or delete
+  there is what the next `.bak` will hold. On, off, on, off, on: every
+  note you kept is back each time, and one you deleted stays deleted.
+  A `.bak` is never copied twice and never grows a twin beside it;
+- a second copy, `<n>.md.bak.1`, is only a safety net for text that cannot
+  come back by itself: something you typed into the plain file while
+  preserve was off (it is regenerated, so it cannot join the zone), a
+  block you edited inside its comments, a cloud copy that moved on. It
+  has one slot and never takes the place of the `.bak` (the toast
+  reports it with the other backups);
 - a file Tomedown itself wrote is never copied. When an export finds
   the very bytes the last run left there, nothing of yours sits in
-  them, so no backup is taken and no slot is used: this is what stops
-  a later export from replacing the copy holding your notes with a
-  plain file you never touched. (The first run after an upgrade has
+  them, so no safety copy is taken. (The first run after an upgrade has
   not seen your file yet and keeps one copy, just in case);
-- turning preserve back on brings the backup back. When the file is the
-  plain export Tomedown wrote itself (nothing of yours in it) and a
-  zoned `.bak` sits beside it from the moment preserve went off, that
-  copy becomes the base of the next export: your notes are in the file
-  again, and the `.bak` stays where it was. If you wrote into the plain
-  file meanwhile, nothing is brought back and nothing is thrown away
-  either: your text comes across as it is and the copy is left alone;
+- if a copy cannot be written (a full card, a read-only folder) the file
+  is **left as it is** and the export reports the error: a note is never
+  traded for a rewrite. The next export tries again;
+- with two readers on one cloud folder: while preserve is off the export
+  does not read the cloud copy, so a plain file edited on another device
+  is replaced by the upload, as it always was. Turn preserve on and the
+  cloud copy is read: if it is a plain file edited elsewhere, its text is
+  kept as `.bak.1` and the `.bak` of this device is the one that comes
+  back, because the file on the device is the one that counts. A cloud
+  copy that has a zone is merged as usual;
 - the frontmatter merges field by field: Tomedown's own fields
   (`status`, `progress`, `exported`…) always show KOReader's values, your
   tags are kept and unioned with the new ones, and a property only you

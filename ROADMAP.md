@@ -66,16 +66,24 @@ writing them down here too.
   the index already did: with preserve off `merge.apply` hands back the
   generated render straight (`tomedown_merge.lua:537`) and never flags
   a backup, so nothing was written for a book until here.
-- **A backup never eats another one.** Every `.bak` went to the same
-  fixed name, so the next backup overwrote the last one, and the copy
-  thrown away could be the one holding what the reader wrote by hand:
-  turning the global switch back on exported a file that
-  `merge.apply` flags with `backup = true` (`tomedown_merge.lua:561`),
-  the plain content replaced the note in the older `.bak`, and it was
-  gone. `keepBackup()` now moves an existing `.bak` to `.bak.1` first,
-  so there are two copies at most per file and the older one always
-  survives. The same shape for the books, the index and the cloud
-  fold, which had four copies of that block and now call one helper.
+- **The `.bak` is the reader's file, parked.** Every `.bak` went to
+  the same fixed name and later rotated into `.bak.1`, so a third
+  backup of any kind (a plain file typed into while preserve was off, a
+  block edited inside its comments) could push the copy holding the
+  notes out, and on / off / on / off / on lost them for good. Now
+  `.bak` has one job: when preserve goes off, `parkZone()` keeps the
+  zoned file there, one copy, the latest (whatever the old one held was
+  folded back into the file when preserve came back, so replacing it
+  loses nothing, and a deleted note stays deleted). Turning preserve on
+  restores from it whenever the file on disk has no zone, whether or
+  not it is the plain export we wrote. Everything else the rewrite
+  would destroy goes to `.bak.1` through `keepSafety()`, one slot that
+  never touches `.bak`; an identical copy takes no slot, and both are
+  written through a temp file and a rename, so a failed write leaves
+  what was there (and should the rename be refused, the copy is written
+  in place instead). When a copy cannot be written at all, the file it
+  was meant to protect is left as it is and the export reports it. The
+  test in section 21 runs the sequence with edits on every step.
 - **Our own file is not backed up any more.** The copy that broke the
   rule above was our own: turning the global switch back on found the
   plain export on disk, `rebuildable()` claimed it
@@ -86,22 +94,22 @@ writing them down here too.
   the index) and `ownCopy()` skips the backup while the file still
   holds them, when nothing of the reader's can be in it. A file from
   before this field existed is still backed up, on the safe side.
-- **Preserve coming back on brings the backup back.** Whoever turns
-  preserve on again used to find a clean file, with their notes waiting
-  in the `.bak` and nothing reading it. The export now folds that copy
-  back in, for the books and for the index, but only when the file on
-  disk is the plain export this plugin wrote itself (`ownCopy()`) and
-  the copy is zoned: a file edited meanwhile is never replaced by an
-  older snapshot, it is merged as it is and the copy is left alone.
-  Silent, no new box, no new string, and nothing to decide in the
-  Discussion about it after all.
+- **Preserve coming back on brings the parked file back.** Whoever
+  turns preserve on again used to find a clean file, with their notes
+  waiting in the `.bak` and nothing reading it. The export now folds
+  that copy back in, for the books and for the index, whenever the file
+  on disk has no zone and the `.bak` has one. If the plain file was not
+  the one we wrote (typed into while preserve was off) the notes still
+  come back from the `.bak`, and the typed text is kept as `.bak.1`
+  instead of deciding which of the two wins. Silent, no new box, no new
+  string.
 
 ### Next
 
 #### Managing the .bak copies
 
-The copies are bounded: two at most beside each file, `.bak` and
-`.bak.1`, rotated so a newer one never throws the older away, and the
+The copies are bounded: two at most beside each file, `.bak` (the parked
+zoned file) and `.bak.1` (the safety copy), and the
 upload never takes them (it collects `*.md` and `covers/*.jpg`). What
 is missing is seeing them from inside the plugin.
 
