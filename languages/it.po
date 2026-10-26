@@ -463,6 +463,9 @@ msgstr "Conserva: indice"
 msgid "%1 files backed up (.bak)"
 msgstr "%1 file salvati in .bak"
 
+msgid "the backup copy could not be written, file left as it is"
+msgstr "impossibile scrivere la copia di backup, file lasciato com'è"
+
 msgid "My notes..."
 msgstr "Le mie note..."
 
