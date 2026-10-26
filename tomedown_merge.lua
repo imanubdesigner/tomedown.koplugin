@@ -98,6 +98,77 @@ function merge.join(doc)
     return s
 end
 
+-- ------------------------------------------------------- joined zones
+
+-- The paragraphs the reader wrote in one zone: blank lines separate
+-- them, the plugin's heading and the invitation seeded by older builds
+-- are not the reader's writing and come out first.
+local function zoneParagraphs(zone)
+    local keep = {}
+    for line in (zone .. "\n"):gmatch("(.-)\n") do
+        if not line:find("<!-- tomedown:notes -->", 1, true)
+                and line ~= render.notesInvite() then
+            keep[#keep + 1] = line
+        end
+    end
+    local out = {}
+    for para in (table.concat(keep, "\n") .. "\n\n"):gmatch("(.-)\n%s*\n") do
+        para = para:gsub("^%s+", ""):gsub("%s+$", "")
+        if para ~= "" then
+            out[#out + 1] = para
+        end
+    end
+    return out
+end
+
+-- The first line tells a note from another: a paragraph rewritten in
+-- the cloud keeps its opening line, so it is not copied twice.
+local function firstLine(para)
+    return para:match("^([^\n]*)") or ""
+end
+
+--- Fold the reader's zones of a parked copy into the base of a merge.
+-- When the base of an export is the cloud copy (it moved on while this
+-- device held the notes parked in .bak), taking one of the two would
+-- lose the other. The base keeps its text and its order, and every
+-- paragraph that exists only in the parked copy is appended after it.
+-- The heading, the invitation and paragraphs already present (whole or
+-- by their first line) are not repeated, so a run of the merge cannot
+-- grow the file. Returns nil when either document has no complete
+-- markers: the caller then holds the export instead of choosing a side.
+function merge.uniteZones(base_md, parked_md)
+    local base, parked = merge.split(base_md), merge.split(parked_md)
+    if not base or not parked then
+        return nil
+    end
+    local blocks = {}
+    for i, b in ipairs(base.blocks) do
+        local other = parked.blocks[i]
+        if b.kind ~= "zone" or not other or other.kind ~= "zone" then
+            blocks[i] = b
+        else
+            local seen = { text = {}, line = {} }
+            for __, p in ipairs(zoneParagraphs(b.text)) do
+                seen.text[p] = true
+                seen.line[firstLine(p)] = true
+            end
+            local text = b.text
+            for __, p in ipairs(zoneParagraphs(other.text)) do
+                local first = firstLine(p)
+                if not seen.text[p] and not seen.line[first] then
+                    text = text:gsub("%s+$", "") .. "\n\n" .. p .. "\n"
+                    seen.text[p] = true
+                    seen.line[first] = true
+                end
+            end
+            blocks[i] = { kind = "zone", text = text }
+        end
+    end
+    return merge.join({ fm = base.fm, blocks = blocks })
+end
+
+-- ------------------------------------------------------ fingerprints
+
 --- md5 of every region of a rendered note: the reference the next
 -- export compares the file on disk against.
 function merge.fingerprints(doc)

@@ -3394,4 +3394,204 @@ do
     store.tomedown.preserve = false
 end
 
+-- ------------------ 23. the cloud moved on while the notes were parked
+--
+-- Two devices on one cloud folder, the case that used to lose notes:
+-- this device holds a parked .bak with notes the cloud copy never got
+-- (a second Tomedown with cloud merge off, a conflict from the sync
+-- app). The cloud copy is the base of the export, and taking it alone
+-- would leave the parked notes behind. They are folded in instead, and
+-- the cloud copy is kept whole as the safety copy.
+do
+    local INDEX_NAME = "00 - Index.md"
+    local function put(path, text)
+        local f = io.open(path, "wb"); f:write(text); f:close()
+    end
+    local function addNote(path, txt)
+        local text = T.readFile(path) or ""
+        put(path, (text:gsub("(<!%-%- tomedown:begin)", txt .. "\n\n%1", 1)))
+    end
+    local function exportNow()
+        plugin:runExport({ FILE }, {})
+        UIManager:runPending()
+    end
+    local function has(s, path)
+        return T.contains(T.readFile(path or MD_PATH) or "", s)
+    end
+    local function times(text, needle)
+        local n, pos = 0, 1
+        while true do
+            local s = text:find(needle, pos, true)
+            if not s then
+                return n
+            end
+            n, pos = n + 1, s + #needle
+        end
+    end
+    uploadSetup()
+    store.tomedown.preserve = true
+    store.tomedown.cloud_merge = true
+    store.tomedown.covers = false
+    NetworkMgr.connected = true
+    remote_files, download_fails, downloads = {}, {}, {}
+    BookList.registry[FILE].annotations = modernAnnotations()
+    store.tomedown.exports = nil
+    for __, p in ipairs({ MD_PATH, MD_PATH .. ".bak", MD_PATH .. ".bak.1",
+            INDEX_PATH, INDEX_PATH .. ".bak", INDEX_PATH .. ".bak.1" }) do
+        os.remove(p)
+    end
+
+    -- seed: both files export with their zone and reach the cloud
+    exportNow()
+    local seed, seed_idx = T.readFile(MD_PATH), T.readFile(INDEX_PATH)
+    T.check(seed ~= nil and seed_idx ~= nil
+            and T.contains(seed, "tomedown:begin")
+            and T.contains(seed_idx, "tomedown:begin"),
+        "23: the seed export wrote both files with their zones")
+    remote_files[MD_NAME], remote_files[INDEX_NAME] = seed, seed_idx
+
+    -- a note the cloud had, now on this device alone
+    addNote(MD_PATH, "NOTA-KINDLE")
+    addNote(INDEX_PATH, "NOTA-INDICE-KINDLE")
+
+    -- preserve off: the zoned files are parked and the files on disk are
+    -- plain. The upload of the plain copies does not reach the cloud in
+    -- this story: the two zoned copies stay there.
+    store.tomedown.preserve = false
+    exportNow()
+    T.check(not has("tomedown:begin") and not has("tomedown:begin", INDEX_PATH),
+        "23: with preserve off both files are plain")
+    T.check(has("NOTA-KINDLE", MD_PATH .. ".bak")
+            and has("NOTA-INDICE-KINDLE", INDEX_PATH .. ".bak"),
+        "23: and the zoned copies wait in their .bak")
+
+    -- meanwhile the cloud copies are replaced by divergent ones: a note
+    -- added on the other device, the parked notes never uploaded
+    remote_files[MD_NAME] = seed:gsub(
+        "(<!%-%- tomedown:begin body)", "NOTA-CLOUD\n\n%1", 1)
+    remote_files[INDEX_NAME] = seed_idx:gsub(
+        "(<!%-%- tomedown:begin)", "NOTA-INDICE-CLOUD\n\n%1", 1)
+
+    -- preserve on, online: the cloud is the base, the parked notes ride
+    -- along and the cloud copy is kept whole
+    store.tomedown.preserve = true
+    exportNow()
+    T.check(has("NOTA-CLOUD") and has("NOTA-KINDLE"),
+        "23: the book holds the cloud note and the parked one")
+    T.check(times(T.readFile(MD_PATH), "NOTA-KINDLE") == 1
+            and times(T.readFile(MD_PATH), "NOTA-CLOUD") == 1,
+        "23: each note is written once")
+    T.check(has("NOTA-CLOUD", MD_PATH .. ".bak.1"),
+        "23: the cloud copy is kept whole as the safety copy")
+    T.check(has("NOTA-KINDLE", MD_PATH .. ".bak"),
+        "23: the parked copy is still there")
+    T.check(has("NOTA-INDICE-CLOUD", INDEX_PATH)
+            and has("NOTA-INDICE-KINDLE", INDEX_PATH),
+        "23: the index keeps both notes too")
+    T.check(has("NOTA-INDICE-CLOUD", INDEX_PATH .. ".bak.1"),
+        "23: and its cloud copy is the safety copy")
+    T.check((store.tomedown.last_export.errors or 0) == 0,
+        "23: the export reports no error")
+
+    -- the upload lands: the next export sees its own copy in the cloud
+    -- and adds nothing
+    remote_files[MD_NAME] = T.readFile(MD_PATH)
+    remote_files[INDEX_NAME] = T.readFile(INDEX_PATH)
+    exportNow()
+    T.check(times(T.readFile(MD_PATH), "NOTA-KINDLE") == 1
+            and times(T.readFile(MD_PATH), "NOTA-CLOUD") == 1,
+        "23: a second export against the uploaded file adds nothing")
+    store.tomedown.preserve = false
+end
+
+-- ------------ 24. the flush folds the notes before it fills the slot
+--
+-- The queued upload can run before any export. It repairs the beta.1
+-- layout first (the notes in .bak.1, a plain copy in .bak), then folds
+-- the parked notes into the divergent cloud copy: keepSafety writes
+-- .bak.1, and without the repair it would overwrite the only copy with
+-- the notes.
+do
+    local function put(path, text)
+        local f = io.open(path, "wb"); f:write(text); f:close()
+    end
+    local function addNote(path, txt)
+        local text = T.readFile(path) or ""
+        put(path, (text:gsub("(<!%-%- tomedown:begin)", txt .. "\n\n%1", 1)))
+    end
+    local function exportNow()
+        plugin:runExport({ FILE }, {})
+        UIManager:runPending()
+    end
+    local function has(s, path)
+        return T.contains(T.readFile(path or MD_PATH) or "", s)
+    end
+    local function times(text, needle)
+        local n, pos = 0, 1
+        while true do
+            local s = text:find(needle, pos, true)
+            if not s then
+                return n
+            end
+            n, pos = n + 1, s + #needle
+        end
+    end
+    uploadSetup()
+    store.tomedown.preserve = true
+    store.tomedown.cloud_merge = true
+    store.tomedown.covers = false
+    NetworkMgr.connected = true
+    remote_files, download_fails, downloads = {}, {}, {}
+    BookList.registry[FILE].annotations = modernAnnotations()
+    store.tomedown.exports = nil
+    for __, p in ipairs({ MD_PATH, MD_PATH .. ".bak", MD_PATH .. ".bak.1" }) do
+        os.remove(p)
+    end
+    exportNow()
+    local seed = T.readFile(MD_PATH)
+    remote_files[MD_NAME] = seed
+    addNote(MD_PATH, "NOTA-KINDLE-24")
+
+    -- offline: the zoned file is parked, the plain one goes in the queue
+    NetworkMgr.connected = false
+    store.tomedown.preserve = false
+    exportNow()
+    T.check(store.tomedown.pending_uploads
+            and store.tomedown.pending_uploads[MD_PATH] == true,
+        "24: the plain export waits in the upload queue")
+
+    -- the beta.1 layout: the notes sit in .bak.1 behind a plain .bak
+    local zoned = T.readFile(MD_PATH .. ".bak")
+    os.remove(MD_PATH .. ".bak")
+    put(MD_PATH .. ".bak", "PLAIN-LEGACY-24\n")
+    put(MD_PATH .. ".bak.1", zoned)
+
+    -- the cloud moved on and this device is back online: the flush runs
+    -- before any export
+    remote_files[MD_NAME] = seed:gsub(
+        "(<!%-%- tomedown:begin body)", "NOTA-CLOUD-24\n\n%1", 1)
+    NetworkMgr.connected = true
+    store.tomedown.preserve = true
+    resetUpload()
+    plugin:reuploadAll(nil)
+    UIManager:runPending()
+    T.check(has("NOTA-CLOUD-24") and has("NOTA-KINDLE-24"),
+        "24: the flush keeps the cloud note and the parked one")
+    T.check(times(T.readFile(MD_PATH), "NOTA-KINDLE-24") == 1
+            and times(T.readFile(MD_PATH), "NOTA-CLOUD-24") == 1,
+        "24: each note is written once")
+    T.check(has("NOTA-CLOUD-24", MD_PATH .. ".bak.1"),
+        "24: the cloud copy is the safety copy")
+    T.check(has("NOTA-KINDLE-24", MD_PATH .. ".bak"),
+        "24: the notes found in .bak.1 came back into .bak")
+    local pushed = false
+    for __, u in ipairs(uploads) do
+        if u.path == MD_PATH then
+            pushed = true
+        end
+    end
+    T.check(pushed, "24: the folded file goes up")
+    store.tomedown.preserve = false
+end
+
 T.finish("test_main")
