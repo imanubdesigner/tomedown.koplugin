@@ -557,7 +557,8 @@ touched block from one of its own at a glance. On every export:
   turning preserve on again makes it the base of the next export, so your
   notes are back. On, off, on, off, on: every note you kept is back each
   time, and one you deleted stays deleted. A `.bak` is never copied twice
-  and never grows a twin beside it;
+  and never grows a twin beside it. A card that ran the 1.1.0-beta.1
+  finds its two copies back in the right slots on the first export;
 - `<name>.md.bak.1` is the safety copy, only for text that cannot come back
   by itself: something typed into the plain file while preserve was off
   (that file is regenerated, so the text cannot join the zone), a block
@@ -576,7 +577,11 @@ touched block from one of its own at a glance. On every export:
   cloud copy is read: if it is a plain file edited elsewhere, its text is
   kept as `.bak.1` and the `.bak` of this device is the one that comes
   back, because the file on the device is the one that counts. A cloud
-  copy that has a zone is merged as usual;
+  copy that has a zone is merged as usual; when this device also holds
+  notes parked in `.bak` that the cloud copy never got, they are folded
+  into it, so neither side is left behind, and what the rewrite replaces
+  is kept as `.bak.1` first (the plain file instead, when it holds text
+  you typed yourself);
 - the frontmatter merges field by field: Tomedown's own fields (`status`,
   `progress`, `exported`…) always show KOReader's values, your tags are
   kept and unioned with the new ones, and a property only you added

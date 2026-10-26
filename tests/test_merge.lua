@@ -534,4 +534,68 @@ T.check(not T.contains(nohead, "tomedown:notes")
         and not T.contains(nohead, INVITE),
     "no heading and no invitation: the room alone opens the zone")
 
+-- ------------------------------------------ two devices: the zone union
+local base_zone = merge.apply(fresh, rendered_i, fps_zone,
+    { mode = "preserve", notes_title = "Le mie note" })
+local parked_zone = base_zone:gsub("(<!%-%- tomedown:begin body)",
+    "Nota del kindle.\n\n%1", 1)
+local cloud_zone = base_zone:gsub("(<!%-%- tomedown:begin body)",
+    "Nota dal cloud.\n\n%1", 1)
+local united = merge.uniteZones(cloud_zone, parked_zone)
+T.check(united ~= nil, "two zoned copies unite")
+T.check(T.contains(united, "Nota dal cloud.")
+        and T.contains(united, "Nota del kindle."),
+    "both the cloud note and the parked note stay")
+T.check(select(2, united:gsub("Nota dal cloud%.", "")) == 1
+        and select(2, united:gsub("Nota del kindle%.", "")) == 1,
+    "each note is written once")
+T.check(select(2, united:gsub("tomedown:notes", "")) == 1,
+    "the heading is not copied twice")
+T.check(merge.uniteZones(united, parked_zone) == united,
+    "uniting again adds nothing")
+
+-- a note reworded in the cloud keeps its first line: the cloud version
+-- wins and the parked one is not appended as a second note
+local reworded = base_zone:gsub("(<!%-%- tomedown:begin body)",
+    "Nota del kindle.\nvecchia riga\n\n%1", 1)
+local edited_cloud = base_zone:gsub("(<!%-%- tomedown:begin body)",
+    "Nota del kindle.\nriga nuova\n\n%1", 1)
+local kept_reword = merge.uniteZones(edited_cloud, reworded)
+T.check(not T.contains(kept_reword, "vecchia riga")
+        and select(2, kept_reword:gsub("Nota del kindle%.", "")) == 1,
+    "a note reworded in the cloud is not copied twice")
+
+-- the invitation of older builds is furniture, not the reader's text
+local with_invite = base_zone:gsub("(<!%-%- tomedown:begin body)",
+    INVITE .. "\n\n%1", 1)
+T.check(not T.contains(merge.uniteZones(cloud_zone, with_invite), INVITE),
+    "the invitation of older builds is not copied")
+
+-- the zone below the block unites as well
+local tail_cloud = cloud_zone:gsub(
+    "(<!%-%- tomedown:end[^\n]*%-%->\n)", "%1\nCoda del cloud.\n", 1)
+local tail_parked = parked_zone:gsub(
+    "(<!%-%- tomedown:end[^\n]*%-%->\n)", "%1\nCoda del kindle.\n", 1)
+local tail_united = merge.uniteZones(tail_cloud, tail_parked)
+T.check(T.contains(tail_united, "Coda del cloud.")
+        and T.contains(tail_united, "Coda del kindle."),
+    "the zone below the block unites too")
+
+-- the generated regions are the cloud copy's, untouched
+local cdoc, udoc = merge.split(cloud_zone), merge.split(united)
+local same_regions = true
+for i, b in ipairs(cdoc.blocks) do
+    local u = udoc.blocks[i]
+    if b.kind == "region" and (not u or u.kind ~= "region"
+            or u.name ~= b.name or u.text ~= b.text) then
+        same_regions = false
+    end
+end
+T.check(same_regions, "the generated regions stay the cloud copy's")
+
+T.check(merge.uniteZones("no markers at all", parked_zone) == nil,
+    "a base without markers cannot be united")
+T.check(merge.uniteZones(cloud_zone, "no markers at all") == nil,
+    "a parked copy without markers cannot be united")
+
 T.finish("test_merge")

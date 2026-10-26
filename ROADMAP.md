@@ -84,6 +84,9 @@ writing them down here too.
   in place instead). When a copy cannot be written at all, the file it
   was meant to protect is left as it is and the export reports it. The
   test in section 21 runs the sequence with edits on every step.
+  A card that has run the beta.1 may hold the notes in `.bak.1` behind
+  a newer copy without a zone: the first export swaps the two (section
+  22), once, so the notes come back and nothing is overwritten.
 - **Our own file is not backed up any more.** The copy that broke the
   rule above was our own: turning the global switch back on found the
   plain export on disk, `rebuildable()` claimed it
@@ -103,31 +106,60 @@ writing them down here too.
   come back from the `.bak`, and the typed text is kept as `.bak.1`
   instead of deciding which of the two wins. Silent, no new box, no new
   string.
+- **Two devices on one cloud folder do not lose the parked notes.** A
+  cloud copy edited elsewhere can become the base of the export, and
+  until now the notes waiting in this device's `.bak` were left out of
+  the file, then overwritten at the next park. Now, when the base comes
+  from the cloud and has a zone while this device holds a plain file
+  with a parked `.bak`, the two zones are joined: the cloud text keeps
+  its place and its order, and every paragraph that exists only in the
+  parked copy follows it. A paragraph already present, or the same note
+  reworded in the cloud, is not repeated. The copy the rewrite replaces
+  is kept first (the plain file when it holds the reader's own text,
+  the cloud copy otherwise), and the same road runs in the flush of the
+  queued uploads, after the beta.1 slots have been repaired. If the
+  join cannot be made, the export is held back and nothing is written.
+  The trade-off is deliberate: a note deleted in Obsidian while this
+  device still had it parked comes back, because the alternative is
+  losing it in silence. Sections 23 and 24 run the export and the flush.
 
 ### Next
 
 #### Managing the .bak copies
 
 The copies are bounded: two at most beside each file, `.bak` (the parked
-zoned file) and `.bak.1` (the safety copy), and the
-upload never takes them (it collects `*.md` and `covers/*.jpg`). What
-is missing is seeing them from inside the plugin.
+zoned file) and `.bak.1` (the safety copy), each with a fixed job, and
+the upload never takes them (it collects `*.md` and `covers/*.jpg`).
+What is missing is seeing them from inside the plugin.
 
 - One row inside the book, for the reader who is already in it: it
   shows that book's copy and deletes it, one confirmation at a time.
   Never all of them together, they may be the only copy of what was
-  written by hand.
-- One row in *Markdown files* that lists every `.bak` of the folder,
-  so they can be reviewed and removed from outside any book.
+  written by hand. This is the only part worth building, and only once
+  someone asks for it.
+- A list of every `.bak` of the folder, to review and remove them from
+  outside any book: postponed. With two copies of clear roles it adds
+  little over the row inside the book.
 - Uploading them and moving them around waits: KOReader's file browser
   already does both, and the copies travel along anyway if the vault
   is synced.
 
+#### Known limit: two devices on one cloud folder
+
+The parked notes are no longer one of the losses: the export joins the
+two zones and keeps a copy of what it replaces (see *Done*). What
+remains is the price of that choice. There is no common ancestor to tell
+a note deleted in Obsidian from a note lost in the cloud, so the join
+brings back a note this device still had parked even when the reader
+meant to delete it. It is visible in the file, and deleting it again is
+enough. A three-way merge that remembers the last zone both sides
+sides agreed on would tell the two cases apart, and waits.
+
 ### At release
 
-- Bump `_meta.lua` past 1.0.0.
+- Bump `_meta.lua` to the version being tagged (the beta included).
 - Tag, zip, release.
-- Move the plugin pointer in `contrib` to `724c16f`.
+- Move the plugin pointer in `contrib` to the tagged commit.
 
 ## Later
 

@@ -1079,6 +1079,52 @@ end
 --                 copy that moved on). One slot, overwritten by the
 --                 next one; it never takes the place of the parked file.
 
+-- The beta.1 rotated every copy from .bak into .bak.1, so on a card
+-- that has run it the file with the notes can sit in .bak.1 behind a
+-- newer copy without a zone. The slots now have fixed jobs: when .bak
+-- holds no zone and .bak.1 does, the two trade places (once: afterwards
+-- .bak is the zoned one and the swap no longer applies). Three renames,
+-- undone if one of them is refused, so nothing is ever lost halfway.
+local function normalizeBackups(path)
+    local bak, bak1, tmp = path .. ".bak", path .. ".bak.1", path .. ".bak.swap"
+    -- a swap cut short between its renames: the copy waiting in .bak.swap
+    -- goes back to the slot it came from, so the swap below sees both
+    local waiting = readIfExists(tmp)
+    if waiting then
+        if not readIfExists(bak) then
+            os.rename(tmp, bak)
+        elseif not readIfExists(bak1) then
+            os.rename(tmp, bak1)
+        elseif waiting == readIfExists(bak) or waiting == readIfExists(bak1) then
+            -- a duplicate left by a swap that did finish: no information
+            -- in it, the slot already has the same bytes
+            os.remove(tmp)
+        else
+            logger.warn("tomedown: a temporary copy is left beside", path,
+                "(.bak.swap), both slots are taken")
+        end
+    end
+    local first, second = readIfExists(bak), readIfExists(bak1)
+    if not first or not second or isZoned(first) or not isZoned(second) then
+        return
+    end
+    if not os.rename(bak, tmp) then
+        return
+    end
+    if not os.rename(bak1, bak) then
+        os.rename(tmp, bak)
+        return
+    end
+    if not os.rename(tmp, bak1) then
+        -- .bak.1 is gone from its place and the old .bak waits in tmp:
+        -- put the notes copy back where it was and the other beside it
+        os.rename(bak, bak1)
+        os.rename(tmp, bak)
+        return
+    end
+    logger.info("tomedown: swapped the slots of", path, "(beta.1 layout)")
+end
+
 -- Parks the zoned file `content` in .bak. Returns whether the copy is
 -- there when the call ends. An older .bak that holds no zone (written
 -- before this rule) is moved to .bak.1 first rather than overwritten.
@@ -1171,7 +1217,7 @@ function Tomedown:runExport(files, opts)
     local unread = {}
     local function mergeBase(rel, md_path, local_old, pull)
         if not pull_server or not pull then
-            return local_old
+            return local_old, false
         end
         local remote, status = self:fetchRemote(pull_server, md_path, dir)
         if status == "failed" then
@@ -1180,16 +1226,16 @@ function Tomedown:runExport(files, opts)
             unread[md_path] = true
         end
         if not remote or remote == local_old then
-            return local_old
+            return local_old, false
         end
         local stored = self:cloudBase(pull_server)
         if stored and stored[rel] and md5(remote) == stored[rel] then
             -- still the copy we uploaded: ours is the newer file
-            return local_old
+            return local_old, false
         end
         logger.info("tomedown:", rel,
             "was edited elsewhere: folding the cloud copy into the merge")
-        return remote
+        return remote, true
     end
 
     for __, file in ipairs(files) do
@@ -1223,7 +1269,7 @@ function Tomedown:runExport(files, opts)
                 -- fold the file on disk into the render: the reader's
                 -- zones and front matter come across, the block is rebuilt
                 local content = md
-                local old = mergeBase(book.base .. ".md", md_path,
+                local old, from_cloud = mergeBase(book.base .. ".md", md_path,
                     readIfExists(md_path), preserve)
                 -- Preserve coming back on brings the parked file back:
                 -- the file on disk is plain (no zone) while the .bak
@@ -1235,6 +1281,7 @@ function Tomedown:runExport(files, opts)
                 -- come across by itself: it is kept as the safety copy.
                 local restored = false
                 local hold
+                normalizeBackups(md_path)
                 if old and preserve and not isZoned(old) then
                     local snapshot = readIfExists(md_path .. ".bak")
                     if isZoned(snapshot) then
@@ -1249,12 +1296,43 @@ function Tomedown:runExport(files, opts)
                         restored = true
                     end
                 end
+                -- The cloud copy moved on and has a zone while this
+                -- device holds a parked .bak with notes it never got (a
+                -- second Tomedown with cloud merge off, a sync conflict):
+                -- taking one of the two would lose the other. The copy
+                -- the rewrite replaces is kept as the safety copy, and
+                -- the cloud text becomes the base with the parked notes
+                -- folded in.
+                local recovered = false
+                if old and preserve and from_cloud and isZoned(old) then
+                    local disk_now = readIfExists(md_path)
+                    local snapshot = readIfExists(md_path .. ".bak")
+                    if (not disk_now or not isZoned(disk_now))
+                            and isZoned(snapshot) then
+                        -- keep what the rewrite replaces: the plain file
+                        -- when it holds the reader's own text, the cloud
+                        -- copy otherwise
+                        local safety = old
+                        if disk_now
+                                and not ownCopy(record and record.disk, disk_now) then
+                            safety = disk_now
+                        end
+                        local union = merge.uniteZones(old, snapshot)
+                        if union and keepSafety(md_path, safety) then
+                            old = union
+                            recovered = true
+                            backups = backups + 1
+                        else
+                            hold = hold_msg
+                        end
+                    end
+                end
                 if old then
                     local merged, info = merge.apply(old, md,
                         record and record.regions,
                         { mode = mode, notes_title = getNotesTitle(file) })
                     content = merged
-                    if restored then
+                    if restored or recovered then
                         -- the parked file stays in .bak as it is: it is
                         -- replaced only when preserve goes off again
                         -- with whatever the file holds by then
@@ -1333,12 +1411,13 @@ function Tomedown:runExport(files, opts)
             })
             -- the index is a region too: the reader may have annotated it
             local content = index_md
-            local old_index = mergeBase(INDEX_FILENAME, index_path,
-                readIfExists(index_path), index_preserve)
+            local old_index, index_from_cloud = mergeBase(INDEX_FILENAME,
+                index_path, readIfExists(index_path), index_preserve)
             -- the same road as the books: the index comes back from its
             -- parked file when preserve returns
             local restored_index = false
             local hold_index
+            normalizeBackups(index_path)
             if old_index and index_preserve and not isZoned(old_index) then
                 local snapshot = readIfExists(index_path .. ".bak")
                 if isZoned(snapshot) then
@@ -1353,13 +1432,36 @@ function Tomedown:runExport(files, opts)
                     restored_index = true
                 end
             end
+            -- the same recovery as the books: the cloud copy is the base
+            -- and the parked index goes with it, not under it
+            local recovered_index = false
+            if old_index and index_preserve and index_from_cloud
+                    and isZoned(old_index) then
+                local disk_now = readIfExists(index_path)
+                local snapshot = readIfExists(index_path .. ".bak")
+                if (not disk_now or not isZoned(disk_now))
+                        and isZoned(snapshot) then
+                    local safety = old_index
+                    if disk_now and not ownCopy(index_disk, disk_now) then
+                        safety = disk_now
+                    end
+                    local union = merge.uniteZones(old_index, snapshot)
+                    if union and keepSafety(index_path, safety) then
+                        old_index = union
+                        recovered_index = true
+                        backups = backups + 1
+                    else
+                        hold_index = hold_msg
+                    end
+                end
+            end
             if old_index then
                 local merged, info = merge.apply(old_index, index_md,
                     getSetting("index_regions"),
                     { mode = index_preserve and "preserve" or "overwrite",
                       notes_title = index_title })
                 content = merged
-                if restored_index then
+                if restored_index or recovered_index then
                     -- the parked index stays in .bak as it is
                 elseif info.backup
                         and not ownCopy(index_disk, old_index) then
@@ -1758,6 +1860,16 @@ function Tomedown:reconcilePending(server, paths, dir)
         end
         return getNotesTitle(bookFor(rel))
     end
+    -- what the last export wrote for this path: the proof to tell the
+    -- reader's own text from a file this plugin generated
+    local function storedDisk(rel)
+        if rel == INDEX_FILENAME then
+            return getSetting("index_disk")
+        end
+        local file = bookFor(rel)
+        local record = file and getSetting("exports", {})[file]
+        return record and record.disk
+    end
     local ready, held = {}, {}
     for __, path in ipairs(paths) do
         local rel = path:sub(1, #dir + 1) == dir .. "/" and path:sub(#dir + 2)
@@ -1775,12 +1887,47 @@ function Tomedown:reconcilePending(server, paths, dir)
                 "(cloud copy not fetched, will retry at the next chance)")
             held[#held + 1] = path
         elseif remote and remote ~= local_md then
-            -- pcall reports its own success first: merged is the text
-            -- only when the call went through
-            local call_ok, merged, info = pcall(merge.apply, remote, local_md,
-                rel == INDEX_FILENAME and getSetting("index_regions") or nil,
-                -- the zone is named the way the export names it
-                { mode = "preserve", notes_title = zoneTitle(rel) })
+            -- A card that ran the beta.1 may hold its notes in .bak.1
+            -- behind a plain .bak: repair the slots before this path
+            -- touches them (keepSafety below writes .bak.1).
+            normalizeBackups(path)
+            local cloud_copy = remote
+            local safety = remote
+            local call_ok, merged, info
+            if not isZoned(local_md) and isZoned(remote) then
+                local snapshot = readIfExists(path .. ".bak")
+                if isZoned(snapshot) then
+                    -- The cloud copy moved on and this device holds the
+                    -- parked notes it never got: fold them in instead of
+                    -- choosing a side. The union is the whole file
+                    -- already, so it is written as it is; the next
+                    -- export regenerates its block from the annotations.
+                    local union = merge.uniteZones(remote, snapshot)
+                    if union then
+                        if not ownCopy(storedDisk(rel), local_md) then
+                            -- the plain file holds the reader's own text:
+                            -- that is the copy to keep, not the cloud one
+                            safety = local_md
+                        end
+                        call_ok, merged, info =
+                            true, union, { reason = "merged" }
+                    else
+                        call_ok, merged, info = false, nil,
+                            { reason = "recovery" }
+                        logger.warn("tomedown: the parked notes of",
+                            rel or path,
+                            "cannot be folded into the cloud copy, holding it back")
+                    end
+                end
+            end
+            if call_ok == nil then
+                -- pcall reports its own success first: merged is the text
+                -- only when the call went through
+                call_ok, merged, info = pcall(merge.apply, remote, local_md,
+                    rel == INDEX_FILENAME and getSetting("index_regions") or nil,
+                    -- the zone is named the way the export names it
+                    { mode = "preserve", notes_title = zoneTitle(rel) })
+            end
             if call_ok and merged
                     and (info.reason == "merged" or info.reason == "format") then
                 -- the copy in the cloud is the base the next export
@@ -1790,10 +1937,13 @@ function Tomedown:reconcilePending(server, paths, dir)
                 -- the reader's can sit in it, and it would only take a
                 -- slot from a copy that might hold their notes
                 local cloud_base = self:cloudBase(server)
-                local kept = true
-                if not (cloud_base and cloud_base[rel]
-                        and cloud_base[rel] == md5(remote)) then
-                    kept = keepSafety(path, remote)
+                local ours = cloud_base and cloud_base[rel]
+                    and cloud_base[rel] == md5(cloud_copy)
+                local kept
+                if safety == cloud_copy and ours then
+                    kept = true
+                else
+                    kept = keepSafety(path, safety)
                 end
                 local written_ok = false
                 if kept then
