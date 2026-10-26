@@ -2036,9 +2036,11 @@ do
         "the rebuild keeps the heading")
     T.check(T.contains(Notification.last_text or "", "1 files backed up (.bak)"),
         "the toast reports the backup: " .. tostring(Notification.last_text))
-    local bak_md = T.readFile(MD_PATH .. ".bak")
+    local bak_md = T.readFile(MD_PATH .. ".bak.1")
     T.check(bak_md ~= nil and T.contains(bak_md, user_line),
-        "the previous file is kept as .bak with the hand-written line")
+        "the previous file is kept as the safety copy (.bak.1) with the hand-written line")
+    T.check(not T.fileExists(MD_PATH .. ".bak"),
+        "and .bak stays free for the parked zone: nothing was parked here")
     local kept_record = store.tomedown.exports[FILE]
     T.check(kept_record and kept_record.regions and kept_record.regions.body,
         "fingerprints stored for the next export")
@@ -2437,18 +2439,44 @@ do
     zone_file:close()
     plugin:runExport({ FILE }, {})
     UIManager:runPending()
-    other_md = T.readFile(MD_PATH .. ".bak.1")
+    -- a block edited inside its comments is a different kind of copy:
+    -- it goes to the safety slot and never takes the parked file's place
+    other_md = T.readFile(MD_PATH .. ".bak")
     T.check(other_md ~= nil
             and T.contains(other_md, "## The Witch theory")
             and T.contains(other_md, "tomedown:begin"),
-        "15b: the older .bak survives a later backup: "
+        "15b: the parked file survives a later backup: "
             .. tostring(other_md ~= nil))
-    other_md = T.readFile(MD_PATH .. ".bak")
+    other_md = T.readFile(MD_PATH .. ".bak.1")
     T.check(other_md ~= nil
             and T.contains(other_md, zone_line)
             and not T.contains(other_md, "## The Witch theory"),
-        "15b: and the fresh copy takes its slot: "
+        "15b: and the copy of the edited block takes the safety slot: "
             .. tostring(other_md ~= nil))
+
+    -- a filesystem that refuses the rename must not stop the export: the
+    -- copy is written in place instead, the parked file is not touched
+    -- and no temporary file is left behind
+    zone_line = "Terza riga a mano, con il rename rifiutato.\n"
+    zoned_md = (T.readFile(MD_PATH) or ""):gsub(
+        "(<!%-%- tomedown:begin body[^\n]*%-%->\n)", "%1" .. zone_line)
+    zone_file = io.open(MD_PATH, "wb")
+    zone_file:write(zoned_md)
+    zone_file:close()
+    other_md = T.readFile(MD_PATH .. ".bak")
+    _G.__td_rename = os.rename
+    os.rename = function() return nil, "refused" end
+    plugin:runExport({ FILE }, {})
+    UIManager:runPending()
+    os.rename = _G.__td_rename
+    _G.__td_rename = nil
+    T.check(T.contains(T.readFile(MD_PATH .. ".bak.1") or "", zone_line),
+        "15b: a refused rename falls back to writing the copy in place")
+    T.check(other_md ~= nil and T.readFile(MD_PATH .. ".bak") == other_md,
+        "15b: and the parked file is exactly as it was")
+    T.check(not T.fileExists(MD_PATH .. ".bak.tmp")
+            and not T.fileExists(MD_PATH .. ".bak.1.tmp"),
+        "15b: and no temporary file is left behind")
 
     -- the reader's note sits in the zone, above the marker, the way the
     -- guide tells them to write: this is the line that has to come back
@@ -2560,8 +2588,15 @@ do
     T.check(T.readFile(INDEX_PATH) ~= nil
             and not T.contains(T.readFile(INDEX_PATH), "tomedown:begin"),
         "15b: the index goes plain with the global switch off")
-    T.check(T.fileExists(INDEX_PATH .. ".bak.1"),
-        "15b: the copy that appears is the index's own, rotated back")
+    -- the index copy about to be taken is byte for byte the one already
+    -- sitting in .bak: it takes no second slot (these twins used to
+    -- fill .bak and .bak.1 with the same file, leaving no room for an
+    -- older copy)
+    T.check(T.readFile(INDEX_PATH .. ".bak") ~= nil
+            and T.contains(T.readFile(INDEX_PATH .. ".bak"), "tomedown:begin"),
+        "15b: the index's zoned copy stays in .bak")
+    T.check(not T.fileExists(INDEX_PATH .. ".bak.1"),
+        "15b: an identical copy takes no second slot")
 
     -- everything back the way the sections below expect it
     store.tomedown.preserve_books = nil
@@ -2908,6 +2943,38 @@ do
     T.check(not T.contains(T.readFile(MD_PATH) or "", "Solo sul cloud."),
         "18: cloud_merge off: the flush does not fold, the local copy wins")
 
+    -- the cloud still holds the very file this plugin uploaded last: no
+    -- note of the reader's can sit in it, so folding it into the offline
+    -- export takes no copy (it would only fill a slot of the two that
+    -- exist for copies worth keeping)
+    uploadSetup()
+    store.tomedown.preserve = true
+    store.tomedown.cloud_merge = true
+    NetworkMgr.connected = true
+    remote_files, download_fails, downloads = {}, {}, {}
+    BookList.registry[FILE].annotations = modernAnnotations()
+    plugin:runExport({ FILE }, {})
+    UIManager:runPending()
+    -- the cloud holds exactly the bytes just uploaded (the fake server
+    -- keeps no content of its own)
+    remote_files[MD_NAME] = T.readFile(MD_PATH)
+    T.check(plugin:cloudBase(SERVER)[MD_NAME] == md5(remote_files[MD_NAME]),
+        "18: the upload is remembered for the file the cloud holds")
+    os.remove(MD_PATH .. ".bak")
+    os.remove(MD_PATH .. ".bak.1")
+    NetworkMgr.connected = false
+    BookList.registry[FILE].annotations = modernAnnotationsWithExtra()
+    plugin:runExport({ FILE }, {})
+    UIManager:runPending()
+    NetworkMgr.connected = true
+    downloads = {}
+    plugin:flushPendingUploads()
+    UIManager:runPending()
+    T.check(#downloads > 0,
+        "18: the flush fetched the cloud copy it had to fold: " .. #downloads)
+    T.check(not T.fileExists(MD_PATH .. ".bak"),
+        "18: a cloud copy that is our own upload takes no .bak")
+
     -- ---------------------- 18b. the flush stays busy while it fetches
     --
     -- the reconcile costs one network GET per file: a reconnect or a resume
@@ -2977,8 +3044,8 @@ end
 T.check(pushed_book, "19: the book goes up after the fold")
 T.check(T.contains(T.readFile(MD_PATH) or "", "A thought from Obsidian."),
     "19: the cloud copy is folded into the local file before the push")
-T.check(T.fileExists(MD_PATH .. ".bak"),
-    "19: the cloud copy is kept whole as .bak")
+T.check(T.fileExists(MD_PATH .. ".bak.1"),
+    "19: the cloud copy is kept whole as the safety copy (.bak.1)")
 T.check(#downloads == 2, "19: both markdown copies are fetched first: " .. #downloads)
 
 -- a cloud copy that cannot be fetched: the file stays out of the push
@@ -3124,5 +3191,151 @@ T.check(store.tomedown.pending_uploads[MD_PATH] == true
 
 store.tomedown.preserve = false
 store.tomedown.upload = false
+
+
+-- ---------------------------- 21. preserve on / off / on / off / on
+--
+-- The promise behind the .bak: the file is the reader's, and switching
+-- preserve any number of times never loses a note nor brings back one
+-- that was deleted. While preserve is off the zoned file is parked in
+-- .bak; when it is on again that one file is the base of the export, and
+-- the next time it goes off the file as it stands then is parked over it
+-- (everything the old copy held was folded back in when it returned).
+do
+    local function wr(path, data)
+        local f = io.open(path, "wb"); f:write(data); f:close()
+    end
+    local function exportNow()
+        plugin:runExport({ FILE }, {})
+        UIManager:runPending()
+    end
+    local function addNote(txt)
+        local md = T.readFile(MD_PATH) or ""
+        wr(MD_PATH, (md:gsub("(<!%-%- tomedown:begin body)", txt .. "\n\n%1", 1)))
+    end
+    local function dropNote(txt)
+        local md = T.readFile(MD_PATH) or ""
+        local a, b = md:find(txt .. "\n\n", 1, true)
+        wr(MD_PATH, md:sub(1, a - 1) .. md:sub(b + 1))
+    end
+    local function has(s, path)
+        return T.contains(T.readFile(path or MD_PATH) or "", s)
+    end
+    for __, p in ipairs({ MD_PATH, MD_PATH .. ".bak", MD_PATH .. ".bak.1",
+            INDEX_PATH, INDEX_PATH .. ".bak", INDEX_PATH .. ".bak.1" }) do
+        os.remove(p)
+    end
+    store.tomedown.preserve_books = nil
+    store.tomedown.preserve_index = nil
+    store.tomedown.upload = false
+    store.tomedown.exports = nil
+    BookList.registry[FILE].annotations = modernAnnotations()
+
+    store.tomedown.preserve = true;  exportNow()
+    addNote("NOTE-A")
+    store.tomedown.preserve = false; exportNow()
+    T.check(not has("NOTE-A") and has("NOTE-A", MD_PATH .. ".bak"),
+        "21: off: the file is plain and the note waits in the one .bak")
+    store.tomedown.preserve = true;  exportNow()
+    T.check(has("NOTE-A"), "21: on: the note is back in the file")
+
+    addNote("NOTE-B"); dropNote("NOTE-A")
+    store.tomedown.preserve = false; exportNow()
+    T.check(has("NOTE-B", MD_PATH .. ".bak")
+            and not has("NOTE-A", MD_PATH .. ".bak"),
+        "21: off again: the .bak is the file as it stood, B in, deleted A out")
+    store.tomedown.preserve = true;  exportNow()
+    T.check(has("NOTE-B") and not has("NOTE-A"),
+        "21: on again: B is back and the deleted A stays deleted")
+
+    addNote("NOTE-C")
+    store.tomedown.preserve = false; exportNow()
+    store.tomedown.preserve = true;  exportNow()
+    store.tomedown.preserve = false; exportNow()
+    store.tomedown.preserve = true;  exportNow()
+    T.check(has("NOTE-B") and has("NOTE-C") and not has("NOTE-A"),
+        "21: off/on twice more with no edit in between: B and C, still no A")
+    T.check(not T.fileExists(MD_PATH .. ".bak.1"),
+        "21: and a single .bak is all that ever exists beside the file")
+
+    -- the reader types into the PLAIN file while preserve is off (it is
+    -- rewritten by the next export, so the text cannot join the zone by
+    -- itself): the notes of the zone must come back all the same, and
+    -- the typed text must be kept somewhere instead of vanishing
+    store.tomedown.preserve = false; exportNow()
+    wr(MD_PATH, (T.readFile(MD_PATH) or "") .. "\nNOTE-P typed while off\n")
+    store.tomedown.preserve = true;  exportNow()
+    T.check(has("NOTE-B") and has("NOTE-C") and not has("NOTE-A"),
+        "21: a plain file edited while off does not stop the zone coming back")
+    T.check(has("NOTE-P", MD_PATH .. ".bak.1"),
+        "21: the text typed into the plain file is kept as the safety copy")
+    T.check(has("NOTE-B", MD_PATH .. ".bak")
+            and has("NOTE-C", MD_PATH .. ".bak"),
+        "21: and the parked file is still the zoned one")
+
+    -- one more full round after that, edits on both sides
+    addNote("NOTE-D"); dropNote("NOTE-B")
+    store.tomedown.preserve = false; exportNow()
+    store.tomedown.preserve = true;  exportNow()
+    T.check(has("NOTE-C") and has("NOTE-D")
+            and not has("NOTE-B") and not has("NOTE-A"),
+        "21: after the typed-while-off round: C and D, B and A stay deleted")
+    -- the index is a file like the others: same road, same promise
+    store.tomedown.preserve = true;  exportNow()
+    wr(INDEX_PATH, ((T.readFile(INDEX_PATH) or ""):gsub(
+        "(<!%-%- tomedown:begin)", "NOTE-IDX\n\n%1", 1)))
+    store.tomedown.preserve = false; exportNow()
+    T.check(not has("NOTE-IDX", INDEX_PATH) and has("NOTE-IDX", INDEX_PATH .. ".bak"),
+        "21: the index is parked in its own .bak while preserve is off")
+    store.tomedown.preserve = true;  exportNow()
+    store.tomedown.preserve = false; exportNow()
+    store.tomedown.preserve = true;  exportNow()
+    T.check(has("NOTE-IDX", INDEX_PATH),
+        "21: and its note is back after on / off / on")
+    T.check(not T.fileExists(MD_PATH .. ".tmp")
+            and not T.fileExists(INDEX_PATH .. ".tmp"),
+        "21: no temporary file is left behind")
+    -- the copy that keeps the notes cannot be written (a full card, a
+    -- read-only folder: here, a directory sits where the .bak goes): the
+    -- zoned file must not be replaced, and the export has to say so
+    store.tomedown.preserve = true;  exportNow()
+    addNote("NOTE-H")
+    os.remove(MD_PATH .. ".bak")
+    os.remove(MD_PATH .. ".bak.1")
+    os.execute('mkdir "' .. MD_PATH .. '.bak"')
+    store.tomedown.preserve = false; exportNow()
+    T.check(has("NOTE-H") and has("tomedown:begin"),
+        "21: when the .bak cannot be written the zoned file is left as it is")
+    T.check((store.tomedown.last_export.errors or 0) >= 1,
+        "21: and the export reports an error: "
+            .. tostring(store.tomedown.last_export.errors))
+    os.remove(MD_PATH .. ".bak") -- the directory goes away
+    exportNow()
+    T.check(not has("NOTE-H") and has("NOTE-H", MD_PATH .. ".bak"),
+        "21: next export, with the obstacle gone, the file is parked and plain")
+    store.tomedown.preserve = true;  exportNow()
+    T.check(has("NOTE-H"), "21: and the note comes back")
+    -- the other slot can fail as well: the text typed into the plain file
+    -- is kept as .bak.1 before the parked file takes its place, so when
+    -- that copy cannot be written the file must not be replaced either
+    store.tomedown.preserve = false; exportNow()
+    wr(MD_PATH, (T.readFile(MD_PATH) or "") .. "\nNOTE-Q typed while off\n")
+    os.execute('mkdir "' .. MD_PATH .. '.bak.1"')
+    store.tomedown.preserve = true;  exportNow()
+    T.check(has("NOTE-Q") and not has("NOTE-H"),
+        "21: when the safety copy cannot be written the plain file is left as it is")
+    T.check(has("NOTE-H", MD_PATH .. ".bak"),
+        "21: and the parked file still holds the notes")
+    T.check((store.tomedown.last_export.errors or 0) >= 1,
+        "21: and the export reports the error: "
+            .. tostring(store.tomedown.last_export.errors))
+    os.remove(MD_PATH .. ".bak.1") -- the directory goes away
+    exportNow()
+    T.check(has("NOTE-H") and not has("NOTE-Q"),
+        "21: next export the parked notes come back")
+    T.check(has("NOTE-Q", MD_PATH .. ".bak.1"),
+        "21: and the typed text is kept as the safety copy")
+    store.tomedown.preserve = false
+end
 
 T.finish("test_main")

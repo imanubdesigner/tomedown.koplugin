@@ -1018,26 +1018,92 @@ local function ownCopy(stored, content)
     return stored ~= nil and stored == md5(content)
 end
 
--- keeps a file as it was before it is overwritten. Two slots at most
--- per file: an existing .bak moves to .bak.1 first, so a copy holding
--- what the reader wrote by hand is never thrown away by a later backup
--- worth less than it is (a plain export, for instance, which the next
--- run regenerates anyway). Returns whether the copy was written.
-local function keepBackup(path, content)
-    local bak_path = path .. ".bak"
-    local existing = io.open(bak_path, "rb")
-    if existing then
-        existing:close()
-        os.remove(bak_path .. ".1")
-        os.rename(bak_path, bak_path .. ".1")
-    end
-    local bak = io.open(bak_path, "wb")
-    if not bak then
+-- A file with a write zone carries this marker in its comments.
+local ZONE_MARK = "tomedown:begin"
+
+local function isZoned(text)
+    return type(text) == "string" and text:find(ZONE_MARK, 1, true) ~= nil
+end
+
+-- writes `content` to `path` through a temporary file and a rename, so
+-- the file that is already there is either replaced whole or left
+-- exactly as it was: never truncated halfway. rename() replaces its
+-- target in one step (KOReader runs on POSIX systems). Should a
+-- filesystem refuse the rename, the copy is complete in the temporary
+-- file by then and is written in place instead, with a warning in the
+-- log: a quirk of the card must not stop the export for good. Returns
+-- whether `path` holds `content` when the call ends.
+local function replaceFile(path, content)
+    local tmp = path .. ".tmp"
+    local f = io.open(tmp, "wb")
+    if not f then
         return false
     end
-    bak:write(content)
-    bak:close()
-    return true
+    local written = f:write(content)
+    f:close()
+    if not written then
+        os.remove(tmp)
+        return false
+    end
+    if os.rename(tmp, path) then
+        return true
+    end
+    logger.warn("tomedown: rename refused for", path, "- writing it in place")
+    local direct = io.open(path, "wb")
+    local ok = direct and direct:write(content)
+    if direct then
+        direct:close()
+    end
+    os.remove(tmp)
+    return ok ~= nil and ok ~= false
+end
+
+-- The two copies that can sit beside an exported file, each with ONE
+-- job, so that turning preserve on and off any number of times finds
+-- the reader's notes where they were left:
+--
+--   <n>.md.bak    the parked file: the zoned file as it was when
+--                 preserve went off. It is the reader's file, kept
+--                 aside while the plain export takes its place, and it
+--                 comes back into the file when preserve is on again.
+--                 There is only this one and it is always the latest:
+--                 whatever it held was folded back into the file when
+--                 it came back, so parking the next version over it
+--                 loses nothing (a note deleted in between stays
+--                 deleted, a note added in between is in the new copy).
+--
+--   <n>.md.bak.1  a safety copy: text of the reader's that the rewrite
+--                 is about to replace and that does NOT come back by
+--                 itself (a plain file edited by hand while preserve
+--                 was off, a block edited inside its comments, a cloud
+--                 copy that moved on). One slot, overwritten by the
+--                 next one; it never takes the place of the parked file.
+
+-- Parks the zoned file `content` in .bak. Returns whether the copy is
+-- there when the call ends. An older .bak that holds no zone (written
+-- before this rule) is moved to .bak.1 first rather than overwritten.
+local function parkZone(path, content)
+    local bak_path = path .. ".bak"
+    local current = readIfExists(bak_path)
+    if current == content then
+        return true
+    end
+    if current and not isZoned(current)
+            and readIfExists(bak_path .. ".1") ~= current
+            and not replaceFile(bak_path .. ".1", current) then
+        return false
+    end
+    return replaceFile(bak_path, content)
+end
+
+-- Keeps `content` as the safety copy (.bak.1), unless the same bytes
+-- are already kept in either slot. Returns whether the copy is there.
+local function keepSafety(path, content)
+    if readIfExists(path .. ".bak") == content
+            or readIfExists(path .. ".bak.1") == content then
+        return true
+    end
+    return replaceFile(path .. ".bak.1", content)
 end
 
 function Tomedown:runExport(files, opts)
@@ -1081,6 +1147,10 @@ function Tomedown:runExport(files, opts)
     -- index: getIndexPreserve and its own title)
     local index_title = getNotesTitle(INDEX_FILENAME)
     local backups = 0
+    -- the copies in .bak / .bak.1 are what keeps the reader's text when a
+    -- file is rewritten: when one cannot be written the file is left as
+    -- it is and the export says so, rather than losing the text
+    local hold_msg = _("the backup copy could not be written, file left as it is")
 
     -- a reader who edits the exported file somewhere else (Obsidian on
     -- the desktop, synced through the same cloud folder) must not lose
@@ -1155,19 +1225,26 @@ function Tomedown:runExport(files, opts)
                 local content = md
                 local old = mergeBase(book.base .. ".md", md_path,
                     readIfExists(md_path), preserve)
-                -- Preserve coming back on brings the backup back with it:
-                -- the file on disk is the plain export this plugin wrote
-                -- itself, so nothing of the reader's sits in it, while the
-                -- .bak from the moment preserve went off is the file that
-                -- held their notes. Both switches take this road (ownCopy
-                -- above), so the global one brings back every book that
-                -- has a copy to bring back.
+                -- Preserve coming back on brings the parked file back:
+                -- the file on disk is plain (no zone) while the .bak
+                -- holds the zoned file from the moment preserve went
+                -- off, so that file is the base of this export and the
+                -- reader's notes are in the file again. If the plain
+                -- file is not the one this plugin wrote (the reader
+                -- typed into it while preserve was off) its text cannot
+                -- come across by itself: it is kept as the safety copy.
                 local restored = false
-                if old and preserve and ownCopy(record and record.disk,
-                        old) and not old:find("tomedown:begin", 1, true) then
+                local hold
+                if old and preserve and not isZoned(old) then
                     local snapshot = readIfExists(md_path .. ".bak")
-                    if snapshot
-                            and snapshot:find("tomedown:begin", 1, true) then
+                    if isZoned(snapshot) then
+                        if not ownCopy(record and record.disk, old) then
+                            if keepSafety(md_path, old) then
+                                backups = backups + 1
+                            else
+                                hold = hold_msg
+                            end
+                        end
                         old = snapshot
                         restored = true
                     end
@@ -1177,30 +1254,39 @@ function Tomedown:runExport(files, opts)
                         record and record.regions,
                         { mode = mode, notes_title = getNotesTitle(file) })
                     content = merged
-                    -- a file restored from its own copy takes no new one:
-                    -- the .bak it came from is still there, untouched
-                    if info.backup and not restored
+                    if restored then
+                        -- the parked file stays in .bak as it is: it is
+                        -- replaced only when preserve goes off again
+                        -- with whatever the file holds by then
+                    elseif info.backup
                             and not ownCopy(record and record.disk, old) then
-                        -- the reader had written inside the block: the
-                        -- previous file is kept whole, as .bak, before
-                        -- the rebuilt one replaces it
-                        if keepBackup(md_path, old) then
+                        -- the reader had written inside the block (or
+                        -- the file has to be rebuilt from scratch): the
+                        -- previous file is kept whole, as the safety
+                        -- copy, before the rebuilt one replaces it
+                        if keepSafety(md_path, old) then
                             backups = backups + 1
+                        else
+                            hold = hold_msg
                         end
-                    elseif not preserve
-                            and old:find("tomedown:begin", 1, true) then
+                    elseif not preserve and isZoned(old) then
                         -- the book goes from zoned to plain, which is
-                        -- what turning preserve off does: the notes the
-                        -- reader wrote in it do not survive the rewrite,
-                        -- so the file as it was is kept whole as .bak
-                        -- first, the way the index below already does
-                        if keepBackup(md_path, old) then
+                        -- what turning preserve off does: the file is
+                        -- parked in .bak until preserve comes back
+                        if parkZone(md_path, old) then
                             backups = backups + 1
+                        else
+                            hold = hold_msg
                         end
                     end
                 end
-                local written_ok, err =
-                    util.writeToFile(content, md_path, true, false, true)
+                local written_ok, err
+                if hold then
+                    written_ok, err = false, hold
+                else
+                    written_ok, err =
+                        util.writeToFile(content, md_path, true, false, true)
+                end
                 if written_ok then
                     exported = exported + 1
                     written[#written + 1] = md_path
@@ -1250,14 +1336,19 @@ function Tomedown:runExport(files, opts)
             local old_index = mergeBase(INDEX_FILENAME, index_path,
                 readIfExists(index_path), index_preserve)
             -- the same road as the books: the index comes back from its
-            -- own copy when preserve returns and the file is ours
+            -- parked file when preserve returns
             local restored_index = false
-            if old_index and index_preserve and ownCopy(index_disk,
-                    old_index)
-                    and not old_index:find("tomedown:begin", 1, true) then
+            local hold_index
+            if old_index and index_preserve and not isZoned(old_index) then
                 local snapshot = readIfExists(index_path .. ".bak")
-                if snapshot
-                        and snapshot:find("tomedown:begin", 1, true) then
+                if isZoned(snapshot) then
+                    if not ownCopy(index_disk, old_index) then
+                        if keepSafety(index_path, old_index) then
+                            backups = backups + 1
+                        else
+                            hold_index = hold_msg
+                        end
+                    end
                     old_index = snapshot
                     restored_index = true
                 end
@@ -1268,23 +1359,32 @@ function Tomedown:runExport(files, opts)
                     { mode = index_preserve and "preserve" or "overwrite",
                       notes_title = index_title })
                 content = merged
-                if info.backup and not restored_index
+                if restored_index then
+                    -- the parked index stays in .bak as it is
+                elseif info.backup
                         and not ownCopy(index_disk, old_index) then
-                    if keepBackup(index_path, old_index) then
+                    if keepSafety(index_path, old_index) then
                         backups = backups + 1
+                    else
+                        hold_index = hold_msg
                     end
-                elseif not index_preserve
-                        and old_index:find("tomedown:begin", 1, true) then
-                    -- the index goes from zoned to plain: the notes the
-                    -- reader wrote in it do not survive the rewrite, so
-                    -- the file as it was is kept whole as .bak first
-                    if keepBackup(index_path, old_index) then
+                elseif not index_preserve and isZoned(old_index) then
+                    -- the index goes from zoned to plain: it is parked
+                    -- in .bak until preserve comes back
+                    if parkZone(index_path, old_index) then
                         backups = backups + 1
+                    else
+                        hold_index = hold_msg
                     end
                 end
             end
-            local index_ok, index_err =
-                util.writeToFile(content, index_path, true, false, true)
+            local index_ok, index_err
+            if hold_index then
+                index_ok, index_err = false, hold_index
+            else
+                index_ok, index_err =
+                    util.writeToFile(content, index_path, true, false, true)
+            end
             if index_ok then
                 written[#written + 1] = index_path
                 setSetting("index_regions",
@@ -1685,11 +1785,22 @@ function Tomedown:reconcilePending(server, paths, dir)
                     and (info.reason == "merged" or info.reason == "format") then
                 -- the copy in the cloud is the base the next export
                 -- will compare against: keep it whole as .bak before
-                -- the folded file replaces the local one
-                keepBackup(path, remote)
-                logger.info("tomedown:", rel,
-                    "was edited in the cloud: folding it into the offline export")
-                local written_ok = util.writeToFile(merged, path, true, false, true)
+                -- the folded file replaces the local one. Unless it is
+                -- the very copy this plugin uploaded last: nothing of
+                -- the reader's can sit in it, and it would only take a
+                -- slot from a copy that might hold their notes
+                local cloud_base = self:cloudBase(server)
+                local kept = true
+                if not (cloud_base and cloud_base[rel]
+                        and cloud_base[rel] == md5(remote)) then
+                    kept = keepSafety(path, remote)
+                end
+                local written_ok = false
+                if kept then
+                    logger.info("tomedown:", rel,
+                        "was edited in the cloud: folding it into the offline export")
+                    written_ok = util.writeToFile(merged, path, true, false, true)
+                end
                 if written_ok then
                     ready[#ready + 1] = path
                 else
