@@ -55,6 +55,13 @@ M.rules = {
             from = [[on the Kindle. The same suite runs on every push through GitHub Actions.]],
             to = [[on the Kindle.]],
         },
+        -- the discussions live on GitHub only, and a Codeberg reader is
+        -- pointed there only for the repository itself: the mirror sends
+        -- questions to its own issues
+        {
+            from = [[Questions, ideas, feedback: [GitHub Discussions](https://github.com/imanubdesigner/tomedown.koplugin/discussions).]],
+            to = [[Questions, ideas, feedback: [Codeberg Issues](https://codeberg.org/imanubdesigner/tomedown.koplugin/issues).]],
+        },
     },
     ["TUTORIAL.md"] = {
         {

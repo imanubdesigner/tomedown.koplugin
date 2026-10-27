@@ -946,6 +946,8 @@ tomedown.koplugin/
 
 ## Support
 
+Questions, ideas, feedback: [GitHub Discussions](https://github.com/imanubdesigner/tomedown.koplugin/discussions).
+
 If it saves you time, you can buy me a coffee: the next features are
 brewed with it.
 

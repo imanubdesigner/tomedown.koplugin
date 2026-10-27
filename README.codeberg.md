@@ -946,6 +946,8 @@ tomedown.koplugin/
 
 ## Support
 
+Questions, ideas, feedback: [Codeberg Issues](https://codeberg.org/imanubdesigner/tomedown.koplugin/issues).
+
 If it saves you time, you can buy me a coffee: the next features are
 brewed with it.
 
