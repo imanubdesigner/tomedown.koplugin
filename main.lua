@@ -2265,7 +2265,7 @@ function Tomedown:editNotesTitle(touchmenu, file)
     local current = file and getNotesTitle(file)
         or getSetting("notes_title", nil) or _("My notes...")
     dialog = InputDialog:new{
-        title = _("Personal notes heading"),
+        title = _("Notes heading"),
         input = current,
         hint = _("leave empty to export no heading"),
         buttons = {

@@ -475,8 +475,8 @@ msgstr "Intestazione delle note: %1"
 msgid "Index notes heading: %1"
 msgstr "Intestazione delle note dell'indice: %1"
 
-msgid "Personal notes heading"
-msgstr "Intestazione note personali"
+msgid "Notes heading"
+msgstr "Intestazione delle note"
 
 msgid "leave empty to export no heading"
 msgstr "lascia vuoto per non esportare l'intestazione"

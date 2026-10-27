@@ -281,6 +281,12 @@ local function stripMarkdown(text)
     text = text:gsub("%*%*(.-)%*%*", "%1")
     text = text:gsub("%*(.-)%*", "%1")
     text = text:gsub("`(.-)`", "%1")
+    -- release notes can carry an image, and a plain viewer has no way
+    -- to fetch it: keep the alt text as a caption, drop the address.
+    -- Links lose the address the same way, after the images, so the
+    -- "!" of an image is not left behind.
+    text = text:gsub("!%[([^%]]*)%]%([^%)]*%)", "%1")
+    text = text:gsub("%[([^%]]*)%]%([^%)]*%)", "%1")
     return (text:gsub("^%s+", ""):gsub("%s+$", ""))
 end
 
