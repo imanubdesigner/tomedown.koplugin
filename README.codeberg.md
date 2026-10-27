@@ -28,9 +28,9 @@
 - [Usage](#usage)
   - [Special highlights](#special-highlights)
   - [Block IDs and linking](#block-ids-and-linking)
-  - [Auto-export and offline reading](#auto-export-and-offline-reading)
+  - [Export when I close a book and offline reading](#export-when-i-close-a-book-and-offline-reading)
   - [Upload retries](#upload-retries)
-  - [Preserve your edits](#preserve-your-edits)
+  - [Keep my notes](#keep-my-notes)
   - [Editing in Obsidian while the device is away](#editing-in-obsidian-while-the-device-is-away)
 - [File format](#file-format)
 - [Obsidian (optional)](#obsidian-optional)
@@ -85,7 +85,7 @@ and one sheet per step. Start with **01**.
 
 Once the files are in your vault, the
 [Obsidian guide](OBSIDIAN.md) shows what you are looking at: the book
-file with and without Preserve, and the index.
+file with and without Keep my notes, and the index.
 
 ## Requirements
 
@@ -166,9 +166,28 @@ first export; optional Remotely Save in Obsidian) is in
 
 ## Configuration (one-off)
 
-☰ menu → **Tomedown** → **Settings**, in four groups:
+☰ menu → **Tomedown** → **Settings**, in five groups:
 
-![The four Tomedown settings groups](assets/menu/settings/settings_menu.png)
+![The five Tomedown settings groups](assets/menu/settings/settings_menu.png)
+
+**Files**
+
+![Files settings](assets/menu/settings/markdown_menu.png)
+
+| Entry | What to do |
+|---|---|
+| *Local folder* | defaults to `clipboard/tomedown` inside KOReader's data folder; tap it to browse with KOReader's folder picker (long-press a folder to choose it) |
+| *Create an index note (00 - Index.md)* | builds the Obsidian tables: a stats line on top, then series books and the rest, each with the columns it actually has (links, author, series, highlights with stars, status over the progress bar, last read) |
+| *Include page bookmarks* | off by default: adds a `# Page bookmarks` section (bookmarked page + note) after the highlights |
+| *Include book covers* | off by default: exports every cover into `covers/` and embeds it in the book file and in the index; the cover leaves the device after a successful upload, the vault copy is the master one. Requires **Obsidian 1.8.1 or newer** |
+| *Export when I close a book* | off by default: exports the book when you close it, and again (silently, no network) before the device suspends |
+
+Ticking or unticking *Include book covers* rewrites every already
+exported file on the next export (the stored hash is invalidated, so
+*Export new and changed books* re-sends everything once).
+
+Covers are always exported in full colour, whatever the device: the
+extraction forces colour rendering even on greyscale e-ink screens.
 
 **Cloud**
 
@@ -180,47 +199,31 @@ first export; optional Remotely Save in Obsidian) is in
 | *Server and folder…* | opens the Cloud storage browser: pick your server (the examples use Koofr), then navigate to the final folder (e.g. `Bookshelf/Kindle`) and tap **Choose** |
 | *Remote folder…* | only if you want to override the folder chosen above (e.g. `/Bookshelf/Kindle`) |
 
-**Markdown files**
+**My notes**
 
-![Markdown files settings](assets/menu/settings/markdown_menu.png)
-
-| Entry | What to do |
-|---|---|
-| *Local folder* | defaults to `clipboard/tomedown` inside KOReader's data folder; tap it to browse with KOReader's folder picker (long-press a folder to choose it) |
-| *Generate the 00 - Index.md (for Obsidian)* | builds the Obsidian tables: a stats line on top, then series books and the rest, each with the columns it actually has (links, author, series, highlights with stars, status over the progress bar, last read) |
-| *Include page bookmarks* | off by default: adds a `# Page bookmarks` section (bookmarked page + note) after the highlights |
-| *Include book covers* | off by default: exports every cover into `covers/` and embeds it in the book file and in the index; the cover leaves the device after a successful upload, the vault copy is the master one. Requires **Obsidian 1.8.1 or newer** |
-| *Auto-export on close* | off by default: exports the book when you close it, and again (silently, no network) before the device suspends |
-| *Preserve: global* | off by default (the tomedown ≤ 0.8 behaviour). Switch it on and every export folds the new render into your file, keeping your zones; switching modes rewrites every file on the next export. While it is on, the rows that choose for a single file are hidden and *Notes: %1* names every zone (see *Preserve your edits*) |
-| *Preserve: index* | the same switch for `00 - Index.md` alone, shown while the index is generated and *Preserve: global* is off. It follows the global switch until you flip it, and no book turns it on any more |
-| *Index notes: %1* | the heading of the index zone, below *Preserve: index* and only while the index keeps one. Tap to rename, empty means no heading; with *Preserve: global* on, the global heading names it again |
-| *Notes: %1* | the heading above your notes block. Tap to rename, empty means no heading, and with preserve off no heading reaches the file. A book's own choice and heading live in the book's own menu |
-
-The *Cloud* group has one more row when a server is set, *Upload to cloud* is on and *Preserve: global* is on (the row needs a write zone to fold into). It appears and disappears in place as you flip those toggles, without leaving the menu:
-
-| *Merge edits made in the cloud* | on by default: before folding the new highlights in, the export fetches the copy in the cloud and uses it as the base when it changed since the last upload, so notes written in Obsidian on the desktop survive (see *Editing in Obsidian while the device is away*) |
-
-With *Preserve: global* ticked the group grows the *Notes*
-row at the bottom (the heading of your notes block exports under):
-
-![Markdown files settings with preserve ticked](assets/menu/settings/markdown_menu_preserve.png)
-
-Ticking or unticking *Include book covers* rewrites every already
-exported file on the next export (the stored hash is invalidated, so
-*Export only what changed* re-sends everything once).
-
-Covers are always exported in full colour, whatever the device: the
-extraction forces colour rendering even on greyscale e-ink screens.
-
-**Highlights**
-
-![Highlights settings](assets/menu/settings/settings_highlights_menu.png)
+![My notes settings](assets/menu/settings/keep_my_notes_menu.png)
 
 | Entry | What to do |
 |---|---|
-| *All highlights as Special Highlights* | off by default: every highlight becomes an `> [!highlight]` callout instead of a plain quote; when off, only *Special Highlight* marks (see *Usage*) turn into callouts |
-| *Special highlight marker: %1* | only while the row above is off, since with every highlight a callout there is nothing left to choose (the row is grayed out): **Callout** is the default and keeps the box on the marked highlights alone, **Bold** writes them as `> **quote**` instead, for the readers that do not know callouts |
-| *Block IDs for highlights* | off by default: writes a stable `^hl-xxxxxxxx` id at the end of every quote, so Obsidian can link to one single highlight and embed it (see *Block IDs and linking*) |
+| *Keep my notes: all books* | off by default (the tomedown ≤ 0.8 behaviour). Switch it on and every export folds the new render into your file, keeping your zones; switching modes rewrites every file on the next export. While it is on it alone is in charge: the keep row in *Current book* goes off, with *On for all books* on the right, the per-book heading and the index rows are hidden, and *Notes heading: %1* names every zone (see *Keep my notes*) |
+| *Keep my notes: index* | the same switch for `00 - Index.md` alone, shown while the index is generated and *Keep my notes: all books* is off. It follows the global switch until you flip it, and no book turns it on any more |
+| *Index notes heading: %1* | the heading of the index zone, below *Keep my notes: index* and only while the index keeps one. Tap to rename, empty means no heading; with *Keep my notes: all books* on, the global heading names it again |
+| *Notes heading: %1* | the heading above your notes block, shown with *Keep my notes: all books* on. Tap to rename, empty means no heading. A book's own choice and heading live in the book's own menu |
+| *Bring in edits made in Obsidian* | on by default: only shown while a server is set, *Upload to cloud* is on and *Keep my notes: all books* is on (there needs to be a write zone). Before folding the new highlights in, the export fetches the copy in the cloud and uses it as the base when it changed since the last upload, so notes written in Obsidian on the desktop survive (see *Editing in Obsidian while the device is away*) |
+
+The group is rebuilt every time it opens, and in place when one of its
+switches flips: a row that no longer applies leaves without closing the
+menu.
+
+**Highlights for Obsidian**
+
+![Highlights for Obsidian settings](assets/menu/settings/settings_highlights_menu.png)
+
+| Entry | What to do |
+|---|---|
+| *Treat every highlight as special* | off by default: every highlight becomes an `> [!highlight]` callout instead of a plain quote; when off, only *Special Highlight* marks (see *Usage*) turn into callouts |
+| *How special highlights look: %1* | only while the row above is off, since with every highlight a callout there is nothing left to choose (the row is grayed out): **Callout** is the default and keeps the box on the marked highlights alone, **Bold** writes them as `> **quote**` instead, for the readers that do not know callouts |
+| *Add link IDs to highlights* | off by default: writes a stable `^hl-xxxxxxxx` id at the end of every quote, so Obsidian can link to one single highlight and embed it (see *Block IDs and linking*) |
 
 All three rows rewrite every already exported file on the next export:
 none of them is part of the book's hash, so flipping one invalidates the
@@ -235,20 +238,22 @@ stored hashes, the way *Include book covers* does above.
 | *Check for updates (vX)* | the row doubles as the version display: it asks GitHub for newer stable releases, shows their notes and can install the update right away (**Update and restart**) |
 | *View changelog* | pages through the notes of every release on GitHub, newest first; the list is cached when a check runs, so the viewer also works offline, and **Refresh** fetches it again |
 | *Check for updates in background* | off by default: when enabled, a quiet check runs when KOReader starts and when the menu opens (at most once an hour) and notifies you of a new stable release |
-| *Developer updates* | a submenu with everything that is not meant for daily use (below) |
+| *Beta versions* | a submenu with everything that is not meant for daily use (below) |
 
-**Developer updates**
+**Beta versions**
 
-![Developer updates submenu](assets/menu/settings/developer_menu.png)
+![Beta versions submenu](assets/menu/settings/updates_beta_menu.png)
 
 | Entry | What to do |
 |---|---|
-| *Beta Releases* | off by default: while ticked, the *Check for updates* row below appears and the changelog lists prereleases (tags like `0.4.0-beta.1`) too |
-| *Check for updates* | only visible while *Beta Releases* is ticked: checks GitHub for newer prereleases right away and installs them the same way as a stable update |
-| *Reset to latest stable release* | installs the newest stable release even when your install is a beta newer than it (the way back from a beta); it also unticks *Beta Releases* so the beta is not offered again |
+| *Receive beta versions* | off by default: while ticked, the *Check for beta updates* row below appears and the changelog lists prereleases (tags like `0.4.0-beta.1`) too |
+| *Check for beta updates* | only visible while *Receive beta versions* is ticked: checks GitHub for newer prereleases right away and installs them the same way as a stable update |
+| *Go back to the stable version* | installs the newest stable release even when your install is a beta newer than it (the way back from a beta); it also unticks *Receive beta versions* so the beta is not offered again |
 | *Installed: vX (Release/Beta)* | the installed version as a plain label |
 
-Everything is stored in KOReader's settings, so it applies to all books.
+Everything is stored in KOReader's settings: the switches here apply to
+every book, while the per book choice and heading live in the book's own
+menu.
 
 ### If you already use AnnotationSync
 
@@ -279,16 +284,16 @@ plugin folder, and KOReader asks to restart. If the download or the
 unpacking fails, the releases page opens instead so the zip can be taken
 by hand (see *Installation*), which works from any older version.
 
-Tick **Beta Releases** (*Settings → Developer updates*) to get the beta
-channel: a second **Check for updates** appears below the box and offers
+Tick **Receive beta versions** (*Settings → Updates → Beta versions*) to get
+the beta channel: a second **Check for beta updates** appears below the box and offers
 prereleases (tags like `0.4.0-beta.1`). The check in *Settings → Updates*
 stays on stable releases whatever the toggle says, and unticking the box
 hides the beta check again. A beta install always sees the final release
 of the same version, so checking from `0.4.0-beta.1` offers `0.4.0`.
 
-**Reset to latest stable release** is the way back from a beta: it installs
+**Go back to the stable version** is the way back from a beta: it installs
 the newest stable release even when your beta is newer than it (the check
-only ever offers *newer* versions) and unticks *Beta Releases* so the same
+only ever offers *newer* versions) and unticks *Receive beta versions* so the same
 beta is not offered again.
 
 When you publish a release, bump `version` in `_meta.lua` to the tag
@@ -303,52 +308,55 @@ settings keys are never renamed.
 
 ☰ menu → **Tomedown**:
 
-![The Tomedown menu](assets/menu/reader/tomedown_reader_menu.png)
+![Tomedown in KOReader's menu, with a book open](assets/menu/reader/tomedown_reader_menu.png)
 
-The menu itself, with a book open, where every row is on show:
+The menu itself:
 
 ![The Tomedown menu with a book open](assets/menu/reader/tomedown_reader_menu_1_1.png)
 
-Four of these rows name a book, and they are only built while one is
-open: *Export current book*, *Preserve: this book*, *Book notes: %1*
-and *Backup copies…* (the last only while the book has a copy beside
-its file). From the file browser the menu starts at *Export only what
-changed*, since there no book is open to speak about.
+The main rows are the same everywhere. *Export this book* and *Current
+book* only exist while a book is open, so from the file browser the menu
+starts at *Export new and changed books* and has seven rows instead of
+nine.
 
-- **Export current book**: only the open book.
-- **Export only what changed**: exports only the books whose highlights changed since
+- **Export this book**: only the open book.
+- **Export new and changed books**: exports only the books whose highlights changed since
   the last export (per-book hash).
-- **Preserve: this book**: the per-book switch of *Preserve: global*,
-  shown only while the global one is off. It starts from the global default
-  and stores the book's own choice. Turning it off asks first, then
-  rewrites that file plain right away, keeping the one you had as `.bak`;
-  turning it on again brings that copy back at the next export. Only that
-  book's hash changes, so the rest of the library is left alone.
-- **Book notes: %1**: the heading for this book alone, under the switch and
-  only while the book keeps a zone to name. Tap it to give the book its own
-  heading ("The Witch theory", "Julian Carax Dixit", …), or leave it empty
-  to export that zone without one. Every other file, `00 - Index.md`
-  included, keeps the global heading.
-- **Backup copies…**: lists the copies beside this book's file, the
-  parked file and the safety copy, one by one with the day each was
-  saved. Tap a copy to see what it holds and delete it: Tomedown asks
-  first, and warns when the parked file is the only place your notes
-  are right now. Nothing else is touched, and the row leaves with the
-  last copy.
+- **Export all books**: exports everything found in KOReader's reading
+  history.
 - **Choose books…**: a list with checkboxes: tick the volumes and export
   just those.
-- **Export every book's highlights**: exports everything found in KOReader's
-  reading history.
-- **Upload everything to the cloud**: re-uploads every file already in the
+- **Current book**: the rows that name the open book:
+  - **Keep my notes in this book**: the per book switch of *Keep my
+    notes: all books*. It starts from the global default and stores the
+    book's own choice. With the global switch on it shows off, with *On
+    for all books* on the right: the global one is in charge, and the
+    stored choice waits for it to go off again. Turning it off asks
+    first, then rewrites that file plain right away, keeping the one you
+    had as `.bak`; turning it on again brings that copy back at the next
+    export. Only that book's hash changes, so the rest of the library is
+    left alone.
+  - **Notes heading: %1**: the heading for this book alone, under the
+    switch and only while the book keeps a zone to name. Tap it to give
+    the book its own heading ("The Witch theory", "Julian Carax Dixit",
+    …), or leave it empty to export that zone without one. Every other
+    file, `00 - Index.md` included, keeps the global heading.
+  - **Backup copies…**: lists the copies beside this book's file, the
+    notes set aside and the safety copy, one by one with the day each was
+    saved. Tap a copy to see what it holds and delete it: Tomedown asks
+    first, and warns when the notes set aside are the only place your
+    notes are right now. Nothing else is touched, and the row leaves with
+    the last copy.
+- **Upload all files again**: re-uploads every file already in the
   local folder (use it after a failed upload). Each markdown file is compared
   with its cloud copy first: notes written in Obsidian are folded in before
   the push, and a copy that cannot be read keeps its file out of the push
   and into the queue for the retry.
-- **Status**: a wide popup (90% of the screen) in a small font: one line
+- **Last export**: a wide popup (90% of the screen) in a small font: one line
   per entry, labels in bold, with network, server, pending uploads and
   the last export/upload with their timestamp and outcome.
 
-  ![The Status popup: every entry on its own line, the labels in bold](assets/menu/settings/new_status_popup_messages.png)
+  ![The Last export popup: every entry on its own line, the labels in bold](assets/menu/settings/new_status_popup_messages.png)
 - **Settings**: see above.
 - **About**: a popup with the logo, the installed version, the description
   and the GitHub link (tap the link to open it or copy it).
@@ -366,8 +374,8 @@ is the flag for those and only those. The mark lives inside the book's
 own settings and is part of the book's hash, so the next export rewrites
 that file; the flagged highlight always keeps a marker of its own: the
 `> [!highlight]` callout by default, or `> **quote**` once you pick *Bold*
-under *Settings → Highlights*. Either way it stays visually apart from
-the plain quotes, even when *All highlights as Special Highlights* is
+under *Settings → Highlights for Obsidian*. Either way it stays visually apart from
+the plain quotes, even when *Treat every highlight as special* is
 off. A notification confirms every change.
 
 Marking it costs a single tap. **Selecting text** puts the row right
@@ -405,7 +413,7 @@ the option off, no image folder is created at all.
 
 ### Block IDs and linking
 
-*Block IDs for highlights* (Settings → Highlights) writes a short id at
+*Add link IDs to highlights* (Settings → Highlights for Obsidian) writes a short id at
 the end of every quote:
 
 ```md
@@ -431,9 +439,9 @@ plain text at the end of the quote, the same way Notion shows
 `[!highlight]`, so leave the toggle off if you read the notes anywhere
 but Obsidian.
 
-### Auto-export and offline reading
+### Export when I close a book and offline reading
 
-With *Auto-export on close* enabled, closing a book exports it on the spot;
+With *Export when I close a book* enabled, closing a book exports it on the spot;
 suspending the device does the same right before sleep, silently, without
 any widget and without touching the network.
 
@@ -468,42 +476,43 @@ the file fails immediately, because retrying would only cost waiting.
 
 If a file still fails after the 3 attempts, a window shows
 `Cloud: X uploaded, Y errors` and everything else continues: the files stay in
-the local folder, so you can fix the problem and use **Upload everything to
-the cloud**. The attempts are also logged:
+the local folder, so you can fix the problem and use **Upload all files again**. The attempts are also logged:
 
 ```
 tomedown: upload failed (attempt 1 of 3), retrying in 2 s: <path> 500
 ```
 
-### Preserve your edits
+### Keep my notes
 
 Your vault is the destination, not a cache. Since 1.0 an export can fold
 the new render into the file already in your vault instead of overwriting
-it. **Preserve: global** is off by default (what every release up to 0.8
+it. **Keep my notes: all books** is off by default (what every release up to 0.8
 always did), so upgrading changes nothing: turn it on in *Settings →
-Markdown files* and the file becomes a shared document.
+My notes* and the file becomes a shared document.
 
 While it is on there is nothing else to decide: it alone is in charge of
-every file, every file keeps its zone, and *Notes: %1* names all of them.
-The rows that choose for one single file are not shown, and the choices
-behind them stay stored, waiting for the switch to go off again.
+every file, every file keeps its zone, and *Notes heading: %1* names all of them.
+The keep row in *Current book* is still there, off, with *On for all books*
+on the right, so the choice a book stored stays visible without being in
+charge. The per-book heading and the index rows leave the menus, and the
+choices behind them stay stored, waiting for the switch to go off again.
 
 Since 1.1 the choice is also **per book**, with the global switch off.
-*Preserve: this book*, in the open book's menu, keeps the zone for that
+*Keep my notes in this book*, in the open book's menu, keeps the zone for that
 book alone, and the choice survives later flips of the global switch.
 Tapping it again asks first, saying the file goes back to a plain export;
 confirming stores an explicit off and writes that file plain there and
 then, with the one you had kept whole as `.bak` first. That copy comes back
-into the file the next time you turn preserve on, which is what makes the
-box's promise true. While a book keeps a zone its menu grows a second row,
-*Book notes: %1*, which names that book's zone and no other file's. The
-rows of *Settings → Markdown files* keep speaking about the global switch
-only: *Notes: %1* appears while it is ticked, whatever the books chose,
+into the file the next time you turn Keep my notes on, which is what makes
+the box's promise true. While a book keeps a zone its menu grows a second row,
+*Notes heading: %1*, which names that book's zone and no other file's. The
+rows of *Settings → My notes* keep speaking about the global switch
+only: *Notes heading: %1* appears while it is ticked, whatever the books chose,
 because a book's own choice lives in the book's own menu.
 
 `00 - Index.md` follows the same shape. With the global switch off, its
-own switch, *Preserve: index*, sits in *Settings → Markdown files* under
-the global one, with *Index notes: %1* under it to name the zone. The index
+own switch, *Keep my notes: index*, sits in *Settings → My notes* under
+the global one, with *Index notes heading: %1* under it to name the zone. The index
 starts out the way the global switch is set, and no book turns it on behind
 your back any more, so exporting a book never takes the notes you wrote in
 the index away by surprise. Turn its switch off and the index exports plain
@@ -558,16 +567,16 @@ touched block from one of its own at a glance. On every export:
   reports `N files backed up (.bak)`). A file that has to be rebuilt from
   scratch (markers broken beyond repair, an export from tomedown ≤ 0.8)
   comes with the same copy;
-- **the `.bak` is your file, parked.** When preserve goes off, the zoned
+- **the `.bak` is your file, set aside.** When Keep my notes goes off, the zoned
   file, notes included, is kept as `<name>.md.bak` while the plain export
   takes its place. There is one `.bak` and it is always the latest:
-  turning preserve on again makes it the base of the next export, so your
+  turning Keep my notes on again makes it the base of the next export, so your
   notes are back. On, off, on, off, on: every note you kept is back each
   time, and one you deleted stays deleted. A `.bak` is never copied twice
   and never grows a twin beside it. A card that ran the 1.1.0-beta.1
   finds its two copies back in the right slots on the first export;
 - `<name>.md.bak.1` is the safety copy, only for text that cannot come back
-  by itself: something typed into the plain file while preserve was off
+  by itself: something typed into the plain file while Keep my notes was off
   (that file is regenerated, so the text cannot join the zone), a block
   edited inside its comments, a cloud copy that moved on. It has one slot
   and never takes the place of the `.bak`;
@@ -578,33 +587,33 @@ touched block from one of its own at a glance. On every export:
 - if a copy cannot be written (a full card, a read-only folder) the file
   is **left as it is** and the export reports the error: a note is never
   traded for a rewrite. The next export tries again;
-- with two readers on one cloud folder: while preserve is off the export
+- with two readers on one cloud folder: while Keep my notes is off the export
   does not read the cloud copy, so a plain file edited on another device
-  is replaced by the upload, as it always was. Turn preserve on and the
+  is replaced by the upload, as it always was. Turn Keep my notes on and the
   cloud copy is read: if it is a plain file edited elsewhere, its text is
   kept as `.bak.1` and the `.bak` of this device is the one that comes
   back, because the file on the device is the one that counts. A cloud
   copy that has a zone is merged as usual; when this device also holds
-  notes parked in `.bak` that the cloud copy never got, they are folded
+  notes set aside in `.bak` that the cloud copy never got, they are folded
   into it, so neither side is left behind, and what the rewrite replaces
   is kept as `.bak.1` first (the plain file instead, when it holds text
   you typed yourself);
 - inside a book, *Backup copies…* in the Tomedown menu lists the copies
-  that sit beside that book's file (the parked file and the safety copy,
+  that sit beside that book's file (the notes set aside and the safety copy,
   each with the day it was saved) and deletes one when you tap it and
-  confirm. The box says what the copy holds, and warns when it is the
-  parked file of a book that has no zone right now, since those notes
-  are then only there. The row appears only while the book has a copy;
+  confirm. The box says what the copy holds, and warns when the notes
+  set aside are the only place those notes are right now. The row appears
+  only while the book has a copy;
 - the frontmatter merges field by field: Tomedown's own fields (`status`,
   `progress`, `exported`…) always show KOReader's values, your tags are
   kept and unioned with the new ones, and a property only you added
   (`rating: 5`, an alias…) survives, even a line the parser cannot place
   is kept verbatim at the end;
-- the heading is the plugin's line (with preserve on, the
-  `<!-- tomedown:notes -->` tag gives it away). Renamed from *Notes: %1*
-  (*Settings → Markdown files*), it is rewritten on the next export while
+- the heading is the plugin's line (with Keep my notes on, the
+  `<!-- tomedown:notes -->` tag gives it away). Renamed from *Notes heading: %1*
+  (*Settings → My notes*), it is rewritten on the next export while
   your text below it stays put. Leave the setting empty and files export
-  without a heading; with preserve off they export without one at all (the
+  without a heading; with Keep my notes off they export without one at all (the
   next run would take it, and anything written under it, away);
 - the zone around it breathes: **two blank lines** under the heading and
   two above the marker, so there is room to start writing. Nothing else is
@@ -612,22 +621,22 @@ touched block from one of its own at a glance. On every export:
   dropped at the next merge). The [Obsidian guide](OBSIDIAN.md) walks
   through the file as it sits in the vault, with and without the toggle.
 
-The global switch in *Settings → Markdown files* controls all this:
+The global switch in *Settings → My notes* controls all this:
 
-- **Preserve: global**: off by default. Every export writes exactly what
+- **Keep my notes: all books**: off by default. Every export writes exactly what
   was generated, a plain Markdown file with no markers, no tag and no
   heading, replaced wholesale on the next run. Switch it on and every
   export folds the new render into your file; switching modes rewrites
   every file on the next export (the plain file as it was comes along as
   `.bak` when the handles appear).
 
-The result toast and the *Status* panel report the backups of the last
+The result toast and the *Last export* popup report the backups of the last
 run: `%1 files backed up (.bak)`.
 
 Good to know:
 
 - don't move or delete the `<!-- tomedown:begin … -->` comments (they only
-  exist with preserve on). A marker line you broke is repaired around your
+  exist with Keep my notes on). A marker line you broke is repaired around your
   zone on the next export; a deleted one still recovers the zone (with a
   `.bak` alongside); a file with no markers at all is **adopted**: its text
   becomes the zone above the block and the block joins in, nothing is lost
@@ -641,9 +650,9 @@ Good to know:
 - markers from older builds carry no hash: for them the fingerprint from
   the last export decides whether the block counts as edited (with none
   to compare, the block counts as ours);
-- with preserve off the file is regenerated at every export. Text typed
-  into it can only be kept when preserve comes back on, and lands in
-  `.bak.1`; an export while preserve is still off overwrites it.
+- with Keep my notes off the file is regenerated at every export. Text
+  typed into it can only be kept when Keep my notes comes back on, and
+  lands in `.bak.1`; an export while Keep my notes is still off overwrites it.
 
 ### Editing in Obsidian while the device is away
 
@@ -654,8 +663,8 @@ export has to know which copy is newer. Otherwise every export would fold
 the new highlights into the older copy on the device and push it over the
 notes you just wrote.
 
-With **Merge edits made in the cloud** on (the default, it lives in
-*Settings → Cloud* right under *Upload to cloud*), an export fetches the
+With **Bring in edits made in Obsidian** on (the default, it lives in
+*Settings → My notes*), an export fetches the
 copy in the cloud before folding the render in, and uses it as the base
 when it has changed since the last upload Tomedown made. The notes you
 wrote in Obsidian survive, the fresh highlights join them, and the file
@@ -664,9 +673,9 @@ for the files being exported, and only while there is a connection.
 
 A few things worth knowing:
 
-- with *Preserve: global* off (the default) every export overwrites the
-  file, so the toggle has nothing to merge and does nothing. Turn preserve
-  on to let your notes ride along;
+- with *Keep my notes: all books* off (the default) every export overwrites the
+  file, so the toggle has nothing to merge and does nothing. Turn Keep my
+  notes on to let your notes ride along;
 - the first export into a folder that already has files adopts the cloud
   copy as the base, so an existing vault is not overwritten on the first
   run;
@@ -683,14 +692,14 @@ A few things worth knowing:
   direction;
 - the same guard runs while you are online. An export or an upload whose
   cloud copy cannot be read keeps that file out of the push and queues it
-  for the retry, and *Upload everything to the cloud* runs the same
+  for the retry, and *Upload all files again* runs the same
   comparison before pushing. A server that cannot download has nothing to
-  compare against and receives the local copy as it is; with *Merge edits
-  made in the cloud* off, the copy on the device always wins.
+  compare against and receives the local copy as it is; with *Bring in edits made in Obsidian*
+  off, the copy on the device always wins.
 
 ## File format
 
-The file as it comes out with **Preserve: global** on. The plain
+The file as it comes out with **Keep my notes: all books** on. The plain
 export (the default) is the same document with the two comments, the
 heading and its tag left out:
 
@@ -766,7 +775,7 @@ tags:
   the copy in the vault is the master one. Obsidian renders such images
   starting with **version 1.8.1**
 - highlights marked **Special Highlight** (see *Usage*) are rendered as
-  `> [!highlight]` callouts; with *All highlights as Special Highlights* ticked
+  `> [!highlight]` callouts; with *Treat every highlight as special* ticked
   every highlight gets the marker, otherwise only the special ones:
 
   ```markdown
@@ -815,7 +824,7 @@ interface the same text comes out translated (see *Languages*).
 Obsidian is just one way to read the notes: the files are plain Markdown,
 so any editor, reader or wiki works. The [Obsidian guide](OBSIDIAN.md)
 walks through the files as they appear in the vault: the book note with
-and without Preserve, and the index. If you do use Obsidian, only
+and without Keep my notes, and the index. If you do use Obsidian, only
 **Remotely Save** needs configuring here: the Tomedown plugin lives on
 KOReader, nothing special has to be installed in Obsidian. **Book covers
 (*Include book covers*) require Obsidian 1.8.1 or newer**: that is the
@@ -854,9 +863,9 @@ a clickable table and every title opens that book's file.
 
 ## Notes and limitations
 
-- With preserve off, the `.md` files are **rewritten on every export**:
-  treat them as read-only, or your edits disappear next time. With preserve
-  on, write outside the block and your notes survive.
+- With Keep my notes off, the `.md` files are **rewritten at every
+export**: treat them as read-only, or your edits disappear next time.
+  With Keep my notes on, write outside the block and your notes survive.
 - I test on a Kindle Paperwhite 5 and on a Kindle 4 Non-Touch. The plugin
   is plain Lua and touches no hardware, but I cannot try every KOReader
   build or every cloud server. If something breaks on yours, a report with
@@ -867,7 +876,7 @@ a clickable table and every title opens that book's file.
 - Uploads go through KOReader's *Cloud storage* plugin. If it is not active
   the local export still works and only the upload is skipped. If an upload
   fails (missing remote folder, no connection), the files stay in the local
-  folder: fix it and use **Upload everything to the cloud**.
+  folder: fix it and use **Upload all files again**.
 
 ## Languages (English / Italian)
 

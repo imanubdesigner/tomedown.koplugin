@@ -524,23 +524,26 @@ T.check(newProgressMd and T.contains(newProgressMd, 'progress: "50%"'),
 local menu_items = {}
 plugin:addToMainMenu(menu_items)
 T.check(menu_items.tomedown ~= nil, "menu entry registered")
--- the rows are built on open (v1.1): the heading row of a preserved
--- book only exists while that book is ticked
+-- the rows are fixed (v1.1): everything that names the open book lives
+-- in the Current book submenu, so only that row and the export come and
+-- go with the document
 T.check(type(menu_items.tomedown.sub_item_table_func) == "function",
     "the book menu builds its rows on open")
 local sub = menu_items.tomedown.sub_item_table_func()
 T.check(#sub == 9, "main menu entries: " .. #sub)
-T.check(sub[1].text == "\xEE\x89\xBC  Export current book", "menu item 1")
-T.check(sub[2].text == "\xEE\xA4\xB5  Export only what changed", "menu item 2")
-T.check(sub[3].text == "\xEF\x81\x80  Preserve: this book",
-    "menu item 3, the per book preserve row")
+T.check(sub[1].text == "\xEE\x89\xBC  Export this book", "menu item 1")
+T.check(sub[2].text == "\xEE\xA4\xB5  Export new and changed books", "menu item 2")
+T.check(sub[3].text == "\xEE\xA7\x99  Export all books", "menu item 3")
 T.check(sub[4].text == "\xEE\xB9\x94  Choose books…", "menu item 4")
-T.check(sub[5].text == "\xEE\xA7\x99  Export every book's highlights", "menu item 5")
-T.check(sub[6].text == "\xEE\xB4\xBE  Upload everything to the cloud", "menu item 6")
-T.check(sub[7].text == "\xEF\x83\xA4  Status", "menu item 7 with the dashboard")
+T.check(sub[4].separator == true, "separator after Choose books")
+T.check(sub[5].text == "\xEF\x81\x80  Current book",
+    "menu item 5, the per book submenu")
+T.check(sub[5].separator == true, "separator after Current book")
+T.check(sub[6].text == "\xEE\xB4\xBE  Upload all files again", "menu item 6")
+T.check(sub[7].text == "\xEF\x83\xA4  Last export", "menu item 7")
 T.check(sub[7].separator == true, "separator before Settings")
 T.check(sub[8].text == "\xEF\x80\x93  Settings", "menu item 8 with the cog")
-T.check(sub[8].separator == true, "separator before About")
+T.check(sub[8].separator ~= true, "no separator before About")
 T.check(sub[9].text == "\xEE\xA7\xBC  About", "menu item 9")
 
 local cover_entry = false
@@ -559,110 +562,115 @@ scanCover(menu_items)
 T.check(not cover_entry, "no menu entry about covers")
 
 ui.document = { file = FILE }
-T.check(sub[1].enabled_func() == true, "export current enabled with the book open")
+T.check(sub[1].enabled_func() == true, "export this book enabled with the book open")
 ui.document = nil
--- the row needs an open book: "lastfile" names the last one read, and
--- must not bring the row back onto the dashboard with it
+-- the two rows that name a book need the document: "lastfile" names the
+-- last one read, and must not bring either row back onto the dashboard
 store.lastfile = FILE
 local dashboard = menu_items.tomedown.sub_item_table_func()
 T.check(#dashboard == 7,
-    "no export current row on the dashboard: " .. #dashboard)
-T.check(dashboard[1].text == "\xEE\xA4\xB5  Export only what changed",
+    "no book rows on the dashboard: " .. #dashboard)
+T.check(dashboard[1].text == "\xEE\xA4\xB5  Export new and changed books",
     "the dashboard menu starts on the first row that needs no book")
+T.check(dashboard[3].text == "\xEE\xB9\x94  Choose books…"
+        and dashboard[3].separator == true,
+    "Choose books closes the first group on the dashboard")
+T.check(dashboard[4].text == "\xEE\xB4\xBE  Upload all files again",
+    "the dashboard skips Current book")
+T.check(dashboard[5].text == "\xEF\x83\xA4  Last export"
+        and dashboard[5].separator == true,
+    "Last export sits where the book rows were")
+T.check(dashboard[6].text == "\xEF\x80\x93  Settings", "settings follows")
+T.check(dashboard[7].text == "\xEE\xA7\xBC  About", "about closes the dashboard menu")
+local offered_current = false
+for __, item in ipairs(dashboard) do
+    if item.text and item.text:find("Current book", 1, true) then
+        offered_current = true
+    end
+end
+T.check(not offered_current,
+    "the Current book row is not offered without a book open")
 store.lastfile = nil
 ui.document = { file = nil }
-T.check(sub[1].enabled_func() == false, "export current disabled without a file")
+T.check(sub[1].enabled_func() == false, "export this book disabled without a file")
 ui.document = { file = nil }
-T.check(sub[5].enabled_func() == true, "all books enabled")
+T.check(sub[3].enabled_func() == true, "export all books enabled")
 
--- the per book preserve row (v1.1): it is greyed out with no book to
--- choose for, and with a book open it shows what that book will get,
--- the global default until the book taps it (section 15b taps it)
-T.check(sub[3].enabled_func() == false, "preserve row disabled without a file")
-ui.document = { file = FILE }
-T.check(sub[3].enabled_func() == true, "preserve row enabled with the book open")
-T.check(sub[3].checked_func() == false,
-    "the row shows the global default until the book chooses")
-ui.document = { file = nil }
-
--- the three rows that belong to an open book alone: in the file
--- manager KOReader hands the plugin the FileManager as ui, which
--- carries no document, so "lastfile" alone must not drag any of them
--- (nor the heading that names the zone) onto the dashboard
+-- Current book: the keep row is always there while a book is open, so
+-- the stored per book choice stays reachable when the global switch in
+-- Settings goes off again. Off with the global switch on, with the
+-- reason on the right, since the switch is disabled but not hidden.
 do
+    ui.document = { file = FILE }
+    local current = sub[5].sub_item_table_func()
+    T.check(#current == 1, "Current book starts with the keep row: " .. #current)
+    T.check(current[1].text == "\xEF\x81\x80  Keep my notes in this book",
+        "the per book keep row")
+    T.check(current[1].enabled_func() == true, "keep row enabled with the book open")
+    T.check(current[1].checked_func() == false,
+        "the row shows the global default until the book chooses")
+    T.check(current[1].mandatory_func() == nil,
+        "no reason on the right while the row is in charge")
+    T.check(current[1].keep_menu_open == true,
+        "the keep row keeps the menu open for its tick")
     ui.document = nil
     store.lastfile = FILE
-    local shelf = menu_items.tomedown.sub_item_table_func()
-    T.check(#shelf == 7, "three book rows kept off the dashboard: " .. #shelf)
-    local offered = {}
-    for _, item in ipairs(shelf) do
-        if item.text then
-            for _, name in ipairs({ "Export current book", "Preserve" }) do
-                if item.text:find(name, 1, true) then
-                    offered[name] = true
-                end
-            end
-        end
-    end
-    T.check(not offered["Export current book"],
-        "the current book row is not offered without a book open")
-    T.check(not offered["Preserve"],
-        "the per book preserve row is not offered without a book open")
+    T.check(#menu_items.tomedown.sub_item_table_func() == 7,
+        "the keep row stays off the dashboard")
     store.lastfile = nil
     ui.document = { file = nil }
 end
 
 local settings = plugin:genSettingsMenu()
-T.check(#settings == 4, "settings groups: " .. #settings)
-T.check(settings[1].text == "\xEE\xB4\xBE  Cloud", "cloud group with icon")
-T.check(settings[2].text == "\xEF\x83\xB6  Markdown files",
-    "markdown files group with icon")
-T.check(settings[3].text == "\xEE\xB5\x91  Highlights",
+T.check(#settings == 5, "settings groups: " .. #settings)
+T.check(settings[1].text == "\xEF\x83\xB6  Files", "files group with icon")
+T.check(settings[1].sub_item_table ~= nil, "Files is a static group")
+T.check(settings[2].text == "\xEE\xB4\xBE  Cloud", "cloud group with icon")
+T.check(settings[3].text == "\xEF\x89\x89  My notes", "my notes group with icon")
+T.check(settings[4].text == "\xEE\xB5\x91  Highlights for Obsidian",
     "highlights group with icon")
-T.check(settings[4].text == "\xEE\xB6\xAE  Updates", "updates group with icon")
--- Cloud: rebuilt on open, the Merge row only exists with a server and
--- upload on (no cloud copy to fold without them)
-local cloud = settings[1].sub_item_table_func()
-local updates = settings[4].sub_item_table
+T.check(settings[5].text == "\xEE\xB6\xAE  Updates", "updates group with icon")
+-- Cloud: three fixed rows since 1.1. The row that brings the cloud copy
+-- back now lives in My notes, where the notes are.
+local cloud = settings[2].sub_item_table
+local updates = settings[5].sub_item_table
 T.check(#cloud == 3, "cloud rows without a server: " .. #cloud)
 T.check(#updates == 4, "updates rows: " .. #updates)
 T.check(cloud[1].text == "Upload to cloud", "upload entry")
 T.check(cloud[2].text_func() == "Server and folder: not set", "server not set")
 T.check(T.contains(cloud[3].text_func(), "Remote folder: not set"), "remote folder not set")
--- Markdown files: flat since 1.0, no Style/Behaviour submenus; the
--- group is rebuilt on open because three rows depend on the switches
--- in it: the index ones on Generate, on Preserve and on their own
--- switch, the heading one on Preserve
-local files = settings[2].sub_item_table_func()
-T.check(#files == 7, "markdown files rows: " .. #files)
+-- Files: five static rows, none of them appears or disappears
+local files = settings[1].sub_item_table
+T.check(#files == 5, "files rows: " .. #files)
 T.check(T.contains(files[1].text_func(), "clipboard/tomedown"), "default local folder")
-T.check(files[2].text == "Generate the 00 - Index.md (for Obsidian)",
-    "index entry with the file name and the Obsidian hint")
+T.check(files[2].text == "Create an index note (00 - Index.md)",
+    "index entry with the file name")
 T.check(files[3].text == "Include page bookmarks", "page bookmarks entry")
 T.check(files[3].checked_func() == false, "page bookmarks off by default")
 T.check(files[4].text == "Include book covers", "covers entry")
 T.check(files[4].checked_func() == false, "covers off by default")
-T.check(files[5].text == "Auto-export on close", "auto-export entry")
+T.check(files[5].text == "Export when I close a book", "auto-export entry")
 T.check(files[5].checked_func() == false, "auto-export off by default")
-T.check(files[6].text == "Preserve: global", "preserve entry")
-T.check(files[6].checked_func() == false,
+-- My notes: the global switch, the index switch while the global one is
+-- off, the headings of the zones, and the cloud merge. Rebuilt on open
+-- and in place when a switch in it flips.
+local notes = settings[3].sub_item_table_func()
+T.check(#notes == 2, "notes rows with preserve off: " .. #notes)
+T.check(notes[1].text == "Keep my notes: all books", "global switch entry")
+T.check(notes[1].checked_func() == false,
     "manual edits off by default (the tomedown <= 0.8 behaviour)")
--- the index is a file like the others (v1.1): its own switch, right
--- under the global one, following it until the reader flips it, and
--- the row that names its zone below that, only while it keeps one
-T.check(files[7].text == "Preserve: index",
-    "the index preserve entry")
-T.check(files[7].checked_func() == false,
+T.check(notes[2].text == "Keep my notes: index",
+    "the index keep entry")
+T.check(notes[2].checked_func() == false,
     "the index follows the global switch by default")
-T.check(files[8] == nil,
+T.check(notes[3] == nil,
     "no heading row while preserve is off and the index is plain")
 
--- Highlights: its own group since 1.1 — the three rows that speak about
--- the highlights themselves, which would make the Markdown files group
--- carry nine rows (six here, plus the marker rows, plus notes)
-local highlights = settings[3].sub_item_table
+-- Highlights for Obsidian: its own group since 1.1, the three rows that
+-- speak about the highlights themselves
+local highlights = settings[4].sub_item_table
 T.check(#highlights == 3, "highlights rows: " .. #highlights)
-T.check(highlights[1].text == "All highlights as Special Highlights",
+T.check(highlights[1].text == "Treat every highlight as special",
     "callout entry")
 T.check(highlights[1].checked_func() == false, "callout off by default")
 T.check(type(highlights[2].text_func) == "function", "special marker row present")
@@ -678,7 +686,7 @@ T.check(marker_items[1].text == "Callout" and marker_items[1].checked_func(),
     "the callout choice is the one on")
 T.check(marker_items[2].text == "Bold" and marker_items[2].checked_func() == false,
     "the bold choice starts off")
-T.check(highlights[3].text == "Block IDs for highlights", "block ids entry")
+T.check(highlights[3].text == "Add link IDs to highlights", "block ids entry")
 T.check(highlights[3].checked_func() == false, "block ids off by default")
 -- with every highlight becoming a callout the marker row has nothing
 -- left to choose, and graying it out is the only way to say so
@@ -690,17 +698,17 @@ T.check(highlights[2].enabled_func() == true,
     "special marker row back once the callout option is off")
 
 -- flipping preserve shows the heading row in the open group, without
--- leaving it, and takes the two index rows away: with the switch on
--- it alone governs every file, so nothing else is on show
-local live = settings[2].sub_item_table_func()
+-- leaving it, and takes the index rows away: with the switch on it
+-- alone governs every file, so nothing else is on show
+local live = settings[3].sub_item_table_func()
 local open_menu = { item_table = live }
-live[6].callback(open_menu)
+live[1].callback(open_menu)
 T.check(store.tomedown.preserve == true, "preserve toggled on")
-T.check(#live == 7, "heading row appears with preserve on: " .. #live)
-local notes_row = live[7]
-T.check(notes_row.text_func() == "Notes: My notes...",
+T.check(#live == 2, "heading row appears with preserve on: " .. #live)
+local notes_row = live[2]
+T.check(notes_row.text_func() == "Notes heading: My notes...",
     "notes heading entry: " .. notes_row.text_func())
-T.check(live[7] == notes_row and live[8] == nil,
+T.check(live[2] == notes_row and live[3] == nil,
     "the heading row sits right under the switch: the index rows are hidden")
 
 -- rename dialog
@@ -712,116 +720,117 @@ InputDialog.last.input_text = "  Appunti miei  "
 InputDialog.last:simulateSave()
 T.check(store.tomedown.notes_title == "Appunti miei",
     "heading saved and trimmed")
-T.check(notes_row.text_func() == "Notes: Appunti miei",
+T.check(notes_row.text_func() == "Notes heading: Appunti miei",
     "menu entry updated")
 plugin:editNotesTitle(nil)
 InputDialog.last.input_text = ""
 InputDialog.last:simulateSave()
 T.check(store.tomedown.notes_title == "", "an empty title clears the heading")
 store.tomedown.notes_title = nil
-T.check(notes_row.text_func() == "Notes: My notes...",
+T.check(notes_row.text_func() == "Notes heading: My notes...",
     "back to the default heading")
 
 -- back off: the heading row leaves the open group again and the index
 -- switch comes back to take its place
-live[6].callback(open_menu)
+live[1].callback(open_menu)
 T.check(store.tomedown.preserve == false, "preserve toggled back off")
-T.check(#live == 7, "heading row disappears with preserve off: " .. #live)
-T.check(live[7].text == "Preserve: index",
+T.check(#live == 2, "heading row disappears with preserve off: " .. #live)
+T.check(live[2].text == "Keep my notes: index",
     "the index switch is back, with no heading row under it")
-T.check(files[6].checked_func() == false, "the toggle reflects the setting")
+T.check(notes[1].checked_func() == false, "the toggle reflects the setting")
 store.tomedown.preserve = nil
 
--- Generate off takes the index preserve row away too, and back on
--- brings it (v1.1): there is no index to keep edits in without it
-live[2].callback(open_menu)
+-- Generate off takes the index keep row away too, and back on brings it
+-- (v1.1): there is no index to keep edits in without it
+files[2].callback()
 T.check(store.tomedown.with_index == false, "index generation toggled off")
-T.check(#live == 6, "the index row leaves with the index: " .. #live)
-live[2].callback(open_menu)
+live = plugin:genSettingsMenu()[3].sub_item_table_func()
+T.check(#live == 1, "the index row leaves with the index: " .. #live)
+files[2].callback()
 T.check(store.tomedown.with_index == true, "index generation back on")
-T.check(#live == 7, "the index row comes back with the index: " .. #live)
-T.check(live[7].checked_func() == false,
+live = plugin:genSettingsMenu()[3].sub_item_table_func()
+T.check(#live == 2, "the index row comes back with the index: " .. #live)
+T.check(live[2].checked_func() == false,
     "the index switch still follows the global one")
 
 -- ------------- 16b. the Merge row needs the full cloud setup
 -- server + upload + preserve: without all three it is not shown at all,
--- and the group rebuilds in place when the Upload or Preserve toggle
--- flips (so the reader never has to leave and re-enter the group to
--- see it appear or vanish)
+-- and My notes rebuilds in place when its own switch flips (so the
+-- reader never has to leave and re-enter the group to see it appear or
+-- vanish)
+do
 uploadSetup()
 store.tomedown.preserve = false
-local cloud_live = settings[1].sub_item_table_func()
-T.check(#cloud_live == 3,
-    "no Merge row with preserve off: " .. #cloud_live)
+local notes_live = settings[3].sub_item_table_func()
+T.check(#notes_live == 2,
+    "no Merge row with preserve off: " .. #notes_live)
 
 -- the settings speak about the global switch only: a book's own choice
 -- lives in its own menu, so a preserved book brings no Merge row here
 -- (the choice is cleared again below)
 store.tomedown.preserve_books = { [FILE] = true }
-cloud_live = settings[1].sub_item_table_func()
-T.check(#cloud_live == 3,
+notes_live = settings[3].sub_item_table_func()
+T.check(#notes_live == 2,
     "no Merge row for a preserved book while the global is off: "
-        .. #cloud_live)
+        .. #notes_live)
 store.tomedown.preserve_books = nil
-cloud_live = settings[1].sub_item_table_func()
-T.check(#cloud_live == 3,
-    "no Merge row once the book's choice is cleared: " .. #cloud_live)
+notes_live = settings[3].sub_item_table_func()
+T.check(#notes_live == 2,
+    "no Merge row once the book's choice is cleared: " .. #notes_live)
 
--- flip Preserve on while the Cloud group is open: the row appears
--- in place, without leaving the menu
-local cloud_menu = { item_table = cloud_live }
--- (Preserve lives in the Markdown files group, but its callback
--- rebuilds Cloud too when Cloud is the open group)
-files[6].callback(cloud_menu)
-T.check(store.tomedown.preserve == true, "preserve on from the Cloud group")
-T.check(#cloud_live == 4,
-    "Merge row appears with preserve on: " .. #cloud_live)
-T.check(cloud_live[4].text == "Merge edits made in the cloud",
+-- flip the global switch while My notes is open: the row appears in
+-- place, without leaving the menu
+local notes_menu = { item_table = notes_live }
+notes_live[1].callback(notes_menu)
+T.check(store.tomedown.preserve == true, "preserve on from My notes")
+T.check(#notes_live == 3,
+    "Merge row appears with preserve on: " .. #notes_live)
+T.check(notes_live[3].text == "Bring in edits made in Obsidian",
     "the Merge row itself")
 
--- flip Upload off while the Merge row is visible: it leaves the open
--- group in place, without the reader having to re-enter it
-cloud_live[1].callback(cloud_menu)
+-- flip Upload off and reopen the group: there is no cloud copy to bring
+-- back without it, so the row leaves
+cloud[1].callback()
 T.check(store.tomedown.upload == false, "upload toggled off")
-T.check(#cloud_live == 3,
-    "Merge row leaves the open group when upload goes off: "
-        .. #cloud_live)
+notes_live = settings[3].sub_item_table_func()
+T.check(#notes_live == 2,
+    "Merge row leaves when upload goes off: " .. #notes_live)
 
--- flip Preserve off while upload is still on: same in-place rebuild
-cloud_live[1].callback(cloud_menu) -- upload back on
-files[6].callback(cloud_menu)      -- preserve off
+-- flip the global switch off again with upload on: same rebuild
+cloud[1].callback() -- upload back on
+notes_live = settings[3].sub_item_table_func()
+notes_menu = { item_table = notes_live }
+notes_live[1].callback(notes_menu) -- preserve off
 T.check(store.tomedown.preserve == false, "preserve off again")
-T.check(#cloud_live == 3,
+T.check(#notes_live == 2,
     "Merge row leaves the open group when preserve goes off: "
-        .. #cloud_live)
+        .. #notes_live)
 
 -- put the shared store back the way the sections below expect it: a
 -- server, upload not chosen yet, preserve off (nothing above leaks)
 uploadSetup()
 store.tomedown.upload = nil
 store.tomedown.preserve = nil
-cloud_live = nil
-cloud_menu = nil
-cloud_menu = nil
+end
 
 -- the rows that used to sit in the Style and Behaviour submenus, kept
--- under the names the sections below toggle: auto-export and preserve
--- in Markdown files, the callout toggle in Highlights
-local behaviour = { [1] = files[5], [2] = files[6] }
+-- under the names the sections below toggle: auto-export in Files and
+-- the global switch in My notes
+local behaviour = { [1] = files[5], [2] = notes[1] }
 T.check(updates[1].text_func() == "Check for updates (v"
         .. Update.getInstalledVersion() .. ")",
     "check row carries the installed version: " .. updates[1].text_func())
 T.check(updates[2].text == "View changelog", "changelog entry")
 T.check(updates[2].separator == true, "separator after the changelog entry")
 T.check(updates[3].text == "Check for updates in background", "background entry")
-T.check(updates[4].text == "\xEF\x84\xA6  Developer updates",
-    "developer updates entry with icon")
+T.check(updates[4].text == "\xEF\x84\xA6  Beta versions",
+    "beta versions entry with icon")
 local developer = updates[4].sub_item_table_func()
 T.check(#developer == 3, "beta check hidden by default: " .. #developer)
-T.check(developer[1].text == "Beta Releases", "beta releases entry")
-T.check(developer[1].checked_func() == false, "beta releases off by default")
+T.check(developer[1].text == "Receive beta versions", "beta versions entry")
+T.check(developer[1].checked_func() == false, "beta versions off by default")
 T.check(developer[1].separator == true, "separator under the beta toggle")
-T.check(developer[2].text == "\xEE\xB6\x8F  Reset to latest stable release",
+T.check(developer[2].text == "\xEE\xB6\x8F  Go back to the stable version",
     "reset entry with the bomb icon")
 local installed_version = Update.getInstalledVersion()
 T.check(developer[3].text_func() == "Installed: v" .. installed_version
@@ -829,14 +838,14 @@ T.check(developer[3].text_func() == "Installed: v" .. installed_version
     "installed row: " .. developer[3].text_func())
 T.check(developer[3].enabled == false, "installed row is a plain label")
 
--- ticking Beta Releases reveals the check in the open submenu at once
--- (the callback receives the TouchMenu, whose item_table is this very
--- table; it is rebuilt in place and redrawn by KOReader)
+-- ticking Receive beta versions reveals the check in the open submenu at
+-- once (the callback receives the TouchMenu, whose item_table is this
+-- very table; it is rebuilt in place and redrawn by KOReader)
 local fake_menu = { item_table = developer }
 developer[1].callback(fake_menu)
-T.check(store.tomedown.beta_releases == true, "beta releases toggled on")
+T.check(store.tomedown.beta_releases == true, "beta versions toggled on")
 T.check(#developer == 4, "beta check shown after ticking: " .. #developer)
-T.check(developer[2].text == "Check for updates", "beta check entry")
+T.check(developer[2].text == "Check for beta updates", "beta check entry")
 T.check(developer[2].separator == true,
     "separator between the beta check and the reset")
 T.check(developer[1].separator ~= true, "no separator under the toggle")
@@ -848,8 +857,8 @@ T.check(#developer == 3, "beta check hidden again: " .. #developer)
 T.check(developer[1].separator == true, "separator back under the toggle")
 
 -- checkable rows must keep the menu open so KOReader refreshes them
--- (the rows of the old Style and Behaviour submenus are in `files`)
-for _, group in ipairs({ sub, cloud, files, updates, developer }) do
+for _, group in ipairs({ sub, cloud, files, notes, highlights,
+        updates, developer }) do
     for i, row in ipairs(group) do
         if row.checked_func then
             T.check(row.keep_menu_open == true,
@@ -1732,7 +1741,7 @@ T.check(store.tomedown.exports[FILE].hash == nil,
 marker_items[1].callback()
 T.check(store.tomedown.special_marker == "callout",
     "back to the default callout marker")
-T.check(highlights[2].text_func() == "Special highlight marker: Callout",
+T.check(highlights[2].text_func() == "How special highlights look: Callout",
     "the row label follows the choice: " .. highlights[2].text_func())
 
 -- extraction: capped to the 800x1200 box, quality 50, colours kept
@@ -2093,30 +2102,33 @@ do
     -- alone, and it outlives any later flip of the global switch. The
     -- index follows its own switch (v1.1): no book turns it on behind
     -- the reader's back any more.
+    do
     ui.document = { file = FILE }
     behaviour[2].callback() -- global preserve off, the tomedown 0.8 way
     T.check(store.tomedown.preserve == false, "15b: the global switch is off")
-    sub[3].callback() -- the open book asks for its own zone
+    sub = menu_items.tomedown.sub_item_table_func()
+    local current_book = sub[5].sub_item_table_func()
+    current_book[1].callback() -- the open book asks for its own zone
     T.check(store.tomedown.preserve_books
             and store.tomedown.preserve_books[FILE] == true,
         "15b: the choice is stored for this book")
-    T.check(sub[3].checked_func() == true,
+    T.check(current_book[1].checked_func() == true,
         "15b: the row shows the book's own choice")
     T.check(store.tomedown.preserve == false,
         "15b: the global default is untouched")
-    -- the book menu is built on open: a book that keeps a zone gets its
-    -- own heading row, right under the switch that keeps it
-    sub = menu_items.tomedown.sub_item_table_func()
-    -- (the copies of this book, left by the sections above, add a row of
-    -- their own right above "Choose books")
-    T.check(#sub == 11, "15b: the heading row joins the menu: " .. #sub)
-    T.check(sub[4].text_func()
-            == "Book notes: My notes...",
+    -- the Current book submenu is built on open: a book that keeps a
+    -- zone gets its own heading row, right under the switch that keeps
+    -- it, and the copies left by the sections above sit under that
+    current_book = sub[5].sub_item_table_func()
+    T.check(#current_book == 3,
+        "15b: the heading and the copies join the submenu: "
+            .. #current_book)
+    T.check(current_book[2].text_func()
+            == "Notes heading: My notes...",
         "15b: the heading row names this book's zone: "
-            .. sub[4].text_func())
-    T.check(sub[5].text == "\xEF\x83\x87  Backup copies…"
-            and sub[6].text == "\xEE\xB9\x94  Choose books…",
-        "15b: the heading row sits right under the preserve switch")
+            .. current_book[2].text_func())
+    T.check(current_book[3].text == "\xEF\x83\x87  Backup copies…",
+        "15b: the copies row follows the heading")
     plugin:runExport({ FILE, FILE2 }, {})
     UIManager:runPending()
     local per_book_md = T.readFile(MD_PATH)
@@ -2145,20 +2157,25 @@ do
         "15b: the index no longer rides along with the books")
 
     -- the global switch comes back on: while it is on it alone is in
-    -- charge of every file, so both per book rows leave the book menu
-    -- (the choice this book stored stays where it is, and comes back
-    -- when the switch goes off again)
+    -- charge of every file, so the keep row goes off with the reason on
+    -- the right and the heading leaves (the choice this book stored
+    -- stays where it is, and comes back when the switch goes off again)
     behaviour[2].callback()
     T.check(store.tomedown.preserve == true, "15b: the global switch is on")
-    T.check(#sub == 9,
-        "15b: the book menu drops both per book rows with it on: " .. #sub)
-    T.check(sub[3].text == "\xEF\x83\x87  Backup copies…"
-            and sub[4].text == "\xEE\xB9\x94  Choose books…",
-        "15b: the per book switch is gone, the rows below follow")
+    current_book = sub[5].sub_item_table_func()
+    T.check(current_book[1].enabled_func() == false,
+        "15b: the keep row is off while the global switch covers every book")
+    T.check(current_book[1].checked_func() == false,
+        "15b: and it shows no book's choice")
+    T.check(current_book[1].mandatory_func() == "On for all books",
+        "15b: the reason sits on the right")
+    T.check(current_book[2].text == "\xEF\x83\x87  Backup copies…",
+        "15b: the heading leaves with the global switch, the copies stay")
     behaviour[2].callback()
     T.check(store.tomedown.preserve == false, "15b: and off again")
-    T.check(#sub == 11,
-        "15b: both rows are back with the switch off: " .. #sub)
+    current_book = sub[5].sub_item_table_func()
+    T.check(#current_book == 3,
+        "15b: the heading is back with the switch off: " .. #current_book)
     plugin:runExport({ FILE }, {})
     UIManager:runPending()
     T.check(T.readFile(MD_PATH) ~= nil
@@ -2169,7 +2186,8 @@ do
     -- A book that keeps a zone names it itself: the row under the
     -- switch opens the dialog, and the title is stored for that book
     -- alone. The index, when it has a zone, keeps the global heading.
-    sub[4].callback()
+    current_book = sub[5].sub_item_table_func()
+    current_book[2].callback()
     T.check(InputDialog.last ~= nil
             and InputDialog.last.title == "Personal notes heading",
         "15c: the heading dialog opened")
@@ -2182,17 +2200,19 @@ do
         "15c: the global heading is left alone")
     T.check(store.tomedown.exports[FILE].hash == nil,
         "15c: the book's hash goes: its file has to be rewritten")
-    T.check(sub[4].text_func()
-            == "Book notes: The Witch theory",
-        "15c: the row shows the new name: " .. sub[4].text_func())
+    T.check(current_book[2].text_func()
+            == "Notes heading: The Witch theory",
+        "15c: the row shows the new name: " .. current_book[2].text_func())
     -- a book that never named its zone, saved back with the global title
     -- still in the field, keeps following the global one: a copy of it
     -- would freeze the book on today's heading, and a later rename in
     -- Settings would leave it behind for good
     ui.document = { file = FILE2 }
     sub = menu_items.tomedown.sub_item_table_func()
-    sub[3].callback({ item_table = sub })
-    sub[4].callback()
+    current_book = sub[5].sub_item_table_func()
+    current_book[1].callback({ item_table = current_book })
+    current_book = sub[5].sub_item_table_func()
+    current_book[2].callback()
     T.check(InputDialog.last ~= nil
             and InputDialog.last.input_text == "My notes...",
         "15c: the field starts on the heading the book exports today: "
@@ -2234,13 +2254,13 @@ do
     -- goes from zoned to plain the file is kept whole as .bak, because
     -- the notes in it do not survive the rewrite.
     local index_row
-    for __, row in ipairs(plugin:genSettingsMenu()[2].sub_item_table_func()) do
-        if row.text == "Preserve: index" then
+    for __, row in ipairs(plugin:genSettingsMenu()[3].sub_item_table_func()) do
+        if row.text == "Keep my notes: index" then
             index_row = row
             break
         end
     end
-    T.check(index_row ~= nil, "15d: the index preserve row exists")
+    T.check(index_row ~= nil, "15d: the index keep row exists")
     T.check(index_row.checked_func() == false,
         "15d: it follows the global switch, which is off")
     index_row.callback() -- the index asks for its own zone
@@ -2263,12 +2283,13 @@ do
     -- alone, and every export hash goes with it (the index is only
     -- rebuilt along with the books, so the new heading needs every
     -- file to be written again).
-    live = plugin:genSettingsMenu()[2].sub_item_table_func()
-    T.check(#live == 8 and live[8].text_func() == "Index notes: My notes...",
+    live = plugin:genSettingsMenu()[3].sub_item_table_func()
+    T.check(#live == 3
+            and live[3].text_func() == "Index notes heading: My notes...",
         "15d: the index heading row sits under its switch: "
-            .. tostring(live[8] and live[8].text_func
-                and live[8].text_func()))
-    live[8].callback()
+            .. tostring(live[3] and live[3].text_func
+                and live[3].text_func()))
+    live[3].callback()
     T.check(InputDialog.last ~= nil
             and InputDialog.last.title == "Personal notes heading",
         "15d: the index heading dialog opened")
@@ -2283,8 +2304,8 @@ do
     T.check(store.tomedown.exports[FILE] == nil
             or store.tomedown.exports[FILE].hash == nil,
         "15d: every export hash goes: the index rides along with the books")
-    live = plugin:genSettingsMenu()[2].sub_item_table_func()
-    T.check(live[#live].text_func() == "Index notes: Appunti dell'indice",
+    live = plugin:genSettingsMenu()[3].sub_item_table_func()
+    T.check(live[#live].text_func() == "Index notes heading: Appunti dell'indice",
         "15d: the row shows the new name: "
             .. tostring(live[#live].text_func and live[#live].text_func()))
     plugin:runExport({ FILE }, {})
@@ -2314,8 +2335,8 @@ do
         "15d: an explicit off is stored for the index")
     -- with the index written plain there is no zone left to name: the
     -- row under its switch goes away with it
-    live = plugin:genSettingsMenu()[2].sub_item_table_func()
-    T.check(#live == 7 and live[7].text == "Preserve: index",
+    live = plugin:genSettingsMenu()[3].sub_item_table_func()
+    T.check(#live == 2 and live[2].text == "Keep my notes: index",
         "15d: the heading row leaves when the index is plain: " .. #live)
     plugin:runExport({ FILE }, {})
     UIManager:runPending()
@@ -2337,7 +2358,8 @@ do
     os.remove(MD_PATH .. ".bak")
     os.remove(MD_PATH .. ".bak.1")
     ConfirmBox.last = nil
-    sub[3].callback()
+    current_book = sub[5].sub_item_table_func()
+    current_book[1].callback()
     UIManager:runPending()
     T.check(ConfirmBox.last ~= nil,
         "15b: turning preserve off asks for confirmation first")
@@ -2362,7 +2384,8 @@ do
     -- confirming stores the off, rewrites the file plain there and then,
     -- and keeps what it held as .bak
     ConfirmBox.last = nil
-    sub[3].callback()
+    current_book = sub[5].sub_item_table_func()
+    current_book[1].callback()
     UIManager:runPending()
     T.check(ConfirmBox.last ~= nil, "15b: the box comes back")
     ConfirmBox.last.ok_callback()
@@ -2549,19 +2572,20 @@ do
     -- the settings rows speak about the global switch only: a book's
     -- own choice lives in the book's own menu, so a preserved book
     -- brings no heading row while the global toggle is off
-    sub[3].callback() -- the book keeps its zone again
-    live = plugin:genSettingsMenu()[2].sub_item_table_func()
-    T.check(#live == 7,
+    current_book = sub[5].sub_item_table_func()
+    current_book[1].callback() -- the book keeps its zone again
+    live = plugin:genSettingsMenu()[3].sub_item_table_func()
+    T.check(#live == 2,
         "15b: a preserved book brings no heading row: "
             .. #live)
     behaviour[2].callback() -- the global switch on: the row appears
-    live = plugin:genSettingsMenu()[2].sub_item_table_func()
-    T.check(#live == 7,
+    live = plugin:genSettingsMenu()[3].sub_item_table_func()
+    T.check(#live == 2,
         "15b: the heading row appears with preserve on: "
             .. #live)
-    T.check(live[7].text_func() == "Notes: My notes...",
+    T.check(live[2].text_func() == "Notes heading: My notes...",
         "15b: and it renames the heading of the zone")
-    T.check(live[8] == nil,
+    T.check(live[3] == nil,
         "15b: the index rows are hidden while the switch is on")
     behaviour[2].callback() -- and off again, the way the sections below want it
 
@@ -2608,6 +2632,7 @@ do
     store.tomedown.notes_titles = nil
     store.tomedown.preserve = nil
     ui.document = { file = nil }
+    end
 
     -- --------------- 16. the open book reads the reader's live data (v1.0)
     -- While a book is open KOReader keeps its props in memory and writes the
@@ -3612,9 +3637,13 @@ do
         UIManager:runPending()
     end
     local function backupRow()
-        for __, row in ipairs(menu_items.tomedown.sub_item_table_func()) do
-            if row.text and row.text:find("Backup copies", 1, true) then
-                return row
+        for __, group in ipairs(menu_items.tomedown.sub_item_table_func()) do
+            if group.text and group.text:find("Current book", 1, true) then
+                for __, row in ipairs(group.sub_item_table_func()) do
+                    if row.text and row.text:find("Backup copies", 1, true) then
+                        return row
+                    end
+                end
             end
         end
     end
@@ -3648,17 +3677,17 @@ do
     store.lastfile = nil
     ui.document = { file = FILE }
     local items = row.sub_item_table_func()
-    T.check(#items == 2 and items[1].text == "Parked file (your notes)"
+    T.check(#items == 2 and items[1].text == "Notes set aside"
             and items[2].text == "Safety copy",
-        "25: the parked file comes first, the safety copy after it")
+        "25: the notes set aside come first, the safety copy after it")
     T.check(type(items[1].mandatory) == "string"
             and items[1].mandatory:match("^%d%d%d%d%-%d%d%-%d%d$"),
         "25: each copy shows the day it was saved")
 
     -- the parked file is where the notes are while the book has no zone
     local box = tap(items[1])
-    T.check(box and T.contains(box.text, "Parked file (your notes)")
-            and T.contains(box.text, "when preserve was turned off")
+    T.check(box and T.contains(box.text, "Notes set aside")
+            and T.contains(box.text, "when you turned Keep my notes off")
             and T.contains(box.text, "deletes those notes for good"),
         "25: the question names the copy and warns that the notes are in it")
     box.cancel_callback()

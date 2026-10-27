@@ -45,7 +45,7 @@ local FILENAME_TEMPLATE = "%A - %T"
 
 -- upload retry: up to 3 attempts, wait doubling
 -- each time (2s, 4s), to absorb transient network blips without
--- having to trigger "Upload everything to the cloud" by hand.
+-- having to trigger "Upload all files again" by hand.
 local UPLOAD_MAX_ATTEMPTS = 3
 local UPLOAD_RETRY_BASE_DELAY = 2 -- seconds
 
@@ -868,8 +868,8 @@ end
 -- exponential backoff wait (UPLOAD_RETRY_BASE_DELAY * 2^(n-1))
 -- between one attempt and the next, before being marked as a
 -- permanent failure. It absorbs transient network blips (WiFi reconnecting,
--- slow DNS, etc.) without needing an "Upload everything
--- to the cloud" by hand every time.
+-- slow DNS, etc.) without needing an "Upload all files again"
+-- by hand every time.
 function Tomedown:uploadPaths(server, paths, callback)
     local provider = self:cloudProvider(server)
     -- remembered for the Status panel; every upload path funnels here
@@ -1799,7 +1799,7 @@ function Tomedown:schedulePendingFlush()
 end
 
 --- Decide what a push may do before it sends anything: the flush of the
--- queued files and "Upload everything to the cloud" both run it.
+-- queued files and "Upload all files again" both run it.
 -- Returns the paths that are safe to push and the paths held back.
 --
 -- An offline export wrote the new highlights into the local file while
@@ -1813,8 +1813,8 @@ end
 --   - not fetched (a transient error), or a copy the merge cannot fold
 --     (broken markers): the file stays pending. Nothing is overwritten
 --     and nothing is lost — the copy is still in the cloud and the new
---     highlights are still on the device. "Upload everything to the
---     cloud" runs this same comparison before it pushes; a reader who
+--     highlights are still on the device. "Upload all files again"
+--     runs this same comparison before it pushes; a reader who
 --     wants the copy on the device to win turns the merge option off.
 -- Only a markdown file is folded, the way it works at export time, and
 -- only while the reader keeps their edits: with preserve or the merge
@@ -2066,7 +2066,7 @@ function Tomedown:flushPendingUploads()
     end)
 end
 
---- "Upload everything to the cloud": every markdown file and leftover
+--- "Upload all files again": every markdown file and leftover
 -- cover in the local folder goes up. The markdown files run through the
 -- same reconciliation as the flush first (see reconcilePending): cloud
 -- edits are folded into the push and a copy that cannot be read keeps
@@ -2098,7 +2098,7 @@ function Tomedown:reuploadAll(touchmenu)
         return entry:sub(-3) == ".md"
     end)
     -- covers still sitting on the device (upload was off, or the upload
-    -- failed earlier) ride along with "Upload everything"
+    -- failed earlier) ride along with "Upload all files again"
     listDir(dir .. "/covers", function(entry)
         return entry:sub(-4) == ".jpg"
     end)
@@ -2437,7 +2437,7 @@ end
 -- in the main menu right under Settings. Every setting keeps its own
 -- row; the checkable ones keep their keep_menu_open so KOReader
 -- refreshes the tick in place.
--- Dropping the stored hash forces the next "Export only what changed"
+-- Dropping the stored hash forces the next "Export new and changed books"
 -- to rewrite every book: the render options (covers, callout) are not
 -- part of hashBook, so without this a settings toggle would leave the
 -- already exported .md files stale until the highlights change.
@@ -2456,7 +2456,7 @@ function Tomedown:invalidateExportHashes()
 end
 
 -- the same drop for a single book: flipping preserve for one book must
--- rewrite that one file at the next "Export only what changed" (its
+-- rewrite that one file at the next "Export new and changed books" (its
 -- zone appears or disappears), and must leave every other book's hash
 -- alone, so the rest of the library is not exported again for nothing
 function Tomedown:invalidateExportHash(file)
@@ -2469,135 +2469,9 @@ function Tomedown:invalidateExportHash(file)
 end
 
 function Tomedown:genSettingsMenu()
-    -- declared before the Cloud rows below: the Upload toggle inside
-    -- them rebuilds this very table in place, and in Lua a closure can
-    -- only see a local that is already declared when it is written.
-    -- `cloud` is forward-declared too, so buildCloudRows (also written
-    -- before the rows but called only once the menu opens) can copy it.
-    local cloud_table, buildCloudRows, cloud
-    cloud = {
-        {
-            text = _("Upload to cloud"),
-            enabled_func = function()
-                return self:hasServer()
-            end,
-            checked_func = function()
-                return self:hasServer() and getSetting("upload", false)
-            end,
-            keep_menu_open = true,
-            callback = function(touchmenu)
-                setSetting("upload", not getSetting("upload", false))
-                -- the Merge row below exists only while upload is on:
-                -- rebuild the open group in place (the same way the
-                -- Preserve toggle rebuilds Markdown files), so the row
-                -- shows up or goes away without leaving the menu
-                if touchmenu and cloud_table
-                        and touchmenu.item_table == cloud_table then
-                    local fresh = buildCloudRows()
-                    for i = #cloud_table, 1, -1 do
-                        cloud_table[i] = nil
-                    end
-                    for _, item in ipairs(fresh) do
-                        cloud_table[#cloud_table + 1] = item
-                    end
-                end
-            end,
-        },
-        {
-            text_func = function()
-                local server = self:getServer()
-                if not server then
-                    return _("Server and folder: not set")
-                end
-                local cloud = self.ui and self.ui.cloudstorage
-                local name = cloud and cloud.getServerNameType
-                    and cloud:getServerNameType(server) or server.name or "?"
-                local folder = self:getRemoteFolder()
-                if folder ~= "" then
-                    return T(_("Server and folder: %1 → %2"), name, folder)
-                end
-                return T(_("Server and folder: %1"), name)
-            end,
-            callback = function(touchmenu)
-                self:chooseCloudFolder(touchmenu)
-            end,
-        },
-        {
-            text_func = function()
-                local folder = self:getRemoteFolder()
-                if folder == "" then
-                    return _("Remote folder: not set")
-                end
-                return T(_("Remote folder: %1"), folder)
-            end,
-            callback = function(touchmenu)
-                self:editRemoteFolder(touchmenu)
-            end,
-        },
-    }
-    -- The Merge row folds the cloud copy back into the file before the
-    -- render, but only a cloud reader has a cloud copy to fold, and
-    -- only while preserve keeps a write zone to fold into: with no
-    -- server, no upload or preserve off the row is not shown at all.
-    -- It belongs to the global switch: the per book choice lives in the
-    -- book's own menu, not in the settings (the way the row that names
-    -- the zone below exists only while preserve is on).
-    -- The group is rebuilt every time it opens, and in place when the
-    -- Upload or Preserve toggle flips (both rebuild below).
-    -- (cloud_table, buildCloudRows and cloud are all declared before
-    -- the Cloud rows above, so the toggles can see them; here
-    -- buildCloudRows is only assigned, after the `cloud` table exists.)
-    buildCloudRows = function()
-        local rows = {}
-        for i, item in ipairs(cloud) do
-            rows[i] = item
-        end
-        if self:hasServer() and getSetting("upload", false)
-                and getSetting("preserve", false) then
-            rows[#rows + 1] = {
-                text = _("Merge edits made in the cloud"),
-                checked_func = function()
-                    return getSetting("cloud_merge", true)
-                end,
-                keep_menu_open = true,
-                callback = function()
-                    setSetting("cloud_merge", not getSetting("cloud_merge", true))
-                end,
-            }
-        end
-        return rows
-    end
-    -- The row that renames the heading of the write zone names the
-    -- global one, and that heading is written only behind the merge
-    -- markers: with preserve off every export overwrites the file and
-    -- no heading ever reaches it, so the row exists solely while the
-    -- preserve toggle below is on. The settings speak about the global
-    -- switch only: a book's own choice, and its own heading, live in
-    -- the book's own menu. The group is therefore rebuilt every time it
-    -- opens instead of being a fixed table: files_table is the live
-    -- copy the open group shows, buildFilesRows assembles it, both
-    -- declared before the table so the toggle's callback can reach
-    -- them.
-    local files_table
-    local buildFilesRows
-    -- rebuild the Markdown files group in place: the index rows below
-    -- depend on Generate, on Preserve and on their own switch, the
-    -- heading row on Preserve, so they show up or go away as those
-    -- switches flip, without the reader leaving the menu (the same
-    -- in-place refresh the Developer submenu uses)
-    local function rebuildFilesRows(touchmenu)
-        if not touchmenu or not files_table
-            or touchmenu.item_table ~= files_table then
-            return
-        end
-        local fresh = buildFilesRows()
-        for i = #files_table, 1, -1 do
-            files_table[i] = nil
-        end
-        for _, item in ipairs(fresh) do
-            files_table[#files_table + 1] = item
-        end
-    end
+    -- Files: what is written and where. Static since 1.1: none of its
+    -- rows depends on a switch, so the group is the same table every
+    -- time it opens.
     local files = {
         {
             text_func = function()
@@ -2608,16 +2482,13 @@ function Tomedown:genSettingsMenu()
             end,
         },
         {
-            text = T(_("Generate the %1 (for Obsidian)"), INDEX_FILENAME),
+            text = T(_("Create an index note (%1)"), INDEX_FILENAME),
             checked_func = function()
                 return getSetting("with_index", true)
             end,
             keep_menu_open = true,
-            callback = function(touchmenu)
+            callback = function()
                 setSetting("with_index", not getSetting("with_index", true))
-                -- the index rows below exist only while an
-                -- index is generated at all
-                rebuildFilesRows(touchmenu)
             end,
         },
         {
@@ -2642,7 +2513,7 @@ function Tomedown:genSettingsMenu()
             end,
         },
         {
-            text = _("Auto-export on close"),
+            text = _("Export when I close a book"),
             checked_func = function()
                 return getSetting("auto_export", false)
             end,
@@ -2652,67 +2523,114 @@ function Tomedown:genSettingsMenu()
                     not getSetting("auto_export", false))
             end,
         },
+    }
+
+    -- Cloud: the three rows that speak about the server and the upload.
+    -- The row that folds the cloud copy back into the file now lives in
+    -- My notes, where the notes are, so this group is static too.
+    local cloud = {
         {
-            -- what wins when the render meets a file the reader edited;
-            -- opt-in since 1.0: off means the tomedown ≤ 0.8 behaviour
-            -- (every export writes the file from scratch), and every
-            -- file follows the choice it stored. On, this switch alone
-            -- governs every file and names every zone, and no other
-            -- row is built to choose for one file
-            text = _("Preserve: global"),
+            text = _("Upload to cloud"),
+            enabled_func = function()
+                return self:hasServer()
+            end,
             checked_func = function()
-                return getSetting("preserve", false)
+                return self:hasServer() and getSetting("upload", false)
             end,
             keep_menu_open = true,
-            callback = function(touchmenu)
-                setSetting("preserve", not getSetting("preserve", false))
-                -- switching modes must regenerate what the other
-                -- mode left behind: the next export rewrites
-                -- every file
-                self:invalidateExportHashes()
-                -- With the switch on the rows below go its way: the
-                -- index rows leave (it covers the index too) and the
-                -- heading row for it appears. Rebuild the open group
-                -- in place, the way the Developer submenu does, so the
-                -- rows change without leaving the menu, and rebuild the
-                -- book menu above: the switch is in charge of the per
-                -- book rows there, and its own table is re-read when
-                -- the reader taps back from Settings
-                rebuildFilesRows(touchmenu)
-                self:refreshBookMenu()
-                -- the Merge row in Cloud also needs preserve on (there
-                -- is no write zone to fold into without it): rebuild
-                -- that group too, so it stays in step
-                if touchmenu and cloud_table
-                        and touchmenu.item_table == cloud_table then
-                    local fresh = buildCloudRows()
-                    for i = #cloud_table, 1, -1 do
-                        cloud_table[i] = nil
-                    end
-                    for _, item in ipairs(fresh) do
-                        cloud_table[#cloud_table + 1] = item
-                    end
+            callback = function()
+                setSetting("upload", not getSetting("upload", false))
+            end,
+        },
+        {
+            text_func = function()
+                local server = self:getServer()
+                if not server then
+                    return _("Server and folder: not set")
                 end
+                local cloud_ui = self.ui and self.ui.cloudstorage
+                local name = cloud_ui and cloud_ui.getServerNameType
+                    and cloud_ui:getServerNameType(server) or server.name or "?"
+                local folder = self:getRemoteFolder()
+                if folder ~= "" then
+                    return T(_("Server and folder: %1 → %2"), name, folder)
+                end
+                return T(_("Server and folder: %1"), name)
+            end,
+            callback = function(touchmenu)
+                self:chooseCloudFolder(touchmenu)
+            end,
+        },
+        {
+            text_func = function()
+                local folder = self:getRemoteFolder()
+                if folder == "" then
+                    return _("Remote folder: not set")
+                end
+                return T(_("Remote folder: %1"), folder)
+            end,
+            callback = function(touchmenu)
+                self:editRemoteFolder(touchmenu)
             end,
         },
     }
-    buildFilesRows = function()
-        local rows = {}
-        for i, item in ipairs(files) do
-            rows[i] = item
+
+    -- My notes: the switch that governs every file, the index's own
+    -- switch, the two headings and the merge of the cloud copy. The
+    -- rows come and go with the switches, so the group is rebuilt every
+    -- time it opens and in place when one of them flips.
+    local notes_table
+    local buildNotesRows
+    local function rebuildNotesRows(touchmenu)
+        if not touchmenu or not notes_table
+                or touchmenu.item_table ~= notes_table then
+            return
         end
-        -- The index is a file like the others: since 1.1 it gets its
-        -- own switch, right below the global one, and the row that
-        -- names its zone below that one. Both stay away while the
-        -- global switch is on, which governs the index like every
-        -- other file, and the switch itself exists only while an index
+        local fresh = buildNotesRows()
+        for i = #notes_table, 1, -1 do
+            notes_table[i] = nil
+        end
+        for _, item in ipairs(fresh) do
+            notes_table[#notes_table + 1] = item
+        end
+    end
+    buildNotesRows = function()
+        local rows = {
+            {
+                -- what wins when the render meets a file the reader
+                -- edited; opt-in since 1.0: off means the tomedown <=
+                -- 0.8 behaviour (every export writes the file from
+                -- scratch), and every file follows the choice it
+                -- stored. On, this switch alone governs every file and
+                -- names every zone, and no other row is built to choose
+                -- for one file.
+                text = _("Keep my notes: all books"),
+                checked_func = function()
+                    return getSetting("preserve", false)
+                end,
+                keep_menu_open = true,
+                callback = function(touchmenu)
+                    setSetting("preserve", not getSetting("preserve", false))
+                    -- switching modes must regenerate what the other
+                    -- mode left behind: the next export rewrites every
+                    -- file
+                    self:invalidateExportHashes()
+                    -- with the switch on the index rows leave (it covers
+                    -- the index too) and the global heading appears
+                    rebuildNotesRows(touchmenu)
+                end,
+            },
+        }
+        -- The index is a file like the others: since 1.1 it gets its own
+        -- switch and the row that names its zone, both only while the
+        -- global switch is off (it governs the index too) and an index
         -- is generated at all. Its checked state is the effective one:
-        -- the reader's own choice when they made one, the global
-        -- switch otherwise.
+        -- the reader's own choice when they made one, the global switch
+        -- otherwise.
         if getSetting("with_index", true)
                 and not getSetting("preserve", false) then
             rows[#rows + 1] = {
-                text = _("Preserve: index"),
+                text = _("Keep my notes: index"),
                 checked_func = function()
                     return getIndexPreserve()
                 end,
@@ -2723,50 +2641,140 @@ function Tomedown:genSettingsMenu()
                     -- the index on disk was written the other way
                     -- round: the next export has to rewrite it
                     self:invalidateExportHashes()
-                    -- the row below exists only while the index keeps
-                    -- a zone to name: rebuild the open group in place
-                    rebuildFilesRows(touchmenu)
+                    -- the heading row below exists only while the index
+                    -- keeps a zone to name
+                    rebuildNotesRows(touchmenu)
                 end,
             }
-            if getIndexPreserve() then
-                rows[#rows + 1] = {
-                    text_func = function()
-                        return T(_("Index notes: %1"),
-                            getNotesTitle(INDEX_FILENAME))
-                    end,
-                    callback = function(touchmenu)
-                        self:editNotesTitle(touchmenu, INDEX_FILENAME)
-                    end,
-                }
-            end
         end
-        -- with the global switch on it names every zone itself, and
-        -- this is the single row that does it (every file follows it)
+        -- with the global switch on it names every zone itself
         if getSetting("preserve", false) then
             rows[#rows + 1] = {
                 text_func = function()
-                    return T(_("Notes: %1"), getNotesTitle())
+                    return T(_("Notes heading: %1"), getNotesTitle())
                 end,
                 callback = function(touchmenu)
                     self:editNotesTitle(touchmenu)
                 end,
             }
         end
+        if getSetting("with_index", true)
+                and not getSetting("preserve", false)
+                and getIndexPreserve() then
+            rows[#rows + 1] = {
+                text_func = function()
+                    return T(_("Index notes heading: %1"),
+                        getNotesTitle(INDEX_FILENAME))
+                end,
+                callback = function(touchmenu)
+                    self:editNotesTitle(touchmenu, INDEX_FILENAME)
+                end,
+            }
+        end
+        -- The cloud copy is folded back into the file before the render,
+        -- but only a cloud reader has one and only while Keep my notes
+        -- keeps a write zone. It belongs here because it is about the
+        -- notes, and it sits last.
+        if self:hasServer() and getSetting("upload", false)
+                and getSetting("preserve", false) then
+            rows[#rows + 1] = {
+                text = _("Bring in edits made in Obsidian"),
+                checked_func = function()
+                    return getSetting("cloud_merge", true)
+                end,
+                keep_menu_open = true,
+                callback = function()
+                    setSetting("cloud_merge", not getSetting("cloud_merge", true))
+                end,
+            }
+        end
         return rows
     end
-    -- Developer updates: everything that is not meant for daily use,
-    -- in its own submenu. Beta Releases first; while it is ticked a
-    -- beta "Check for updates" sits right below it, then a separator,
-    -- the way back to stable and the installed version as a plain
-    -- grey label. The row list is rebuilt whenever the submenu opens
-    -- and in place when the toggle flips (TouchMenu redraws the table
-    -- after the callback), so the beta check appears at once.
-    local developer_table
-    local function developerItems()
+
+    -- The three rows that speak about the highlights themselves: how a
+    -- Special Highlight is marked in the note, and whether every quote
+    -- carries its stable block id. Static: no row here appears or
+    -- disappears (the marker row is grayed out while every highlight is
+    -- a callout, because then there is nothing left to choose).
+    local highlights = {
+        {
+            text = _("Treat every highlight as special"),
+            checked_func = function()
+                return getSetting("callout", false)
+            end,
+            keep_menu_open = true,
+            callback = function()
+                setSetting("callout", not getSetting("callout", false))
+                self:invalidateExportHashes()
+            end,
+        },
+        {
+            text_func = function()
+                local labels = {
+                    callout = _("Callout"),
+                    bold = _("Bold"),
+                }
+                return T(_("How special highlights look: %1"),
+                    labels[getSetting("special_marker", "callout")]
+                        or labels.callout)
+            end,
+            enabled_func = function()
+                return not getSetting("callout", false)
+            end,
+            keep_menu_open = true,
+            sub_item_table = {
+                {
+                    text = _("Callout"),
+                    radio = true,
+                    checked_func = function()
+                        return getSetting("special_marker", "callout") == "callout"
+                    end,
+                    keep_menu_open = true,
+                    callback = function()
+                        setSetting("special_marker", "callout")
+                        self:invalidateExportHashes()
+                    end,
+                },
+                {
+                    text = _("Bold"),
+                    radio = true,
+                    checked_func = function()
+                        return getSetting("special_marker", "callout") == "bold"
+                    end,
+                    keep_menu_open = true,
+                    callback = function()
+                        setSetting("special_marker", "bold")
+                        self:invalidateExportHashes()
+                    end,
+                },
+            },
+        },
+        {
+            text = _("Add link IDs to highlights"),
+            checked_func = function()
+                return getSetting("block_ids", false)
+            end,
+            keep_menu_open = true,
+            callback = function()
+                setSetting("block_ids", not getSetting("block_ids", false))
+                self:invalidateExportHashes()
+            end,
+        },
+    }
+
+    -- Beta versions: everything that is not meant for daily use, in its
+    -- own submenu. Receive beta versions first; while it is ticked a
+    -- beta "Check for beta updates" sits right below it, then a
+    -- separator, the way back to stable and the installed version as a
+    -- plain grey label. The row list is rebuilt whenever the submenu
+    -- opens and in place when the toggle flips, so the beta check
+    -- appears at once.
+    local beta_table
+    local function betaItems()
         local beta_on = getSetting("beta_releases", false)
         local items = {
             {
-                text = _("Beta Releases"),
+                text = _("Receive beta versions"),
                 checked_func = function()
                     return getSetting("beta_releases", false)
                 end,
@@ -2775,17 +2783,17 @@ function Tomedown:genSettingsMenu()
                     setSetting("beta_releases",
                         not getSetting("beta_releases", false))
                     Update.clearAvailableCache()
-                    -- the submenu that is open IS this table: rebuild
-                    -- it in place so the check row shows up or goes
-                    -- away without leaving the menu
+                    -- the submenu that is open IS this table: rebuild it
+                    -- in place so the check row shows up or goes away
+                    -- without leaving the menu
                     if touch_menu
-                            and touch_menu.item_table == developer_table then
-                        local fresh = developerItems()
-                        for i = #developer_table, 1, -1 do
-                            developer_table[i] = nil
+                            and touch_menu.item_table == beta_table then
+                        local fresh = betaItems()
+                        for i = #beta_table, 1, -1 do
+                            beta_table[i] = nil
                         end
                         for _, item in ipairs(fresh) do
-                            developer_table[#developer_table + 1] = item
+                            beta_table[#beta_table + 1] = item
                         end
                     end
                 end,
@@ -2794,7 +2802,7 @@ function Tomedown:genSettingsMenu()
         }
         if beta_on then
             items[#items + 1] = {
-                text = _("Check for updates"),
+                text = _("Check for beta updates"),
                 callback = function()
                     Update.check(true)
                 end,
@@ -2803,7 +2811,7 @@ function Tomedown:genSettingsMenu()
         end
         items[#items + 1] = {
             -- the cartoon bomb (U+ED8F): the reset blows the beta up
-            text = withIcon("\xEE\xB6\x8F", _("Reset to latest stable release")),
+            text = withIcon("\xEE\xB6\x8F", _("Go back to the stable version")),
             callback = function()
                 Update.resetToStable()
             end,
@@ -2851,99 +2859,25 @@ function Tomedown:genSettingsMenu()
             end,
         },
         {
-            text = withIcon("\xEF\x84\xA6", _("Developer updates")), -- code-fork
+            text = withIcon("\xEF\x84\xA6", _("Beta versions")), -- code-fork
             sub_item_table_func = function()
-                developer_table = developerItems()
-                return developer_table
-            end,
-        },
-    }
-    -- The three rows that speak about the highlights themselves, out of
-    -- the Markdown files group (where the rows already come and go with
-    -- the switches): how a Special Highlight is marked in the note, and
-    -- whether every quote carries its stable block id. Static: no row
-    -- here appears or disappears.
-    local highlights = {
-        {
-            text = _("All highlights as Special Highlights"),
-            checked_func = function()
-                return getSetting("callout", false)
-            end,
-            keep_menu_open = true,
-            callback = function()
-                setSetting("callout", not getSetting("callout", false))
-                self:invalidateExportHashes()
-            end,
-        },
-        {
-            -- how a Special Highlight is marked in the note; meaningful
-            -- only while "All highlights as Special Highlights" is off,
-            -- because that one makes every highlight a callout
-            text_func = function()
-                local labels = {
-                    callout = _("Callout"),
-                    bold = _("Bold"),
-                }
-                return T(_("Special highlight marker: %1"),
-                    labels[getSetting("special_marker", "callout")]
-                        or labels.callout)
-            end,
-            enabled_func = function()
-                return not getSetting("callout", false)
-            end,
-            keep_menu_open = true,
-            sub_item_table = {
-                {
-                    text = _("Callout"),
-                    radio = true,
-                    checked_func = function()
-                        return getSetting("special_marker", "callout") == "callout"
-                    end,
-                    keep_menu_open = true,
-                    callback = function()
-                        setSetting("special_marker", "callout")
-                        self:invalidateExportHashes()
-                    end,
-                },
-                {
-                    text = _("Bold"),
-                    radio = true,
-                    checked_func = function()
-                        return getSetting("special_marker", "callout") == "bold"
-                    end,
-                    keep_menu_open = true,
-                    callback = function()
-                        setSetting("special_marker", "bold")
-                        self:invalidateExportHashes()
-                    end,
-                },
-            },
-        },
-        {
-            text = _("Block IDs for highlights"),
-            checked_func = function()
-                return getSetting("block_ids", false)
-            end,
-            keep_menu_open = true,
-            callback = function()
-                setSetting("block_ids", not getSetting("block_ids", false))
-                self:invalidateExportHashes()
+                beta_table = betaItems()
+                return beta_table
             end,
         },
     }
 
     return {
+        { text = withIcon("\xEF\x83\xB6", _("Files")), -- file-text
+            sub_item_table = files },
         { text = withIcon("\xEE\xB4\xBE", _("Cloud")), -- cloud-sync
+            sub_item_table = cloud },
+        { text = withIcon("\xEF\x89\x89", _("My notes")), -- sticky-note
             sub_item_table_func = function()
-                cloud_table = buildCloudRows()
-                return cloud_table
+                notes_table = buildNotesRows()
+                return notes_table
             end },
-        { text = withIcon("\xEF\x83\xB6", _("Markdown files")), -- file-text
-            sub_item_table_func = function()
-                files_table = buildFilesRows()
-                return files_table
-            end },
-        { text = withIcon("\xEE\xB5\x91", _("Highlights")), -- marker
+        { text = withIcon("\xEE\xB5\x91", _("Highlights for Obsidian")), -- marker
             sub_item_table = highlights },
         { text = withIcon("\xEE\xB6\xAE", _("Updates")), -- update
             sub_item_table = updates },
@@ -3470,7 +3404,7 @@ local function backupLabel(copy)
     if copy.slot == ".bak.1" then
         return _("Safety copy")
     elseif copy.zoned then
-        return _("Parked file (your notes)")
+        return _("Notes set aside")
     end
     return _("Older copy")
 end
@@ -3479,7 +3413,7 @@ local function backupWhat(copy)
     if copy.slot == ".bak.1" then
         return _("Text of yours that a rewrite was about to replace and that does not come back by itself.")
     elseif copy.zoned then
-        return _("The file as it was when preserve was turned off. It comes back into the file when preserve is on again.")
+        return _("The file as it was when you turned Keep my notes off. It comes back when you turn it on again.")
     end
     return _("A copy kept by an earlier version.")
 end
@@ -3510,9 +3444,8 @@ function Tomedown:askDeleteBackup(copy)
                     UIManager:show(InfoMessage:new{
                         text = _("The copy could not be deleted.") })
                 end
-                -- the row disappears with the last copy, and the list
-                -- under it was built before the copy went
-                self:refreshBookMenu()
+                -- the Current book submenu is built again when it opens,
+                -- so the row and the list are fresh by then
             end,
         })
     end)
@@ -3538,15 +3471,11 @@ function Tomedown:genBackupsMenu(file)
     return items
 end
 
--- The rows of the book's own menu, rebuilt every time the menu opens
--- (and in place when a switch in it or in Settings flips, so a row
--- appears or goes away without the reader leaving the menu). Which
--- rows are there depends on where the menu is opened and on the state
--- it finds: the rows that name a book need one open, the per book
--- switch and its heading need the global one off, and the copies row
--- needs a copy beside the file.
+-- The main Tomedown menu. Its rows are fixed: everything that needs an
+-- open book lives in the Current book submenu, built by
+-- genCurrentBookMenu below. In the file manager there is no document,
+-- so both Export this book and Current book are left out.
 function Tomedown:genBookMenu()
-    local file = self:getCurrentFile()
     local rows = {}
     -- This row needs a book open, which means the document itself: in
     -- the file manager KOReader hands the plugin the FileManager as ui,
@@ -3554,7 +3483,7 @@ function Tomedown:genBookMenu()
     -- last book read over a book nobody has open.
     if self.ui and self.ui.document then
         rows[#rows + 1] = {
-            text = withIcon("\xEE\x89\xBC", _("Export current book")),
+            text = withIcon("\xEE\x89\xBC", _("Export this book")),
             enabled_func = function()
                 local current = self:getCurrentFile()
                 return current ~= nil
@@ -3573,7 +3502,7 @@ function Tomedown:genBookMenu()
         }
     end
     rows[#rows + 1] = {
-        text = withIcon("\xEE\xA4\xB5", _("Export only what changed")),
+        text = withIcon("\xEE\xA4\xB5", _("Export new and changed books")),
         enabled_func = function()
             return #self:listBookFiles() > 0
         end,
@@ -3584,117 +3513,8 @@ function Tomedown:genBookMenu()
             self:runExport(self:listBookFiles(), { only_updated = true })
         end,
     }
-    -- Since 1.1 a book chooses for itself, but only while the global
-    -- switch in Settings is off: with that switch on it covers every
-    -- file and names every zone, so neither of these rows is built at
-    -- all (the stored choice is never touched, it comes back the way
-    -- the reader left it when the switch goes off again). The pencil
-    -- keeps the hand edits of the open book, the row under it names
-    -- that zone.
-    --
-    -- Both rows belong to a book that is open: without one there is no
-    -- file to choose for. In the file manager KOReader hands the plugin
-    -- the FileManager itself as ui, which carries no document, and
-    -- getCurrentFile() would then fall back to "lastfile" (always set,
-    -- it is the last book read) and drag these rows onto the dashboard
-    -- pointing at a book nobody has open. ReaderUI instead passes the
-    -- document, so inside a book both rows are there.
-    if self.ui and self.ui.document and not getSetting("preserve", false) then
-        rows[#rows + 1] = {
-            text = withIcon("\xEF\x81\x80", _("Preserve: this book")),
-            enabled_func = function()
-                return self:getCurrentFile() ~= nil
-            end,
-            checked_func = function()
-                local current = self:getCurrentFile()
-                return current ~= nil and getBookPreserve(current)
-            end,
-            keep_menu_open = true,
-            callback = function(touchmenu)
-                local current = self:getCurrentFile()
-                if not current then
-                    return
-                end
-                if getBookPreserve(current) then
-                    -- the file on disk holds a zone the reader may have
-                    -- written in, and turning preserve off hands the
-                    -- render straight back to the writer: the file is
-                    -- replaced with no merge and no .bak. So it is asked
-                    -- first, deferred the way the import prompt is, so
-                    -- the box lands on top of the just-opened menu
-                    UIManager:scheduleIn(0.1, function()
-                        UIManager:show(ConfirmBox:new{
-                            text = T(_("Turn preserve off for %1? Your notes will not be lost. A .bak copy is created."), ffiUtil.basename(current)),
-                            ok_text = _("Turn off"),
-                            cancel_text = _("Keep it on"),
-                            -- nothing has been touched yet, so closing
-                            -- is all cancel has to do (the box says so
-                            -- itself, and the work waits for OK)
-                            cancel_callback = function() end,
-                            ok_callback = function()
-                                setBookPreserve(current, false)
-                                -- the stored hash goes with it: the
-                                -- file was written the other way round
-                                self:invalidateExportHash(current)
-                                -- and the file is rewritten plain right
-                                -- away instead of waiting for the next
-                                -- export: runExport keeps the zoned copy
-                                -- as .bak before the plain one lands
-                                self:runExport({ current }, {})
-                                -- the heading row below exists only
-                                -- while this book keeps a zone to name,
-                                -- and the menu sat open behind the box:
-                                -- redraw the group, tick included
-                                self:refreshBookMenu()
-                                if touchmenu and touchmenu.updateItems then
-                                    touchmenu:updateItems()
-                                end
-                            end,
-                        })
-                    end)
-                    return
-                end
-                setBookPreserve(current, true)
-                -- the file on disk was written the other way round:
-                -- the next export has to rewrite it, so its stored
-                -- hash goes, and only its hash
-                self:invalidateExportHash(current)
-                -- the heading row below exists only while this book
-                -- keeps a zone to name
-                self:refreshBookMenu()
-            end,
-        }
-        if file and getBookPreserve(file) then
-            rows[#rows + 1] = {
-                text_func = function()
-                    return T(_("Book notes: %1"), getNotesTitle(file))
-                end,
-                callback = function(touchmenu)
-                    self:editNotesTitle(touchmenu, file)
-                end,
-            }
-        end
-    end
-    -- the copies kept beside this book's file, when it has any: shown
-    -- one by one and deleted only after a question. Like the rows above
-    -- it belongs to a book that is open
-    if self.ui and self.ui.document and file
-            and #self:bookBackups(file) > 0 then
-        rows[#rows + 1] = {
-            text = withIcon("\xEF\x83\x87", _("Backup copies…")),
-            sub_item_table_func = function()
-                return self:genBackupsMenu(file)
-            end,
-        }
-    end
     rows[#rows + 1] = {
-        text = withIcon("\xEE\xB9\x94", _("Choose books…")),
-        sub_item_table_func = function()
-            return self:genPickerMenu()
-        end,
-    }
-    rows[#rows + 1] = {
-        text = withIcon("\xEE\xA7\x99", _("Export every book's highlights")),
+        text = withIcon("\xEE\xA7\x99", _("Export all books")),
         enabled_func = function()
             return #self:listBookFiles() > 0
         end,
@@ -3704,10 +3524,28 @@ function Tomedown:genBookMenu()
             end
             self:runExport(self:listBookFiles(), {})
         end,
-        separator = true,
     }
     rows[#rows + 1] = {
-        text = withIcon("\xEE\xB4\xBE", _("Upload everything to the cloud")),
+        text = withIcon("\xEE\xB9\x94", _("Choose books…")),
+        sub_item_table_func = function()
+            return self:genPickerMenu()
+        end,
+        separator = true,
+    }
+    -- The per book rows, grouped in a submenu of their own instead of
+    -- spread through the main menu. ReaderUI passes the document, so
+    -- only there is the row built.
+    if self.ui and self.ui.document then
+        rows[#rows + 1] = {
+            text = withIcon("\xEF\x81\x80", _("Current book")),
+            sub_item_table_func = function()
+                return self:genCurrentBookMenu()
+            end,
+            separator = true,
+        }
+    end
+    rows[#rows + 1] = {
+        text = withIcon("\xEE\xB4\xBE", _("Upload all files again")),
         enabled_func = function()
             return self:hasServer()
         end,
@@ -3716,7 +3554,7 @@ function Tomedown:genBookMenu()
         end,
     }
     rows[#rows + 1] = {
-        text = withIcon("\xEF\x83\xA4", _("Status")),
+        text = withIcon("\xEF\x83\xA4", _("Last export")),
         callback = function()
             self:showStatus()
         end,
@@ -3727,7 +3565,6 @@ function Tomedown:genBookMenu()
         sub_item_table_func = function()
             return self:genSettingsMenu()
         end,
-        separator = true,
     }
     rows[#rows + 1] = {
         text = withIcon("\xEE\xA7\xBC", _("About")),
@@ -3738,24 +3575,124 @@ function Tomedown:genBookMenu()
     return rows
 end
 
--- Rebuild the book menu's rows in place, the way the Markdown files
--- group does: TouchMenu keeps a reference to the table it is showing,
--- so filling it with the fresh rows swaps the content and leaves the
--- menu where it is. It runs on whatever page of the menu is open, and
--- that matters from Settings: the switches there add or remove rows of
--- the book's own menu, which is read from this very table when the
--- reader taps back to it.
-function Tomedown:refreshBookMenu()
-    local live = self.book_menu_table
-    if not live then
+-- The rows that name the open book. The switch is always there: with
+-- the global one in Settings on it shows off, with the reason on the
+-- right, because it is the reason the submenu exists and the stored
+-- per book choice has to stay reachable when the global switch goes
+-- off again (it is never touched meanwhile). The heading and the
+-- copies exist only when they have something to name.
+function Tomedown:genCurrentBookMenu()
+    local file = self:getCurrentFile()
+    local rows = {}
+    if not (self.ui and self.ui.document) or not file then
+        return rows
+    end
+    rows[#rows + 1] = {
+        text = withIcon("\xEF\x81\x80", _("Keep my notes in this book")),
+        enabled_func = function()
+            return not getSetting("preserve", false)
+        end,
+        checked_func = function()
+            return not getSetting("preserve", false)
+                and getBookPreserve(file)
+        end,
+        mandatory_func = function()
+            if getSetting("preserve", false) then
+                return _("On for all books")
+            end
+        end,
+        keep_menu_open = true,
+        callback = function(touchmenu)
+            local current = self:getCurrentFile()
+            if not current or getSetting("preserve", false) then
+                return
+            end
+            if getBookPreserve(current) then
+                -- the file on disk holds a zone the reader may have
+                -- written in, and turning the switch off hands the
+                -- render straight back to the writer: the file is
+                -- replaced with no merge and no .bak. So it is asked
+                -- first, deferred so the box lands on top of the menu
+                UIManager:scheduleIn(0.1, function()
+                    UIManager:show(ConfirmBox:new{
+                        text = T(_("Turn off Keep my notes for %1? Your notes will not be lost. A .bak copy is created."), ffiUtil.basename(current)),
+                        ok_text = _("Turn off"),
+                        cancel_text = _("Keep it on"),
+                        -- nothing has been touched yet, so closing
+                        -- is all cancel has to do (the box says so
+                        -- itself, and the work waits for OK)
+                        cancel_callback = function() end,
+                        ok_callback = function()
+                            setBookPreserve(current, false)
+                            -- the stored hash goes with it: the file
+                            -- was written the other way round
+                            self:invalidateExportHash(current)
+                            -- and the file is rewritten plain right
+                            -- away instead of waiting for the next
+                            -- export: runExport keeps the zoned copy
+                            -- as .bak before the plain one lands
+                            self:runExport({ current }, {})
+                            -- the heading row below exists only while
+                            -- this book keeps a zone to name, and the
+                            -- menu sat open behind the box: redraw it,
+                            -- tick included
+                            self:refreshCurrentBookMenu(touchmenu)
+                        end,
+                    })
+                end)
+                return
+            end
+            setBookPreserve(current, true)
+            -- the file on disk was written the other way round: the
+            -- next export has to rewrite it, so its stored hash goes,
+            -- and only its hash
+            self:invalidateExportHash(current)
+            -- the heading row below exists only while this book keeps a
+            -- zone to name
+            self:refreshCurrentBookMenu(touchmenu)
+        end,
+    }
+    if not getSetting("preserve", false) and getBookPreserve(file) then
+        rows[#rows + 1] = {
+            text_func = function()
+                return T(_("Notes heading: %1"), getNotesTitle(file))
+            end,
+            callback = function(touchmenu)
+                self:editNotesTitle(touchmenu, file)
+            end,
+        }
+    end
+    -- the copies kept beside this book's file, when it has any: shown
+    -- one by one and deleted only after a question
+    if #self:bookBackups(file) > 0 then
+        rows[#rows + 1] = {
+            text = withIcon("\xEF\x83\x87", _("Backup copies…")),
+            sub_item_table_func = function()
+                return self:genBackupsMenu(file)
+            end,
+        }
+    end
+    return rows
+end
+
+-- Rebuild the Current book submenu in place after its switch changes
+-- which rows it has: TouchMenu keeps a reference to the table it is
+-- showing, so filling it with the fresh rows swaps the content and
+-- leaves the menu where it is, the tick included.
+function Tomedown:refreshCurrentBookMenu(touchmenu)
+    if not touchmenu or not touchmenu.item_table then
         return
     end
-    local fresh = self:genBookMenu()
+    local live = touchmenu.item_table
+    local fresh = self:genCurrentBookMenu()
     for i = #live, 1, -1 do
         live[i] = nil
     end
     for _, item in ipairs(fresh) do
         live[#live + 1] = item
+    end
+    if touchmenu.updateItems then
+        touchmenu:updateItems()
     end
 end
 
@@ -3772,13 +3709,12 @@ function Tomedown:addToMainMenu(menu_items)
     -- nerdfonts/symbols.ttf, KOReader's own fallback font). Settings
     -- keeps its word plus the icon; inside, group labels and submenu
     -- rows are iconified - plain setting rows stay text-only.
-    -- The rows are built on open, not once: the heading row of a book
-    -- that keeps a zone only exists while that book is ticked.
+    -- The main rows are fixed; the Current book submenu is built on
+    -- open, so its per book rows read the book that is open right now.
     menu_items.tomedown = {
         text = "Tomedown",
         sub_item_table_func = function()
-            self.book_menu_table = self:genBookMenu()
-            return self.book_menu_table
+            return self:genBookMenu()
         end,
     }
 end
