@@ -327,6 +327,9 @@ nine.
 - **Choose books…**: a list with checkboxes: tick the volumes and export
   just those.
 - **Current book**: the rows that name the open book:
+
+  ![The Current book rows: the book's own switch and heading](assets/menu/reader/current_book_menu.png)
+
   - **Keep my notes in this book**: the per book switch of *Keep my
     notes: all books*. It starts from the global default and stores the
     book's own choice. With the global switch on it shows off, with *On
