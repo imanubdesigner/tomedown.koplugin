@@ -16,6 +16,10 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/AGPL--3.0-171717?style=for-the-badge&logo=gnu&logoColor=white" alt="License AGPL-3.0"></a>
 </p>
 
+<p align="center">
+  Questions, ideas, feedback: <a href="https://codeberg.org/imanubdesigner/tomedown.koplugin/issues">Codeberg Issues</a>
+</p>
+
 ## Contents
 
 - [Quickstart](#quickstart)
@@ -945,8 +949,6 @@ tomedown.koplugin/
 ```
 
 ## Support
-
-Questions, ideas, feedback: [Codeberg Issues](https://codeberg.org/imanubdesigner/tomedown.koplugin/issues).
 
 If it saves you time, you can buy me a coffee: the next features are
 brewed with it.

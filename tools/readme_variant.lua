@@ -59,8 +59,8 @@ M.rules = {
         -- pointed there only for the repository itself: the mirror sends
         -- questions to its own issues
         {
-            from = [[Questions, ideas, feedback: [GitHub Discussions](https://github.com/imanubdesigner/tomedown.koplugin/discussions).]],
-            to = [[Questions, ideas, feedback: [Codeberg Issues](https://codeberg.org/imanubdesigner/tomedown.koplugin/issues).]],
+            from = [[  Questions, ideas, feedback: <a href="https://github.com/imanubdesigner/tomedown.koplugin/discussions">GitHub Discussions</a>]],
+            to = [[  Questions, ideas, feedback: <a href="https://codeberg.org/imanubdesigner/tomedown.koplugin/issues">Codeberg Issues</a>]],
         },
     },
     ["TUTORIAL.md"] = {
