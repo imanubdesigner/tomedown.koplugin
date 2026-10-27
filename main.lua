@@ -3432,14 +3432,119 @@ local function pinToTop(order_module, group_id)
     table.insert(group, 1, "tomedown")
 end
 
+-- ---------------------------------------------- copies kept beside a book
+--
+-- The two copies that can sit beside a book's file (see parkZone and
+-- keepSafety above) are shown to the reader inside the book, one at a
+-- time, and removed only after a question that says what the copy
+-- holds. Nothing here touches the plain file or the zone.
+
+-- The copies that exist for `file`, the parked file first and the
+-- safety copy after it: nothing when the book has not been exported
+-- yet (its file name is the one recorded).
+function Tomedown:bookBackups(file)
+    local record = getSetting("exports", {})[file]
+    if type(record) ~= "table" or not record.base then
+        return {}
+    end
+    local md_path = self:getLocalDir() .. "/" .. record.base .. ".md"
+    local copies = {}
+    for __, slot in ipairs({ ".bak", ".bak.1" }) do
+        local path = md_path .. slot
+        local attr = lfs.attributes(path)
+        if attr and attr.mode == "file" then
+            copies[#copies + 1] = {
+                path = path,
+                slot = slot,
+                md_path = md_path,
+                zoned = isZoned(readIfExists(path)),
+                size = attr.size or 0,
+                modified = attr.modification or 0,
+            }
+        end
+    end
+    return copies
+end
+
+local function backupLabel(copy)
+    if copy.slot == ".bak.1" then
+        return _("Safety copy")
+    elseif copy.zoned then
+        return _("Parked file (your notes)")
+    end
+    return _("Older copy")
+end
+
+local function backupWhat(copy)
+    if copy.slot == ".bak.1" then
+        return _("Text of yours that a rewrite was about to replace and that does not come back by itself.")
+    elseif copy.zoned then
+        return _("The file as it was when preserve was turned off. It comes back into the file when preserve is on again.")
+    end
+    return _("A copy kept by an earlier version.")
+end
+
+function Tomedown:askDeleteBackup(copy)
+    local text = T(_("%1\n\n%2\n\nSaved %3 (%4).\n\nDelete this copy? It cannot be undone."),
+        backupLabel(copy), backupWhat(copy),
+        os.date("%Y-%m-%d %H:%M", copy.modified),
+        T(_("%1 KB"), math.max(1, math.floor(copy.size / 1024 + 0.5))))
+    -- a parked file is the only place the notes are while the book's own
+    -- file has no zone: say so before it goes
+    if copy.slot == ".bak" and copy.zoned
+            and not isZoned(readIfExists(copy.md_path)) then
+        text = text .. "\n\n" .. _("The file has no write zone right now: deleting this copy deletes those notes for good.")
+    end
+    -- deferred so the box lands after the submenu has closed
+    UIManager:scheduleIn(0.1, function()
+        UIManager:show(ConfirmBox:new{
+            text = text,
+            ok_text = _("Delete"),
+            cancel_text = _("Keep"),
+            cancel_callback = function() end,
+            ok_callback = function()
+                if os.remove(copy.path) then
+                    UIManager:show(InfoMessage:new{
+                        text = _("Copy deleted."), timeout = 2 })
+                else
+                    UIManager:show(InfoMessage:new{
+                        text = _("The copy could not be deleted.") })
+                end
+                -- the row disappears with the last copy, and the list
+                -- under it was built before the copy went
+                self:refreshBookMenu()
+            end,
+        })
+    end)
+end
+
+function Tomedown:genBackupsMenu(file)
+    local items = {}
+    for __, copy in ipairs(self:bookBackups(file)) do
+        items[#items + 1] = {
+            text = backupLabel(copy),
+            mandatory = os.date("%Y-%m-%d", copy.modified),
+            callback = function()
+                self:askDeleteBackup(copy)
+            end,
+        }
+    end
+    if #items == 0 then
+        items[1] = {
+            text = _("No backup copies for this book"),
+            enabled_func = function() return false end,
+        }
+    end
+    return items
+end
+
 -- The rows of the book's own menu, rebuilt every time the menu opens
 -- (and in place when a switch in it or in Settings flips, so a row
--- appears or goes away without the reader leaving the menu). Nine rows
--- inside a book, ten while the open book keeps a write zone (that is
--- when a heading to name it with makes any sense at all), eight while
--- the global switch in Settings is on: it governs every file itself,
--- so both per book rows stay away. On the dashboard, with no book
--- open, the three rows that need one are not built at all, so seven.
+-- appears or goes away without the reader leaving the menu). Which
+-- rows are there depends on where the menu is opened and on the state
+-- it finds: the rows that name a book need one open, the per book
+-- switch and its heading need the global one off, and the copies row
+-- needs a copy beside the file.
 function Tomedown:genBookMenu()
     local file = self:getCurrentFile()
     local rows = {}
@@ -3569,6 +3674,18 @@ function Tomedown:genBookMenu()
                 end,
             }
         end
+    end
+    -- the copies kept beside this book's file, when it has any: shown
+    -- one by one and deleted only after a question. Like the rows above
+    -- it belongs to a book that is open
+    if self.ui and self.ui.document and file
+            and #self:bookBackups(file) > 0 then
+        rows[#rows + 1] = {
+            text = withIcon("\xEF\x83\x87", _("Backup copies…")),
+            sub_item_table_func = function()
+                return self:genBackupsMenu(file)
+            end,
+        }
     end
     rows[#rows + 1] = {
         text = withIcon("\xEE\xB9\x94", _("Choose books…")),

@@ -130,13 +130,16 @@ writing them down here too.
 The copies are bounded: two at most beside each file, `.bak` (the parked
 zoned file) and `.bak.1` (the safety copy), each with a fixed job, and
 the upload never takes them (it collects `*.md` and `covers/*.jpg`).
-What is missing is seeing them from inside the plugin.
 
-- One row inside the book, for the reader who is already in it: it
-  shows that book's copy and deletes it, one confirmation at a time.
-  Never all of them together, they may be the only copy of what was
-  written by hand. This is the only part worth building, and only once
-  someone asks for it.
+- **Done: one row inside the book**, for the reader who is already in
+  it. *Backup copies…* appears in the book's menu only while that book
+  has a copy beside its file (the export record names the file), lists
+  the copies one by one with the day they were saved, and deletes one
+  only after a question that says what it holds. Never all together:
+  they may be the only copy of what was written by hand. When the book
+  has no zone right now and the copy is the parked file, the question
+  says the notes are in it and go with it. Nothing else is touched by
+  the delete, and the row leaves with the last copy (section 25).
 - A list of every `.bak` of the folder, to review and remove them from
   outside any book: postponed. With two copies of clear roles it adds
   little over the row inside the book.
@@ -153,7 +156,7 @@ a note deleted in Obsidian from a note lost in the cloud, so the join
 brings back a note this device still had parked even when the reader
 meant to delete it. It is visible in the file, and deleting it again is
 enough. A three-way merge that remembers the last zone both sides
-sides agreed on would tell the two cases apart, and waits.
+agreed on would tell the two cases apart, and waits.
 
 ### At release
 
