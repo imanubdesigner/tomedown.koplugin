@@ -160,7 +160,7 @@ first export; optional Remotely Save in Obsidian) is in
    *Navigation* tab (right before *Table of Contents*) while reading, on
    top of the first tab in the file browser (right before *Display mode*):
 
-   ![Tomedown first in the reader's Navigation tab](assets/menu/reader/tomedown_reader_new_menu.png)
+   ![Tomedown first in the reader's Navigation tab](assets/menu/reader/tomedown_reader_menu.png)
 
    ![Tomedown first in the file browser's menu](assets/menu/reader/tomedown_file_browser_top_menu.png)
 
@@ -308,11 +308,11 @@ settings keys are never renamed.
 
 ☰ menu → **Tomedown**:
 
-![Tomedown in KOReader's menu, with a book open](assets/menu/reader/tomedown_reader_menu.png)
-
-The menu itself:
-
 ![The Tomedown menu with a book open](assets/menu/reader/tomedown_reader_menu_1_1.png)
+
+From the file browser the same menu has seven rows:
+
+![The Tomedown menu in the file browser](assets/menu/reader/tomedown_reader_new_menu.png)
 
 The main rows are the same everywhere. *Export this book* and *Current
 book* only exist while a book is open, so from the file browser the menu
