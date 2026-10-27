@@ -714,7 +714,7 @@ T.check(live[2] == notes_row and live[3] == nil,
 -- rename dialog
 plugin:editNotesTitle(nil)
 T.check(InputDialog.last ~= nil
-        and InputDialog.last.title == "Personal notes heading",
+        and InputDialog.last.title == "Notes heading",
     "notes heading dialog opened")
 InputDialog.last.input_text = "  Appunti miei  "
 InputDialog.last:simulateSave()
@@ -2189,7 +2189,7 @@ do
     current_book = sub[5].sub_item_table_func()
     current_book[2].callback()
     T.check(InputDialog.last ~= nil
-            and InputDialog.last.title == "Personal notes heading",
+            and InputDialog.last.title == "Notes heading",
         "15c: the heading dialog opened")
     InputDialog.last.input_text = "  The Witch theory  "
     InputDialog.last:simulateSave()
@@ -2291,7 +2291,7 @@ do
                 and live[3].text_func()))
     live[3].callback()
     T.check(InputDialog.last ~= nil
-            and InputDialog.last.title == "Personal notes heading",
+            and InputDialog.last.title == "Notes heading",
         "15d: the index heading dialog opened")
     InputDialog.last.input_text = "  Appunti dell'indice  "
     InputDialog.last:simulateSave()

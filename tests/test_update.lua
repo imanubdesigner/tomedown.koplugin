@@ -229,7 +229,7 @@ fakeReleases({
     release("v" .. MAJOR,
         "## v" .. MAJOR .. "\n\n# Fixes\n- **bold** and `code` and *italic*"),
     release("v" .. MINOR, "Fix A"),
-    release("v" .. PATCH, "Fix B for issue #12"),
+    release("v" .. PATCH, "Fix B for issue #12\n\n![The new menus](https://example.com/menus.gif)\n\nSee [the guide](https://example.com/guide)."),
     release("v0.0.0", "old"),
 })
 Update.check()
@@ -258,6 +258,8 @@ T.check(css:find("Helvetica", 1, true) ~= nil,
 T.check(T.contains(viewer.text, "**bold**") and T.contains(viewer.text, "# Fixes")
     and T.contains(viewer.text, "`code`"),
     "markdown kept for rendering: " .. tostring(viewer.text))
+T.check(T.contains(viewer.text, "![The new menus]"),
+    "image kept for markdown rendering: " .. tostring(viewer.text))
 T.check(countTimes(viewer.text, "## v" .. MAJOR) == 1,
     "the release's own version heading is not shown twice")
 T.check(T.contains(viewer.text, "issue #12"), "inline #12 kept: " .. tostring(viewer.text))
@@ -307,6 +309,12 @@ T.check(ScrollHtmlWidget.last == nil,
 T.check(not T.contains(plain.text, "**") and not T.contains(plain.text, "# "),
     "fallback strips markdown: " .. tostring(plain.text))
 T.check(T.contains(plain.text, "Fix A"), "fallback keeps the notes")
+T.check(not T.contains(plain.text, "example.com")
+        and not T.contains(plain.text, "!["),
+    "fallback drops image and link addresses: " .. tostring(plain.text))
+T.check(T.contains(plain.text, "The new menus")
+        and T.contains(plain.text, "the guide"),
+    "fallback keeps the alt text and the link label: " .. tostring(plain.text))
 TextViewer.html_text_formats = saved_formats
 
 -- ------------------------------------------------ 6. manual check: failure
