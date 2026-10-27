@@ -52,7 +52,7 @@ The labels are Remotely Save's own wording:
   [tutorial](TUTORIAL.md).
 - **Your edits under the heading are merged, not overwritten**: an export
   folds its new render into the file already in your vault (and keeps a
-  `.bak` next to it). See [Preserve your edits](README.md#preserve-your-edits).
+  `.bak` next to it). See [Keep my notes](README.md#keep-my-notes).
 
 ## Where do your edits live?
 

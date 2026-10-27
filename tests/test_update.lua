@@ -170,14 +170,13 @@ resetWidgets()
 fakeReleases({})
 
 local settings = plugin:genSettingsMenu()
-T.check(#settings == 4, "settings groups: " .. #settings)
--- Cloud is rebuilt on open; with no server the Merge row is absent
-local cloud = settings[1].sub_item_table_func()
-local files = settings[2].sub_item_table_func()
-local updates = settings[4].sub_item_table
+T.check(#settings == 5, "settings groups: " .. #settings)
+-- Files and Cloud are fixed groups; the rows that come and go with the
+-- switches live in My notes (test_main checks them)
+local files = settings[1].sub_item_table
+local cloud = settings[2].sub_item_table
+local updates = settings[5].sub_item_table
 T.check(files[3].text == "Include page bookmarks", "page bookmarks row")
--- Auto-export lives flat in Settings > Markdown files now
--- (test_main checks the rows)
 T.check(#cloud == 3, "cloud rows without a server: " .. #cloud)
 T.check(updates[1].text_func() == "Check for updates (v" .. INSTALLED .. ")",
     "check row: " .. updates[1].text_func())
@@ -185,11 +184,11 @@ T.check(updates[2].text == "View changelog", "changelog row")
 T.check(updates[3].text == "Check for updates in background",
     "background toggle row")
 T.check(updates[3].checked_func() == false, "background check off by default")
-T.check(updates[4].text == "\xEF\x84\xA6  Developer updates",
-    "developer updates row with icon")
+T.check(updates[4].text == "\xEF\x84\xA6  Beta versions",
+    "beta versions row with icon")
 local developer = updates[4].sub_item_table_func()
-T.check(developer[1].text == "Beta Releases", "beta releases row")
-T.check(developer[1].checked_func() == false, "beta releases off by default")
+T.check(developer[1].text == "Receive beta versions", "beta versions row")
+T.check(developer[1].checked_func() == false, "beta versions off by default")
 
 updates[3].callback()
 T.check(store.tomedown and store.tomedown.update_check == true,
@@ -198,9 +197,9 @@ T.check(updates[3].checked_func() == true, "toggle reflects the setting")
 updates[3].callback()
 T.check(store.tomedown.update_check == false, "background check toggled off")
 developer[1].callback()
-T.check(store.tomedown.beta_releases == true, "beta releases toggled on")
+T.check(store.tomedown.beta_releases == true, "beta versions toggled on")
 developer[1].callback()
-T.check(store.tomedown.beta_releases == false, "beta releases toggled off")
+T.check(store.tomedown.beta_releases == false, "beta versions toggled off")
 
 -- ------------------------------------------- 4. manual check: up to date
 
@@ -265,7 +264,7 @@ T.check(T.contains(viewer.text, "issue #12"), "inline #12 kept: " .. tostring(vi
 T.check(Update.getAvailableVersion() == MAJOR,
     "cached available version: " .. tostring(Update.getAvailableVersion()))
 
-local check_row = plugin:genSettingsMenu()[4].sub_item_table[1]
+local check_row = plugin:genSettingsMenu()[5].sub_item_table[1]
 T.check(check_row.text_func() == "Update available: v" .. INSTALLED
         .. " → v" .. MAJOR,
     "check row shows the update: " .. check_row.text_func())
@@ -532,9 +531,9 @@ T.check(T.contains(InfoMessage.last_text or "", "Installation failed:")
 T.check(UIManager.restarted == 0, "no restart after an unexpected error")
 T.rmrf(cache_dir)
 
--- --------------------------------------------- 12. Beta Releases toggle
+-- --------------------------------------------- 12. Beta versions toggle
 -- Two channels: the Updates check stays release-only whatever the
--- toggle says; the beta check lives in Developer updates and its row
+-- toggle says; the beta check lives in Beta versions and its row
 -- only exists while the toggle is on - it appears in the open submenu
 -- the moment the box is ticked.
 
@@ -542,19 +541,19 @@ resetWidgets()
 Update._resetState()
 NetworkMgr.connected = true
 settings = plugin:genSettingsMenu()
-T.check(#settings == 4, "settings groups with the beta row: " .. #settings)
-updates = settings[4].sub_item_table
+T.check(#settings == 5, "settings groups with the beta row: " .. #settings)
+updates = settings[5].sub_item_table
 developer = updates[4].sub_item_table_func()
-T.check(developer[1].text == "Beta Releases", "beta releases row")
-T.check(developer[1].checked_func() == false, "beta releases off by default")
+T.check(developer[1].text == "Receive beta versions", "beta versions row")
+T.check(developer[1].checked_func() == false, "beta versions off by default")
 T.check(#developer == 3, "no beta check while the toggle is off: " .. #developer)
 
 -- toggle on: the check row appears in the open submenu at once
 local fake_menu = { item_table = developer }
 developer[1].callback(fake_menu)
-T.check(store.tomedown.beta_releases == true, "beta releases toggled on")
+T.check(store.tomedown.beta_releases == true, "beta versions toggled on")
 T.check(#developer == 4, "beta check row shown: " .. #developer)
-T.check(developer[2].text == "Check for updates", "beta check entry")
+T.check(developer[2].text == "Check for beta updates", "beta check entry")
 T.check(developer[2].separator == true, "separator before the reset row")
 T.check(developer[1].separator ~= true, "no separator under the toggle")
 

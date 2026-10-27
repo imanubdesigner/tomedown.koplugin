@@ -66,7 +66,7 @@ toggles there are worth knowing about (both off by default):
   one). **Obsidian 1.8.1 or newer is required to display them** — older
   versions show a broken image; update Obsidian from its own settings if
   you are behind.
-- ***All highlights as callouts*** — every highlight becomes an
+- ***Treat every highlight as special*** — every highlight becomes an
   `> [!highlight]` callout in the exported note. With it off, only the
   highlights you mark as **Special Highlight** (day to day, below) get
   the callout.
@@ -77,8 +77,8 @@ toggles there are worth knowing about (both off by default):
 
 - On a **fresh install**, the first time you open the menu Tomedown offers
   to export your whole reading history in one tap (*Export* / *Not now*).
-- Later: **Export current book** for the open one, **Export only what changed** for
-  whatever changed, **Export every book's highlights** if you skipped the
+- Later: **Export this book** for the open one, **Export new and changed
+  books** for whatever changed, **Export all books** if you skipped the
   offer.
 
 The files appear in KOReader's local folder first, then the upload
@@ -113,7 +113,7 @@ Save picks up whatever new export you make.
 ## Day to day
 
 1. Read and highlight in KOReader as usual.
-2. Close the book → export (or tap *Export current book*).
+2. Close the book → export (or tap *Export this book*).
 3. Upload to the cloud is automatic; Remotely Save syncs Obsidian on its
    schedule.
 4. **Mark what matters:** when you select text, pick **Special Highlight**
@@ -122,24 +122,24 @@ Save picks up whatever new export you make.
    tap the highlight and use the row at the bottom of its menu: it reads
    **Special Highlight** or **Remove Special Highlight**.
 
-Updates of the plugin itself: **Settings → Check for updates…** (notes are
-shown formatted, with *Update and restart* right in the window).
+Updates of the plugin itself: **Settings → Updates → Check for updates**
+(notes are shown formatted, with *Update and restart* right in the window).
 
 ## Troubleshooting
 
 - **"Nothing to upload, export something first."** — the local folder is
   empty: run an export first.
 - **Upload fails** — the uploader retries 3 times on its own; if it still
-  fails, check the server/folder in *Settings → Server and folder…*, then
-  use **Upload everything to the cloud**.
+  fails, check the server/folder in *Settings → Cloud → Server and folder…*,
+  then use **Upload all files again**.
 - **Notes don't appear in Obsidian** — in Remotely Save run *Test* /
   *Sync now*, check the address is the one of **your** server (with
   Koofr: `https://app.koofr.net/dav/Koofr`, not the plain `/dav/` root,
   which is not writable), and that the same folder is selected on both
   sides.
 - **The first-run export offer doesn't show** — it appears only when
-  nothing has ever been exported; use **Export every book's highlights**
-  from the menu instead.
+  nothing has ever been exported; use **Export all books** from the menu
+  instead.
 - **`.json` files cluttering the vault** — add `*.json` to Remotely
   Save's ignore list (see step 4).
 - **Covers show as a broken image in Obsidian** — rendering images that

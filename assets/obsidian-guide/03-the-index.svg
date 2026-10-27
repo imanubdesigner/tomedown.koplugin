@@ -90,7 +90,7 @@
   <rect class="note" x="916" y="272" width="220" height="136" rx="10"/>
   <text class="nhead" x="934" y="302" font-size="11">YOUR HEADING</text>
   <text class="body" x="934" y="326" font-size="14.5">Rename it in</text>
-  <text class="body" x="934" y="346" font-size="14.5">Settings ▸ Markdown files</text>
+  <text class="body" x="934" y="346" font-size="14.5">Settings ▸ My notes</text>
   <text class="body" x="934" y="366" font-size="14.5">Gray tag that marks</text>
   <text class="body" x="934" y="386" font-size="14.5">the line it rewrites.</text>
   <path class="dash" marker-end="url(#ah)" d="M904 340 C720 340 628 462 434 462"/>
@@ -117,11 +117,11 @@
 
   <!-- the switch -->
   <rect class="card" x="916" y="832" width="220" height="182" rx="10" fill="#FBFBFA"/>
-  <text class="label" x="934" y="860" font-size="9.5">SETTINGS ▸ MARKDOWN FILES</text>
+  <text class="label" x="934" y="860" font-size="9.5">SETTINGS ▸ MY NOTES</text>
   <rect x="934" y="876" width="44" height="22" rx="11" fill="#7F6DF2"/>
   <circle cx="967" cy="887" r="8" fill="#FFFFFF"/>
-  <text class="menu" x="990" y="884" font-size="12">Generate the</text>
-  <text class="menu" x="990" y="900" font-size="12">00 - Index.md</text>
+  <text class="menu" x="990" y="884" font-size="10.5">Create an index note</text>
+  <text class="menu" x="990" y="900" font-size="10.5">(00 - Index.md)</text>
   <text class="labelm" x="934" y="926" font-size="10">ON BY DEFAULT</text>
   <text class="body" x="934" y="954" font-size="13">Tick it (it already is).</text>
   <text class="body" x="934" y="974" font-size="13">The index is written</text>
