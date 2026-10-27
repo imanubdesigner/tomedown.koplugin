@@ -131,14 +131,20 @@ writing them down here too.
   The trade-off is deliberate: a note deleted in Obsidian while this
   device still had it set aside comes back, because the alternative is
   losing it in silence. Sections 23 and 24 run the export and the flush.
+- **The changelog and the dialog name (1.1.1).** A changelog viewer
+  without Markdown rendering keeps the caption of an image and the text
+  of a link instead of their addresses, so the notes of 1.1.0 no longer
+  show a raw `![…](https://…)` on an older KOReader. The dialog that
+  renames a notes heading is called *Notes heading*, like the row that
+  opens it.
 
 ### Next
 
 #### Managing the .bak copies
 
-The copies are bounded: two at most beside each file, `.bak` (the zoned file set aside
-) and `.bak.1` (the safety copy), each with a fixed job, and
-the upload never takes them (it collects `*.md` and `covers/*.jpg`).
+The copies are bounded: two at most beside each file, `.bak` (the zoned
+file set aside) and `.bak.1` (the safety copy), each with a fixed job,
+and the upload never takes them (it collects `*.md` and `covers/*.jpg`).
 
 - **Done: one row inside the book**, for the reader who is already in
   it. *Backup copies…* appears in the book's menu only while that book
