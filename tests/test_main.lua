@@ -2107,12 +2107,15 @@ do
     -- the book menu is built on open: a book that keeps a zone gets its
     -- own heading row, right under the switch that keeps it
     sub = menu_items.tomedown.sub_item_table_func()
-    T.check(#sub == 10, "15b: the heading row joins the menu: " .. #sub)
+    -- (the copies of this book, left by the sections above, add a row of
+    -- their own right above "Choose books")
+    T.check(#sub == 11, "15b: the heading row joins the menu: " .. #sub)
     T.check(sub[4].text_func()
             == "Book notes: My notes...",
         "15b: the heading row names this book's zone: "
             .. sub[4].text_func())
-    T.check(sub[5].text == "\xEE\xB9\x94  Choose books…",
+    T.check(sub[5].text == "\xEF\x83\x87  Backup copies…"
+            and sub[6].text == "\xEE\xB9\x94  Choose books…",
         "15b: the heading row sits right under the preserve switch")
     plugin:runExport({ FILE, FILE2 }, {})
     UIManager:runPending()
@@ -2147,13 +2150,14 @@ do
     -- when the switch goes off again)
     behaviour[2].callback()
     T.check(store.tomedown.preserve == true, "15b: the global switch is on")
-    T.check(#sub == 8,
+    T.check(#sub == 9,
         "15b: the book menu drops both per book rows with it on: " .. #sub)
-    T.check(sub[3].text == "\xEE\xB9\x94  Choose books…",
+    T.check(sub[3].text == "\xEF\x83\x87  Backup copies…"
+            and sub[4].text == "\xEE\xB9\x94  Choose books…",
         "15b: the per book switch is gone, the rows below follow")
     behaviour[2].callback()
     T.check(store.tomedown.preserve == false, "15b: and off again")
-    T.check(#sub == 10,
+    T.check(#sub == 11,
         "15b: both rows are back with the switch off: " .. #sub)
     plugin:runExport({ FILE }, {})
     UIManager:runPending()
@@ -3591,6 +3595,118 @@ do
         end
     end
     T.check(pushed, "24: the folded file goes up")
+    store.tomedown.preserve = false
+end
+
+
+-- ---------------------------- 25. the copies kept beside a book, in its menu
+--
+-- A book that has copies beside its file gets a row that lists them, one
+-- by one, and deletes one only after a question that says what it holds.
+do
+    local function wr(path, data)
+        local f = io.open(path, "wb"); f:write(data); f:close()
+    end
+    local function exportNow()
+        plugin:runExport({ FILE }, {})
+        UIManager:runPending()
+    end
+    local function backupRow()
+        for __, row in ipairs(menu_items.tomedown.sub_item_table_func()) do
+            if row.text and row.text:find("Backup copies", 1, true) then
+                return row
+            end
+        end
+    end
+    local function tap(item)
+        item.callback(nil)
+        UIManager:runPending()
+        return ConfirmBox.last
+    end
+    for __, p in ipairs({ MD_PATH, MD_PATH .. ".bak", MD_PATH .. ".bak.1" }) do
+        os.remove(p)
+    end
+    store.tomedown.preserve_books = nil
+    store.tomedown.upload = false
+    store.tomedown.exports = nil
+    BookList.registry[FILE].annotations = modernAnnotations()
+
+    store.tomedown.preserve = true;  exportNow()
+    ui.document = { file = FILE }
+    T.check(backupRow() == nil, "25: a book with no copy has no row for them")
+    local md = T.readFile(MD_PATH) or ""
+    wr(MD_PATH, (md:gsub("(<!%-%- tomedown:begin body)", "NOTE-Z\n\n%1", 1)))
+    store.tomedown.preserve = false; exportNow()   -- parked in .bak, file plain
+    wr(MD_PATH .. ".bak.1", "SAFETY-TEXT\n")
+
+    local row = backupRow()
+    T.check(row ~= nil, "25: the row is there once the book has copies")
+    ui.document = nil
+    store.lastfile = FILE
+    T.check(backupRow() == nil,
+        "25: and it needs an open book: not on the dashboard")
+    store.lastfile = nil
+    ui.document = { file = FILE }
+    local items = row.sub_item_table_func()
+    T.check(#items == 2 and items[1].text == "Parked file (your notes)"
+            and items[2].text == "Safety copy",
+        "25: the parked file comes first, the safety copy after it")
+    T.check(type(items[1].mandatory) == "string"
+            and items[1].mandatory:match("^%d%d%d%d%-%d%d%-%d%d$"),
+        "25: each copy shows the day it was saved")
+
+    -- the parked file is where the notes are while the book has no zone
+    local box = tap(items[1])
+    T.check(box and T.contains(box.text, "Parked file (your notes)")
+            and T.contains(box.text, "when preserve was turned off")
+            and T.contains(box.text, "deletes those notes for good"),
+        "25: the question names the copy and warns that the notes are in it")
+    box.cancel_callback()
+    T.check(T.fileExists(MD_PATH .. ".bak"),
+        "25: keeping it leaves the copy where it is")
+
+    -- the safety copy: other words, no warning, and nothing else goes
+    box = tap(items[2])
+    T.check(box and T.contains(box.text, "Safety copy")
+            and not T.contains(box.text, "deletes those notes for good"),
+        "25: the safety copy has its own question and no warning")
+    local plain_before = T.readFile(MD_PATH)
+    box.ok_callback()
+    T.check(not T.fileExists(MD_PATH .. ".bak.1"),
+        "25: deleting removes the copy")
+    T.check(T.fileExists(MD_PATH .. ".bak")
+            and T.readFile(MD_PATH) == plain_before,
+        "25: and nothing else: the parked file and the book's file stay")
+
+    -- with the zone back in the book, the parked file is no longer the
+    -- only place the notes are: no warning
+    store.tomedown.preserve = true;  exportNow()
+    items = backupRow().sub_item_table_func()
+    box = tap(items[1])
+    T.check(box and not T.contains(box.text, "deletes those notes for good"),
+        "25: with the notes back in the file the warning is not shown")
+    box.ok_callback()
+    T.check(not T.fileExists(MD_PATH .. ".bak"), "25: the last copy goes")
+    T.check(T.contains(T.readFile(MD_PATH) or "", "NOTE-Z"),
+        "25: and the notes in the book's file are untouched")
+    T.check(backupRow() == nil,
+        "25: with no copy left the row is gone")
+    -- a plain .bak, left by a version before the markers, is an older
+    -- copy: it says so and carries no warning about the notes
+    wr(MD_PATH .. ".bak", "OLD-TEXT\n")
+    local older = backupRow()
+    T.check(older ~= nil, "25: a plain .bak brings the row back")
+    items = older.sub_item_table_func()
+    T.check(#items == 1 and items[1].text == "Older copy",
+        "25: a plain .bak is listed as an older copy")
+    box = tap(items[1])
+    T.check(box and T.contains(box.text, "A copy kept by an earlier version")
+            and not T.contains(box.text, "deletes those notes for good"),
+        "25: the older copy says what it is and carries no warning")
+    box.ok_callback()
+    T.check(not T.fileExists(MD_PATH .. ".bak") and backupRow() == nil,
+        "25: deleting the older copy leaves no row")
+    ui.document = nil
     store.tomedown.preserve = false
 end
 

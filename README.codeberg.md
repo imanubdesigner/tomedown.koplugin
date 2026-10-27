@@ -309,10 +309,11 @@ The menu itself, with a book open, where every row is on show:
 
 ![The Tomedown menu with a book open](assets/menu/reader/tomedown_reader_menu_1_1.png)
 
-Three of these rows name a book, and they are only built while one is
-open: *Export current book*, *Preserve: this book* and *Book notes: %1*.
-From the file browser the menu starts at *Export only what changed*,
-since there no book is open to speak about.
+Four of these rows name a book, and they are only built while one is
+open: *Export current book*, *Preserve: this book*, *Book notes: %1*
+and *Backup copies…* (the last only while the book has a copy beside
+its file). From the file browser the menu starts at *Export only what
+changed*, since there no book is open to speak about.
 
 - **Export current book**: only the open book.
 - **Export only what changed**: exports only the books whose highlights changed since
@@ -328,6 +329,12 @@ since there no book is open to speak about.
   heading ("The Witch theory", "Julian Carax Dixit", …), or leave it empty
   to export that zone without one. Every other file, `00 - Index.md`
   included, keeps the global heading.
+- **Backup copies…**: lists the copies beside this book's file, the
+  parked file and the safety copy, one by one with the day each was
+  saved. Tap a copy to see what it holds and delete it: Tomedown asks
+  first, and warns when the parked file is the only place your notes
+  are right now. Nothing else is touched, and the row leaves with the
+  last copy.
 - **Choose books…**: a list with checkboxes: tick the volumes and export
   just those.
 - **Export every book's highlights**: exports everything found in KOReader's
@@ -582,6 +589,12 @@ touched block from one of its own at a glance. On every export:
   into it, so neither side is left behind, and what the rewrite replaces
   is kept as `.bak.1` first (the plain file instead, when it holds text
   you typed yourself);
+- inside a book, *Backup copies…* in the Tomedown menu lists the copies
+  that sit beside that book's file (the parked file and the safety copy,
+  each with the day it was saved) and deletes one when you tap it and
+  confirm. The box says what the copy holds, and warns when it is the
+  parked file of a book that has no zone right now, since those notes
+  are then only there. The row appears only while the book has a copy;
 - the frontmatter merges field by field: Tomedown's own fields (`status`,
   `progress`, `exported`…) always show KOReader's values, your tags are
   kept and unioned with the new ones, and a property only you added

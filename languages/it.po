@@ -486,3 +486,48 @@ msgstr "lascia vuoto per non esportare l'intestazione"
 
 msgid "Write your thoughts, your emotions, your questions."
 msgstr "Scrivi i tuoi pensieri, le tue emozioni, le tue domande."
+
+msgid "Backup copies…"
+msgstr "Copie di backup…"
+
+msgid "Safety copy"
+msgstr "Copia di sicurezza"
+
+msgid "Parked file (your notes)"
+msgstr "File parcheggiato (le tue note)"
+
+msgid "Older copy"
+msgstr "Copia precedente"
+
+msgid "Text of yours that a rewrite was about to replace and that does not come back by itself."
+msgstr "Testo tuo che una riscrittura stava per sostituire e che non torna da solo."
+
+msgid "The file as it was when preserve was turned off. It comes back into the file when preserve is on again."
+msgstr "Il file com'era quando hai spento preserve. Torna nel file quando riaccendi preserve."
+
+msgid "A copy kept by an earlier version."
+msgstr "Una copia lasciata da una versione precedente."
+
+msgid "%1\n\n%2\n\nSaved %3 (%4).\n\nDelete this copy? It cannot be undone."
+msgstr "%1\n\n%2\n\nSalvata il %3 (%4).\n\nCancellare questa copia? Non si può annullare."
+
+msgid "%1 KB"
+msgstr "%1 KB"
+
+msgid "The file has no write zone right now: deleting this copy deletes those notes for good."
+msgstr "Il file non ha una zona di scrittura in questo momento: cancellando questa copia cancelli quelle note per sempre."
+
+msgid "Delete"
+msgstr "Cancella"
+
+msgid "Keep"
+msgstr "Tienila"
+
+msgid "Copy deleted."
+msgstr "Copia cancellata."
+
+msgid "The copy could not be deleted."
+msgstr "Impossibile cancellare la copia."
+
+msgid "No backup copies for this book"
+msgstr "Nessuna copia di backup per questo libro"
