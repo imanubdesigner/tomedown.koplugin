@@ -308,9 +308,9 @@ settings keys are never renamed.
 
 ☰ menu → **Tomedown**:
 
-![The Tomedown menu](assets/menu/reader/tomedown_reader_menu.png)
+![Tomedown in KOReader's menu, with a book open](assets/menu/reader/tomedown_reader_menu.png)
 
-The menu itself, with a book open:
+The menu itself:
 
 ![The Tomedown menu with a book open](assets/menu/reader/tomedown_reader_menu_1_1.png)
 
