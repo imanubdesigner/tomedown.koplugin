@@ -2,7 +2,7 @@
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/banner-dark.png">
     <source media="(prefers-color-scheme: light)" srcset="assets/banner-light.png">
-    <img src="assets/banner-light.png" alt="tomedown: one Markdown file per book, straight into your notes" width="100%">
+    <img src="assets/banner-light.png" alt="tomedown: one Markdown file per book, straight into your notes" width="60%">
   </picture>
 </p>
 
