@@ -4,10 +4,10 @@ Builds the Codeberg-flavoured copies of README.md and TUTORIAL.md.
 README.md is the canonical document: it lives on the GitHub home of the
 project and links there. README.codeberg.md is generated from it by
 rewriting the handful of lines that name a host - the release, test and
-license badges, the Releases and Issues links and the CI sentence - so
-that a reader on Codeberg never follows a link back to a GitHub that may
-be unreachable. tests/test_readme.lua fails when the committed copies
-drift from this script's output.
+license badges and the Releases and Issues links - so that a reader on
+Codeberg never follows a link back to a GitHub that may be unreachable.
+tests/test_readme.lua fails when the committed copies drift from this
+script's output.
 
     lua tools/readme_variant.lua README.md > README.codeberg.md
     lua tools/readme_variant.lua TUTORIAL.md > TUTORIAL.codeberg.md
@@ -52,8 +52,13 @@ M.rules = {
             to = [[   [Releases](https://codeberg.org/imanubdesigner/tomedown.koplugin/releases)]],
         },
         {
-            from = [[on the Kindle. The same suite runs on every push through GitHub Actions.]],
-            to = [[on the Kindle.]],
+            from = [[| [Releases](https://github.com/imanubdesigner/tomedown.koplugin/releases) | zips and release notes |]],
+            to = [[| [Releases](https://codeberg.org/imanubdesigner/tomedown.koplugin/releases) | zips and release notes |]],
+        },
+        -- the mirror sends bug reports to its own tracker
+        {
+            from = [[Something wrong or missing? [Open an issue](https://github.com/imanubdesigner/tomedown.koplugin/issues).]],
+            to = [[Something wrong or missing? [Open an issue](https://codeberg.org/imanubdesigner/tomedown.koplugin/issues).]],
         },
         -- the discussions live on GitHub only, and a Codeberg reader is
         -- pointed there only for the repository itself: the mirror sends

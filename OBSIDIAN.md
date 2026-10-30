@@ -2,11 +2,12 @@
 
 Three sheets on what Tomedown writes into your vault: the book file as
 every export produces it by default, the same file with *Keep my notes:
-all books* on, and the index that ties the library together. A last
-section shows how a quote gets an id of its own and can be linked on its
-own. The [quickstart](README.md#quickstart) shows the flow end to end;
-this page zooms into the file itself. Nothing here needs anything
-installed in Obsidian — the files are plain Markdown either way.
+all books* on, and the index that ties the library together. A section
+shows how a quote gets an id of its own and can be linked on its own, and
+the last one sets up Remotely Save if you want the vault synced by itself.
+The [first export](README.md#first-export) shows the flow end to end; this
+page zooms into the file itself. The sheets need nothing installed in
+Obsidian: the files are plain Markdown either way.
 
 ## The book file, as exported (default)
 
@@ -63,12 +64,51 @@ the quote into the page you are writing. The toggle is off by default,
 and the apps that ignore ids show `^hl-4f2a9c31` as plain text at the
 end of the quote.
 
+## Setting up Remotely Save
+
+Obsidian is just one way to read the notes: the files are plain Markdown,
+so any editor, reader or wiki works. If you do use Obsidian, only
+**Remotely Save** needs configuring: the Tomedown plugin lives on
+KOReader, nothing special has to be installed in Obsidian. **Book covers
+(*Include book covers*) require Obsidian 1.8.1 or newer**: that is the
+version that started rendering `<img>` tags whose `src` points at a file
+inside the vault; older versions show a broken image. The steps below use
+Koofr (the README's example cloud); with any other WebDAV server
+(Nextcloud, ownCloud, a NAS…), substitute its address and credentials.
+
+1. On Koofr create an app (Security → Applications) and copy the **app
+   password**, not the account one.
+2. In Obsidian install **Remotely Save** and configure:
+   - type: **WebDAV**
+   - server: `https://app.koofr.net/dav/Koofr`
+   - user: your Koofr account e-mail
+   - password: the app password
+   - **remote folder / base dir: `/Bookshelf`**
+   - **Abort Sync If Modification Above Percentage: `100 (disable the
+     protection)`**: Tomedown re-exports notes in bulk (first export,
+     toggling *Include book covers*, migrations), which trips the default
+     `50` guard and aborts the sync with *"you set changing files >= 50%
+     is not allowed"*; the vault is regenerated from KOReader at any time,
+     so disabling that protection is safe
+3. In Remotely Save's local data, point to the folder that holds your books
+   vault (in this example `Bookshelf/`).
+4. Sync.
+
+One setting deserves a page of its own: Remotely Save's experimental
+**Sync Direction**. Leave it on **Bidirectional (default)**:
+[SYNC-DIRECTION.md](SYNC-DIRECTION.md) explains the five options and
+where your edits live.
+
+Result: `Bookshelf/Kindle/*.md` arrive in Obsidian, `00 - Index.md` opens as
+a clickable table and every title opens that book's file.
+
+![The book index in Obsidian: the stats line under the properties, then covers, titles, authors, the status word over its bar and percentage, the last read date and the highlight count](assets/obsidian/index_v2_cover.png)
+
 ## See also
 
-- [README — Keep my notes](README.md#keep-my-notes): the
-  setting, the merge and the `.bak` files, step by step.
-- [README — Obsidian (optional)](README.md#obsidian-optional): the cloud
-  setup with Remotely Save, from zero to a synced vault.
+- [README — Keep my notes](docs/keep-my-notes.md): the setting, the merge
+  and the `.bak` files, step by step.
 - [SYNC-DIRECTION.md](SYNC-DIRECTION.md): which Remotely Save sync
   direction to pick, and where your edits live.
 - [TUTORIAL.md](TUTORIAL.md): the same flow as a full tutorial.
+- [README](README.md): installation, the menu, settings and file format.

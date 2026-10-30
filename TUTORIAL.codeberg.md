@@ -14,7 +14,7 @@ them all.
 > substitute the address and credentials.
 
 > Prerequisite: the plugin itself is installed and enabled
-> ([Installation in the README](README.md#installation)).
+> ([Install in the README](README.md#install)).
 
 ## Step 1 — Cloud account and app password (Koofr as the example)
 
@@ -57,8 +57,8 @@ automatically, and *Server and folder…* already shows it. Only set
 the JSONs.
 
 More options (index, page bookmarks, local folder…) are described in the
-README's [Configuration](README.md#configuration-one-off) table. Two more
-toggles there are worth knowing about (both off by default):
+[Settings](docs/settings.md) page. Two more toggles there are worth knowing
+about (both off by default):
 
 - ***Include book covers*** — exports every book's cover into `covers/`
   and embeds it in the book note and in the index. The cover is removed

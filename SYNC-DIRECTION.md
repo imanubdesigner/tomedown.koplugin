@@ -45,14 +45,14 @@ The labels are Remotely Save's own wording:
   re-exports in bulk (first export, toggling *Include book covers*,
   migrations), which trips the default `50` guard; the vault is
   regenerated from KOReader at any time, so disabling the protection is
-  safe. Configured in step 2 of the
-  [Obsidian section](README.md#obsidian-optional).
+  safe. Configured in step 2 of
+  [Setting up Remotely Save](OBSIDIAN.md#setting-up-remotely-save).
 - **Ignore `*.json`** in Remotely Save's *Ignore list* if AnnotationSync
   files share the folder, so only the notes reach the vault — see the
   [tutorial](TUTORIAL.md).
 - **Your edits under the heading are merged, not overwritten**: an export
   folds its new render into the file already in your vault (and keeps a
-  `.bak` next to it). See [Keep my notes](README.md#keep-my-notes).
+  `.bak` next to it). See [Keep my notes](docs/keep-my-notes.md).
 
 ## Where do your edits live?
 
@@ -71,8 +71,8 @@ want the text to survive.
 
 ## See also
 
-- [README — Obsidian (optional)](README.md#obsidian-optional): the full
-  cloud setup, step by step.
+- [Obsidian guide](OBSIDIAN.md#setting-up-remotely-save): the full cloud
+  setup, step by step.
 - [TUTORIAL.md](TUTORIAL.md): the same flow in tutorial form.
 - [Remotely Save](https://github.com/remotely-save/remotely-save): the
   plugin itself, where the setting lives.
