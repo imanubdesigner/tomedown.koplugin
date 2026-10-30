@@ -14,7 +14,9 @@ script's output.
 
 A rule matches whole lines, never pieces of a sentence: editing a source
 line then changes the generated copy (and the test says so) instead of
-leaving a half-converted paragraph behind.
+leaving a half-converted paragraph behind. Inside a Markdown table the
+spaces an editor adds to line the cells up are ignored, and the row is
+padded back to its column width so the table stays straight.
 --]]
 
 local M = {}
@@ -80,6 +82,119 @@ M.rules = {
     },
 }
 
+local function trim(s)
+    return (s:match("^%s*(.-)%s*$"))
+end
+
+--- The trimmed cells of a Markdown table row, or nil for any other line.
+local function cells_of(line)
+    if line:sub(1, 1) ~= "|" or line:sub(-1) ~= "|" then
+        return nil
+    end
+    local cells = {}
+    for cell in (line:sub(2, -2) .. "|"):gmatch("([^|]*)|") do
+        cells[#cells + 1] = trim(cell)
+    end
+    if #cells < 2 then
+        return nil
+    end
+    return cells
+end
+
+local function same_cells(a, b)
+    if #a ~= #b then
+        return false
+    end
+    for i = 1, #a do
+        if a[i] ~= b[i] then
+            return false
+        end
+    end
+    return true
+end
+
+--- The rows of one table, padded so every cell in a column starts at the
+-- same place. An editor that lines the cells up leaves the table in the
+-- canonical file with spaces that a longer URL would break: the block is
+-- rebuilt instead of patched row by row.
+local function align_block(block)
+    for _, line in ipairs(block) do
+        if line:find("\\|", 1, true) then
+            return block
+        end
+    end
+    local rows, width, cols = {}, {}, 0
+    for i, line in ipairs(block) do
+        rows[i] = {}
+        for cell in (line:sub(2, -2) .. "|"):gmatch("([^|]*)|") do
+            rows[i][#rows[i] + 1] = trim(cell)
+        end
+        cols = math.max(cols, #rows[i])
+    end
+    local function is_rule(row)
+        for _, cell in ipairs(row) do
+            if not cell:match("^:?-+:?$") then
+                return false
+            end
+        end
+        return true
+    end
+    for _, row in ipairs(rows) do
+        if not is_rule(row) then
+            for i, cell in ipairs(row) do
+                width[i] = math.max(width[i] or 0, #cell)
+            end
+        end
+    end
+    local out = {}
+    for i, row in ipairs(rows) do
+        local rule, cells = is_rule(row), {}
+        for j = 1, cols do
+            local cell = row[j] or ""
+            local span = width[j] or #cell
+            if rule then
+                cell = string.rep("-", span)
+            end
+            cells[j] = " " .. cell .. string.rep(" ", span - #cell) .. " "
+        end
+        out[i] = "|" .. table.concat(cells, "|") .. "|"
+    end
+    return out
+end
+
+--- `lines` with every table that holds a replaced row re-aligned; the
+-- other tables are left byte for byte as they were.
+local function align_tables(lines, replaced)
+    local out, i, n = {}, 1, #lines
+    while i <= n do
+        if cells_of(lines[i]) then
+            local j = i
+            while j < n and cells_of(lines[j + 1]) do
+                j = j + 1
+            end
+            local touched = false
+            for k = i, j do
+                touched = touched or replaced[k] == true
+            end
+            local block = {}
+            for k = i, j do
+                block[#block + 1] = lines[k]
+            end
+            if touched then
+                block = align_block(block)
+            end
+            for k = 1, #block do
+                out[#out + 1] = block[k]
+            end
+            i = j + 1
+        else
+            out[#out + 1] = lines[i]
+            i = i + 1
+        end
+    end
+    return out
+end
+
 --- The given document with the rules for `name` applied. Returns the
 -- new text and, second, how many lines each rule replaced or dropped -
 -- 0 meaning that rule no longer matches anything in its source.
@@ -100,15 +215,22 @@ function M.transform(name, text)
     if not last_line_closed and text ~= "" then
         lines[#lines + 1] = text:match("([^\n]*)$")
     end
-    local out = {}
+    local out, replaced = {}, {}
     for _, line in ipairs(lines) do
         local converted = false
+        local cells = cells_of(line)
         for i, rule in ipairs(rules) do
-            if line == rule.from then
+            local matches = line == rule.from
+            if not matches and cells then
+                local target = cells_of(rule.from)
+                matches = target ~= nil and same_cells(target, cells)
+            end
+            if matches then
                 counts[i] = counts[i] + 1
                 if rule.to ~= false then
                     for newline in (rule.to .. "\n"):gmatch("([^\n]*)\n") do
                         out[#out + 1] = newline
+                        replaced[#out] = true
                     end
                 end
                 converted = true
@@ -119,6 +241,7 @@ function M.transform(name, text)
             out[#out + 1] = line
         end
     end
+    out = align_tables(out, replaced)
     local converted_text = table.concat(out, "\n")
     if last_line_closed and converted_text ~= "" then
         converted_text = converted_text .. "\n"

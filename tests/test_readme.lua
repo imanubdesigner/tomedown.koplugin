@@ -51,4 +51,14 @@ for _, doc in ipairs({ "README", "TUTORIAL" }) do
     end
 end
 
+-- an editor that lines the cells of a table up pads them with spaces:
+-- the row rule must still match, and the generated row must not contain
+-- a link back to the GitHub repository
+local padded = "|  [Releases](https://github.com/imanubdesigner/tomedown.koplugin/releases)  "
+    .. "|  zips and release notes  |\n"
+local converted = variant.transform("README.md", padded)
+T.check(T.contains(converted, "codeberg.org"), "a padded table row still converts")
+T.check(not T.contains(converted, "github.com/imanubdesigner"),
+    "a padded table row loses its GitHub link")
+
 T.finish("test_readme")
