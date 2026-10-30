@@ -136,8 +136,9 @@ The result should look like:
    export the highlights of your whole reading history in one tap (*Export* /
    *Not now*; the offer is made only once, and the menu entry stays available
    anyway).
-2. Otherwise pick **Export this book**, **Export new and changed books**,
-   **Choose books…** or **Export all books**.
+2. Otherwise pick **Export this book**, **Export new and changed books** or
+   **Choose books…**. *Export new and changed books* also picks up the books
+   you never exported.
 3. The files land in the local folder first; with *Upload to cloud* on, the
    upload follows by itself.
 
@@ -189,7 +190,7 @@ on top.
 |---|---|
 | **Export this book** | the open book alone |
 | **Export new and changed books** | only the books whose highlights changed since the last export (per-book hash) |
-| **Export all books** | everything in KOReader's reading history |
+| **Repair all files** | writes every file again from KOReader's reading history: for a file deleted by mistake or a sync that went wrong |
 | **Choose books…** | a list with checkboxes: tick the volumes and export just those |
 | **Current book** | the rows that name the open book: *Keep my notes in this book*, *Notes heading: %1* and *Backup copies…*, explained in [Keep my notes](docs/keep-my-notes.md) |
 | **Upload all files again** | re-uploads every file already in the local folder, after comparing each one with its cloud copy |

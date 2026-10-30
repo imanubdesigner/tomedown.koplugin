@@ -533,7 +533,7 @@ local sub = menu_items.tomedown.sub_item_table_func()
 T.check(#sub == 9, "main menu entries: " .. #sub)
 T.check(sub[1].text == "\xEE\x89\xBC  Export this book", "menu item 1")
 T.check(sub[2].text == "\xEE\xA4\xB5  Export new and changed books", "menu item 2")
-T.check(sub[3].text == "\xEE\xA7\x99  Export all books", "menu item 3")
+T.check(sub[3].text == "\xEE\xA7\x99  Repair all files", "menu item 3")
 T.check(sub[4].text == "\xEE\xB9\x94  Choose books…", "menu item 4")
 T.check(sub[4].separator == true, "separator after Choose books")
 T.check(sub[5].text == "\xEF\x81\x80  Current book",
@@ -868,13 +868,14 @@ for _, group in ipairs({ sub, cloud, files, notes, highlights,
 end
 -- the About row opens the Bookshelf-style popup
 local shown_before = #UIManager.shown
+TextWidget.all = {}
 sub[9].callback()
 T.check(#UIManager.shown == shown_before + 1, "about popup shown")
 local dialog = UIManager.shown[#UIManager.shown]
 T.check(dialog ~= nil and dialog.__widget == "InputContainer",
     "about is a framed popup: " .. tostring(dialog and dialog.__widget))
-T.check(TextWidget.last ~= nil
-        and TextWidget.last.text == "v" .. installed_version,
+T.check(#TextWidget.all > 0
+        and TextWidget.all[1].text == "v" .. installed_version,
     "about shows the version")
 T.check(T.contains(TextBoxWidget.last and TextBoxWidget.last.text or "",
     "Exports each book"), "about shows the description")
@@ -888,23 +889,40 @@ T.check(#Button.all >= 2
 T.check(type(Button.last.callback) == "function"
         and type(Button.all[#Button.all - 1].callback) == "function",
     "both repository URLs are tappable")
--- the logo ships with the plugin and keeps its own ratio (PNG header)
+-- the logo ships with the plugin and keeps the ratio of the file itself:
+-- expected width and height come from the PNG's own IHDR chunk, so
+-- re-exporting the artwork never needs a test edit
+local function pngSize(path)
+    local data = T.readFile(path)
+    if not data or data:sub(1, 4) ~= "\137PNG" or data:sub(13, 16) ~= "IHDR" then
+        return nil
+    end
+    local function be32(at)
+        local a, b, c, d = data:byte(at, at + 3)
+        if not d then
+            return nil
+        end
+        return ((a * 256 + b) * 256 + c) * 256 + d
+    end
+    return be32(17), be32(21)
+end
+local logo_w, logo_h = pngSize(T.plugin .. "/assets/logo.png")
 T.check(ImageWidget.last ~= nil
         and (ImageWidget.last.file or ""):find("assets/logo.png", 1, true) ~= nil,
     "about shows the logo: " .. tostring(ImageWidget.last and ImageWidget.last.file))
-T.check(ImageWidget.last ~= nil and (ImageWidget.last.height or 0) > 0
-        and (ImageWidget.last.height or 0) < ImageWidget.last.width,
-    "logo box follows the file ratio: "
-        .. tostring(ImageWidget.last and ImageWidget.last.width)
-        .. "x" .. tostring(ImageWidget.last and ImageWidget.last.height))
-T.check(ImageWidget.last ~= nil
+T.check(logo_w ~= nil and logo_h ~= nil and logo_w > 0 and logo_h > 0,
+    "logo.png has a readable PNG header")
+T.check(ImageWidget.last ~= nil and logo_w ~= nil and logo_h ~= nil
         and math.abs(ImageWidget.last.height
-            - ImageWidget.last.width * 250 / 1045) <= 1,
+            - ImageWidget.last.width * logo_h / logo_w) <= 1,
     "logo box reads the PNG size: "
         .. tostring(ImageWidget.last and ImageWidget.last.width)
         .. "x" .. tostring(ImageWidget.last and ImageWidget.last.height))
 T.check(ImageWidget.last ~= nil and ImageWidget.last.is_icon == true,
     "logo follows the UI in night mode")
+T.check(#TextWidget.all > 0
+        and TextWidget.all[#TextWidget.all].text == "© 2026 Manuel B.",
+    "about shows the copyright line")
 UIManager:close(dialog)
 
 local main_src = T.readFile(T.plugin .. "/main.lua") or ""

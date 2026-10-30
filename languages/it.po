@@ -123,8 +123,8 @@ msgstr "Tienila accesa"
 msgid "Choose books…"
 msgstr "Scegli libri…"
 
-msgid "Export all books"
-msgstr "Esporta tutti i libri"
+msgid "Repair all files"
+msgstr "Ripara tutti i file"
 
 msgid "Upload all files again"
 msgstr "Carica di nuovo tutti i file"

@@ -3061,6 +3061,11 @@ function Tomedown:showAbout()
             callback = open_link(repo.url),
         }
     end
+    column[#column + 1] = VerticalSpan:new{ width = Size.padding.default }
+    column[#column + 1] = TextWidget:new{
+        text = "© 2026 Manuel B.",
+        face = Font:getFace("cfont", 12),
+    }
 
     local frame = FrameContainer:new{
         radius = Size.radius.window,
@@ -3532,7 +3537,7 @@ function Tomedown:genBookMenu()
         end,
     }
     rows[#rows + 1] = {
-        text = withIcon("\xEE\xA7\x99", _("Export all books")),
+        text = withIcon("\xEE\xA7\x99", _("Repair all files")),
         enabled_func = function()
             return #self:listBookFiles() > 0
         end,

@@ -78,8 +78,7 @@ about (both off by default):
 - On a **fresh install**, the first time you open the menu Tomedown offers
   to export your whole reading history in one tap (*Export* / *Not now*).
 - Later: **Export this book** for the open one, **Export new and changed
-  books** for whatever changed, **Export all books** if you skipped the
-  offer.
+  books** for whatever changed (it also takes the books you never exported).
 
 The files appear in KOReader's local folder first, then the upload
 happens by itself (you'll see *N files exported* and *Cloud: N uploaded*).
@@ -138,8 +137,8 @@ Updates of the plugin itself: **Settings → Updates → Check for updates**
   which is not writable), and that the same folder is selected on both
   sides.
 - **The first-run export offer doesn't show** — it appears only when
-  nothing has ever been exported; use **Export all books** from the menu
-  instead.
+  nothing has ever been exported; use **Export new and changed books**
+  from the menu instead.
 - **`.json` files cluttering the vault** — add `*.json` to Remotely
   Save's ignore list (see step 4).
 - **Covers show as a broken image in Obsidian** — rendering images that
