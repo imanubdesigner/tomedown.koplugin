@@ -48,6 +48,26 @@ and retries) against a fake KOReader environment (`kostubs/`). It ends with
 `luac5.1 -p` on the sources, the same Lua version that runs on the Kindle.
 The same suite runs on every push.
 
+## Publishing
+
+GitHub is the canonical home and `main` tracks `origin/main`. Codeberg runs
+the same files with the links that name a host rewritten, so it is published
+from the commit that is already on GitHub:
+
+```
+tools/publish.sh
+```
+
+The script pushes `main` to GitHub, then builds the mirror commit from that
+tree, with `README.md` and `TUTORIAL.md` replaced by their `.codeberg.md`
+copies, and pushes it to Codeberg. It refuses to run when those copies are
+stale, so regenerate and commit them first:
+
+```
+lua tools/readme_variant.lua README.md > README.codeberg.md
+lua tools/readme_variant.lua TUTORIAL.md > TUTORIAL.codeberg.md
+```
+
 ## Project structure
 
 ```
