@@ -888,15 +888,23 @@ T.check(#Button.all >= 2
 T.check(type(Button.last.callback) == "function"
         and type(Button.all[#Button.all - 1].callback) == "function",
     "both repository URLs are tappable")
--- the logo ships with the plugin and keeps its own ratio (viewBox)
+-- the logo ships with the plugin and keeps its own ratio (PNG header)
 T.check(ImageWidget.last ~= nil
-        and (ImageWidget.last.file or ""):find("assets/logo.svg", 1, true) ~= nil,
+        and (ImageWidget.last.file or ""):find("assets/logo.png", 1, true) ~= nil,
     "about shows the logo: " .. tostring(ImageWidget.last and ImageWidget.last.file))
 T.check(ImageWidget.last ~= nil and (ImageWidget.last.height or 0) > 0
-        and ImageWidget.last.height < ImageWidget.last.width,
+        and (ImageWidget.last.height or 0) < ImageWidget.last.width,
     "logo box follows the file ratio: "
         .. tostring(ImageWidget.last and ImageWidget.last.width)
         .. "x" .. tostring(ImageWidget.last and ImageWidget.last.height))
+T.check(ImageWidget.last ~= nil
+        and math.abs(ImageWidget.last.height
+            - ImageWidget.last.width * 250 / 1045) <= 1,
+    "logo box reads the PNG size: "
+        .. tostring(ImageWidget.last and ImageWidget.last.width)
+        .. "x" .. tostring(ImageWidget.last and ImageWidget.last.height))
+T.check(ImageWidget.last ~= nil and ImageWidget.last.is_icon == true,
+    "logo follows the UI in night mode")
 UIManager:close(dialog)
 
 local main_src = T.readFile(T.plugin .. "/main.lua") or ""

@@ -2940,12 +2940,14 @@ function Tomedown:showAbout()
 
     local column = VerticalGroup:new{ align = "center" }
 
-    -- Logo at the top, centred: SVG preferred (scales to any density),
-    -- PNG as a fallback. alpha=true so a transparent background stays
-    -- transparent instead of rendering as opaque black
-    -- Native size from the file's own header (SVG viewBox/width/height):
-    -- passing width alone would leave ImageWidget reserve a square box
-    -- with empty bands above and below the logo
+    -- Logo at the top, centred: PNG first (the shipped artwork), SVG as a
+    -- fallback for an older install. alpha=true so a transparent
+    -- background stays transparent instead of rendering as opaque black,
+    -- is_icon so night mode inverts it with the UI instead of keeping a
+    -- black logo on the black background.
+    -- Native size from the file's own header (PNG IHDR, or SVG
+    -- viewBox/width/height): passing width alone would leave ImageWidget
+    -- reserve a square box with empty bands above and below the logo
     local function imageSize(path)
         local f = io.open(path, "rb")
         if not f then
@@ -2955,6 +2957,21 @@ function Tomedown:showAbout()
         f:close()
         if not head then
             return nil
+        end
+        -- PNG: width and height are the first two 32-bit big-endian
+        -- numbers of the IHDR chunk
+        if head:sub(1, 4) == "\137PNG" and head:sub(13, 16) == "IHDR" then
+            local function be32(at)
+                local a, b, c, d = head:byte(at, at + 3)
+                if not d then
+                    return nil
+                end
+                return ((a * 256 + b) * 256 + c) * 256 + d
+            end
+            local pw, ph = be32(17), be32(21)
+            if pw and ph and pw > 0 and ph > 0 then
+                return pw, ph
+            end
         end
         local w, h = head:match(
             'viewBox%s*=%s*"%s*[%-%d%.]+%s+[%-%d%.]+%s+([%-%d%.]+)%s+([%-%d%.]+)%"')
@@ -2971,7 +2988,7 @@ function Tomedown:showAbout()
     if plugin_dir then
         local ok_lfs, lfs = pcall(require, "libs/libkoreader-lfs")
         if ok_lfs and lfs and lfs.attributes then
-            for __, name in ipairs({ "logo.svg", "logo.png" }) do
+            for __, name in ipairs({ "logo.png", "logo.svg" }) do
                 local path = plugin_dir .. "/assets/" .. name
                 if lfs.attributes(path) then
                     local ImageWidget = require("ui/widget/imagewidget")
@@ -2980,6 +2997,7 @@ function Tomedown:showAbout()
                         width = math.min(content_w, Screen:scaleBySize(220)),
                         scale_factor = 0,
                         alpha = true,
+                        is_icon = true,
                     }
                     local nat_w, nat_h = imageSize(path)
                     if nat_w and nat_h then

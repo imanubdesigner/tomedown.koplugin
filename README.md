@@ -1,5 +1,9 @@
 <p align="center">
-  <img src="assets/banner.svg" alt="tomedown: one Markdown file per book, straight into your notes" width="100%">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/banner-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="assets/banner-light.png">
+    <img src="assets/banner-light.png" alt="tomedown: one Markdown file per book, straight into your notes" width="100%">
+  </picture>
 </p>
 
 <p align="center">
@@ -103,7 +107,7 @@ rsync -a --exclude tests --exclude .git --exclude .github \
       --exclude docs \
       --exclude assets/menu --exclude assets/obsidian \
       --exclude assets/obsidian-guide --exclude assets/tutorials \
-      --exclude assets/banner.svg \
+      --exclude 'assets/banner-*.png' \
       tomedown.koplugin /mnt/us/koreader/plugins/
 ```
 
@@ -118,7 +122,7 @@ The result should look like:
 /mnt/us/koreader/plugins/tomedown.koplugin/tomedown_update.lua
 /mnt/us/koreader/plugins/tomedown.koplugin/_meta.lua
 /mnt/us/koreader/plugins/tomedown.koplugin/languages/it.po
-/mnt/us/koreader/plugins/tomedown.koplugin/assets/logo.svg
+/mnt/us/koreader/plugins/tomedown.koplugin/assets/logo.png
 /mnt/us/koreader/plugins/tomedown.koplugin/LICENSE
 ```
 
