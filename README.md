@@ -85,12 +85,10 @@ hardware.
 3. Unplug the Kindle and restart KOReader (or: ☰ menu → *Plugin management* →
    enable *Tomedown*).
 4. **Tomedown** is the first entry of KOReader's menu: on top of the
-   *Navigation* tab (right before *Table of Contents*) while reading, on
-   top of the first tab in the file browser (right before *Display mode*):
+   *Navigation* tab (right before *Table of Contents*) while reading, and on
+   top of the first tab in the file browser (right before *Display mode*).
 
    ![Tomedown first in the reader's Navigation tab](assets/menu/reader/tomedown_reader_menu.png)
-
-   ![Tomedown first in the file browser's menu](assets/menu/reader/tomedown_file_browser_top_menu.png)
 
 <details>
 <summary>Installing from a clone of this repo</summary>
