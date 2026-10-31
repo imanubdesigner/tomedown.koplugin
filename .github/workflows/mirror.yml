@@ -1,0 +1,52 @@
+name: mirror to codeberg
+
+# Codeberg is an exact mirror of GitHub: every branch and every tag, with
+# deletions and force-pushes included. Each run starts from a fresh clone of
+# GitHub, so the result never depends on which event fired it.
+on:
+  push: # any branch, any tag, and commits made on the web
+  delete: # a branch or a tag removed on GitHub
+  workflow_dispatch: # manual run from the Actions tab
+  schedule:
+    # Safety net: GitHub fires no push event when more than three tags are
+    # pushed at once. A daily run catches whatever an event missed.
+    - cron: "23 4 * * *"
+
+permissions:
+  contents: read
+
+# One mirror at a time. A queued run clones the latest state anyway.
+concurrency:
+  group: mirror-to-codeberg
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Mirror GitHub to Codeberg
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CODEBERG_TOKEN: ${{ secrets.CODEBERG_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${CODEBERG_TOKEN}" ]; then
+            echo "::error::The CODEBERG_TOKEN secret is missing"
+            exit 1
+          fi
+
+          # A bare clone carries exactly branches and tags: no refs/pull/*,
+          # which Codeberg keeps for itself.
+          git clone --bare \
+            "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
+            repo.git
+          cd repo.git
+
+          # --prune removes on Codeberg the branches and tags that no longer
+          # exist on GitHub; --force follows rewritten history.
+          git push --prune --force \
+            "https://imanubdesigner:${CODEBERG_TOKEN}@codeberg.org/imanubdesigner/tomedown.koplugin.git" \
+            'refs/heads/*:refs/heads/*' \
+            'refs/tags/*:refs/tags/*'
