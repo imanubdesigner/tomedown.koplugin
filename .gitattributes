@@ -6,9 +6,7 @@
 tests export-ignore
 tools export-ignore
 README.md export-ignore
-README.codeberg.md export-ignore
 TUTORIAL.md export-ignore
-TUTORIAL.codeberg.md export-ignore
 OBSIDIAN.md export-ignore
 ROADMAP.md export-ignore
 SYNC-DIRECTION.md export-ignore
