@@ -298,4 +298,6 @@ Something wrong or missing? [Open an issue](https://codeberg.org/imanubdesigner/
 
 ## License
 
+Copyright (C) 2026 Manuel B.
+
 GNU Affero General Public License v3.0, see [LICENSE](LICENSE).
