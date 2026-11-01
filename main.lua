@@ -38,10 +38,25 @@ local merge = require("tomedown_merge")
 local Cover = require("tomedown_cover")
 local Update = require("tomedown_update")
 
-local SETTINGS_KEY = "tomedown"
-local DEFAULT_LOCAL_SUBDIR = "clipboard/tomedown"
-local INDEX_FILENAME = "00 - Index.md"
-local FILENAME_TEMPLATE = "%A - %T"
+local shared = require("tomedown_shared")
+local SETTINGS_KEY = shared.SETTINGS_KEY
+local DEFAULT_LOCAL_SUBDIR = shared.DEFAULT_LOCAL_SUBDIR
+local INDEX_FILENAME = shared.INDEX_FILENAME
+local FILENAME_TEMPLATE = shared.FILENAME_TEMPLATE
+local getSetting = shared.getSetting
+local setSetting = shared.setSetting
+local getNotesTitle = shared.getNotesTitle
+local setBookNotesTitle = shared.setBookNotesTitle
+local getBookPreserve = shared.getBookPreserve
+local setBookPreserve = shared.setBookPreserve
+local getIndexPreserve = shared.getIndexPreserve
+local readIfExists = shared.readIfExists
+local ownCopy = shared.ownCopy
+local isZoned = shared.isZoned
+local replaceFile = shared.replaceFile
+local normalizeBackups = shared.normalizeBackups
+local parkZone = shared.parkZone
+local keepSafety = shared.keepSafety
 
 -- upload retry: up to 3 attempts, wait doubling
 -- each time (2s, 4s), to absorb transient network blips without
@@ -64,102 +79,6 @@ local Tomedown = WidgetContainer:extend{
     name = "tomedown",
 }
 
--- settings (everything in G_reader_settings under a single key)
-
-local function getSetting(key, default)
-    local value = G_reader_settings:readSetting(SETTINGS_KEY, {})[key]
-    if value == nil then
-        return default
-    end
-    return value
-end
-
-local function setSetting(key, value)
-    local settings = G_reader_settings:readSetting(SETTINGS_KEY, {})
-    settings[key] = value
-    G_reader_settings:saveSetting(SETTINGS_KEY, settings)
-end
-
--- Title of the heading that names the writable zone in an exported
--- file: the file's own title when it asked for one, the global one
--- otherwise (translated default until the reader renames it from the
--- Markdown menu, "" when they asked for no heading at all). Books are
--- keyed the same way as "preserve_books" (the book file path), the
--- index by its filename. The global switch, while it is on, names
--- every zone itself: the per file titles stay where they are, dormant
--- until it is off again.
-local function getNotesTitle(file)
-    if file and not getSetting("preserve", false) then
-        local titles = getSetting("notes_titles", {})
-        if titles[file] ~= nil then
-            return titles[file]
-        end
-    end
-    local value = getSetting("notes_title", nil)
-    if value == nil then
-        return _("My notes...")
-    end
-    return value
-end
-
-local function setBookNotesTitle(file, title)
-    local titles = getSetting("notes_titles", {})
-    titles[file] = title
-    setSetting("notes_titles", titles)
-end
-
--- preserve per file: while the global switch is on it alone governs
--- every file, and the per book rows stay out of the way; with it off,
--- a book's own choice wins over the default, which stays for books
--- that never chose anything (whoever turned it on under 1.0 keeps it
--- on for every one of them). The map is keyed the same way as
--- "exports", the book file path, and no choice is ever dropped.
-local function getBookPreserve(file)
-    local global = getSetting("preserve", false)
-    if global then
-        return true
-    end
-    local choice = getSetting("preserve_books", {})[file]
-    if choice ~= nil then
-        return choice
-    end
-    return global
-end
-
-local function setBookPreserve(file, on)
-    local choices = getSetting("preserve_books", {})
-    choices[file] = on and true or false
-    setSetting("preserve_books", choices)
-end
-
--- The index is a file like the others, and since 1.1 it carries its
--- own switch: it keeps its zone when the reader asks for it, and
--- otherwise follows the global default. It used to ride along with
--- whatever any book had chosen, which switched the index on behind
--- the reader's back; now nothing turns it on but the global switch or
--- this choice, and with the global switch on it is covered like every
--- other file (the row below it in Settings then goes away).
-local function getIndexPreserve()
-    local global = getSetting("preserve", false)
-    if global then
-        return true
-    end
-    local choice = getSetting("preserve_index", nil)
-    if choice ~= nil then
-        return choice
-    end
-    return global
-end
-
-local function readIfExists(path)
-    local f = io.open(path, "rb")
-    if not f then
-        return nil
-    end
-    local data = f:read("*a")
-    f:close()
-    return data
-end
 
 -- helpers
 
@@ -1007,149 +926,6 @@ function Tomedown:clearPendingUploads(paths)
     if changed then
         setSetting("pending_uploads", pending)
     end
-end
-
--- whether the file to replace is byte for byte what the last export
--- wrote: nothing of the reader's sits in it, the next run rebuilds it
--- anyway, so there is no point in a copy of it (and no point in letting
--- it take the slot of a copy worth keeping). A record from before this
--- was remembered answers false, which keeps the backup.
-local function ownCopy(stored, content)
-    return stored ~= nil and stored == md5(content)
-end
-
--- A file with a write zone carries this marker in its comments.
-local ZONE_MARK = "tomedown:begin"
-
-local function isZoned(text)
-    return type(text) == "string" and text:find(ZONE_MARK, 1, true) ~= nil
-end
-
--- writes `content` to `path` through a temporary file and a rename, so
--- the file that is already there is either replaced whole or left
--- exactly as it was: never truncated halfway. rename() replaces its
--- target in one step (KOReader runs on POSIX systems). Should a
--- filesystem refuse the rename, the copy is complete in the temporary
--- file by then and is written in place instead, with a warning in the
--- log: a quirk of the card must not stop the export for good. Returns
--- whether `path` holds `content` when the call ends.
-local function replaceFile(path, content)
-    local tmp = path .. ".tmp"
-    local f = io.open(tmp, "wb")
-    if not f then
-        return false
-    end
-    local written = f:write(content)
-    f:close()
-    if not written then
-        os.remove(tmp)
-        return false
-    end
-    if os.rename(tmp, path) then
-        return true
-    end
-    logger.warn("tomedown: rename refused for", path, "- writing it in place")
-    local direct = io.open(path, "wb")
-    local ok = direct and direct:write(content)
-    if direct then
-        direct:close()
-    end
-    os.remove(tmp)
-    return ok ~= nil and ok ~= false
-end
-
--- The two copies that can sit beside an exported file, each with ONE
--- job, so that turning preserve on and off any number of times finds
--- the reader's notes where they were left:
---
---   <n>.md.bak    the parked file: the zoned file as it was when
---                 preserve went off. It is the reader's file, kept
---                 aside while the plain export takes its place, and it
---                 comes back into the file when preserve is on again.
---                 There is only this one and it is always the latest:
---                 whatever it held was folded back into the file when
---                 it came back, so parking the next version over it
---                 loses nothing (a note deleted in between stays
---                 deleted, a note added in between is in the new copy).
---
---   <n>.md.bak.1  a safety copy: text of the reader's that the rewrite
---                 is about to replace and that does NOT come back by
---                 itself (a plain file edited by hand while preserve
---                 was off, a block edited inside its comments, a cloud
---                 copy that moved on). One slot, overwritten by the
---                 next one; it never takes the place of the parked file.
-
--- The beta.1 rotated every copy from .bak into .bak.1, so on a card
--- that has run it the file with the notes can sit in .bak.1 behind a
--- newer copy without a zone. The slots now have fixed jobs: when .bak
--- holds no zone and .bak.1 does, the two trade places (once: afterwards
--- .bak is the zoned one and the swap no longer applies). Three renames,
--- undone if one of them is refused, so nothing is ever lost halfway.
-local function normalizeBackups(path)
-    local bak, bak1, tmp = path .. ".bak", path .. ".bak.1", path .. ".bak.swap"
-    -- a swap cut short between its renames: the copy waiting in .bak.swap
-    -- goes back to the slot it came from, so the swap below sees both
-    local waiting = readIfExists(tmp)
-    if waiting then
-        if not readIfExists(bak) then
-            os.rename(tmp, bak)
-        elseif not readIfExists(bak1) then
-            os.rename(tmp, bak1)
-        elseif waiting == readIfExists(bak) or waiting == readIfExists(bak1) then
-            -- a duplicate left by a swap that did finish: no information
-            -- in it, the slot already has the same bytes
-            os.remove(tmp)
-        else
-            logger.warn("tomedown: a temporary copy is left beside", path,
-                "(.bak.swap), both slots are taken")
-        end
-    end
-    local first, second = readIfExists(bak), readIfExists(bak1)
-    if not first or not second or isZoned(first) or not isZoned(second) then
-        return
-    end
-    if not os.rename(bak, tmp) then
-        return
-    end
-    if not os.rename(bak1, bak) then
-        os.rename(tmp, bak)
-        return
-    end
-    if not os.rename(tmp, bak1) then
-        -- .bak.1 is gone from its place and the old .bak waits in tmp:
-        -- put the notes copy back where it was and the other beside it
-        os.rename(bak, bak1)
-        os.rename(tmp, bak)
-        return
-    end
-    logger.info("tomedown: swapped the slots of", path, "(beta.1 layout)")
-end
-
--- Parks the zoned file `content` in .bak. Returns whether the copy is
--- there when the call ends. An older .bak that holds no zone (written
--- before this rule) is moved to .bak.1 first rather than overwritten.
-local function parkZone(path, content)
-    local bak_path = path .. ".bak"
-    local current = readIfExists(bak_path)
-    if current == content then
-        return true
-    end
-    if current and not isZoned(current)
-            and readIfExists(bak_path .. ".1") ~= current
-            and not replaceFile(bak_path .. ".1", current) then
-        return false
-    end
-    return replaceFile(bak_path, content)
-end
-
--- Keeps `content` as the safety copy (.bak.1), unless the same bytes
--- are already kept in either slot. Returns whether the copy is there.
-local function keepSafety(path, content)
-    if readIfExists(path .. ".bak") == content
-            or readIfExists(path .. ".bak.1") == content then
-        return true
-    end
-    return replaceFile(path .. ".bak.1", content)
 end
 
 function Tomedown:runExport(files, opts)
