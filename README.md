@@ -116,6 +116,10 @@ The result should look like:
 
 ```
 /mnt/us/koreader/plugins/tomedown.koplugin/main.lua
+/mnt/us/koreader/plugins/tomedown.koplugin/tomedown_shared.lua
+/mnt/us/koreader/plugins/tomedown.koplugin/tomedown_menu.lua
+/mnt/us/koreader/plugins/tomedown.koplugin/tomedown_export.lua
+/mnt/us/koreader/plugins/tomedown.koplugin/tomedown_upload.lua
 /mnt/us/koreader/plugins/tomedown.koplugin/tomedown_i18n.lua
 /mnt/us/koreader/plugins/tomedown.koplugin/tomedown_render.lua
 /mnt/us/koreader/plugins/tomedown.koplugin/tomedown_merge.lua

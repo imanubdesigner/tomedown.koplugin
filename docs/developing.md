@@ -43,17 +43,21 @@ cd tests && ./run.sh
 ```
 
 It covers the Markdown render, the `languages/it.po` sync, the runtime
-translations and `main.lua` (export, menu, dialogs, fallback servers, uploads
-and retries) against a fake KOReader environment (`kostubs/`). It ends with
-`luac5.1 -p` on the sources, the same Lua version that runs on the Kindle.
-The same suite runs on every push.
+translations and the plugin modules (export, menu, dialogs, fallback
+servers, uploads and retries) against a fake KOReader environment
+(`kostubs/`). It ends with `luac5.1 -p` on the sources, the same Lua
+version that runs on the Kindle. The same suite runs on every push.
 
 ## Project structure
 
 ```
 tomedown.koplugin/
 ├── _meta.lua              plugin name and description
-├── main.lua               menu, .sdr reading, export, upload (with retries)
+├── main.lua               plugin class, settings, server getters, reader events
+├── tomedown_shared.lua    settings accessors and write-zone file helpers
+├── tomedown_menu.lua      main menu, Settings groups, About, book menu
+├── tomedown_export.lua    .sdr reading, Markdown export and index
+├── tomedown_upload.lua    cloud upload, retries, pending queue and Status
 ├── tomedown_render.lua    Markdown builder (pure, testable)
 ├── tomedown_merge.lua     zones, frontmatter and the .bak copies
 ├── tomedown_cover.lua     cover extraction and resize
