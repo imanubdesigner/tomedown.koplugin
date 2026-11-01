@@ -10,6 +10,7 @@ local SOURCES = {
     "main.lua",
     "tomedown_shared.lua",
     "tomedown_menu.lua",
+    "tomedown_export.lua",
     "tomedown_render.lua",
     "tomedown_update.lua",
     "_meta.lua",
@@ -198,7 +199,8 @@ end)(), "po and source entry counts match")
 
 -- the modules that require tomedown_i18n declare it
 for __, name in ipairs({ "main.lua", "tomedown_shared.lua",
-        "tomedown_menu.lua", "tomedown_render.lua", "tomedown_update.lua" }) do
+        "tomedown_menu.lua", "tomedown_export.lua",
+        "tomedown_render.lua", "tomedown_update.lua" }) do
     T.check(T.contains(T.readFile(T.plugin .. "/" .. name), 'require("tomedown_i18n")'),
         name .. " requires tomedown_i18n")
 end
