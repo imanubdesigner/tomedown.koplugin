@@ -36,7 +36,6 @@ local GetText = require("gettext")
 local UIManager = require("ui/uimanager")
 local InfoMessage = require("ui/widget/infomessage")
 local TextViewer = require("ui/widget/textviewer")
-local ScrollHtmlWidget = require("ui/widget/scrollhtmlwidget")
 local ConfirmBox = require("ui/widget/confirmbox")
 local Notification = require("ui/widget/notification")
 local Device = require("device")
@@ -78,7 +77,6 @@ local function resetWidgets()
     NetworkMgr:reset()
     InfoMessage.last_text = nil
     TextViewer.last = nil
-    ScrollHtmlWidget.last = nil
     ConfirmBox.last = nil
     Notification.last_text = nil
 end
@@ -248,22 +246,22 @@ T.check(T.contains(viewer.text, "v" .. MAJOR) and T.contains(viewer.text, "v" ..
     and T.contains(viewer.text, "v" .. MINOR), "header for every newer release")
 T.check(T.contains(viewer.text, "Fix A") and T.contains(viewer.text, "Fix B")
     and T.contains(viewer.text, "Fixes"), "notes of every newer release")
-T.check(viewer.text_format == "md",
-    "notes rendered as markdown: " .. tostring(viewer.text_format))
-T.check(viewer.__tomedown_notes == true,
-    "viewer tagged for the notes stylesheet")
-local css = ScrollHtmlWidget.last and ScrollHtmlWidget.last.css or ""
-T.check(css:find("body { font-family", 1, true) == 1,
-    "sans stylesheet prepended to the viewer css: " .. css)
-T.check(css:find("Helvetica", 1, true) ~= nil,
-    "Helvetica stack requested: " .. css)
-T.check(T.contains(viewer.text, "**bold**") and T.contains(viewer.text, "# Fixes")
-    and T.contains(viewer.text, "`code`"),
-    "markdown kept for rendering: " .. tostring(viewer.text))
-T.check(T.contains(viewer.text, "![The new menus]"),
-    "image kept for markdown rendering: " .. tostring(viewer.text))
-T.check(countTimes(viewer.text, "## v" .. MAJOR) == 1,
-    "the release's own version heading is not shown twice")
+T.check(viewer.text_format == nil,
+    "notes rendered as plain text: " .. tostring(viewer.text_format))
+T.check(not T.contains(viewer.text, "**")
+        and not T.contains(viewer.text, "`")
+        and not T.contains(viewer.text, "*italic*"),
+    "markdown markers stripped: " .. tostring(viewer.text))
+T.check(T.contains(viewer.text, "- bold and code and italic"),
+    "list and inline formatting flattened: " .. tostring(viewer.text))
+T.check(not T.contains(viewer.text, "![")
+        and not T.contains(viewer.text, "example.com"),
+    "image and link addresses dropped: " .. tostring(viewer.text))
+T.check(T.contains(viewer.text, "The new menus")
+        and T.contains(viewer.text, "the guide"),
+    "image caption and link text kept: " .. tostring(viewer.text))
+T.check(countTimes(viewer.text, "## v" .. MAJOR) == 0,
+    "the release's own version heading is stripped")
 T.check(T.contains(viewer.text, "issue #12"), "inline #12 kept: " .. tostring(viewer.text))
 T.check(Update.getAvailableVersion() == MAJOR,
     "cached available version: " .. tostring(Update.getAvailableVersion()))
@@ -293,31 +291,6 @@ for __, widget in ipairs(UIManager.shown) do
     end
 end
 T.check(not viewer_still_open, "viewer closed")
-
--- a KOReader whose TextViewer cannot render markdown gets the plain,
--- stripped notes (what every version showed before)
-local saved_formats = TextViewer.html_text_formats
-TextViewer.html_text_formats = nil
-resetWidgets()
-Update._resetState()
-Update.check()
-UIManager:runPending()
-local plain = TextViewer.last
-T.check(plain ~= nil, "fallback viewer shown")
-T.check(plain.text_format == nil,
-    "fallback stays plain text: " .. tostring(plain.text_format))
-T.check(ScrollHtmlWidget.last == nil,
-    "fallback builds no html widget: " .. tostring(ScrollHtmlWidget.last))
-T.check(not T.contains(plain.text, "**") and not T.contains(plain.text, "# "),
-    "fallback strips markdown: " .. tostring(plain.text))
-T.check(T.contains(plain.text, "Fix A"), "fallback keeps the notes")
-T.check(not T.contains(plain.text, "example.com")
-        and not T.contains(plain.text, "!["),
-    "fallback drops image and link addresses: " .. tostring(plain.text))
-T.check(T.contains(plain.text, "The new menus")
-        and T.contains(plain.text, "the guide"),
-    "fallback keeps the alt text and the link label: " .. tostring(plain.text))
-TextViewer.html_text_formats = saved_formats
 
 -- ------------------------------------------------ 6. manual check: failure
 
@@ -813,19 +786,16 @@ Update.showChangelog()
 T.check(TextViewer.last ~= nil, "changelog viewer shown")
 T.check(TextViewer.last.title == "Changelog (1 of 2)",
     "changelog title: " .. tostring(TextViewer.last and TextViewer.last.title))
-T.check(TextViewer.last.text_format == "md",
-    "changelog rendered as markdown: " .. tostring(TextViewer.last.text_format))
-T.check(TextViewer.last.__tomedown_notes == true
-        and ScrollHtmlWidget.last ~= nil
-        and (ScrollHtmlWidget.last.css or ""):find("body { font-family", 1, true) == 1,
-    "changelog viewer carries the notes stylesheet")
+T.check(TextViewer.last.text_format == nil,
+    "changelog rendered as plain text: " .. tostring(TextViewer.last.text_format))
 T.check(T.contains(TextViewer.last.text or "", "v9.9.0"), "newest entry first")
 T.check(not T.contains(TextViewer.last.text or "", "2026-01-15"),
     "no date in the changelog headline")
-T.check(countTimes(TextViewer.last.text or "", "## v9.9.0") == 1,
+T.check(countTimes(TextViewer.last.text or "", "## v9.9.0") == 0,
     "the body's version heading is stripped, not duplicated")
-T.check(T.contains(TextViewer.last.text or "", "- **bold**"),
-    "the notes under the heading are kept")
+T.check(T.contains(TextViewer.last.text or "", "- bold")
+        and not T.contains(TextViewer.last.text or "", "**"),
+    "the notes under the heading are kept, markers stripped")
 T.check(#urls == before, "cache hit: no fetch")
 
 -- page to the older release and back

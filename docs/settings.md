@@ -96,8 +96,8 @@ stored hashes, the way *Include book covers* does above.
 *Check for updates (vX)* compares the installed version with the releases
 on GitHub and shows the notes of **every** release newer than yours, so
 someone updating from 0.2.0 to 1.0 reads the fixes of 0.3.0, 0.3.1 and 1.0
-in one window. When your KOReader renders Markdown, the notes keep their
-formatting (bold, headings, lists); older versions get them as plain text.
+in one window. The notes are shown as plain text, so they look the same on
+every device.
 Tap **Update and restart**: the zip is downloaded, unpacked into a folder
 next to the plugin, and checked before anything moves: both entry points
 must be there, every Lua module must compile, and the version inside must

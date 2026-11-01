@@ -299,6 +299,10 @@ function Update.offerReleasesPage(message)
     end
 end
 
+-- Release notes are always plain text. TextViewer's HTML path draws
+-- list markers outside the text area, and its page has no left margin,
+-- so on a small screen the markers get clipped. Plain text keeps the
+-- "-" as an ordinary character and looks the same on every device.
 local function stripMarkdown(text)
     -- headings only at the start of a line: an inline "#12" must stay
     text = text:gsub("^#+%s*", "")
@@ -313,64 +317,6 @@ local function stripMarkdown(text)
     text = text:gsub("!%[([^%]]*)%]%([^%)]*%)", "%1")
     text = text:gsub("%[([^%]]*)%]%([^%)]*%)", "%1")
     return (text:gsub("^%s+", ""):gsub("%s+$", ""))
-end
-
---- Whether this KOReader's TextViewer can render Markdown natively
---- (text_format = "md" converts the notes to HTML, so bold, headings
---- and lists are shown formatted instead of as raw markers). Older
---- versions fall back to the plain, stripped text above.
-local function canRenderMarkdown()
-    if type(TextViewer.html_text_formats) ~= "table"
-        or not TextViewer.html_text_formats.md then
-        return false
-    end
-    local ok, Converter = pcall(require, "apps/filemanager/filemanagerconverter")
-    return ok and type(Converter) == "table"
-        and type(Converter.mdToHtml) == "function"
-end
-
--- The stylesheet our viewers ask for: the named fonts are usually
--- absent (Kindle, most desktop setups), so the renderer falls back to
--- its own sans-serif face instead of the serif default. mupdf reads
--- <style> blocks only from the document <head> - the one
--- HtmlBoxWidget:setContent assembles from the css TextViewer passes to
--- ScrollHtmlWidget - and TextViewer exposes no hook for it, so
--- installNotesCssHook prepends this to that css, for our viewers
--- only. It is prepended (not appended) so TextViewer's own
--- "Monospace" menu rule, `body { font-family: monospace }`, still
--- wins the cascade when the toggle is on.
-local NOTES_CSS = 'body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }'
-
--- Whether the ScrollHtmlWidget wrapper is already in place.
-local notes_css_hooked = false
-
---- Make every viewer tagged with __tomedown_notes render its HTML with
--- NOTES_CSS. TextViewer builds its ScrollHtmlWidget css inline with no
--- parameter to override, so a wrapper around ScrollHtmlWidget.new
--- prepends the stylesheet to widgets whose dialog is one of our tagged
--- viewers only - any other TextViewer in the session keeps its stock
--- look. The wrapper stays installed for the session and fails safe:
--- if a future KOReader moves the pieces and it never fires, our notes
--- simply keep the serif default.
-local function installNotesCssHook()
-    if notes_css_hooked then
-        return
-    end
-    notes_css_hooked = true
-    local ok, ScrollHtmlWidget = pcall(require, "ui/widget/scrollhtmlwidget")
-    if not ok or type(ScrollHtmlWidget) ~= "table"
-            or type(ScrollHtmlWidget.new) ~= "function" then
-        return
-    end
-    local orig_new = ScrollHtmlWidget.new
-    ScrollHtmlWidget.new = function(class, o)
-        if type(o) == "table" and type(o.css) == "string"
-                and type(o.dialog) == "table"
-                and o.dialog.__tomedown_notes then
-            o.css = NOTES_CSS .. "\n" .. o.css
-        end
-        return orig_new(class, o)
-    end
 end
 
 --- The "Beta Releases" Settings toggle (default off): with it on, the
@@ -478,36 +424,29 @@ end
 -- forward declaration: the viewer's Refresh button refetches through it
 local changelogFetchShow
 
---- The paginated viewer. idx 1 = newest; Markdown rendered when this
--- KOReader can, the raw markers stripped otherwise. Chevrons (U+2039/
--- U+203A) rather than Nerd Font glyphs: a stock TextViewer button only
--- carries the standard UI font.
+--- The paginated viewer. idx 1 = newest; the raw markers are stripped
+-- so every device shows the same plain text. Chevrons (U+2039/U+203A)
+-- rather than Nerd Font glyphs: a stock TextViewer button only carries
+-- the standard UI font.
 local function changelogShow(rels, idx)
-    local as_md = canRenderMarkdown()
     local rel = rels[idx]
     -- the tag alone as the headline (no date: it was noise), and the
     -- body's own "## vX.Y.Z" heading dropped so the version is not
     -- repeated right under the headline
     local head = "v" .. (tostring(rel.tag or ""):gsub("^v", ""))
-    local body = stripLeadingTag(rel.body, rel.tag)
-    if not as_md then
-        body = stripMarkdown(body)
-    end
+    local body = stripMarkdown(stripLeadingTag(rel.body, rel.tag))
     if body:match("^%s*$") then
         body = _("(no notes for this release)")
     end
-    local text = (as_md and ("## " .. head) or head) .. "\n\n" .. body
+    local text = head .. "\n\n" .. body
     local viewer
     local function repage(new_idx)
         UIManager:close(viewer)
         changelogShow(rels, new_idx)
     end
-    installNotesCssHook()
     viewer = TextViewer:new{
         title = T(_("Changelog (%1 of %2)"), idx, #rels),
         text = text,
-        text_format = as_md and "md" or nil,
-        __tomedown_notes = true,
         buttons_table = {
             {
                 {
@@ -618,26 +557,18 @@ local function checkBody(include_beta)
     if not include_beta then
         cached_version = latest
     end
-    local as_md = canRenderMarkdown()
     local notes = {}
     for __, rel in ipairs(newer) do
         local body = stripLeadingTag(rel.body, rel.version)
-        if as_md then
-            notes[#notes + 1] = "## v" .. rel.version .. "\n\n" .. body
-        else
-            notes[#notes + 1] = "v" .. rel.version .. "\n" .. stripMarkdown(body)
-        end
+        notes[#notes + 1] = "v" .. rel.version .. "\n" .. stripMarkdown(body)
     end
     local text = T(_("Installed: %1\nLatest: %2"), "v" .. installed,
         "v" .. latest)
         .. "\n\n" .. table.concat(notes, "\n\n")
     local viewer
-    installNotesCssHook()
     viewer = TextViewer:new{
         title = _("Update available!"),
         text = text,
-        text_format = as_md and "md" or nil,
-        __tomedown_notes = true,
         buttons_table = {
             {
                 {
