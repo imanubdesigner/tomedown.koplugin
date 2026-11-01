@@ -3066,6 +3066,10 @@ function Tomedown:showAbout()
         text = "© 2026 Manuel B.",
         face = Font:getFace("cfont", 12),
     }
+    column[#column + 1] = TextWidget:new{
+        text = "GNU Affero General Public License v3.0",
+        face = Font:getFace("cfont", 12),
+    }
 
     local frame = FrameContainer:new{
         radius = Size.radius.window,

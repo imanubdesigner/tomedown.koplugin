@@ -920,9 +920,11 @@ T.check(ImageWidget.last ~= nil and logo_w ~= nil and logo_h ~= nil
         .. "x" .. tostring(ImageWidget.last and ImageWidget.last.height))
 T.check(ImageWidget.last ~= nil and ImageWidget.last.is_icon == true,
     "logo follows the UI in night mode")
-T.check(#TextWidget.all > 0
-        and TextWidget.all[#TextWidget.all].text == "© 2026 Manuel B.",
-    "about shows the copyright line")
+T.check(#TextWidget.all >= 2
+        and TextWidget.all[#TextWidget.all - 1].text == "© 2026 Manuel B."
+        and TextWidget.all[#TextWidget.all].text
+            == "GNU Affero General Public License v3.0",
+    "about shows the copyright and the licence")
 UIManager:close(dialog)
 
 local main_src = T.readFile(T.plugin .. "/main.lua") or ""
