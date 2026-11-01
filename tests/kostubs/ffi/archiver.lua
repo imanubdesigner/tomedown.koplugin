@@ -15,6 +15,11 @@ local Archiver = {
     extracted = {},
     open_fails = false,
     extract_fails = false,
+    -- when true, extractToPath really writes the files: the install flow
+    -- checks the extracted tree before swapping it in, so the fake has to
+    -- produce one
+    write_files = false,
+    contents = {},
 }
 
 Archiver.Reader = {}
@@ -24,6 +29,8 @@ function Archiver.reset()
     Archiver.extracted = {}
     Archiver.open_fails = false
     Archiver.extract_fails = false
+    Archiver.write_files = false
+    Archiver.contents = {}
 end
 
 function Archiver.Reader:new()
@@ -56,6 +63,19 @@ function Archiver.Reader:extractToPath(src, dest)
         return false
     end
     Archiver.extracted[#Archiver.extracted + 1] = { src = src, dest = dest }
+    if Archiver.write_files then
+        if dest:sub(-1) == "/" then
+            os.execute('mkdir -p "' .. dest .. '"')
+        else
+            local parent = dest:match("^(.*)/[^/]*$")
+            if parent then
+                os.execute('mkdir -p "' .. parent .. '"')
+            end
+            local file = assert(io.open(dest, "wb"))
+            file:write(Archiver.contents[src] or "")
+            file:close()
+        end
+    end
     return true
 end
 

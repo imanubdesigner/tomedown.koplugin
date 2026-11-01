@@ -431,17 +431,44 @@ UIManager:runPending()
 viewer = TextViewer.last
 buttons = viewer.buttons_table[1]
 
+-- The install flow renames the plugin folder, so it must point at a
+-- scratch copy: never at the checkout the suite runs from.
+local fixture = "/tmp/tomedown-install-fixture"
+local installed = fixture .. "/tomedown.koplugin"
+local function writeFile(path, text)
+    local f = assert(io.open(path, "wb"))
+    f:write(text)
+    f:close()
+end
+local function resetFixture()
+    T.rmrf(fixture)
+    os.execute('mkdir -p "' .. installed .. '"')
+    writeFile(installed .. "/main.lua", "return {}\n")
+    writeFile(installed .. "/_meta.lua", 'return { version = "1.1.1" }\n')
+    writeFile(installed .. "/old.lua", "return {}\n")
+end
+local realPluginDir = Update._pluginDir
+Update._pluginDir = function() return installed end
+resetFixture()
+
 local downloads = {}
 Update.httpDownload = function(url, path)
     downloads[#downloads + 1] = { url = url, path = path }
     return true
 end
+Archiver.write_files = true
 Archiver.entries = {
     "tomedown.koplugin/",
     "tomedown.koplugin/main.lua",
     "tomedown.koplugin/_meta.lua",
     "tomedown.koplugin/languages/it.po",
     "tomedown.koplugin/tomedown_update.lua",
+}
+Archiver.contents = {
+    ["tomedown.koplugin/main.lua"] = "return {}\n",
+    ["tomedown.koplugin/_meta.lua"] = 'return { version = "' .. MAJOR .. '" }\n',
+    ["tomedown.koplugin/languages/it.po"] = "# empty\n",
+    ["tomedown.koplugin/tomedown_update.lua"] = "return {}\n",
 }
 buttons[2].callback()
 UIManager:runPending()
@@ -456,8 +483,9 @@ T.check(#Archiver.extracted == 4,
     "bare root folder skipped, 4 files extracted: " .. #Archiver.extracted)
 local first = Archiver.extracted[1]
 T.check(first.src == "tomedown.koplugin/main.lua"
-        and first.dest == T.plugin .. "/main.lua",
-    "root folder stripped: " .. first.src .. " -> " .. tostring(first.dest))
+        and first.dest == installed .. ".new/main.lua",
+    "extracted next to the install, not over it: "
+        .. first.src .. " -> " .. tostring(first.dest))
 T.check(not T.fileExists(cache_dir .. "/tomedown.koplugin.zip"),
     "zip removed after unpacking")
 T.check(ConfirmBox.last ~= nil
@@ -465,6 +493,14 @@ T.check(ConfirmBox.last ~= nil
         and T.contains(ConfirmBox.last.text, "Restart KOReader now?"),
     "restart prompt: " .. tostring(ConfirmBox.last and ConfirmBox.last.text))
 T.check(ConfirmBox.last.ok_text == "Restart", "restart button label")
+T.check(T.fileExists(installed .. "/tomedown_update.lua"),
+    "new tree in place")
+T.check(not T.fileExists(installed .. "/old.lua"),
+    "files from the old version are gone")
+T.check(T.fileExists(installed .. ".previous/old.lua"),
+    "the previous tree is kept next to the install")
+T.check(not T.fileExists(installed .. ".new/main.lua"),
+    "staging folder removed after the swap")
 T.check(UIManager.restarted == 0, "no restart before the prompt is confirmed")
 ConfirmBox.last.ok_callback()
 T.check(UIManager.restarted == 1, "restart requested")
@@ -487,9 +523,11 @@ ConfirmBox.last.ok_callback()
 T.check(Device.links[1] == RELEASES_PAGE,
     "releases page opened after the download failure")
 
--- 10c. unpack failure: message with the reason, no restart prompt
+-- 10c. unpack failure: message with the reason, no restart prompt, and
+-- the installed copy untouched
 resetWidgets()
 Update._resetState()
+resetFixture()
 Archiver.reset()
 Archiver.entries = { "tomedown.koplugin/main.lua" }
 Archiver.extract_fails = true
@@ -503,7 +541,111 @@ T.check(T.contains(InfoMessage.last_text or "",
     "unpack failure message: " .. tostring(InfoMessage.last_text))
 T.check(ConfirmBox.last == nil, "no restart prompt on unpack failure")
 T.check(UIManager.restarted == 0, "no restart after a failed unpack")
+T.check(T.fileExists(installed .. "/old.lua")
+        and not T.fileExists(installed .. ".new/main.lua"),
+    "failed unpack leaves the installed tree alone")
 Archiver.reset()
+
+-- 10d. wrong version in the archive: refused before the swap
+resetWidgets()
+Update._resetState()
+resetFixture()
+Archiver.write_files = true
+Archiver.entries = {
+    "tomedown.koplugin/main.lua",
+    "tomedown.koplugin/_meta.lua",
+}
+Archiver.contents = {
+    ["tomedown.koplugin/main.lua"] = "return {}\n",
+    ["tomedown.koplugin/_meta.lua"] = 'return { version = "0.0.1" }\n',
+}
+Update.httpDownload = function() return true end
+Update.install("https://example/x.zip", MAJOR)
+UIManager:runPending()
+T.check(T.contains(InfoMessage.last_text or "",
+        "the archive is v0.0.1, expected v" .. MAJOR),
+    "version mismatch refused: " .. tostring(InfoMessage.last_text))
+T.check(T.fileExists(installed .. "/old.lua")
+        and not T.fileExists(installed .. ".new/main.lua"),
+    "version mismatch leaves the installed tree alone")
+Archiver.reset()
+
+-- 10e. an entry that climbs out of the folder: refused
+resetWidgets()
+Update._resetState()
+resetFixture()
+Archiver.write_files = true
+Archiver.entries = {
+    "tomedown.koplugin/../evil.lua",
+    "tomedown.koplugin/main.lua",
+}
+Archiver.contents = { ["tomedown.koplugin/main.lua"] = "return {}\n" }
+Update.httpDownload = function() return true end
+Update.install("https://example/x.zip", MAJOR)
+UIManager:runPending()
+T.check(T.contains(InfoMessage.last_text or "",
+        "Installation failed: unsafe path in archive"),
+    "unsafe path refused: " .. tostring(InfoMessage.last_text))
+T.check(not T.fileExists(fixture .. "/evil.lua"),
+    "nothing written outside the plugin folder")
+T.check(T.fileExists(installed .. "/old.lua"),
+    "unsafe archive leaves the installed tree alone")
+Archiver.reset()
+
+-- 10f. archive without main.lua: refused
+resetWidgets()
+Update._resetState()
+resetFixture()
+Archiver.write_files = true
+Archiver.entries = { "tomedown.koplugin/_meta.lua" }
+Archiver.contents = {
+    ["tomedown.koplugin/_meta.lua"] = 'return { version = "' .. MAJOR .. '" }\n',
+}
+Update.httpDownload = function() return true end
+Update.install("https://example/x.zip", MAJOR)
+UIManager:runPending()
+T.check(T.contains(InfoMessage.last_text or "", "main.lua missing"),
+    "archive without main.lua refused: " .. tostring(InfoMessage.last_text))
+T.check(T.fileExists(installed .. "/old.lua"),
+    "incomplete archive leaves the installed tree alone")
+Archiver.reset()
+
+-- 10g. the second rename fails: the old tree is put back
+resetWidgets()
+Update._resetState()
+resetFixture()
+Archiver.write_files = true
+Archiver.entries = {
+    "tomedown.koplugin/main.lua",
+    "tomedown.koplugin/_meta.lua",
+}
+Archiver.contents = {
+    ["tomedown.koplugin/main.lua"] = "return {}\n",
+    ["tomedown.koplugin/_meta.lua"] = 'return { version = "' .. MAJOR .. '" }\n',
+}
+Update.httpDownload = function() return true end
+local renames = 0
+Update._installRename = function(a, b)
+    renames = renames + 1
+    if renames == 2 then
+        return nil, "no space left"
+    end
+    return os.rename(a, b)
+end
+Update.install("https://example/x.zip", MAJOR)
+UIManager:runPending()
+T.check(T.contains(InfoMessage.last_text or "", "no space left"),
+    "swap failure reported: " .. tostring(InfoMessage.last_text))
+T.check(T.fileExists(installed .. "/main.lua")
+        and T.fileExists(installed .. "/old.lua"),
+    "the old tree is back in place")
+T.check(not T.fileExists(installed .. ".new/main.lua"),
+    "staging folder removed after a failed swap")
+Update._installRename = os.rename
+Archiver.reset()
+
+-- the fixture stays the install target for the rest of the suite, so no
+-- test can rename the checkout
 T.rmrf(cache_dir)
 
 -- ------------------------------- 11. errors inside scheduled actions
@@ -714,6 +856,7 @@ T.check(G_reader_settings:readSetting("tomedown_changelog") == nil,
 -- reset: the newest stable is offered even when a beta install is newer
 resetWidgets()
 Update._resetState()
+resetFixture()
 NetworkMgr.connected = true
 store.tomedown = store.tomedown or {}
 store.tomedown.beta_releases = true
@@ -737,9 +880,15 @@ Update.httpDownload = function(url)
     reset_downloads[#reset_downloads + 1] = url
     return true
 end
+Archiver.write_files = true
 Archiver.entries = {
     "tomedown.koplugin/",
     "tomedown.koplugin/main.lua",
+    "tomedown.koplugin/_meta.lua",
+}
+Archiver.contents = {
+    ["tomedown.koplugin/main.lua"] = "return {}\n",
+    ["tomedown.koplugin/_meta.lua"] = 'return { version = "0.1.0" }\n',
 }
 reset_confirm.ok_callback()
 UIManager:runPending()
@@ -844,5 +993,8 @@ T.check(TextViewer.last ~= nil
         and T.contains(TextViewer.last.text or "", "survived the broken host"),
     "the mirror answered after GitHub errored: "
         .. tostring(TextViewer.last and TextViewer.last.text))
+
+Update._pluginDir = realPluginDir
+T.rmrf(fixture)
 
 T.finish("test_update")

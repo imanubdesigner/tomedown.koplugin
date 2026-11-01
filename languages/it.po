@@ -349,6 +349,9 @@ msgstr "Download non riuscito."
 msgid "the connection failed"
 msgstr "la connessione è fallita"
 
+msgid "the address is not safe"
+msgstr "l'indirizzo non è sicuro"
+
 msgid "the connection timed out"
 msgstr "la connessione è scaduta"
 
