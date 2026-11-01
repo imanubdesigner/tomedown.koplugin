@@ -32,6 +32,8 @@ next export rebuilds `00 - Index.md` alone even when every book is unchanged.
 With the index switched off the choice is remembered for the next time it is
 created.
 
+![The index order menu: Author, Title, Last read or Highlights](../assets/menu/settings/index_order_menu.png)
+
 Covers are always exported in full colour, whatever the device: the
 extraction forces colour rendering even on greyscale e-ink screens.
 

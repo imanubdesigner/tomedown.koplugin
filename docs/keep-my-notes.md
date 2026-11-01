@@ -58,6 +58,8 @@ export (right away when the book is exported on close). Clearing the field
 drops them. A tag made only of digits (`1500`) is ignored, because Obsidian
 does not accept it: use `1500s` or `anno-1500`.
 
+![The tags dialog, one book's tags in a comma separated field](../assets/menu/reader/add_tag_menu.png)
+
 With Keep my notes on, the file carries `tomedown_book_tags`, the receipt of
 the tags the menu owns. A tag you remove there leaves `tags` at the next
 export even while the rest of the file is merged; a tag you write by hand in
