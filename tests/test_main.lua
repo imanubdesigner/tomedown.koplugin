@@ -535,6 +535,11 @@ do
     T.check(T.contains(tagged,
             "tomedown_book_tags:\n  - Horror\n  - Psicologico"),
         "the ledger records the managed tags in a plain file too")
+    local tagged_index = T.readFile(INDEX_PATH) or ""
+    T.check(T.contains(tagged_index, "| Tags |"),
+        "the index grows a Tags column")
+    T.check(T.contains(tagged_index, "| #Horror #Psicologico |"),
+        "the book tags reach the index as clickable tags")
 
     -- with markers the ledger is what the merge keeps in step
     store.tomedown.preserve = true
@@ -572,6 +577,9 @@ do
         "the tag written by hand stays")
     T.check(not T.contains(cleared, "tomedown_book_tags"),
         "the empty ledger is not written back")
+    local cleared_index = T.readFile(INDEX_PATH) or ""
+    T.check(not T.contains(cleared_index, "| Tags |"),
+        "the Tags column leaves the index when no book carries tags")
 
     -- a numeric-only field on a book that never chose stores nothing
     store.tomedown.book_tags = nil

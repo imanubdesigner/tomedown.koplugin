@@ -575,6 +575,7 @@ function M:buildIndexEntries(dir, export_records)
                 author = book.author,
                 series = book.series,
                 series_index = book.series_index,
+                tags = book.tags or {},
                 status = book.status,
                 count = book.count,
                 special = special,

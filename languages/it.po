@@ -206,6 +206,9 @@ msgstr "Titolo"
 msgid "Series"
 msgstr "Serie"
 
+msgid "Tags"
+msgstr "Tag"
+
 msgid "Last read"
 msgstr "Ultima lettura"
 

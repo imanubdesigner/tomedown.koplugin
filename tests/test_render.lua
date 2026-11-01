@@ -574,6 +574,36 @@ local sparse = render.buildIndexMd({
 T.check(T.contains(sparse, "| [[B\\|B]] | Au | 1 |"),
     "missing series/status drop their columns, no cover cell")
 
+-- index v4: per-book tags, in a column of their own only when used
+local indexTags = render.buildIndexMd({
+    {
+        link = "Au - Tagged", title = "Tagged", author = "Au", series = "Saga",
+        series_index = 1, tags = { "Horror", "Psicologico" },
+        status = "reading", count = 1,
+    },
+    { link = "Au - Plain", title = "Plain", author = "Au", count = 1 },
+}, {})
+T.check(T.contains(indexTags,
+        "| Book | Author | Series | Tags | Status | Highlights |"),
+    "Tags sits between Series and Status")
+T.check(T.contains(indexTags,
+        "| [[Au - Tagged\\|Tagged]] | Au | Saga #1 | #Horror #Psicologico |"),
+    "the tags are clickable, separated by a space")
+T.check(T.contains(indexTags, "| Book | Author | Highlights |"),
+    "a table with no tags of its own keeps no Tags column")
+T.check(not T.contains(indexTags, "| [[Au - Plain\\|Plain]] | Au | — | 1 |"),
+    "the untagged table gets no empty Tags cell")
+T.check(not T.contains(rows, "| Tags |"),
+    "no Tags column when every book is untagged")
+local dirtyIndexTags = render.buildIndexMd({
+    {
+        link = "B", title = "B", author = "A", count = 1,
+        tags = { "Horror tales", "1500", "horror-tales", "" },
+    },
+}, {})
+T.check(T.contains(dirtyIndexTags, "| #Horror-tales |"),
+    "raw index tags are sanitized, deduplicated and numbers dropped")
+
 -- index v3: two groups, each with its own columns and a heading
 local split = render.buildIndexMd({
     {

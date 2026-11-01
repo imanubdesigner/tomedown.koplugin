@@ -40,7 +40,7 @@ them in Obsidian. No app in the middle.
 - **An index that ties the library together**: `00 - Index.md`, a clickable
   table of every book, ordered by author, title, last read or highlights;
 - **Tags for the book you are reading**: add them from the open book's menu
-  and they join its frontmatter, ready to filter in Obsidian;
+  and they join its frontmatter and the index, ready to filter in Obsidian;
 - **Your notes survive**: write in the file from Obsidian and the next export
   folds the new highlights in instead of overwriting them;
 - **The cloud is optional**: the local export needs no network at all.

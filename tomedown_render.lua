@@ -823,6 +823,26 @@ function render.buildIndexMd(books, opts)
         end
         return false
     end
+    -- the index shows the tags chosen from the book menu, as the
+    -- clickable #tag Obsidian understands; the entries are sanitized
+    -- again because an older file or a test may hand in raw values
+    local function tagsText(tags)
+        if type(tags) ~= "table" then
+            return ""
+        end
+        local seen, out = {}, {}
+        for __, tag in ipairs(tags) do
+            tag = render.sanitizeTag(tag)
+            if tag ~= "" then
+                local key = tag:lower()
+                if not seen[key] then
+                    seen[key] = true
+                    out[#out + 1] = "#" .. tag
+                end
+            end
+        end
+        return table.concat(out, " ")
+    end
 
     local function addTable(list, with_series)
         local has_author = any_filled(list, "author")
@@ -832,6 +852,13 @@ function render.buildIndexMd(books, opts)
         local has_status = any_filled(list, "status")
             or any_filled(list, "progress")
         local has_last_read = any_filled(list, "last_read")
+        local has_tags = false
+        for __, b in ipairs(list) do
+            if tagsText(b.tags) ~= "" then
+                has_tags = true
+                break
+            end
+        end
         local header, align = {}, {}
         local function column(title, separator)
             header[#header + 1] = title
@@ -846,6 +873,9 @@ function render.buildIndexMd(books, opts)
         end
         if with_series then
             column(_("Series"))
+        end
+        if has_tags then
+            column(_("Tags"))
         end
         if has_status then
             column(_("Status"))
@@ -910,6 +940,10 @@ function render.buildIndexMd(books, opts)
             end
             if with_series then
                 cells[#cells + 1] = series
+            end
+            if has_tags then
+                local tag_text = tagsText(b.tags)
+                cells[#cells + 1] = tag_text ~= "" and tag_text or "—"
             end
             if has_status then
                 cells[#cells + 1] = status_cell

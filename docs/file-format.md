@@ -223,10 +223,14 @@ starred specials) above the table, and with covers enabled the first column
 shows the cover image (120×160 box):
 
 ```markdown
-| <img src="covers/Michael McDowell - Blackwater.jpg" alt="" style="object-fit:contain;width:120px;height:160px"> | [[Michael McDowell - Blackwater\|Blackwater]] | Michael McDowell | Blackwater #1 | Complete<br>▰▰▰▰▰▰▰▰▰▰&nbsp;96% | 26/09/2026 | 150 · ★42 |
+| <img src="covers/Michael McDowell - Blackwater.jpg" alt="" style="object-fit:contain;width:120px;height:160px"> | [[Michael McDowell - Blackwater\|Blackwater]] | Michael McDowell | Blackwater #1 | #Horror #Southern-Gothic | Complete<br>▰▰▰▰▰▰▰▰▰▰&nbsp;96% | 26/09/2026 | 150 · ★42 |
 ```
 
-Without the option the cover column disappears. The Status cell holds whatever
+Without the option the cover column disappears. The Tags column holds the tags
+chosen from *Current book → Tags: %1*, written as clickable `#tag` values
+separated by a space. It appears only when at least one book in that table has
+tags and sits between Series and Status, so a library that never used them
+keeps exactly the table it had before. The Status cell holds whatever
 the book has: the status word on the first line, the progress bar under it
 with the percentage glued to the bar by a no-break space, so Obsidian can
 never drop a two-digit `96%` onto a line of its own, and a dash when it has

@@ -62,24 +62,28 @@ T.check(i18n("%1 files exported locally") == "%1 Dateien lokal exportiert",
     "de: notification with placeholder")
 T.check(i18n("Check for updates (v%1)") == "Nach Updates suchen (v%1)",
     "de: check for updates row")
+T.check(i18n("Tags") == "Tags", "de: index Tags cell")
 
 setLang("fr")
 T.check(i18n("Book index") == "Index des livres", "fr: Book index")
 T.check(i18n("No chapter") == "Sans chapitre", "fr: No chapter")
 T.check(i18n("%1 files exported locally") == "%1 fichiers exportés localement",
     "fr: notification with placeholder")
+T.check(i18n("Tags") == "Tags", "fr: index Tags cell")
 
 setLang("es")
 T.check(i18n("Book index") == "Índice de libros", "es: Book index")
 T.check(i18n("No chapter") == "Sin capítulo", "es: No chapter")
 T.check(i18n("%1 files exported locally") == "%1 archivos exportados localmente",
     "es: notification with placeholder")
+T.check(i18n("Tags") == "Etiquetas", "es: index Tags cell")
 
 setLang("pt_BR")
 T.check(i18n("Book index") == "Índice de livros", "pt_BR: Book index")
 T.check(i18n("No chapter") == "Sem capítulo", "pt_BR: No chapter")
 T.check(i18n("%1 files exported locally") == "%1 arquivos exportados localmente",
     "pt_BR: notification with placeholder")
+T.check(i18n("Tags") == "Tags", "pt_BR: index Tags cell")
 
 -- 7. regional variants fall back to the two-letter language
 setLang("de_AT")
@@ -107,6 +111,7 @@ T.check(i18n("%1 special") == "%1 special", "it: special count")
 T.check(i18n("Series books") == "Libri in serie", "it: heading series")
 T.check(i18n("My books") == "I miei libri", "it: heading plain")
 T.check(i18n("Cover") == "Copertina", "it: cell Cover")
+T.check(i18n("Tags") == "Tag", "it: cell Tags")
 
 -- 10. the language changes even after loading (reload)
 setLang(nil)
