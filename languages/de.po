@@ -1,0 +1,548 @@
+# German translation for tomedown.koplugin (KOReader).
+# Source: English strings. This translation applies when KOReader runs in German.
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: de\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Export in progress…"
+msgstr "Export läuft…"
+
+msgid "No chapter"
+msgstr "Kein Kapitel"
+
+msgid "Book index"
+msgstr "Buchindex"
+
+msgid "%1 files exported locally"
+msgstr "%1 Dateien lokal exportiert"
+
+msgid "%1 files exported — upload when online"
+msgstr "%1 Dateien exportiert — Upload, sobald online"
+
+msgid "No files exported"
+msgstr "Keine Dateien exportiert"
+
+msgid "%1 files unchanged, skipped"
+msgstr "%1 Dateien unverändert, übersprungen"
+
+msgid "Cloud: %1 uploaded, %2 errors"
+msgstr "Cloud: %1 hochgeladen, %2 Fehler"
+
+msgid "Cloud: %1 files uploaded"
+msgstr "Cloud: %1 Dateien hochgeladen"
+
+msgid "Cloud: %1 files kept back, will retry"
+msgstr "Cloud: %1 Dateien zurückgehalten, neuer Versuch"
+
+msgid "Errors:"
+msgstr "Fehler:"
+
+msgid "Choose a cloud server in the settings first."
+msgstr "Wähle zuerst einen Cloud-Server in den Einstellungen."
+
+msgid "Nothing to upload, export something first."
+msgstr "Nichts zum Hochladen, exportiere zuerst etwas."
+
+msgid "Uploading %1 files to the cloud…"
+msgstr "%1 Dateien werden in die Cloud hochgeladen…"
+
+msgid "Cloud: %1/%2 files uploaded, %3 errors"
+msgstr "Cloud: %1/%2 Dateien hochgeladen, %3 Fehler"
+
+msgid "Enable the \"Cloud storage\" plugin to upload to the cloud."
+msgstr "Aktiviere das Plugin \"Cloud storage\", um in die Cloud hochzuladen."
+
+msgid "Remote folder on the server"
+msgstr "Remote-Ordner auf dem Server"
+
+msgid "leave empty to use the folder chosen in the browser"
+msgstr "leer lassen, um den im Browser gewählten Ordner zu nutzen"
+
+msgid "Cancel"
+msgstr "Abbrechen"
+
+msgid "Save"
+msgstr "Speichern"
+
+msgid "Local folder for exports"
+msgstr "Lokaler Ordner für Exporte"
+
+msgid "No books with highlights"
+msgstr "Keine Bücher mit Markierungen"
+
+msgid "Export selected (%1)"
+msgstr "Auswahl exportieren (%1)"
+
+msgid "Deselect all"
+msgstr "Alle abwählen"
+
+msgid "Upload to cloud"
+msgstr "In die Cloud hochladen"
+
+msgid "Server and folder: not set"
+msgstr "Server und Ordner: nicht festgelegt"
+
+msgid "Server and folder: %1 → %2"
+msgstr "Server und Ordner: %1 → %2"
+
+msgid "Server and folder: %1"
+msgstr "Server und Ordner: %1"
+
+msgid "Remote folder: not set"
+msgstr "Remote-Ordner: nicht festgelegt"
+
+msgid "Remote folder: %1"
+msgstr "Remote-Ordner: %1"
+
+msgid "Local folder: %1"
+msgstr "Lokaler Ordner: %1"
+
+msgid "Create an index note (%1)"
+msgstr "Eine Indexnotiz erstellen (%1)"
+
+msgid "Export this book"
+msgstr "Dieses Buch exportieren"
+
+msgid "Export new and changed books"
+msgstr "Neue und geänderte Bücher exportieren"
+
+msgid "Keep my notes in this book"
+msgstr "Meine Notizen in diesem Buch behalten"
+
+msgid "Turn off Keep my notes for %1? Your notes will not be lost. A .bak copy is created."
+msgstr "„Meine Notizen behalten“ für %1 ausschalten? Deine Notizen gehen nicht verloren. Eine .bak-Kopie wird erstellt."
+
+msgid "Turn off"
+msgstr "Ausschalten"
+
+msgid "Keep it on"
+msgstr "Eingeschaltet lassen"
+
+msgid "Choose books…"
+msgstr "Bücher auswählen…"
+
+msgid "Repair all files"
+msgstr "Alle Dateien reparieren"
+
+msgid "Upload all files again"
+msgstr "Alle Dateien erneut hochladen"
+
+msgid "Bring in edits made in Obsidian"
+msgstr "In Obsidian vorgenommene Änderungen übernehmen"
+
+msgid "Settings"
+msgstr "Einstellungen"
+
+msgid "Found %1 books in your KOReader reading history. Export their highlights now?"
+msgstr "%1 Bücher im KOReader-Leseverlauf gefunden. Ihre Markierungen jetzt exportieren?"
+
+msgid "Export"
+msgstr "Exportieren"
+
+msgid "Not now"
+msgstr "Jetzt nicht"
+
+msgid ""
+"Exports each book's highlights into its own Markdown file,\n"
+"with frontmatter and an index, and uploads them to your cloud."
+msgstr ""
+"Exportiert die Markierungen jedes Buchs in eine eigene Markdown-Datei,\n"
+"mit Frontmatter und einem Index, und lädt sie in deine Cloud hoch."
+
+msgid "highlights"
+msgstr "Markierungen"
+
+msgid "index"
+msgstr "Index"
+
+msgid "No exported books with highlights."
+msgstr "Keine exportierten Bücher mit Markierungen."
+
+msgid "%1 book"
+msgstr "%1 Buch"
+
+msgid "%1 books"
+msgstr "%1 Bücher"
+
+msgid "%1 highlight"
+msgstr "%1 Markierung"
+
+msgid "%1 highlights"
+msgstr "%1 Markierungen"
+
+# index table cells (v0.8.0: cover/series/status columns)
+msgid "Cover"
+msgstr "Cover"
+
+msgid "Book"
+msgstr "Buch"
+
+msgid "Author"
+msgstr "Autor"
+
+msgid "Series"
+msgstr "Reihe"
+
+msgid "Last read"
+msgstr "Zuletzt gelesen"
+
+msgid "Highlights"
+msgstr "Markierungen"
+
+msgid "%1 special"
+msgstr "%1 besonders"
+
+msgid "Series books"
+msgstr "Bücher der Reihe"
+
+msgid "My books"
+msgstr "Meine Bücher"
+
+msgid "Reading"
+msgstr "Lesend"
+
+msgid "Complete"
+msgstr "Abgeschlossen"
+
+msgid "Abandoned"
+msgstr "Abgebrochen"
+
+# settings: covers and callout (v0.8.0)
+msgid "Include book covers"
+msgstr "Buchcover einbeziehen"
+
+msgid "Treat every highlight as special"
+msgstr "Jede Markierung als besonders behandeln"
+
+msgid "Add link IDs to highlights"
+msgstr "Link-IDs zu Markierungen hinzufügen"
+
+msgid "How special highlights look: %1"
+msgstr "Aussehen besonderer Markierungen: %1"
+
+msgid "Callout"
+msgstr "Callout"
+
+msgid "Bold"
+msgstr "Fett"
+
+# Special Highlight (v0.8.0)
+msgid "Special Highlight"
+msgstr "Besondere Markierung"
+
+msgid "Remove Special Highlight"
+msgstr "Besondere Markierung entfernen"
+
+msgid "Highlight marked as special"
+msgstr "Markierung als besonders gekennzeichnet"
+
+msgid "Special mark removed"
+msgstr "Besondere Markierung entfernt"
+
+msgid "Update available: v%1 → v%2"
+msgstr "Update verfügbar: v%1 → v%2"
+
+msgid "Check for updates (v%1)"
+msgstr "Nach Updates suchen (v%1)"
+
+msgid "View changelog"
+msgstr "Changelog ansehen"
+
+msgid "Changelog (%1 of %2)"
+msgstr "Changelog (%1 von %2)"
+
+msgid "Older"
+msgstr "Älter"
+
+msgid "Newer"
+msgstr "Neuer"
+
+msgid "Refresh"
+msgstr "Aktualisieren"
+
+msgid "(no notes for this release)"
+msgstr "(keine Notizen für diese Version)"
+
+msgid "Fetching changelog..."
+msgstr "Changelog wird abgerufen..."
+
+msgid "Could not fetch the changelog."
+msgstr "Changelog konnte nicht abgerufen werden."
+
+msgid "Check for updates in background"
+msgstr "Im Hintergrund nach Updates suchen"
+
+msgid "Beta versions"
+msgstr "Beta-Versionen"
+
+msgid "Check for beta updates"
+msgstr "Nach Beta-Updates suchen"
+
+msgid "Go back to the stable version"
+msgstr "Zur stabilen Version zurückkehren"
+
+msgid "This will install the latest stable release of Tomedown, then restart KOReader. Continue?"
+msgstr "Hiermit wird die neueste stabile Version von Tomedown installiert und KOReader neu gestartet. Fortfahren?"
+
+msgid "Reset"
+msgstr "Zurücksetzen"
+
+msgid "Could not fetch latest release."
+msgstr "Neueste Version konnte nicht abgerufen werden."
+
+msgid "Latest release has no downloadable zip."
+msgstr "Die neueste Version hat keine herunterladbare Zip-Datei."
+
+msgid "Installed: v%1 (%2)"
+msgstr "Installiert: v%1 (%2)"
+
+msgid "Beta"
+msgstr "Beta"
+
+msgid "Release"
+msgstr "Stabil"
+
+msgid "Cloud"
+msgstr "Cloud"
+
+msgid "Files"
+msgstr "Dateien"
+
+msgid "Updates"
+msgstr "Updates"
+
+msgid "About"
+msgstr "Über"
+
+msgid "Link copied to clipboard"
+msgstr "Link in die Zwischenablage kopiert"
+
+msgid "Checking for updates…"
+msgstr "Suche nach Updates…"
+
+msgid "Tomedown is up to date. Current version: %1"
+msgstr "Tomedown ist aktuell. Aktuelle Version: %1"
+
+msgid "Update available!"
+msgstr "Update verfügbar!"
+
+msgid "Installed: %1\nLatest: %2"
+msgstr "Installiert: %1\nNeueste: %2"
+
+msgid "Close"
+msgstr "Schließen"
+
+msgid "Update and restart"
+msgstr "Aktualisieren und neu starten"
+
+msgid "Downloading update…"
+msgstr "Update wird heruntergeladen…"
+
+msgid "No download available for this release."
+msgstr "Für diese Version ist kein Download verfügbar."
+
+msgid "Download failed."
+msgstr "Download fehlgeschlagen."
+
+msgid "the connection failed"
+msgstr "die Verbindung ist fehlgeschlagen"
+
+msgid "the address is not safe"
+msgstr "die Adresse ist nicht sicher"
+
+msgid "the connection timed out"
+msgstr "Zeitüberschreitung bei der Verbindung"
+
+msgid "the secure connection failed"
+msgstr "die sichere Verbindung ist fehlgeschlagen"
+
+msgid "there was no response"
+msgstr "es kam keine Antwort"
+
+msgid "the file could not be saved"
+msgstr "die Datei konnte nicht gespeichert werden"
+
+msgid "Installation failed: %1"
+msgstr "Installation fehlgeschlagen: %1"
+
+msgid "Tomedown updated to v%1."
+msgstr "Tomedown auf v%1 aktualisiert."
+
+msgid "Restart KOReader now?"
+msgstr "KOReader jetzt neu starten?"
+
+msgid "Restart"
+msgstr "Neu starten"
+
+msgid "Could not check for updates."
+msgstr "Updates konnten nicht geprüft werden."
+
+msgid "Open the releases page in a browser?"
+msgstr "Die Versionsseite in einem Browser öffnen?"
+
+msgid "Open"
+msgstr "Öffnen"
+
+msgid "Tomedown update available: v%1"
+msgstr "Tomedown-Update verfügbar: v%1"
+
+msgid "Include page bookmarks"
+msgstr "Seitenlesezeichen einbeziehen"
+
+msgid "Export when I close a book"
+msgstr "Exportieren, wenn ich ein Buch schließe"
+
+msgid "Page bookmarks"
+msgstr "Seitenlesezeichen"
+
+msgid "Receive beta versions"
+msgstr "Beta-Versionen erhalten"
+
+msgid "Status"
+msgstr "Status"
+
+msgid "Network: connected"
+msgstr "Netzwerk: verbunden"
+
+msgid "Network: offline"
+msgstr "Netzwerk: offline"
+
+msgid "Server: %1"
+msgstr "Server: %1"
+
+msgid "Server: not set"
+msgstr "Server: nicht festgelegt"
+
+msgid "Upload pending: %1 files"
+msgstr "Ausstehende Uploads: %1 Dateien"
+
+msgid "Last export: never"
+msgstr "Letzter Export: nie"
+
+msgid "%1 exported, %2 skipped"
+msgstr "%1 exportiert, %2 übersprungen"
+
+msgid "Last export: %1 — %2"
+msgstr "Letzter Export: %1 — %2"
+
+msgid "%1 errors"
+msgstr "%1 Fehler"
+
+msgid "Last upload: never"
+msgstr "Letzter Upload: nie"
+
+msgid "%1 uploaded"
+msgstr "%1 hochgeladen"
+
+msgid "Last upload: %1 — %2"
+msgstr "Letzter Upload: %1 — %2"
+
+msgid "Next upload: disabled in settings"
+msgstr "Nächster Upload: in den Einstellungen deaktiviert"
+
+msgid "Next upload: at the next connection"
+msgstr "Nächster Upload: bei der nächsten Verbindung"
+
+msgid "Next upload: in progress"
+msgstr "Nächster Upload: läuft"
+
+msgid "Next upload: any moment now"
+msgstr "Nächster Upload: jeden Moment"
+
+msgid "Closing"
+msgstr "Beim Schließen"
+
+msgid "Manual"
+msgstr "Manuell"
+
+msgid "Keep my notes: all books"
+msgstr "Meine Notizen behalten: alle Bücher"
+
+msgid "Keep my notes: index"
+msgstr "Meine Notizen behalten: Index"
+
+msgid "%1 files backed up (.bak)"
+msgstr "%1 Dateien als .bak gesichert"
+
+msgid "the backup copy could not be written, file left as it is"
+msgstr "die Sicherungskopie konnte nicht geschrieben werden, Datei unverändert gelassen"
+
+msgid "My notes..."
+msgstr "Meine Notizen..."
+
+msgid "Notes heading: %1"
+msgstr "Überschrift der Notizen: %1"
+
+msgid "Index notes heading: %1"
+msgstr "Überschrift der Indexnotizen: %1"
+
+msgid "Notes heading"
+msgstr "Überschrift der Notizen"
+
+msgid "leave empty to export no heading"
+msgstr "leer lassen, um keine Überschrift zu exportieren"
+
+msgid "Write your thoughts, your emotions, your questions."
+msgstr "Schreib deine Gedanken, deine Gefühle, deine Fragen."
+
+msgid "Backup copies…"
+msgstr "Sicherungskopien…"
+
+msgid "Safety copy"
+msgstr "Sicherheitskopie"
+
+msgid "Notes set aside"
+msgstr "Beiseitegelegte Notizen"
+
+msgid "Older copy"
+msgstr "Ältere Kopie"
+
+msgid "Text of yours that a rewrite was about to replace and that does not come back by itself."
+msgstr "Dein Text, den eine Neufassung ersetzen wollte und der nicht von selbst zurückkommt."
+
+msgid "The file as it was when you turned Keep my notes off. It comes back when you turn it on again."
+msgstr "Die Datei, wie sie war, als du „Meine Notizen behalten“ ausgeschaltet hast. Sie kommt zurück, wenn du es wieder einschaltest."
+
+msgid "A copy kept by an earlier version."
+msgstr "Eine Kopie aus einer früheren Version."
+
+msgid "%1\n\n%2\n\nSaved %3 (%4).\n\nDelete this copy? It cannot be undone."
+msgstr "%1\n\n%2\n\nGesichert am %3 (%4).\n\nDiese Kopie löschen? Das kann nicht rückgängig gemacht werden."
+
+msgid "%1 KB"
+msgstr "%1 KB"
+
+msgid "The file has no write zone right now: deleting this copy deletes those notes for good."
+msgstr "Die Datei hat im Moment keine Schreibzone: Wenn du diese Kopie löschst, sind diese Notizen endgültig weg."
+
+msgid "Delete"
+msgstr "Löschen"
+
+msgid "Keep"
+msgstr "Behalten"
+
+msgid "Copy deleted."
+msgstr "Kopie gelöscht."
+
+msgid "The copy could not be deleted."
+msgstr "Die Kopie konnte nicht gelöscht werden."
+
+msgid "No backup copies for this book"
+msgstr "Keine Sicherungskopien für dieses Buch"
+
+msgid "Current book"
+msgstr "Aktuelles Buch"
+
+msgid "Last export"
+msgstr "Letzter Export"
+
+msgid "My notes"
+msgstr "Meine Notizen"
+
+msgid "Highlights for Obsidian"
+msgstr "Markierungen für Obsidian"
+
+msgid "On for all books"
+msgstr "Für alle Bücher an"

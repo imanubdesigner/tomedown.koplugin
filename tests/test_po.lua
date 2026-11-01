@@ -1,6 +1,7 @@
 --[[--
-Checks that the English source strings and languages/it.po stay in sync:
-every _("...") has an entry and every entry has the string.
+Checks that the English source strings and every language catalog stay in
+sync: every _("...") has an entry in each .po file and every entry has the
+string.
 --]]
 local HERE = arg[0]:match("^(.*)/") or "."
 package.path = HERE .. "/?.lua;" .. package.path
@@ -16,7 +17,8 @@ local SOURCES = {
     "tomedown_update.lua",
     "_meta.lua",
 }
-local PO = T.plugin .. "/languages/it.po"
+local LANGUAGES = { "it", "de", "fr", "es", "pt_BR" }
+local PO_DIR = T.plugin .. "/languages"
 
 -- extracts the strings passed to _( ... ), handling escapes
 local function extract(path)
@@ -136,67 +138,73 @@ local function collectAll()
 end
 
 local source_strings, source_total = collectAll()
-local po, order = parsePO(PO)
-
 T.check(source_total > 30, "enough strings extracted from the sources (" .. source_total .. ")")
-T.check(#order > 40, "po with enough entries (" .. #order .. ")")
 
--- header
-T.check(T.contains(T.readFile(PO), "Language: it"), "header Language: it")
-T.check(T.contains(T.readFile(PO), "charset=UTF-8"), "header UTF-8")
-T.check(T.contains(T.readFile(PO), "Plural-Forms:"), "header plural forms")
-
--- no empty msgid apart from the header
-local header = po[""]
-T.check(header ~= nil, "po header present")
-T.check(#order >= 2, "header + at least one entry")
-
--- duplicate entries
-local seen, dup = {}, 0
-for __, id in ipairs(order) do
-    if seen[id] then
-        dup = dup + 1
-    end
-    seen[id] = true
+local source_count = 0
+for __ in pairs(source_strings) do
+    source_count = source_count + 1
 end
-T.check(dup == 0, "no duplicate msgid (dup=" .. dup .. ")")
+T.check(source_count > 40, "enough distinct source strings (" .. source_count .. ")")
 
--- every source string is translated
-local missing = {}
-for str in pairs(source_strings) do
-    if po[str] == nil then
-        missing[#missing + 1] = str
+for __, lang in ipairs(LANGUAGES) do
+    local path = PO_DIR .. "/" .. lang .. ".po"
+    local text = T.readFile(path)
+    local po, order = parsePO(path)
+    local prefix = lang .. ": "
+
+    T.check(#order > 40, prefix .. "po with enough entries (" .. #order .. ")")
+
+    -- header
+    T.check(T.contains(text, "Language: " .. lang), prefix .. "header Language")
+    T.check(T.contains(text, "charset=UTF-8"), prefix .. "header UTF-8")
+    T.check(T.contains(text, "Plural-Forms:"), prefix .. "header plural forms")
+
+    -- no empty msgid apart from the header
+    T.check(po[""] ~= nil, prefix .. "po header present")
+    T.check(#order >= 2, prefix .. "header + at least one entry")
+
+    -- duplicate entries
+    local seen, dup = {}, 0
+    for ___, id in ipairs(order) do
+        if seen[id] then
+            dup = dup + 1
+        end
+        seen[id] = true
     end
-end
-T.check(#missing == 0, "missing msgstr: " .. (#missing > 0 and ("'" .. missing[1] .. "'") or "nessuna"))
+    T.check(dup == 0, prefix .. "no duplicate msgid (dup=" .. dup .. ")")
 
--- every po entry exists in the sources
-local orphan = {}
-for __, id in ipairs(order) do
-    if id ~= "" and source_strings[id] == nil then
-        orphan[#orphan + 1] = id
-    end
-end
-T.check(#orphan == 0,
-    "orphan entries in the po: " .. (#orphan > 0 and ("'" .. orphan[1] .. "'") or "nessuna"))
-
--- every entry (header excluded) has a translation
-local empty = 0
-for id, str in pairs(po) do
-    if id ~= "" and (str == nil or str == "") then
-        empty = empty + 1
-    end
-end
-T.check(empty == 0, "empty translations: " .. empty)
-
--- same number of entries
-T.check(#order - 1 == (function()
-    local n = 0
+    -- every source string is translated
+    local missing = {}
     for str in pairs(source_strings) do
-        n = n + 1
+        if po[str] == nil then
+            missing[#missing + 1] = str
+        end
     end
-    return n
-end)(), "po and source entry counts match")
+    T.check(#missing == 0, prefix .. "missing msgstr: "
+        .. (#missing > 0 and ("'" .. missing[1] .. "'") or "nessuna"))
+
+    -- every po entry exists in the sources
+    local orphan = {}
+    for ___, id in ipairs(order) do
+        if id ~= "" and source_strings[id] == nil then
+            orphan[#orphan + 1] = id
+        end
+    end
+    T.check(#orphan == 0, prefix .. "orphan entries in the po: "
+        .. (#orphan > 0 and ("'" .. orphan[1] .. "'") or "nessuna"))
+
+    -- every entry (header excluded) has a translation
+    local empty = 0
+    for id, str in pairs(po) do
+        if id ~= "" and (str == nil or str == "") then
+            empty = empty + 1
+        end
+    end
+    T.check(empty == 0, prefix .. "empty translations: " .. empty)
+
+    -- same number of entries
+    T.check(#order - 1 == source_count, prefix .. "po and source entry counts match")
+end
 
 -- the modules that require tomedown_i18n declare it
 for __, name in ipairs({ "main.lua", "tomedown_shared.lua",

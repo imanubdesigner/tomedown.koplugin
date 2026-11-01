@@ -127,6 +127,10 @@ The result should look like:
 /mnt/us/koreader/plugins/tomedown.koplugin/tomedown_update.lua
 /mnt/us/koreader/plugins/tomedown.koplugin/_meta.lua
 /mnt/us/koreader/plugins/tomedown.koplugin/languages/it.po
+/mnt/us/koreader/plugins/tomedown.koplugin/languages/de.po
+/mnt/us/koreader/plugins/tomedown.koplugin/languages/fr.po
+/mnt/us/koreader/plugins/tomedown.koplugin/languages/es.po
+/mnt/us/koreader/plugins/tomedown.koplugin/languages/pt_BR.po
 /mnt/us/koreader/plugins/tomedown.koplugin/assets/logo.png
 /mnt/us/koreader/plugins/tomedown.koplugin/LICENSE
 ```
