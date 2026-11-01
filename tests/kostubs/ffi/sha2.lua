@@ -1,10 +1,109 @@
 --[[--
 Pure Lua md5 (RFC 1321): main.lua uses it to hash books.
 
-Uses Lua 5.3+ bitwise operators (the suite runs with `lua`).
-The test vectors are checked inside test_main.lua against the official
-strings, so a mistake in the implementation shows up immediately.
+No bitwise operators, so the same file runs on Lua 5.1, LuaJIT (the
+interpreter KOReader ships) and Lua 5.3+: `bit` is used when the module is
+there, plain arithmetic otherwise. The test vectors are checked inside
+test_main.lua against the official strings, so a mistake in the
+implementation shows up immediately.
 --]]
+
+local has_bit, bitlib = pcall(require, "bit")
+
+local band, bor, bxor, bnot, lshift, rshift
+
+if has_bit and bitlib then
+    -- LuaJIT: fast path, with the signed results brought back to 0..2^32-1
+    local function unsigned(x)
+        if x < 0 then
+            return x + 4294967296
+        end
+        return x
+    end
+    band = function(a, b) return unsigned(bitlib.band(a, b)) end
+    bor = function(a, b) return unsigned(bitlib.bor(a, b)) end
+    bxor = function(a, b) return unsigned(bitlib.bxor(a, b)) end
+    bnot = function(a) return unsigned(bitlib.bnot(a)) end
+    -- `bit` masks the shift count to five bits, so lshift(x, 32) is x and
+    -- not 0. The length field asks for a shift by 32 or more: stop here.
+    lshift = function(a, n)
+        if n >= 32 then
+            return 0
+        end
+        return unsigned(bitlib.lshift(a, n))
+    end
+    rshift = function(a, n)
+        if n >= 32 then
+            return 0
+        end
+        return unsigned(bitlib.rshift(a, n))
+    end
+else
+    local function u32(x)
+        x = x % 4294967296
+        if x < 0 then
+            x = x + 4294967296
+        end
+        return x
+    end
+
+    local function bits(a, b, keep)
+        local res, place = 0, 1
+        for _ = 1, 32 do
+            local abit, bbit = a % 2, b % 2
+            if keep(abit, bbit) then
+                res = res + place
+            end
+            a = (a - abit) / 2
+            b = (b - bbit) / 2
+            place = place * 2
+        end
+        return res
+    end
+
+    band = function(a, b)
+        return bits(a, b, function(x, y) return x == 1 and y == 1 end)
+    end
+    bor = function(a, b)
+        return bits(a, b, function(x, y) return x == 1 or y == 1 end)
+    end
+    bxor = function(a, b)
+        return bits(a, b, function(x, y) return x ~= y end)
+    end
+    bnot = function(a) return 4294967295 - u32(a) end
+    lshift = function(a, n)
+        for _ = 1, n do
+            a = u32(a * 2)
+        end
+        return a
+    end
+    rshift = function(a, n)
+        if n >= 32 then
+            return 0
+        end
+        return math.floor(a / 2 ^ n)
+    end
+end
+
+local function rotl(x, n)
+    return bor(lshift(x, n), rshift(x, 32 - n))
+end
+
+local function add32(...)
+    local sum = 0
+    for i = 1, select("#", ...) do
+        sum = sum + select(i, ...)
+    end
+    return sum % 4294967296
+end
+
+local function hex32(x)
+    local out = {}
+    for i = 0, 3 do
+        out[#out + 1] = string.format("%02x", rshift(x, i * 8) % 256)
+    end
+    return table.concat(out)
+end
 
 local T = {
     0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee,
@@ -32,19 +131,6 @@ local S = {
     6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21,
 }
 
-local function rotl(x, n)
-    x = x & 0xffffffff
-    return ((x << n) | (x >> (32 - n))) & 0xffffffff
-end
-
-local function hex32(x)
-    local out = {}
-    for i = 0, 3 do
-        out[#out + 1] = string.format("%02x", (x >> (i * 8)) & 0xff)
-    end
-    return table.concat(out)
-end
-
 local function md5hex(str)
     local msg = {}
     for i = 1, #str do
@@ -56,7 +142,7 @@ local function md5hex(str)
         msg[#msg + 1] = 0
     end
     for i = 0, 7 do
-        msg[#msg + 1] = (bit_len >> (8 * i)) & 0xff
+        msg[#msg + 1] = rshift(bit_len, 8 * i) % 256
     end
 
     local A, B, C, D = 0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476
@@ -64,34 +150,32 @@ local function md5hex(str)
     for chunk = 1, #msg, 64 do
         for i = 0, 15 do
             local o = chunk + i * 4
-            M[i] = msg[o] | (msg[o + 1] << 8) | (msg[o + 2] << 16) | (msg[o + 3] << 24)
+            M[i] = msg[o] + msg[o + 1] * 256
+                + msg[o + 2] * 65536 + msg[o + 3] * 16777216
         end
         local a, b, c, d = A, B, C, D
         for i = 0, 63 do
             local f, g
             if i < 16 then
-                f = (b & c) | ((~b) & d)
+                f = bor(band(b, c), band(bnot(b), d))
                 g = i
             elseif i < 32 then
-                f = (d & b) | ((~d) & c)
+                f = bor(band(d, b), band(bnot(d), c))
                 g = (5 * i + 1) % 16
             elseif i < 48 then
-                f = b ~ c ~ d
+                f = bxor(bxor(b, c), d)
                 g = (3 * i + 5) % 16
             else
-                f = c ~ (b | (~d))
+                f = bxor(c, bor(b, bnot(d)))
                 g = (7 * i) % 16
             end
-            f = (f + a + T[i + 1] + M[g]) & 0xffffffff
-            a = d
-            d = c
-            c = b
-            b = (b + rotl(f, S[i + 1])) & 0xffffffff
+            f = add32(f, a, T[i + 1], M[g])
+            a, b, c, d = d, add32(b, rotl(f, S[i + 1])), b, c
         end
-        A = (A + a) & 0xffffffff
-        B = (B + b) & 0xffffffff
-        C = (C + c) & 0xffffffff
-        D = (D + d) & 0xffffffff
+        A = add32(A, a)
+        B = add32(B, b)
+        C = add32(C, c)
+        D = add32(D, d)
     end
     return hex32(A) .. hex32(B) .. hex32(C) .. hex32(D)
 end

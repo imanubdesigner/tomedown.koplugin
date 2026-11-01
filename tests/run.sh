@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Runs the tomedown.koplugin test suite.
-#   ./run.sh              uses `lua` from PATH (5.3+: the test md5 needs
-#                          bitwise operators)
+#   ./run.sh              uses `lua` from PATH
 #   LUA=lua5.4 ./run.sh   to pick a specific interpreter (CI does this)
+#   LUA=luajit ./run.sh   the interpreter KOReader actually ships
 set -euo pipefail
 cd "$(dirname "$0")"
 

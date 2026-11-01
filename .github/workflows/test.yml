@@ -13,9 +13,14 @@ jobs:
       - name: Install Lua
         run: |
           sudo apt-get update
-          sudo apt-get install -y lua5.4 lua5.1
+          sudo apt-get install -y lua5.4 lua5.1 luajit
 
-      - name: Run the test suite
+      - name: Run the test suite (Lua 5.4)
         run: tests/run.sh
         env:
           LUA: lua5.4
+
+      - name: Run the test suite (LuaJIT, the interpreter KOReader ships)
+        run: tests/run.sh
+        env:
+          LUA: luajit

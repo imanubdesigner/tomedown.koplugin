@@ -3,12 +3,12 @@ Tests for tomedown_update.lua and the update entries in Settings:
 version display, manual check (up to date / fixes shown / failure /
 offline gate), version jumps (0.2.0 -> 1.0), background check
 (throttle, Wi-Fi gate, notification) and the install flow
-("Update and restart": download, unpack over the plugin folder,
-restart prompt, fallbacks) - all against a fake GitHub response, so
-nothing here touches the network. The last section covers the second
-host (the Codeberg mirror): a GitHub that errors or answers nothing
-must still leave the check with a list, and the page we open follows
-the host that actually answered.
+("Update and restart": download, unpack next to the plugin, check the
+new tree, swap it in, restart prompt, fallbacks) - all against a fake
+GitHub response, so nothing here touches the network. The last section
+covers the second host (the Codeberg mirror): a GitHub that errors or
+answers nothing must still leave the check with a list, and the page we
+open follows the host that actually answered.
 --]]
 local HERE = arg[0]:match("^(.*)/") or "."
 package.path = HERE .. "/?.lua;" .. package.path
@@ -36,7 +36,6 @@ local GetText = require("gettext")
 local UIManager = require("ui/uimanager")
 local InfoMessage = require("ui/widget/infomessage")
 local TextViewer = require("ui/widget/textviewer")
-local ScrollHtmlWidget = require("ui/widget/scrollhtmlwidget")
 local ConfirmBox = require("ui/widget/confirmbox")
 local Notification = require("ui/widget/notification")
 local Device = require("device")
@@ -78,7 +77,6 @@ local function resetWidgets()
     NetworkMgr:reset()
     InfoMessage.last_text = nil
     TextViewer.last = nil
-    ScrollHtmlWidget.last = nil
     ConfirmBox.last = nil
     Notification.last_text = nil
 end
@@ -94,7 +92,9 @@ T.check(Update.getAvailableVersion() == nil, "no update known yet")
 -- PATCH < MINOR < MAJOR, all strictly above INSTALLED
 local function versionParts(v)
     local p = {}
-    for x in tostring(v):gsub("^v", ""):gmatch("([^.]+)") do
+    -- drop the tag prefix and a prerelease suffix ("1.1.3-beta.1" -> "1.1.3")
+    local base = tostring(v):gsub("^v", ""):match("^([^%-]+)") or ""
+    for x in base:gmatch("([^.]+)") do
         p[#p + 1] = tonumber(x) or 0
     end
     return p
@@ -246,22 +246,22 @@ T.check(T.contains(viewer.text, "v" .. MAJOR) and T.contains(viewer.text, "v" ..
     and T.contains(viewer.text, "v" .. MINOR), "header for every newer release")
 T.check(T.contains(viewer.text, "Fix A") and T.contains(viewer.text, "Fix B")
     and T.contains(viewer.text, "Fixes"), "notes of every newer release")
-T.check(viewer.text_format == "md",
-    "notes rendered as markdown: " .. tostring(viewer.text_format))
-T.check(viewer.__tomedown_notes == true,
-    "viewer tagged for the notes stylesheet")
-local css = ScrollHtmlWidget.last and ScrollHtmlWidget.last.css or ""
-T.check(css:find("body { font-family", 1, true) == 1,
-    "sans stylesheet prepended to the viewer css: " .. css)
-T.check(css:find("Helvetica", 1, true) ~= nil,
-    "Helvetica stack requested: " .. css)
-T.check(T.contains(viewer.text, "**bold**") and T.contains(viewer.text, "# Fixes")
-    and T.contains(viewer.text, "`code`"),
-    "markdown kept for rendering: " .. tostring(viewer.text))
-T.check(T.contains(viewer.text, "![The new menus]"),
-    "image kept for markdown rendering: " .. tostring(viewer.text))
-T.check(countTimes(viewer.text, "## v" .. MAJOR) == 1,
-    "the release's own version heading is not shown twice")
+T.check(viewer.text_format == nil,
+    "notes rendered as plain text: " .. tostring(viewer.text_format))
+T.check(not T.contains(viewer.text, "**")
+        and not T.contains(viewer.text, "`")
+        and not T.contains(viewer.text, "*italic*"),
+    "markdown markers stripped: " .. tostring(viewer.text))
+T.check(T.contains(viewer.text, "- bold and code and italic"),
+    "list and inline formatting flattened: " .. tostring(viewer.text))
+T.check(not T.contains(viewer.text, "![")
+        and not T.contains(viewer.text, "example.com"),
+    "image and link addresses dropped: " .. tostring(viewer.text))
+T.check(T.contains(viewer.text, "The new menus")
+        and T.contains(viewer.text, "the guide"),
+    "image caption and link text kept: " .. tostring(viewer.text))
+T.check(countTimes(viewer.text, "## v" .. MAJOR) == 0,
+    "the release's own version heading is stripped")
 T.check(T.contains(viewer.text, "issue #12"), "inline #12 kept: " .. tostring(viewer.text))
 T.check(Update.getAvailableVersion() == MAJOR,
     "cached available version: " .. tostring(Update.getAvailableVersion()))
@@ -291,31 +291,6 @@ for __, widget in ipairs(UIManager.shown) do
     end
 end
 T.check(not viewer_still_open, "viewer closed")
-
--- a KOReader whose TextViewer cannot render markdown gets the plain,
--- stripped notes (what every version showed before)
-local saved_formats = TextViewer.html_text_formats
-TextViewer.html_text_formats = nil
-resetWidgets()
-Update._resetState()
-Update.check()
-UIManager:runPending()
-local plain = TextViewer.last
-T.check(plain ~= nil, "fallback viewer shown")
-T.check(plain.text_format == nil,
-    "fallback stays plain text: " .. tostring(plain.text_format))
-T.check(ScrollHtmlWidget.last == nil,
-    "fallback builds no html widget: " .. tostring(ScrollHtmlWidget.last))
-T.check(not T.contains(plain.text, "**") and not T.contains(plain.text, "# "),
-    "fallback strips markdown: " .. tostring(plain.text))
-T.check(T.contains(plain.text, "Fix A"), "fallback keeps the notes")
-T.check(not T.contains(plain.text, "example.com")
-        and not T.contains(plain.text, "!["),
-    "fallback drops image and link addresses: " .. tostring(plain.text))
-T.check(T.contains(plain.text, "The new menus")
-        and T.contains(plain.text, "the guide"),
-    "fallback keeps the alt text and the link label: " .. tostring(plain.text))
-TextViewer.html_text_formats = saved_formats
 
 -- ------------------------------------------------ 6. manual check: failure
 
@@ -410,8 +385,8 @@ local Archiver = require("ffi/archiver")
 local lfs = require("libs/libkoreader-lfs")
 local cache_dir = require("datastorage"):getSettingsDir() .. "/tomedown_cache"
 
--- 10a. happy path: download the zip, unpack it over the plugin folder,
--- ask for the restart, restart on confirm
+-- 10a. happy path: download the zip, unpack it next to the plugin,
+-- check the tree, swap it in, ask for the restart, restart on confirm
 resetWidgets()
 Update._resetState()
 Archiver.reset()
@@ -431,17 +406,44 @@ UIManager:runPending()
 viewer = TextViewer.last
 buttons = viewer.buttons_table[1]
 
+-- The install flow renames the plugin folder, so it must point at a
+-- scratch copy: never at the checkout the suite runs from.
+local fixture = "/tmp/tomedown-install-fixture"
+local installed = fixture .. "/tomedown.koplugin"
+local function writeFile(path, text)
+    local f = assert(io.open(path, "wb"))
+    f:write(text)
+    f:close()
+end
+local function resetFixture()
+    T.rmrf(fixture)
+    os.execute('mkdir -p "' .. installed .. '"')
+    writeFile(installed .. "/main.lua", "return {}\n")
+    writeFile(installed .. "/_meta.lua", 'return { version = "1.1.1" }\n')
+    writeFile(installed .. "/old.lua", "return {}\n")
+end
+local realPluginDir = Update._pluginDir
+Update._pluginDir = function() return installed end
+resetFixture()
+
 local downloads = {}
 Update.httpDownload = function(url, path)
     downloads[#downloads + 1] = { url = url, path = path }
     return true
 end
+Archiver.write_files = true
 Archiver.entries = {
     "tomedown.koplugin/",
     "tomedown.koplugin/main.lua",
     "tomedown.koplugin/_meta.lua",
     "tomedown.koplugin/languages/it.po",
     "tomedown.koplugin/tomedown_update.lua",
+}
+Archiver.contents = {
+    ["tomedown.koplugin/main.lua"] = "return {}\n",
+    ["tomedown.koplugin/_meta.lua"] = 'return { version = "' .. MAJOR .. '" }\n',
+    ["tomedown.koplugin/languages/it.po"] = "# empty\n",
+    ["tomedown.koplugin/tomedown_update.lua"] = "return {}\n",
 }
 buttons[2].callback()
 UIManager:runPending()
@@ -456,8 +458,9 @@ T.check(#Archiver.extracted == 4,
     "bare root folder skipped, 4 files extracted: " .. #Archiver.extracted)
 local first = Archiver.extracted[1]
 T.check(first.src == "tomedown.koplugin/main.lua"
-        and first.dest == T.plugin .. "/main.lua",
-    "root folder stripped: " .. first.src .. " -> " .. tostring(first.dest))
+        and first.dest == installed .. ".new/main.lua",
+    "extracted next to the install, not over it: "
+        .. first.src .. " -> " .. tostring(first.dest))
 T.check(not T.fileExists(cache_dir .. "/tomedown.koplugin.zip"),
     "zip removed after unpacking")
 T.check(ConfirmBox.last ~= nil
@@ -465,6 +468,14 @@ T.check(ConfirmBox.last ~= nil
         and T.contains(ConfirmBox.last.text, "Restart KOReader now?"),
     "restart prompt: " .. tostring(ConfirmBox.last and ConfirmBox.last.text))
 T.check(ConfirmBox.last.ok_text == "Restart", "restart button label")
+T.check(T.fileExists(installed .. "/tomedown_update.lua"),
+    "new tree in place")
+T.check(not T.fileExists(installed .. "/old.lua"),
+    "files from the old version are gone")
+T.check(T.fileExists(installed .. ".previous/old.lua"),
+    "the previous tree is kept next to the install")
+T.check(not T.fileExists(installed .. ".new/main.lua"),
+    "staging folder removed after the swap")
 T.check(UIManager.restarted == 0, "no restart before the prompt is confirmed")
 ConfirmBox.last.ok_callback()
 T.check(UIManager.restarted == 1, "restart requested")
@@ -487,9 +498,11 @@ ConfirmBox.last.ok_callback()
 T.check(Device.links[1] == RELEASES_PAGE,
     "releases page opened after the download failure")
 
--- 10c. unpack failure: message with the reason, no restart prompt
+-- 10c. unpack failure: message with the reason, no restart prompt, and
+-- the installed copy untouched
 resetWidgets()
 Update._resetState()
+resetFixture()
 Archiver.reset()
 Archiver.entries = { "tomedown.koplugin/main.lua" }
 Archiver.extract_fails = true
@@ -503,7 +516,111 @@ T.check(T.contains(InfoMessage.last_text or "",
     "unpack failure message: " .. tostring(InfoMessage.last_text))
 T.check(ConfirmBox.last == nil, "no restart prompt on unpack failure")
 T.check(UIManager.restarted == 0, "no restart after a failed unpack")
+T.check(T.fileExists(installed .. "/old.lua")
+        and not T.fileExists(installed .. ".new/main.lua"),
+    "failed unpack leaves the installed tree alone")
 Archiver.reset()
+
+-- 10d. wrong version in the archive: refused before the swap
+resetWidgets()
+Update._resetState()
+resetFixture()
+Archiver.write_files = true
+Archiver.entries = {
+    "tomedown.koplugin/main.lua",
+    "tomedown.koplugin/_meta.lua",
+}
+Archiver.contents = {
+    ["tomedown.koplugin/main.lua"] = "return {}\n",
+    ["tomedown.koplugin/_meta.lua"] = 'return { version = "0.0.1" }\n',
+}
+Update.httpDownload = function() return true end
+Update.install("https://example/x.zip", MAJOR)
+UIManager:runPending()
+T.check(T.contains(InfoMessage.last_text or "",
+        "the archive is v0.0.1, expected v" .. MAJOR),
+    "version mismatch refused: " .. tostring(InfoMessage.last_text))
+T.check(T.fileExists(installed .. "/old.lua")
+        and not T.fileExists(installed .. ".new/main.lua"),
+    "version mismatch leaves the installed tree alone")
+Archiver.reset()
+
+-- 10e. an entry that climbs out of the folder: refused
+resetWidgets()
+Update._resetState()
+resetFixture()
+Archiver.write_files = true
+Archiver.entries = {
+    "tomedown.koplugin/../evil.lua",
+    "tomedown.koplugin/main.lua",
+}
+Archiver.contents = { ["tomedown.koplugin/main.lua"] = "return {}\n" }
+Update.httpDownload = function() return true end
+Update.install("https://example/x.zip", MAJOR)
+UIManager:runPending()
+T.check(T.contains(InfoMessage.last_text or "",
+        "Installation failed: unsafe path in archive"),
+    "unsafe path refused: " .. tostring(InfoMessage.last_text))
+T.check(not T.fileExists(fixture .. "/evil.lua"),
+    "nothing written outside the plugin folder")
+T.check(T.fileExists(installed .. "/old.lua"),
+    "unsafe archive leaves the installed tree alone")
+Archiver.reset()
+
+-- 10f. archive without main.lua: refused
+resetWidgets()
+Update._resetState()
+resetFixture()
+Archiver.write_files = true
+Archiver.entries = { "tomedown.koplugin/_meta.lua" }
+Archiver.contents = {
+    ["tomedown.koplugin/_meta.lua"] = 'return { version = "' .. MAJOR .. '" }\n',
+}
+Update.httpDownload = function() return true end
+Update.install("https://example/x.zip", MAJOR)
+UIManager:runPending()
+T.check(T.contains(InfoMessage.last_text or "", "main.lua missing"),
+    "archive without main.lua refused: " .. tostring(InfoMessage.last_text))
+T.check(T.fileExists(installed .. "/old.lua"),
+    "incomplete archive leaves the installed tree alone")
+Archiver.reset()
+
+-- 10g. the second rename fails: the old tree is put back
+resetWidgets()
+Update._resetState()
+resetFixture()
+Archiver.write_files = true
+Archiver.entries = {
+    "tomedown.koplugin/main.lua",
+    "tomedown.koplugin/_meta.lua",
+}
+Archiver.contents = {
+    ["tomedown.koplugin/main.lua"] = "return {}\n",
+    ["tomedown.koplugin/_meta.lua"] = 'return { version = "' .. MAJOR .. '" }\n',
+}
+Update.httpDownload = function() return true end
+local renames = 0
+Update._installRename = function(a, b)
+    renames = renames + 1
+    if renames == 2 then
+        return nil, "no space left"
+    end
+    return os.rename(a, b)
+end
+Update.install("https://example/x.zip", MAJOR)
+UIManager:runPending()
+T.check(T.contains(InfoMessage.last_text or "", "no space left"),
+    "swap failure reported: " .. tostring(InfoMessage.last_text))
+T.check(T.fileExists(installed .. "/main.lua")
+        and T.fileExists(installed .. "/old.lua"),
+    "the old tree is back in place")
+T.check(not T.fileExists(installed .. ".new/main.lua"),
+    "staging folder removed after a failed swap")
+Update._installRename = os.rename
+Archiver.reset()
+
+-- the fixture stays the install target for the rest of the suite, so no
+-- test can rename the checkout
 T.rmrf(cache_dir)
 
 -- ------------------------------- 11. errors inside scheduled actions
@@ -669,19 +786,16 @@ Update.showChangelog()
 T.check(TextViewer.last ~= nil, "changelog viewer shown")
 T.check(TextViewer.last.title == "Changelog (1 of 2)",
     "changelog title: " .. tostring(TextViewer.last and TextViewer.last.title))
-T.check(TextViewer.last.text_format == "md",
-    "changelog rendered as markdown: " .. tostring(TextViewer.last.text_format))
-T.check(TextViewer.last.__tomedown_notes == true
-        and ScrollHtmlWidget.last ~= nil
-        and (ScrollHtmlWidget.last.css or ""):find("body { font-family", 1, true) == 1,
-    "changelog viewer carries the notes stylesheet")
+T.check(TextViewer.last.text_format == nil,
+    "changelog rendered as plain text: " .. tostring(TextViewer.last.text_format))
 T.check(T.contains(TextViewer.last.text or "", "v9.9.0"), "newest entry first")
 T.check(not T.contains(TextViewer.last.text or "", "2026-01-15"),
     "no date in the changelog headline")
-T.check(countTimes(TextViewer.last.text or "", "## v9.9.0") == 1,
+T.check(countTimes(TextViewer.last.text or "", "## v9.9.0") == 0,
     "the body's version heading is stripped, not duplicated")
-T.check(T.contains(TextViewer.last.text or "", "- **bold**"),
-    "the notes under the heading are kept")
+T.check(T.contains(TextViewer.last.text or "", "- bold")
+        and not T.contains(TextViewer.last.text or "", "**"),
+    "the notes under the heading are kept, markers stripped")
 T.check(#urls == before, "cache hit: no fetch")
 
 -- page to the older release and back
@@ -714,6 +828,7 @@ T.check(G_reader_settings:readSetting("tomedown_changelog") == nil,
 -- reset: the newest stable is offered even when a beta install is newer
 resetWidgets()
 Update._resetState()
+resetFixture()
 NetworkMgr.connected = true
 store.tomedown = store.tomedown or {}
 store.tomedown.beta_releases = true
@@ -737,9 +852,15 @@ Update.httpDownload = function(url)
     reset_downloads[#reset_downloads + 1] = url
     return true
 end
+Archiver.write_files = true
 Archiver.entries = {
     "tomedown.koplugin/",
     "tomedown.koplugin/main.lua",
+    "tomedown.koplugin/_meta.lua",
+}
+Archiver.contents = {
+    ["tomedown.koplugin/main.lua"] = "return {}\n",
+    ["tomedown.koplugin/_meta.lua"] = 'return { version = "0.1.0" }\n',
 }
 reset_confirm.ok_callback()
 UIManager:runPending()
@@ -844,5 +965,8 @@ T.check(TextViewer.last ~= nil
         and T.contains(TextViewer.last.text or "", "survived the broken host"),
     "the mirror answered after GitHub errored: "
         .. tostring(TextViewer.last and TextViewer.last.text))
+
+Update._pluginDir = realPluginDir
+T.rmrf(fixture)
 
 T.finish("test_update")

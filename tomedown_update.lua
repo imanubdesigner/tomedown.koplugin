@@ -10,9 +10,10 @@ background check enabled, a new release is noticed on
 its own (KOReader start and menu open, at most once an hour). When one
 is found the release notes of every newer release are shown together
 (the fixes, newest first) with an "Update and restart" button that
-downloads the release zip, unpacks it over the plugin folder and asks
-to restart KOReader - any failure falls back to opening the releases
-page so the zip can be taken by hand.
+downloads the release zip, unpacks it next to the plugin folder, checks
+the new tree and only then swaps it in, asking to restart KOReader - any
+failure leaves the installed copy alone and falls back to opening the
+releases page so the zip can be taken by hand.
 
 Everything goes through the releases API of this repository: GitHub
 first, the Codeberg mirror second - both answer with the same release
@@ -94,6 +95,10 @@ local function pluginDir()
         return src:sub(2):match("^(.*)/[^/]+$")
     end
 end
+
+-- Seam: the install flow renames this folder, so the tests point it at a
+-- scratch copy instead of the checkout the suite runs from.
+Update._pluginDir = pluginDir
 
 --- Version of this install, read from _meta.lua ("unknown" if unreadable).
 function Update.getInstalledVersion()
@@ -182,11 +187,31 @@ local function releaseZip(rel)
     return nil
 end
 
+--- Plain https URL, safe inside the single quotes of a shell command.
+-- The fallbacks hand the address to curl, and Lua's %q quoting does not
+-- stop $( ) or a backtick inside double quotes, so the address is
+-- restricted instead of escaped: no quotes, no $, no spaces.
+local function shellSafeURL(url)
+    if type(url) ~= "string" or url:sub(1, 8) ~= "https://" then
+        return false
+    end
+    for i = 1, #url do
+        local c = url:sub(i, i)
+        if not c:match("[%w%._~:/%?#%[%]@!&%*%+%,;=%%%(%)%-]") then
+            return false
+        end
+    end
+    return true
+end
+
 --- GET url and decode the JSON body, or nil.
 -- LuaSocket first (e-reader path), curl as a fallback where SSL or the
 -- socket stack misbehaves (Android, desktop). Test seam: tests replace
 -- Update.httpGetJSON with a fake and never reach the network.
 function Update.httpGetJSON(url)
+    if not shellSafeURL(url) then
+        return nil
+    end
     local json = require("json")
     local ok_require, http, ltn12, socket, socketutil =
         pcall(function()
@@ -224,7 +249,7 @@ function Update.httpGetJSON(url)
         end)
     end
     local ok_popen, handle = pcall(io.popen, string.format(
-        "curl -s -L -H %q -H %q %q",
+        "curl -s -L -H '%s' -H '%s' '%s'",
         "KOReader-Tomedown/" .. Update.getInstalledVersion(),
         "Accept: application/vnd.github.v3+json",
         url))
@@ -274,6 +299,10 @@ function Update.offerReleasesPage(message)
     end
 end
 
+-- Release notes are always plain text. TextViewer's HTML path draws
+-- list markers outside the text area, and its page has no left margin,
+-- so on a small screen the markers get clipped. Plain text keeps the
+-- "-" as an ordinary character and looks the same on every device.
 local function stripMarkdown(text)
     -- headings only at the start of a line: an inline "#12" must stay
     text = text:gsub("^#+%s*", "")
@@ -288,64 +317,6 @@ local function stripMarkdown(text)
     text = text:gsub("!%[([^%]]*)%]%([^%)]*%)", "%1")
     text = text:gsub("%[([^%]]*)%]%([^%)]*%)", "%1")
     return (text:gsub("^%s+", ""):gsub("%s+$", ""))
-end
-
---- Whether this KOReader's TextViewer can render Markdown natively
---- (text_format = "md" converts the notes to HTML, so bold, headings
---- and lists are shown formatted instead of as raw markers). Older
---- versions fall back to the plain, stripped text above.
-local function canRenderMarkdown()
-    if type(TextViewer.html_text_formats) ~= "table"
-        or not TextViewer.html_text_formats.md then
-        return false
-    end
-    local ok, Converter = pcall(require, "apps/filemanager/filemanagerconverter")
-    return ok and type(Converter) == "table"
-        and type(Converter.mdToHtml) == "function"
-end
-
--- The stylesheet our viewers ask for: the named fonts are usually
--- absent (Kindle, most desktop setups), so the renderer falls back to
--- its own sans-serif face instead of the serif default. mupdf reads
--- <style> blocks only from the document <head> - the one
--- HtmlBoxWidget:setContent assembles from the css TextViewer passes to
--- ScrollHtmlWidget - and TextViewer exposes no hook for it, so
--- installNotesCssHook prepends this to that css, for our viewers
--- only. It is prepended (not appended) so TextViewer's own
--- "Monospace" menu rule, `body { font-family: monospace }`, still
--- wins the cascade when the toggle is on.
-local NOTES_CSS = 'body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }'
-
--- Whether the ScrollHtmlWidget wrapper is already in place.
-local notes_css_hooked = false
-
---- Make every viewer tagged with __tomedown_notes render its HTML with
--- NOTES_CSS. TextViewer builds its ScrollHtmlWidget css inline with no
--- parameter to override, so a wrapper around ScrollHtmlWidget.new
--- prepends the stylesheet to widgets whose dialog is one of our tagged
--- viewers only - any other TextViewer in the session keeps its stock
--- look. The wrapper stays installed for the session and fails safe:
--- if a future KOReader moves the pieces and it never fires, our notes
--- simply keep the serif default.
-local function installNotesCssHook()
-    if notes_css_hooked then
-        return
-    end
-    notes_css_hooked = true
-    local ok, ScrollHtmlWidget = pcall(require, "ui/widget/scrollhtmlwidget")
-    if not ok or type(ScrollHtmlWidget) ~= "table"
-            or type(ScrollHtmlWidget.new) ~= "function" then
-        return
-    end
-    local orig_new = ScrollHtmlWidget.new
-    ScrollHtmlWidget.new = function(class, o)
-        if type(o) == "table" and type(o.css) == "string"
-                and type(o.dialog) == "table"
-                and o.dialog.__tomedown_notes then
-            o.css = NOTES_CSS .. "\n" .. o.css
-        end
-        return orig_new(class, o)
-    end
 end
 
 --- The "Beta Releases" Settings toggle (default off): with it on, the
@@ -453,36 +424,29 @@ end
 -- forward declaration: the viewer's Refresh button refetches through it
 local changelogFetchShow
 
---- The paginated viewer. idx 1 = newest; Markdown rendered when this
--- KOReader can, the raw markers stripped otherwise. Chevrons (U+2039/
--- U+203A) rather than Nerd Font glyphs: a stock TextViewer button only
--- carries the standard UI font.
+--- The paginated viewer. idx 1 = newest; the raw markers are stripped
+-- so every device shows the same plain text. Chevrons (U+2039/U+203A)
+-- rather than Nerd Font glyphs: a stock TextViewer button only carries
+-- the standard UI font.
 local function changelogShow(rels, idx)
-    local as_md = canRenderMarkdown()
     local rel = rels[idx]
     -- the tag alone as the headline (no date: it was noise), and the
     -- body's own "## vX.Y.Z" heading dropped so the version is not
     -- repeated right under the headline
     local head = "v" .. (tostring(rel.tag or ""):gsub("^v", ""))
-    local body = stripLeadingTag(rel.body, rel.tag)
-    if not as_md then
-        body = stripMarkdown(body)
-    end
+    local body = stripMarkdown(stripLeadingTag(rel.body, rel.tag))
     if body:match("^%s*$") then
         body = _("(no notes for this release)")
     end
-    local text = (as_md and ("## " .. head) or head) .. "\n\n" .. body
+    local text = head .. "\n\n" .. body
     local viewer
     local function repage(new_idx)
         UIManager:close(viewer)
         changelogShow(rels, new_idx)
     end
-    installNotesCssHook()
     viewer = TextViewer:new{
         title = T(_("Changelog (%1 of %2)"), idx, #rels),
         text = text,
-        text_format = as_md and "md" or nil,
-        __tomedown_notes = true,
         buttons_table = {
             {
                 {
@@ -593,26 +557,18 @@ local function checkBody(include_beta)
     if not include_beta then
         cached_version = latest
     end
-    local as_md = canRenderMarkdown()
     local notes = {}
     for __, rel in ipairs(newer) do
         local body = stripLeadingTag(rel.body, rel.version)
-        if as_md then
-            notes[#notes + 1] = "## v" .. rel.version .. "\n\n" .. body
-        else
-            notes[#notes + 1] = "v" .. rel.version .. "\n" .. stripMarkdown(body)
-        end
+        notes[#notes + 1] = "v" .. rel.version .. "\n" .. stripMarkdown(body)
     end
     local text = T(_("Installed: %1\nLatest: %2"), "v" .. installed,
         "v" .. latest)
         .. "\n\n" .. table.concat(notes, "\n\n")
     local viewer
-    installNotesCssHook()
     viewer = TextViewer:new{
         title = _("Update available!"),
         text = text,
-        text_format = as_md and "md" or nil,
-        __tomedown_notes = true,
         buttons_table = {
             {
                 {
@@ -762,6 +718,9 @@ end
 -- LuaSocket first, curl as a fallback (mirrors httpGetJSON). Test seam:
 -- tests replace Update.httpDownload with a fake and never hit the net.
 function Update.httpDownload(url, path)
+    if not shellSafeURL(url) then
+        return false, _("the address is not safe")
+    end
     local ok_require, http, ltn12, socket, socketutil =
         pcall(function()
             return require("socket/http"),
@@ -827,7 +786,7 @@ function Update.httpDownload(url, path)
         end
     end
     if not downloaded then
-        local ret = os.execute(string.format("curl -sfL -o %q %q", path, url))
+        local ret = os.execute(string.format("curl -sfL -o '%s' '%s'", path, url))
         downloaded = ret == 0 or ret == true
         if not downloaded then
             pcall(os.remove, path)
@@ -842,8 +801,64 @@ function Update.httpDownload(url, path)
     return false, reason
 end
 
---- Unpack zip over dest, stripping the zip's single top-level folder
--- (tomedown.koplugin/…) so files land inside the installed plugin dir.
+--- Remove a file or a folder with everything under it. A missing path is
+-- not an error: the caller uses this to clear a previous attempt.
+local function removeTree(path)
+    local ok_lfs, lfs = pcall(require, "libs/libkoreader-lfs")
+    if not (ok_lfs and lfs) then
+        return false, "filesystem unavailable"
+    end
+    local mode = lfs.attributes(path, "mode")
+    if not mode then
+        return true
+    end
+    if mode ~= "directory" then
+        return os.remove(path) ~= nil
+    end
+    local ok_dir, iter, obj = pcall(lfs.dir, path)
+    if not ok_dir then
+        return false, tostring(iter)
+    end
+    for name in iter, obj do
+        if name ~= "." and name ~= ".." then
+            local ok, err = removeTree(path .. "/" .. name)
+            if not ok then
+                return false, err
+            end
+        end
+    end
+    local ok_rm, err = lfs.rmdir(path)
+    if not ok_rm then
+        return false, err
+    end
+    return true
+end
+
+--- Path inside the destination for an archive entry, or nil. The second
+-- return marks an entry to refuse: no folder at the top, an absolute
+-- path, or a ".." that would climb out of dest.
+local function entryRelativePath(path)
+    local first, rest = tostring(path or ""):match("^([^/]+)(/?.*)$")
+    if not first or first == "." or first == ".." then
+        return nil, true
+    end
+    if rest == "" or rest == "/" then
+        return nil, false -- the top folder itself, nothing to write
+    end
+    local rel = rest:sub(2)
+    if rel == "" or rel:sub(1, 1) == "/" then
+        return nil, true
+    end
+    for segment in rel:gmatch("[^/]+") do
+        if segment == ".." then
+            return nil, true
+        end
+    end
+    return rel, false
+end
+
+--- Unpack zip into dest, stripping the zip's single top-level folder
+-- (tomedown.koplugin/…) and returning the paths it wrote.
 local function unpackStripRoot(zip_path, dest)
     local ok_req, Archiver = pcall(require, "ffi/archiver")
     if not (ok_req and Archiver and Archiver.Reader) then
@@ -857,14 +872,20 @@ local function unpackStripRoot(zip_path, dest)
     end
     local extract_err
     local extracted = 0
+    local names = {}
     for entry in arc:iterate() do
-        local rel = entry.path and entry.path:match("^[^/]+/(.+)$")
-        if rel and rel ~= "" then
+        local rel, unsafe = entryRelativePath(entry.path)
+        if unsafe then
+            extract_err = "unsafe path in archive"
+            break
+        end
+        if rel then
             if not arc:extractToPath(entry.path, dest .. "/" .. rel) then
                 extract_err = arc.err or "extract failed"
                 break
             end
             extracted = extracted + 1
+            names[#names + 1] = rel
         end
     end
     arc:close()
@@ -874,24 +895,117 @@ local function unpackStripRoot(zip_path, dest)
     if extracted == 0 then
         return false, "empty archive"
     end
-    return true
+    return true, nil, names
 end
 Update._unpackStripRoot = unpackStripRoot
+
+--- Version written in the extracted _meta.lua, or nil.
+local function versionIn(dir)
+    local file = io.open(dir .. "/_meta.lua", "r")
+    if not file then
+        return nil
+    end
+    local data = file:read("*a")
+    file:close()
+    return data and data:match('version%s*=%s*"([^"]+)"')
+end
+
+--- Check the new tree before it replaces the running one: the two entry
+-- points, every module compiling, and the version the release promised
+-- (so a wrong asset attached to a tag is refused instead of installed).
+local function validateTree(dir, names, expected)
+    local has_main, has_meta = false, false
+    for __, rel in ipairs(names or {}) do
+        if rel == "main.lua" then
+            has_main = true
+        elseif rel == "_meta.lua" then
+            has_meta = true
+        end
+        if rel:sub(-4) == ".lua" then
+            local chunk, err = loadfile(dir .. "/" .. rel)
+            if not chunk then
+                return false, err or ("could not load " .. rel)
+            end
+        end
+    end
+    if not has_main then
+        return false, "main.lua missing"
+    end
+    if not has_meta then
+        return false, "_meta.lua missing"
+    end
+    local version = versionIn(dir)
+    if not version then
+        return false, "no version in _meta.lua"
+    end
+    if expected and version ~= expected then
+        return false, string.format("the archive is v%s, expected v%s",
+            version, expected)
+    end
+    return true
+end
+
+--- Replace dest with new_dir, keeping the old tree next to it as
+-- dest..".previous" so a broken release can be put back by hand. If the
+-- second rename fails, the old tree is moved back.
+local function swapTrees(new_dir, dest)
+    local previous = dest .. ".previous"
+    local ok_prev, prev_err = removeTree(previous)
+    if not ok_prev then
+        return false, prev_err
+    end
+    local ok_lfs, lfs = pcall(require, "libs/libkoreader-lfs")
+    if not (ok_lfs and lfs) then
+        return false, "filesystem unavailable"
+    end
+    if not lfs.attributes(dest, "mode") then
+        return Update._installRename(new_dir, dest)
+    end
+    local ok_old, old_err = Update._installRename(dest, previous)
+    if not ok_old then
+        return false, old_err or "could not move the installed folder"
+    end
+    local ok_new, new_err = Update._installRename(new_dir, dest)
+    if ok_new then
+        return true
+    end
+    local ok_back = Update._installRename(previous, dest)
+    if not ok_back then
+        return false, "the old copy is in " .. previous
+    end
+    return false, new_err or "could not move the new files into place"
+end
+Update._installRename = os.rename
+
+--- A development install is a symlink to a checkout; swapping the folder
+-- would replace the link, so those installs keep writing in place.
+local function isSymlink(path)
+    local ok_lfs, lfs = pcall(require, "libs/libkoreader-lfs")
+    if not (ok_lfs and lfs and lfs.symlinkattributes) then
+        return false
+    end
+    local ok, mode = pcall(lfs.symlinkattributes, path, "mode")
+    return ok and mode == "link"
+end
 
 --- Restart KOReader (seam: tests override Update.restartKOReader).
 function Update.restartKOReader()
     UIManager:restartKOReader()
 end
 
+local function installFailed(message)
+    UIManager:show(InfoMessage:new{
+        text = T(_("Installation failed: %1"), tostring(message)),
+        timeout = 5,
+    })
+end
+
 --- Body of the scheduled install step, kept separate so the caller can
 -- run it behind pcall (see Update.install).
 local function installBody(zip_url, new_version)
-    local dest = pluginDir()
+    local dest = Update._pluginDir()
     if not dest then
-        UIManager:show(InfoMessage:new{
-            text = T(_("Installation failed: %1"), "unknown plugin folder"),
-            timeout = 5,
-        })
+        installFailed("unknown plugin folder")
         return
     end
     local lfs = require("libs/libkoreader-lfs")
@@ -907,14 +1021,42 @@ local function installBody(zip_url, new_version)
         Update.offerReleasesPage(withReason(_("Download failed."), reason))
         return
     end
-    local ok, err = Update._unpackStripRoot(zip_path, dest)
+    -- Extract next to the install, never over it. A half-written update
+    -- must not be able to leave new and old files mixed together.
+    local staging = dest .. ".new"
+    local in_place = isSymlink(dest)
+    if in_place then
+        staging = dest
+    else
+        removeTree(staging)
+        if not lfs.mkdir(staging) then
+            pcall(os.remove, zip_path)
+            installFailed("could not create the new folder")
+            return
+        end
+    end
+    local ok, err, names = Update._unpackStripRoot(zip_path, staging)
     pcall(os.remove, zip_path)
     if not ok then
-        UIManager:show(InfoMessage:new{
-            text = T(_("Installation failed: %1"), tostring(err)),
-            timeout = 5,
-        })
+        if not in_place then
+            removeTree(staging)
+        end
+        installFailed(err)
         return
+    end
+    if not in_place then
+        local ok_tree, tree_err = validateTree(staging, names, new_version)
+        if not ok_tree then
+            removeTree(staging)
+            installFailed(tree_err)
+            return
+        end
+        local ok_swap, swap_err = swapTrees(staging, dest)
+        if not ok_swap then
+            removeTree(staging)
+            installFailed(swap_err)
+            return
+        end
     end
     UIManager:show(ConfirmBox:new{
         text = T(_("Tomedown updated to v%1."), new_version)
@@ -927,9 +1069,9 @@ local function installBody(zip_url, new_version)
 end
 
 --- Install the release zip: gate, download into a cache dir, unpack it
--- over this plugin's own folder, then ask to restart KOReader. Any
--- failure falls back to the releases page (manual zip) or an error
--- message - the old version keeps running either way.
+-- into a folder next to this plugin, check that tree, swap it in and ask
+-- to restart KOReader. Any failure falls back to the releases page
+-- (manual zip) or an error message - the old version keeps running.
 function Update.install(zip_url, new_version)
     if Update.gateOnConnection(function()
         Update.install(zip_url, new_version)
