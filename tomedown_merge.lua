@@ -210,9 +210,59 @@ end
 
 --- Merge the frontmatter: the exporter's keys win, tags are the union
 -- of both sides, any key only the user knows about is kept verbatim.
+-- `tomedown_book_tags` is the ledger of the tags chosen from the book's
+-- own menu: an old managed tag that is gone from the new ledger is
+-- dropped from the union, while tags written by hand stay. When the
+-- rendered file carries no ledger at all, nothing is managed (a book
+-- that never chose, or settings that were reset) and the file's own
+-- ledger and tags are left alone.
+local function itemValue(line)
+    return line:match("^%s*-%s+(.*)$")
+end
+
+-- comparison form of a tag: surrounding quotes stripped, lower case
+local function tagKey(value)
+    if not value then
+        return nil
+    end
+    value = tostring(value):gsub("%s+$", "")
+    local quoted = value:match('^"(.*)"$') or value:match("^'(.*)'$")
+    if quoted then
+        value = quoted
+    end
+    return value:lower()
+end
+
+-- Obsidian does not accept a tag made only of digits: an old export
+-- may still carry one, and the union should clean it out.
+local function validTagKey(value)
+    local key = tagKey(value)
+    if not key or key == "" or key:match("^%d+$") then
+        return nil
+    end
+    return key
+end
+
+local function tagSet(block)
+    local set = {}
+    if not block then
+        return set
+    end
+    for i = 2, #block do
+        local key = validTagKey(itemValue(block[i]))
+        if key then
+            set[key] = true
+        end
+    end
+    return set
+end
+
 function merge.mergeFrontmatter(disk_fm, rendered_fm)
     local disk = parseFm(disk_fm)
     local rendered = parseFm(rendered_fm)
+    local old_managed = tagSet(disk.blocks.tomedown_book_tags)
+    local new_managed = tagSet(rendered.blocks.tomedown_book_tags)
+    local manages_tags = rendered.blocks.tomedown_book_tags ~= nil
     local out = {}
     for __, key in ipairs(rendered.order) do
         local lines = rendered.blocks[key]
@@ -220,22 +270,34 @@ function merge.mergeFrontmatter(disk_fm, rendered_fm)
             local seen = {}
             local merged = { lines[1] }
             for i = 2, #lines do
-                local item = lines[i]:match("^%s*-%s+(.*)$")
-                if item then
-                    seen[item] = true
+                local tag = validTagKey(itemValue(lines[i]))
+                if tag then
+                    seen[tag] = true
                 end
                 merged[#merged + 1] = lines[i]
             end
             local disk_tags = disk.blocks.tags or {}
             for i = 2, #disk_tags do
-                local item = disk_tags[i]:match("^%s*-%s+(.*)$")
-                if item and not seen[item] then
-                    seen[item] = true
-                    merged[#merged + 1] = disk_tags[i]
+                local tag = validTagKey(itemValue(disk_tags[i]))
+                if tag and not seen[tag] then
+                    local drop = manages_tags
+                        and old_managed[tag] and not new_managed[tag]
+                    if not drop then
+                        seen[tag] = true
+                        merged[#merged + 1] = disk_tags[i]
+                    end
                 end
             end
             for __, line in ipairs(merged) do
                 out[#out + 1] = line
+            end
+        elseif key == "tomedown_book_tags" then
+            -- an empty ledger is the signal "the reader cleared the
+            -- tags": it has done its job above and is not written back
+            if next(new_managed) ~= nil then
+                for __, line in ipairs(lines) do
+                    out[#out + 1] = line
+                end
             end
         else
             for __, line in ipairs(lines) do

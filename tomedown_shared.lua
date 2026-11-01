@@ -85,6 +85,28 @@ local function setBookPreserve(file, on)
     setSetting("preserve_books", choices)
 end
 
+-- Tags the reader added to a book from its own menu. The map is keyed
+-- like "exports" (the book file path). A missing entry means the book
+-- never chose anything; an empty table means the tags were cleared on
+-- purpose. The difference matters: only an explicit choice lets the
+-- export drop the tags it managed before.
+local function getBookTags(file)
+    if not file then
+        return nil
+    end
+    local tags = getSetting("book_tags", {})[file]
+    if type(tags) ~= "table" then
+        return nil
+    end
+    return tags
+end
+
+local function setBookTags(file, tags)
+    local all = getSetting("book_tags", {})
+    all[file] = tags or {}
+    setSetting("book_tags", all)
+end
+
 -- The index is a file like the others, and since 1.1 it carries its
 -- own switch: it keeps its zone when the reader asks for it, and
 -- otherwise follows the global default. It used to ride along with
@@ -269,6 +291,8 @@ return {
     setBookNotesTitle = setBookNotesTitle,
     getBookPreserve = getBookPreserve,
     setBookPreserve = setBookPreserve,
+    getBookTags = getBookTags,
+    setBookTags = setBookTags,
     getIndexPreserve = getIndexPreserve,
     readIfExists = readIfExists,
     ownCopy = ownCopy,

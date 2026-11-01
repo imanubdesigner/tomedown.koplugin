@@ -8,7 +8,7 @@ new render into the file already in your vault instead of overwriting it.
 always did), so upgrading changes nothing: turn it on in
 *Settings → My notes* and the file becomes a shared document.
 
-![The Current book rows: the book's own switch and heading](../assets/menu/reader/current_book_menu.png)
+![The Current book rows: the book's own switch, its tags and heading](../assets/menu/reader/current_book_menu.png)
 
 ## The switches
 
@@ -48,6 +48,23 @@ wrote in the index away by surprise. Turn its switch off and the index
 exports plain from the next export on, with the one you had kept whole as
 `00 - Index.md.bak` first; turn it on again and that copy comes back. With
 the global switch on, both of its rows are hidden.
+
+### Tags for one book
+
+*Tags: %1*, in the open book's menu, holds the tags of that book alone. The
+field starts on the tags already stored; separate them with commas and save,
+and they join `ebook`, `highlights` and the book's own keywords at the next
+export (right away when the book is exported on close). Clearing the field
+drops them. A tag made only of digits (`1500`) is ignored, because Obsidian
+does not accept it: use `1500s` or `anno-1500`.
+
+With Keep my notes on, the file carries `tomedown_book_tags`, the receipt of
+the tags the menu owns. A tag you remove there leaves `tags` at the next
+export even while the rest of the file is merged; a tag you write by hand in
+Obsidian is not in the receipt and survives. Clearing the field removes both
+the managed tags and the receipt; with Keep my notes on, the clear is
+recorded as an empty ledger (`tomedown_book_tags: []`) so the next merge
+knows to drop the old ones.
 
 ## The zone and the block
 
@@ -107,9 +124,11 @@ On every export:
   file as it sits in the vault, with and without the toggle;
 - the frontmatter merges field by field: Tomedown's own fields (`status`,
   `progress`, `exported`…) always show KOReader's values, your tags are kept
-  and unioned with the new ones, and a property only you added (`rating: 5`,
-  an alias…) survives, even a line the parser cannot place is kept verbatim
-  at the end.
+  and unioned with the new ones (a tag removed from the book's menu leaves
+  through its `tomedown_book_tags` receipt, see
+  [Tags for one book](#tags-for-one-book)), and a property only you added
+  (`rating: 5`, an alias…) survives, even a line the parser cannot place is
+  kept verbatim at the end.
 
 With Keep my notes off the file is regenerated at every export. Text typed
 into it can only be kept when Keep my notes comes back on, and lands in

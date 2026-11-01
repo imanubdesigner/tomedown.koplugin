@@ -102,6 +102,9 @@ msgstr "Lokaler Ordner: %1"
 msgid "Create an index note (%1)"
 msgstr "Eine Indexnotiz erstellen (%1)"
 
+msgid "Index order: %1"
+msgstr "Reihenfolge des Index: %1"
+
 msgid "Export this book"
 msgstr "Dieses Buch exportieren"
 
@@ -110,6 +113,21 @@ msgstr "Neue und geänderte Bücher exportieren"
 
 msgid "Keep my notes in this book"
 msgstr "Meine Notizen in diesem Buch behalten"
+
+msgid "Tags for this book"
+msgstr "Tags für dieses Buch"
+
+msgid "Tags: %1"
+msgstr "Tags: %1"
+
+msgid "Tags made only of numbers are ignored: %1"
+msgstr "Tags, die nur aus Zahlen bestehen, werden ignoriert: %1"
+
+msgid "none"
+msgstr "keine"
+
+msgid "separate tags with commas; applied at the next export"
+msgstr "Tags durch Kommas trennen; sie gelten ab dem nächsten Export"
 
 msgid "Turn off Keep my notes for %1? Your notes will not be lost. A .bak copy is created."
 msgstr "„Meine Notizen behalten“ für %1 ausschalten? Deine Notizen gehen nicht verloren. Eine .bak-Kopie wird erstellt."
@@ -181,6 +199,9 @@ msgstr "Buch"
 
 msgid "Author"
 msgstr "Autor"
+
+msgid "Title"
+msgstr "Titel"
 
 msgid "Series"
 msgstr "Reihe"

@@ -392,6 +392,39 @@ if index then
         "title from the file name when title is missing")
 end
 
+-- the index order setting rebuilds the index alone: no book is
+-- rewritten, but index_dirty makes the next export refresh the table
+do
+    store.tomedown.index_order = "title"
+    store.tomedown.index_dirty = true
+    plugin:runExport({}, {})
+    UIManager:runPending()
+    local by_title = T.readFile(INDEX_PATH) or ""
+    local b = by_title:find("\\|Blackwater]]", 1, true)
+    local l = by_title:find("\\|LibroVecchio]]", 1, true)
+    local s = by_title:find("\\|Senza Meta]]", 1, true)
+    T.check(b and l and s and b < l and l < s,
+        "title order: Blackwater, LibroVecchio, Senza Meta")
+    T.check(store.tomedown.index_dirty == false,
+        "the flag is cleared once the index is written")
+    T.check(T.contains(Notification.last_text or "", "No files exported"),
+        "no book was exported for the new order: "
+            .. tostring(Notification.last_text))
+    store.tomedown.index_order = "author"
+    store.tomedown.index_dirty = true
+    plugin:runExport({}, {})
+    UIManager:runPending()
+    local by_author = T.readFile(INDEX_PATH) or ""
+    local ax = by_author:find("\\|Senza Meta]]", 1, true)
+    local mm = by_author:find("\\|Blackwater]]", 1, true)
+    local na = by_author:find("\\|LibroVecchio]]", 1, true)
+    T.check(na and ax and mm and na < ax and ax < mm,
+        "author order is the default again")
+    T.check(store.tomedown.index_dirty == false,
+        "the flag is cleared again")
+end
+
+
 local legacy_md = T.readFile(DIR .. "/N_A - LibroVecchio.md")
 T.check(legacy_md ~= nil, "export of the book with the old .sdr")
 if legacy_md then
@@ -445,6 +478,164 @@ T.check(T.contains(Notification.last_text or "", "1 files exported"),
 
 T.check(store.tomedown.exports[FILE].hash == saved_hash,
     "hash back to the previous value")
+
+-- ------------------------------------- 4a. tags for one book (v1.2.0)
+do
+    resetUpload()
+    store.tomedown.book_tags = nil
+    store.tomedown.preserve = nil
+    ui.document = { file = FILE }
+    local current_book = plugin:genCurrentBookMenu()
+    T.check(#current_book == 2,
+        "the open book has the keep row and the tags row: " .. #current_book)
+    T.check(current_book[2].text_func() == "Tags: none",
+        "the tags row starts empty")
+    local refreshed = 0
+    local menu = { item_table = current_book,
+        updateItems = function() refreshed = refreshed + 1 end }
+    current_book[2].callback(menu)
+    T.check(InputDialog.last ~= nil
+            and InputDialog.last.title == "Tags for this book",
+        "the tags dialog opened")
+    T.check(InputDialog.last ~= nil and InputDialog.last.input_text == "",
+        "the field starts empty on a book that never chose")
+    T.check(InputDialog.last ~= nil
+            and InputDialog.last.hint
+                == "separate tags with commas; applied at the next export",
+        "the dialog says when the tags are applied")
+    InputDialog.last.input_text = " Horror, 1500, Psicologico, Horror, !!! "
+    Notification.last_text = nil
+    InputDialog.last:simulateSave()
+    local chosen = store.tomedown.book_tags and store.tomedown.book_tags[FILE]
+    T.check(chosen and #chosen == 2 and chosen[1] == "Horror"
+            and chosen[2] == "Psicologico",
+        "tags stored sanitized and deduplicated")
+    T.check(Notification.last_text
+            == "Tags made only of numbers are ignored: 1500",
+        "the numeric tag is reported: " .. tostring(Notification.last_text))
+    T.check(store.tomedown.exports[FILE].hash == nil,
+        "a tag change invalidates only this book's hash")
+    T.check(current_book[2].text_func() == "Tags: Horror, Psicologico",
+        "the row shows the new tags: " .. current_book[2].text_func())
+    T.check(refreshed > 0, "the menu is redrawn after saving")
+    -- a numeric tag stored by an older build is hidden right away
+    store.tomedown.book_tags[FILE] = { "Horror", "1500", "Psicologico" }
+    T.check(current_book[2].text_func() == "Tags: Horror, Psicologico",
+        "the row hides tags Obsidian cannot use")
+    store.tomedown.book_tags[FILE] = chosen
+
+    -- the ledger records ownership even in a plain file, so turning
+    -- Keep my notes on later still knows which tags the menu manages
+    plugin:runExport({ FILE }, {})
+    UIManager:runPending()
+    local tagged = T.readFile(MD_PATH) or ""
+    T.check(T.contains(tagged, "  - Horror")
+            and T.contains(tagged, "  - Psicologico"),
+        "the book tags reach the frontmatter")
+    T.check(T.contains(tagged,
+            "tomedown_book_tags:\n  - Horror\n  - Psicologico"),
+        "the ledger records the managed tags in a plain file too")
+
+    -- with markers the ledger is what the merge keeps in step
+    store.tomedown.preserve = true
+    plugin:runExport({ FILE }, {})
+    UIManager:runPending()
+    tagged = T.readFile(MD_PATH) or ""
+    T.check(T.contains(tagged,
+            "tomedown_book_tags:\n  - Horror\n  - Psicologico"),
+        "the ledger survives the merge with markers")
+
+    -- a tag the reader wrote by hand sits in the same list
+    tagged = tagged:gsub("(  %- Psicologico\n)(tomedown_book_tags:)",
+        "%1  - my-own-tag\n%2", 1)
+    local fh = assert(io.open(MD_PATH, "wb"))
+    fh:write(tagged)
+    fh:close()
+
+    -- clearing the field removes exactly the managed tags
+    current_book = plugin:genCurrentBookMenu()
+    current_book[2].callback(menu)
+    InputDialog.last.input_text = ""
+    InputDialog.last:simulateSave()
+    T.check(store.tomedown.book_tags and store.tomedown.book_tags[FILE]
+            and #store.tomedown.book_tags[FILE] == 0,
+        "an explicit empty list is stored")
+    T.check(store.tomedown.exports[FILE].hash == nil,
+        "clearing the tags invalidates the hash too")
+    plugin:runExport({ FILE }, {})
+    UIManager:runPending()
+    local cleared = T.readFile(MD_PATH) or ""
+    T.check(not T.contains(cleared, "  - Horror")
+            and not T.contains(cleared, "  - Psicologico"),
+        "the managed tags leave the file")
+    T.check(T.contains(cleared, "  - my-own-tag"),
+        "the tag written by hand stays")
+    T.check(not T.contains(cleared, "tomedown_book_tags"),
+        "the empty ledger is not written back")
+
+    -- a numeric-only field on a book that never chose stores nothing
+    store.tomedown.book_tags = nil
+    current_book = plugin:genCurrentBookMenu()
+    current_book[2].callback(menu)
+    InputDialog.last.input_text = "1500"
+    Notification.last_text = nil
+    InputDialog.last:simulateSave()
+    T.check(store.tomedown.book_tags == nil,
+        "a numeric tag on a book that never chose stores nothing")
+    T.check(Notification.last_text
+            == "Tags made only of numbers are ignored: 1500",
+        "and the menu says why")
+
+    -- an export made by the old build carries the numeric tag, and its
+    -- hash counts it: the next only_updated run has to notice the old
+    -- file and rewrite it even though the reader changed nothing
+    local render = require("tomedown_render")
+    local new_sanitize, new_parse = render.sanitizeTag, render.parseTagList
+    render.sanitizeTag = function(s)
+        if s == nil then
+            return ""
+        end
+        s = tostring(s):gsub("%s+", "-"):gsub("[^%w%-_/]", "")
+        s = s:gsub("%-+", "-"):gsub("^%-+", ""):gsub("%-+$", "")
+        return s
+    end
+    render.parseTagList = function(text)
+        local out = {}
+        for part in tostring(text):gmatch("[^,\n]+") do
+            local tag = render.sanitizeTag(part)
+            if tag ~= "" then
+                out[#out + 1] = tag
+            end
+        end
+        return out, {}
+    end
+    store.tomedown.book_tags = { [FILE] = { "Horror", "1500" } }
+    store.tomedown.preserve = nil
+    plugin:runExport({ FILE }, {})
+    UIManager:runPending()
+    T.check(T.contains(T.readFile(MD_PATH) or "", '  - "1500"'),
+        "the old build wrote the numeric tag")
+    render.sanitizeTag, render.parseTagList = new_sanitize, new_parse
+    Notification.last_text = nil
+    plugin:runExport({ FILE }, { only_updated = true })
+    UIManager:runPending()
+    T.check(T.contains(Notification.last_text or "", "1 files exported"),
+        "the old file is re-exported: " .. tostring(Notification.last_text))
+    local cleaned = T.readFile(MD_PATH) or ""
+    T.check(not T.contains(cleaned, "1500"),
+        "the numeric tag leaves the old file")
+
+    -- back to the state the sections below expect
+    store.tomedown.book_tags = nil
+    store.tomedown.preserve = nil
+    plugin:runExport({ FILE }, {})
+    UIManager:runPending()
+    T.check(store.tomedown.exports[FILE].hash == saved_hash,
+        "with the tags gone the hash is the one from before")
+    ui.document = { file = nil }
+    os.remove(MD_PATH .. ".bak")
+    os.remove(MD_PATH .. ".bak.1")
+end
 
 -- ------------------------------------ 4b. rich frontmatter from doc settings
 local rec = BookList.registry[FILE]
@@ -603,8 +794,8 @@ T.check(sub[3].enabled_func() == true, "export all books enabled")
 do
     ui.document = { file = FILE }
     local current = sub[5].sub_item_table_func()
-    T.check(#current == 1, "Current book starts with the keep row: " .. #current)
-    T.check(current[1].text == "\xEF\x81\x80  Keep my notes in this book",
+    T.check(#current == 2, "Current book starts with keep and tags: " .. #current)
+    T.check(current[1].text == "Keep my notes in this book",
         "the per book keep row")
     T.check(current[1].enabled_func() == true, "keep row enabled with the book open")
     T.check(current[1].checked_func() == false,
@@ -613,6 +804,8 @@ do
         "no reason on the right while the row is in charge")
     T.check(current[1].keep_menu_open == true,
         "the keep row keeps the menu open for its tick")
+    T.check(current[2].text_func() == "Tags: none",
+        "the tags row starts empty: " .. current[2].text_func())
     ui.document = nil
     store.lastfile = FILE
     T.check(#menu_items.tomedown.sub_item_table_func() == 7,
@@ -639,18 +832,48 @@ T.check(#updates == 4, "updates rows: " .. #updates)
 T.check(cloud[1].text == "Upload to cloud", "upload entry")
 T.check(cloud[2].text_func() == "Server and folder: not set", "server not set")
 T.check(T.contains(cloud[3].text_func(), "Remote folder: not set"), "remote folder not set")
--- Files: five static rows, none of them appears or disappears
+-- Files: six static rows, none of them appears or disappears
 local files = settings[1].sub_item_table
-T.check(#files == 5, "files rows: " .. #files)
+T.check(#files == 6, "files rows: " .. #files)
 T.check(T.contains(files[1].text_func(), "clipboard/tomedown"), "default local folder")
 T.check(files[2].text == "Create an index note (00 - Index.md)",
     "index entry with the file name")
-T.check(files[3].text == "Include page bookmarks", "page bookmarks entry")
-T.check(files[3].checked_func() == false, "page bookmarks off by default")
-T.check(files[4].text == "Include book covers", "covers entry")
-T.check(files[4].checked_func() == false, "covers off by default")
-T.check(files[5].text == "Export when I close a book", "auto-export entry")
-T.check(files[5].checked_func() == false, "auto-export off by default")
+T.check(files[3].text_func() == "Index order: Author",
+    "index order entry: " .. files[3].text_func())
+local order_rows = files[3].sub_item_table
+T.check(order_rows and #order_rows == 4,
+    "four index orders: " .. tostring(order_rows and #order_rows))
+T.check(order_rows[1].text == "Author" and order_rows[1].radio == true
+        and order_rows[1].checked_func() == true,
+    "author is the default index order")
+T.check(order_rows[2].text == "Title" and order_rows[2].checked_func() == false,
+    "title order is offered")
+T.check(order_rows[3].text == "Last read", "last read order is offered")
+T.check(order_rows[4].text == "Highlights", "highlights order is offered")
+order_rows[2].callback()
+T.check(store.tomedown.index_order == "title", "title order chosen")
+T.check(store.tomedown.index_dirty == true,
+    "choosing another order asks for an index rebuild")
+T.check(files[3].text_func() == "Index order: Title",
+    "the row names the chosen order: " .. files[3].text_func())
+T.check(order_rows[2].checked_func() == true
+        and order_rows[1].checked_func() == false,
+    "the radio follows the choice")
+store.tomedown.index_dirty = nil
+order_rows[2].callback()
+T.check(store.tomedown.index_dirty == nil,
+    "choosing the order already set asks for nothing")
+order_rows[1].callback()
+T.check(store.tomedown.index_order == "author", "author chosen back")
+T.check(store.tomedown.index_dirty == true,
+    "and the index is asked to rebuild again")
+store.tomedown.index_dirty = nil
+T.check(files[4].text == "Include page bookmarks", "page bookmarks entry")
+T.check(files[4].checked_func() == false, "page bookmarks off by default")
+T.check(files[5].text == "Include book covers", "covers entry")
+T.check(files[5].checked_func() == false, "covers off by default")
+T.check(files[6].text == "Export when I close a book", "auto-export entry")
+T.check(files[6].checked_func() == false, "auto-export off by default")
 -- My notes: the global switch, the index switch while the global one is
 -- off, the headings of the zones, and the cloud merge. Rebuilt on open
 -- and in place when a switch in it flips.
@@ -816,7 +1039,7 @@ end
 -- the rows that used to sit in the Style and Behaviour submenus, kept
 -- under the names the sections below toggle: auto-export in Files and
 -- the global switch in My notes
-local behaviour = { [1] = files[5], [2] = notes[1] }
+local behaviour = { [1] = files[6], [2] = notes[1] }
 T.check(updates[1].text_func() == "Check for updates (v"
         .. Update.getInstalledVersion() .. ")",
     "check row carries the installed version: " .. updates[1].text_func())
@@ -939,9 +1162,9 @@ files[2].callback()
 T.check(store.tomedown.with_index == false, "index disabled")
 files[2].callback()
 T.check(store.tomedown.with_index == true, "index re-enabled")
-files[3].callback()
+files[4].callback()
 T.check(store.tomedown.include_bookmarks == true, "page bookmarks enabled")
-files[3].callback()
+files[4].callback()
 T.check(store.tomedown.include_bookmarks == false, "page bookmarks disabled")
 developer[1].callback()
 T.check(store.tomedown.beta_releases == true, "beta releases enabled")
@@ -1174,7 +1397,7 @@ store.tomedown = { import_prompt_done = true }
 
 -- ----------------------------------------------- 5b. page bookmarks
 
-files[3].callback() -- enable "Include page bookmarks"
+files[4].callback() -- enable "Include page bookmarks"
 T.check(store.tomedown.include_bookmarks == true, "page bookmarks enabled for the export")
 plugin:runExport({ FILE }, {})
 UIManager:runPending()
@@ -1210,7 +1433,7 @@ if onlyBmMd then
 end
 
 -- disabled again: the section disappears
-files[3].callback()
+files[4].callback()
 T.check(store.tomedown.include_bookmarks == false, "page bookmarks disabled again")
 plugin:runExport({ FILE }, {})
 UIManager:runPending()
@@ -1735,11 +1958,11 @@ NetworkMgr.connected = true
 uploadSetup()
 plugin:runExport({ FILE }, {})
 T.check(store.tomedown.exports[FILE].hash ~= nil, "hash stored by the export")
-files[4].callback()
+files[5].callback()
 T.check(store.tomedown.covers == true, "covers toggled on")
 T.check(store.tomedown.exports[FILE].hash == nil,
     "the covers toggle invalidates the stored hash")
-files[4].callback()
+files[5].callback()
 T.check(store.tomedown.covers == false, "covers toggled off again")
 plugin:runExport({ FILE }, {})
 T.check(store.tomedown.exports[FILE].hash ~= nil, "hash back after the export")
@@ -2148,14 +2371,14 @@ do
     -- zone gets its own heading row, right under the switch that keeps
     -- it, and the copies left by the sections above sit under that
     current_book = sub[5].sub_item_table_func()
-    T.check(#current_book == 3,
+    T.check(#current_book == 4,
         "15b: the heading and the copies join the submenu: "
             .. #current_book)
-    T.check(current_book[2].text_func()
+    T.check(current_book[3].text_func()
             == "Notes heading: My notes...",
         "15b: the heading row names this book's zone: "
-            .. current_book[2].text_func())
-    T.check(current_book[3].text == "\xEF\x83\x87  Backup copies…",
+            .. current_book[3].text_func())
+    T.check(current_book[4].text == "\xEF\x83\x87  Backup copies…",
         "15b: the copies row follows the heading")
     plugin:runExport({ FILE, FILE2 }, {})
     UIManager:runPending()
@@ -2197,12 +2420,12 @@ do
         "15b: and it shows no book's choice")
     T.check(current_book[1].mandatory_func() == "On for all books",
         "15b: the reason sits on the right")
-    T.check(current_book[2].text == "\xEF\x83\x87  Backup copies…",
+    T.check(current_book[3].text == "\xEF\x83\x87  Backup copies…",
         "15b: the heading leaves with the global switch, the copies stay")
     behaviour[2].callback()
     T.check(store.tomedown.preserve == false, "15b: and off again")
     current_book = sub[5].sub_item_table_func()
-    T.check(#current_book == 3,
+    T.check(#current_book == 4,
         "15b: the heading is back with the switch off: " .. #current_book)
     plugin:runExport({ FILE }, {})
     UIManager:runPending()
@@ -2215,7 +2438,7 @@ do
     -- switch opens the dialog, and the title is stored for that book
     -- alone. The index, when it has a zone, keeps the global heading.
     current_book = sub[5].sub_item_table_func()
-    current_book[2].callback()
+    current_book[3].callback()
     T.check(InputDialog.last ~= nil
             and InputDialog.last.title == "Notes heading",
         "15c: the heading dialog opened")
@@ -2228,9 +2451,9 @@ do
         "15c: the global heading is left alone")
     T.check(store.tomedown.exports[FILE].hash == nil,
         "15c: the book's hash goes: its file has to be rewritten")
-    T.check(current_book[2].text_func()
+    T.check(current_book[3].text_func()
             == "Notes heading: The Witch theory",
-        "15c: the row shows the new name: " .. current_book[2].text_func())
+        "15c: the row shows the new name: " .. current_book[3].text_func())
     -- a book that never named its zone, saved back with the global title
     -- still in the field, keeps following the global one: a copy of it
     -- would freeze the book on today's heading, and a later rename in
@@ -2240,7 +2463,7 @@ do
     current_book = sub[5].sub_item_table_func()
     current_book[1].callback({ item_table = current_book })
     current_book = sub[5].sub_item_table_func()
-    current_book[2].callback()
+    current_book[3].callback()
     T.check(InputDialog.last ~= nil
             and InputDialog.last.input_text == "My notes...",
         "15c: the field starts on the heading the book exports today: "

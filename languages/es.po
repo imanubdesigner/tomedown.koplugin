@@ -102,6 +102,9 @@ msgstr "Carpeta local: %1"
 msgid "Create an index note (%1)"
 msgstr "Crear una nota de índice (%1)"
 
+msgid "Index order: %1"
+msgstr "Orden del índice: %1"
+
 msgid "Export this book"
 msgstr "Exportar este libro"
 
@@ -110,6 +113,21 @@ msgstr "Exportar libros nuevos y modificados"
 
 msgid "Keep my notes in this book"
 msgstr "Conservar mis notas en este libro"
+
+msgid "Tags for this book"
+msgstr "Etiquetas para este libro"
+
+msgid "Tags: %1"
+msgstr "Etiquetas: %1"
+
+msgid "Tags made only of numbers are ignored: %1"
+msgstr "Las etiquetas compuestas solo por números se ignoran: %1"
+
+msgid "none"
+msgstr "ninguna"
+
+msgid "separate tags with commas; applied at the next export"
+msgstr "separa las etiquetas con comas; se aplican en la próxima exportación"
 
 msgid "Turn off Keep my notes for %1? Your notes will not be lost. A .bak copy is created."
 msgstr "¿Desactivar «Conservar mis notas» para %1? Tus notas no se perderán. Se creará una copia .bak."
@@ -181,6 +199,9 @@ msgstr "Libro"
 
 msgid "Author"
 msgstr "Autor"
+
+msgid "Title"
+msgstr "Título"
 
 msgid "Series"
 msgstr "Serie"
