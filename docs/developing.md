@@ -52,6 +52,25 @@ servers, uploads and retries) against a fake KOReader environment
 (`kostubs/`). It ends with `luac5.1 -p` on the sources, the same Lua
 version that runs on the Kindle. The same suite runs on every push.
 
+## Release zip
+
+The release asset is built from a commit, never from a folder copied by
+hand:
+
+```
+tools/release-zip.sh            # HEAD
+tools/release-zip.sh 1.2.0      # a branch, tag or commit
+```
+
+It refuses a dirty working tree, reads the version from `_meta.lua` at that
+ref and writes `~/Documents/Tomedown-Bidirectional/tomedown.koplugin-v<version>.zip`
+(set `TOMEDOWN_RELEASE_DIR` to change the folder). The archive may contain
+only `LICENSE`, `_meta.lua`, `assets/logo.png`, `main.lua`, the
+`tomedown_*.lua` modules and `languages/*.po`: never `docs/`, the tests, the
+menu screenshots or the repository banners. The script compares that list
+with the archive contents, runs `luac5.1 -p` on every Lua file and prints the
+sha256 to record with the release.
+
 ## Project structure
 
 ```
@@ -78,6 +97,8 @@ tomedown.koplugin/
 │   ├── run.sh             runs everything, ends with luac5.1 -p
 │   ├── kostubs/           stubs for KOReader's Lua modules
 │   └── test_*.lua
+├── tools/
+│   └── release-zip.sh     builds the release asset from a commit
 └── README.md
 ```
 
