@@ -734,7 +734,7 @@ do
     ui.document = { file = FILE }
     local current = sub[5].sub_item_table_func()
     T.check(#current == 2, "Current book starts with keep and tags: " .. #current)
-    T.check(current[1].text == "\xEF\x81\x80  Keep my notes in this book",
+    T.check(current[1].text == "Keep my notes in this book",
         "the per book keep row")
     T.check(current[1].enabled_func() == true, "keep row enabled with the book open")
     T.check(current[1].checked_func() == false,

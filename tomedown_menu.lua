@@ -1370,7 +1370,7 @@ function M:genCurrentBookMenu()
         return rows
     end
     rows[#rows + 1] = {
-        text = withIcon("\xEF\x81\x80", _("Keep my notes in this book")),
+        text = _("Keep my notes in this book"),
         enabled_func = function()
             return not getSetting("preserve", false)
         end,
