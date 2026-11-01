@@ -320,6 +320,32 @@ T.check(T.contains(render.buildBookMd({
 }, { markers = false }), "tomedown_book_tags:\n  - Horror"),
     "the ledger of chosen tags is written without markers too")
 
+-- a tag that is only digits is not valid for Obsidian, and a tag YAML
+-- would type as a number or a boolean is quoted so the list stays strings
+local yamlTags = render.buildBookMd({
+    title = "T",
+    keywords = { "1500", "1500s", "true", "no", "null", "2026-11-01" },
+    count = 0,
+    annotations = {},
+})
+T.check(not T.contains(yamlTags, "  - 1500\n"),
+    "a numeric-only keyword never reaches the frontmatter")
+T.check(T.contains(yamlTags, '  - "1500s"'),
+    "a digit-led tag is quoted for YAML")
+T.check(T.contains(yamlTags, '  - "true"'), "a boolean-looking tag is quoted")
+T.check(T.contains(yamlTags, '  - "no"'), "a yes/no-looking tag is quoted")
+T.check(T.contains(yamlTags, '  - "null"'), "a null-looking tag is quoted")
+T.check(T.contains(yamlTags, '  - "2026-11-01"'), "a date-like tag is quoted")
+local numericBook = render.buildBookMd({
+    title = "T", tags = { "Storico", "1500", "Paranormale" },
+    tags_managed = true, count = 0, annotations = {},
+})
+T.check(not T.contains(numericBook, "1500"),
+    "a numeric tag stays out of tags and ledger")
+T.check(T.contains(numericBook, "  - Storico")
+        and T.contains(numericBook, "  - Paranormale"),
+    "the valid tags around it still render")
+
 local bookUnmanaged = render.buildBookMd({
     title = "T", keywords = { "horror" }, count = 0, annotations = {},
 })
@@ -721,6 +747,13 @@ T.check(render.sanitizeTag("a\194\160b") == "a-b",
     "non-breaking space becomes a dash")
 T.check(render.sanitizeTag("fantasy \240\159\144\137") == "fantasy-\240\159\144\137",
     "emoji (multi-byte) survives")
+T.check(render.sanitizeTag("1500") == "",
+    "a tag made only of digits is not a tag for Obsidian")
+T.check(render.sanitizeTag("1984") == "", "another numeric-only tag is dropped")
+T.check(render.sanitizeTag("1500s") == "1500s",
+    "a digit-led tag with a letter survives")
+T.check(render.sanitizeTag("2026-11-01") == "2026-11-01",
+    "a date-like tag survives, the hyphen is not numerical")
 local clean_once = render.sanitizeTag("Occult & Supernatural")
 T.check(render.sanitizeTag(clean_once) == clean_once, "sanitizeTag is idempotent")
 
@@ -732,6 +765,18 @@ T.check(#parsed == 3 and parsed[1] == "Horror" and parsed[2] == "psicologico"
 T.check(#render.parseTagList("  ,  , ") == 0, "empty field: no tags")
 T.check(#render.parseTagList(nil) == 0, "nil field: no tags")
 T.check(render.parseTagList("A\nB")[2] == "B", "newlines split tags too")
+local numericTags, numericRejected = render.parseTagList(
+    "Horror, 1500, 1984, Psicologico, 1500")
+T.check(#numericTags == 2 and numericTags[1] == "Horror"
+        and numericTags[2] == "Psicologico",
+    "numeric-only tags are dropped from the field")
+T.check(#numericRejected == 2 and numericRejected[1] == "1500"
+        and numericRejected[2] == "1984",
+    "the dropped numbers are reported once each")
+local digitLed, digitRejected = render.parseTagList("1500s")
+T.check(#digitLed == 1 and digitLed[1] == "1500s"
+        and #digitRejected == 0,
+    "a valid digit-led tag is not reported as dropped")
 
 -- through the exporter: dirty keywords render sanitized, dead ones vanish
 local tagged = render.buildBookMd({

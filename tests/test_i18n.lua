@@ -41,6 +41,9 @@ T.check(i18n("none") == "nessuno", "it: empty book tags")
 T.check(i18n("Index order: %1") == "Ordine dell'indice: %1",
     "it: index order row")
 T.check(i18n("Title") == "Titolo", "it: title order")
+T.check(i18n("Tags made only of numbers are ignored: %1")
+        == "I tag composti solo da numeri vengono ignorati: %1",
+    "it: numeric-only tags notice")
 
 -- 4. explicit getter
 T.check(i18n.gettext("Book index") == "Indice dei libri", "gettext() same as __call")

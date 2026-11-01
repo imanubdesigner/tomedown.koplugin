@@ -465,8 +465,14 @@ function M:buildBook(file, live_annotations)
                 end
                 local keywords = parseKeywords(props.keywords)
                 -- tags chosen from the book's own menu; nil means the
-                -- book never chose, an empty list means it cleared them
-                local tags = shared.getBookTags(file)
+                -- book never chose, an empty list means it cleared them.
+                -- The stored list is sanitized again: an older build let
+                -- a number alone through, and filtering it here keeps it
+                -- out of the hash too, so the next export rewrites the
+                -- old file instead of taking it for unchanged
+                local stored_tags = shared.getBookTags(file)
+                local tags = stored_tags and render.parseTagList(
+                    table.concat(stored_tags, ", ")) or nil
                 local tags_managed = tags ~= nil
                 local meta_parts = {
                     tostring(series or ""),

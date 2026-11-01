@@ -233,14 +233,24 @@ local function tagKey(value)
     return value:lower()
 end
 
+-- Obsidian does not accept a tag made only of digits: an old export
+-- may still carry one, and the union should clean it out.
+local function validTagKey(value)
+    local key = tagKey(value)
+    if not key or key == "" or key:match("^%d+$") then
+        return nil
+    end
+    return key
+end
+
 local function tagSet(block)
     local set = {}
     if not block then
         return set
     end
     for i = 2, #block do
-        local key = tagKey(itemValue(block[i]))
-        if key and key ~= "" then
+        local key = validTagKey(itemValue(block[i]))
+        if key then
             set[key] = true
         end
     end
@@ -260,16 +270,16 @@ function merge.mergeFrontmatter(disk_fm, rendered_fm)
             local seen = {}
             local merged = { lines[1] }
             for i = 2, #lines do
-                local tag = tagKey(itemValue(lines[i]))
-                if tag and tag ~= "" then
+                local tag = validTagKey(itemValue(lines[i]))
+                if tag then
                     seen[tag] = true
                 end
                 merged[#merged + 1] = lines[i]
             end
             local disk_tags = disk.blocks.tags or {}
             for i = 2, #disk_tags do
-                local tag = tagKey(itemValue(disk_tags[i]))
-                if tag and tag ~= "" and not seen[tag] then
+                local tag = validTagKey(itemValue(disk_tags[i]))
+                if tag and not seen[tag] then
                     local drop = manages_tags
                         and old_managed[tag] and not new_managed[tag]
                     if not drop then

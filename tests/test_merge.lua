@@ -464,6 +464,37 @@ local qfm = merge.mergeFrontmatter(quotedDisk, clearedRendered)
 T.check(not qfm:lower():find("horror", 1, true),
     "a quoted managed tag is recognised and dropped")
 
+-- a tag made only of digits is not a tag for Obsidian: an old export
+-- may still carry it, and the union cleans it out while the rest stays
+local numericDisk = table.concat({
+    'tomedown: "1.0"',
+    'title: "Blackwater"',
+    "tags:",
+    "  - ebook",
+    "  - 1500",
+    "  - Horror",
+    "  - my-tag",
+    "tomedown_book_tags:",
+    "  - 1500",
+    "  - Horror",
+}, "\n")
+local numericRendered = table.concat({
+    'tomedown: "1.0"',
+    'title: "Blackwater"',
+    "tags:",
+    "  - ebook",
+    "  - Horror",
+    "tomedown_book_tags:",
+    "  - Horror",
+}, "\n")
+local nfm = merge.mergeFrontmatter(numericDisk, numericRendered)
+T.check(not T.contains(nfm, "1500"),
+    "a numeric tag is dropped from the merged frontmatter")
+T.check(T.contains(nfm, "  - Horror"), "the valid managed tag stays")
+T.check(T.contains(nfm, "  - my-tag"), "the hand-written tag stays")
+T.check(T.contains(nfm, "tomedown_book_tags:\n  - Horror"),
+    "the ledger is rewritten without the numeric tag")
+
 -- the .bak round trip: a restored copy still loses the tags the menu
 -- removed, because the render names them in its empty ledger again
 local taggedBook = {

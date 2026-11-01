@@ -79,8 +79,10 @@ the same text comes out translated (see [Languages](developing.md#languages)).
 
 Every keyword is normalised into a valid Obsidian tag: spaces become `-`, and
 only letters, numbers, `-`, `_`, `/` and non-ASCII characters (accents, emoji)
-survive, everything else (`;`, `'`, `=`, `[`, `]`…) is dropped. A field
-KOReader does not know (ISBN, for instance) is simply not there.
+survive, everything else (`;`, `'`, `=`, `[`, `]`…) is dropped. Obsidian also
+requires at least one non-numerical character, so a tag made only of digits
+(`1500`) is dropped: use `1500s` or `anno-1500`. A field KOReader does not
+know (ISBN, for instance) is simply not there.
 
 Tags chosen from *Current book → Tags: %1* go through the same normalisation
 and join the frontmatter at the next export, without duplicates: `ebook`,

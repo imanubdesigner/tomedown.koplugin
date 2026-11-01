@@ -120,6 +120,9 @@ msgstr "Tags pour ce livre"
 msgid "Tags: %1"
 msgstr "Tags : %1"
 
+msgid "Tags made only of numbers are ignored: %1"
+msgstr "Les tags composés uniquement de chiffres sont ignorés : %1"
+
 msgid "none"
 msgstr "aucun"
 

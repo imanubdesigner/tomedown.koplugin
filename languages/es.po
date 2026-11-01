@@ -120,6 +120,9 @@ msgstr "Etiquetas para este libro"
 msgid "Tags: %1"
 msgstr "Etiquetas: %1"
 
+msgid "Tags made only of numbers are ignored: %1"
+msgstr "Las etiquetas compuestas solo por números se ignoran: %1"
+
 msgid "none"
 msgstr "ninguna"
 

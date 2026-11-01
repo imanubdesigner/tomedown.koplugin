@@ -503,17 +503,26 @@ do
             and InputDialog.last.hint
                 == "separate tags with commas; applied at the next export",
         "the dialog says when the tags are applied")
-    InputDialog.last.input_text = " Horror, Psicologico, Horror, !!! "
+    InputDialog.last.input_text = " Horror, 1500, Psicologico, Horror, !!! "
+    Notification.last_text = nil
     InputDialog.last:simulateSave()
     local chosen = store.tomedown.book_tags and store.tomedown.book_tags[FILE]
     T.check(chosen and #chosen == 2 and chosen[1] == "Horror"
             and chosen[2] == "Psicologico",
         "tags stored sanitized and deduplicated")
+    T.check(Notification.last_text
+            == "Tags made only of numbers are ignored: 1500",
+        "the numeric tag is reported: " .. tostring(Notification.last_text))
     T.check(store.tomedown.exports[FILE].hash == nil,
         "a tag change invalidates only this book's hash")
     T.check(current_book[2].text_func() == "Tags: Horror, Psicologico",
         "the row shows the new tags: " .. current_book[2].text_func())
     T.check(refreshed > 0, "the menu is redrawn after saving")
+    -- a numeric tag stored by an older build is hidden right away
+    store.tomedown.book_tags[FILE] = { "Horror", "1500", "Psicologico" }
+    T.check(current_book[2].text_func() == "Tags: Horror, Psicologico",
+        "the row hides tags Obsidian cannot use")
+    store.tomedown.book_tags[FILE] = chosen
 
     -- the ledger records ownership even in a plain file, so turning
     -- Keep my notes on later still knows which tags the menu manages
@@ -563,6 +572,58 @@ do
         "the tag written by hand stays")
     T.check(not T.contains(cleared, "tomedown_book_tags"),
         "the empty ledger is not written back")
+
+    -- a numeric-only field on a book that never chose stores nothing
+    store.tomedown.book_tags = nil
+    current_book = plugin:genCurrentBookMenu()
+    current_book[2].callback(menu)
+    InputDialog.last.input_text = "1500"
+    Notification.last_text = nil
+    InputDialog.last:simulateSave()
+    T.check(store.tomedown.book_tags == nil,
+        "a numeric tag on a book that never chose stores nothing")
+    T.check(Notification.last_text
+            == "Tags made only of numbers are ignored: 1500",
+        "and the menu says why")
+
+    -- an export made by the old build carries the numeric tag, and its
+    -- hash counts it: the next only_updated run has to notice the old
+    -- file and rewrite it even though the reader changed nothing
+    local render = require("tomedown_render")
+    local new_sanitize, new_parse = render.sanitizeTag, render.parseTagList
+    render.sanitizeTag = function(s)
+        if s == nil then
+            return ""
+        end
+        s = tostring(s):gsub("%s+", "-"):gsub("[^%w%-_/]", "")
+        s = s:gsub("%-+", "-"):gsub("^%-+", ""):gsub("%-+$", "")
+        return s
+    end
+    render.parseTagList = function(text)
+        local out = {}
+        for part in tostring(text):gmatch("[^,\n]+") do
+            local tag = render.sanitizeTag(part)
+            if tag ~= "" then
+                out[#out + 1] = tag
+            end
+        end
+        return out, {}
+    end
+    store.tomedown.book_tags = { [FILE] = { "Horror", "1500" } }
+    store.tomedown.preserve = nil
+    plugin:runExport({ FILE }, {})
+    UIManager:runPending()
+    T.check(T.contains(T.readFile(MD_PATH) or "", '  - "1500"'),
+        "the old build wrote the numeric tag")
+    render.sanitizeTag, render.parseTagList = new_sanitize, new_parse
+    Notification.last_text = nil
+    plugin:runExport({ FILE }, { only_updated = true })
+    UIManager:runPending()
+    T.check(T.contains(Notification.last_text or "", "1 files exported"),
+        "the old file is re-exported: " .. tostring(Notification.last_text))
+    local cleaned = T.readFile(MD_PATH) or ""
+    T.check(not T.contains(cleaned, "1500"),
+        "the numeric tag leaves the old file")
 
     -- back to the state the sections below expect
     store.tomedown.book_tags = nil

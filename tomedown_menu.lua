@@ -218,7 +218,10 @@ function M:editBookTags(touchmenu, file)
         return
     end
     local dialog
-    local previous = getBookTags(file) or {}
+    -- invalid tags stored by an older build (a number alone, say) are
+    -- not shown: the field starts on what Obsidian can actually use
+    local previous = render.parseTagList(
+        table.concat(getBookTags(file) or {}, ", "))
     dialog = InputDialog:new{
         title = _("Tags for this book"),
         input = table.concat(previous, ", "),
@@ -237,17 +240,27 @@ function M:editBookTags(touchmenu, file)
                 {
                     text = _("Save"),
                     callback = function()
-                        local tags = render.parseTagList(
+                        local tags, rejected = render.parseTagList(
                             dialog:getInputText() or "")
+                        local function finish()
+                            UIManager:close(dialog)
+                            if touchmenu and touchmenu.updateItems then
+                                touchmenu:updateItems()
+                            end
+                            if #rejected > 0 then
+                                UIManager:show(Notification:new{
+                                    text = T(
+                                        _("Tags made only of numbers are ignored: %1"),
+                                        table.concat(rejected, ", ")),
+                                })
+                            end
+                        end
                         local stored = getBookTags(file)
                         -- an untouched empty field on a book that never
                         -- chose says nothing: it must not store an empty
                         -- choice (which would start managing its tags)
                         if stored == nil and #tags == 0 then
-                            UIManager:close(dialog)
-                            if touchmenu and touchmenu.updateItems then
-                                touchmenu:updateItems()
-                            end
+                            finish()
                             return
                         end
                         local unchanged = stored ~= nil
@@ -267,10 +280,7 @@ function M:editBookTags(touchmenu, file)
                             -- next export rewrites it, and only it
                             self:invalidateExportHash(file)
                         end
-                        UIManager:close(dialog)
-                        if touchmenu and touchmenu.updateItems then
-                            touchmenu:updateItems()
-                        end
+                        finish()
                     end,
                 },
             },
@@ -1436,9 +1446,10 @@ function M:genCurrentBookMenu()
     }
     rows[#rows + 1] = {
         text_func = function()
-            local tags = getBookTags(file)
+            local tags = render.parseTagList(
+                table.concat(getBookTags(file) or {}, ", "))
             return T(_("Tags: %1"),
-                tags and #tags > 0 and table.concat(tags, ", ") or _("none"))
+                #tags > 0 and table.concat(tags, ", ") or _("none"))
         end,
         callback = function(touchmenu)
             self:editBookTags(touchmenu, file)

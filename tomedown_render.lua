@@ -110,10 +110,20 @@ local function yamlQuote(s)
     return '"' .. s .. '"'
 end
 
+-- Values YAML would read as something other than a string. Quoting
+-- them keeps the tags and the ledger a list of strings: an unquoted
+-- `1500` or `true` makes Obsidian show the whole property as an array.
+local YAML_RESERVED = {
+    ["true"] = true, ["false"] = true, ["yes"] = true, ["no"] = true,
+    ["on"] = true, ["off"] = true, ["y"] = true, ["n"] = true,
+    ["null"] = true, ["nan"] = true, ["inf"] = true,
+}
+
 -- list item: plain when YAML-safe, quoted otherwise
 local function yamlListItem(s)
     s = tostring(s)
-    if s:match("^[%w][%w%s%-_%.']*$") then
+    if s:match("^[%a_][%w%s%-_%.']*$")
+            and not YAML_RESERVED[s:lower()] then
         return s
     end
     return yamlQuote(s)
@@ -126,7 +136,9 @@ end
 -- list, so anything else (";", "'", "=", "[", "\\", ...) never reaches
 -- the frontmatter. All non-ASCII bytes (accents, emoji) survive
 -- untouched, runs of "-" are collapsed and the edge ones are trimmed.
--- The result is idempotent. The caller drops the empty ones.
+-- Obsidian also needs at least one non-numerical character, so a tag
+-- made only of digits is not a tag and comes back empty. The result is
+-- idempotent. The caller drops the empty ones.
 function render.sanitizeTag(s)
     if s == nil then
         return ""
@@ -143,6 +155,9 @@ function render.sanitizeTag(s)
     s = s:gsub("%-+", "-")
     s = s:gsub("^%-+", "")
     s = s:gsub("%-+$", "")
+    if s:match("^%d+$") then
+        return ""
+    end
     return s
 end
 
@@ -150,11 +165,13 @@ end
 -- goes through sanitizeTag, empty parts are dropped and duplicates are
 -- removed case-insensitively, keeping the first spelling the reader
 -- used. The result is what the book's own menu stores and what both the
--- tags list and the managed-tags ledger write.
+-- tags list and the managed-tags ledger write. The second return value
+-- names the parts that were made only of digits: they are not tags for
+-- Obsidian, so the menu can say they were ignored.
 function render.parseTagList(text)
-    local out, seen = {}, {}
+    local out, seen, rejected, seen_rejected = {}, {}, {}, {}
     if type(text) ~= "string" then
-        return out
+        return out, rejected
     end
     for part in text:gmatch("[^,\n]+") do
         local tag = render.sanitizeTag(part)
@@ -164,9 +181,16 @@ function render.parseTagList(text)
                 seen[key] = true
                 out[#out + 1] = tag
             end
+        else
+            local raw = part:gsub("^%s+", ""):gsub("%s+$", "")
+            local key = raw:lower()
+            if raw:match("%d") and not seen_rejected[key] then
+                seen_rejected[key] = true
+                rejected[#rejected + 1] = raw
+            end
         end
     end
-    return out
+    return out, rejected
 end
 
 -- "2026-09-26 10:11:12" -> "26/09/2026"

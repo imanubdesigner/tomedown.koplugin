@@ -55,7 +55,8 @@ the global switch on, both of its rows are hidden.
 field starts on the tags already stored; separate them with commas and save,
 and they join `ebook`, `highlights` and the book's own keywords at the next
 export (right away when the book is exported on close). Clearing the field
-drops them.
+drops them. A tag made only of digits (`1500`) is ignored, because Obsidian
+does not accept it: use `1500s` or `anno-1500`.
 
 With Keep my notes on, the file carries `tomedown_book_tags`, the receipt of
 the tags the menu owns. A tag you remove there leaves `tags` at the next
