@@ -1445,9 +1445,9 @@ T.check(render_src and render_src:find("coverImg", 1, true),
     "render embeds the cover")
 local cover_src = T.readFile(T.plugin .. "/tomedown_cover.lua")
 T.check(cover_src ~= nil, "tomedown_cover.lua exists")
-local main_src = T.readFile(T.plugin .. "/main.lua")
-T.check(main_src and main_src:find("tomedown_cover", 1, true),
-    "main.lua requires the cover module")
+local export_src = T.readFile(T.plugin .. "/tomedown_export.lua")
+T.check(export_src and export_src:find("tomedown_cover", 1, true),
+    "tomedown_export.lua requires the cover module")
 
 -- --------------------------------------- 11. first-run import prompt
 

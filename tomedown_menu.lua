@@ -1355,5 +1355,4 @@ function M:addToMainMenu(menu_items)
     }
 end
 
-
 return M

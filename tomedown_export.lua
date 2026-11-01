@@ -29,6 +29,7 @@ local Cover = require("tomedown_cover")
 local shared = require("tomedown_shared")
 
 local INDEX_FILENAME = shared.INDEX_FILENAME
+local FILENAME_TEMPLATE = shared.FILENAME_TEMPLATE
 local getSetting = shared.getSetting
 local setSetting = shared.setSetting
 local getNotesTitle = shared.getNotesTitle
@@ -1091,6 +1092,5 @@ function M:showResult(exported, skipped, errors, offline_pending,
         timeout = 3,
     })
 end
-
 
 return M
