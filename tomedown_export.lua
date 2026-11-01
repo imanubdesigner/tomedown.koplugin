@@ -464,7 +464,11 @@ function M:buildBook(file, live_annotations)
                     language = nil
                 end
                 local keywords = parseKeywords(props.keywords)
-                local meta = table.concat({
+                -- tags chosen from the book's own menu; nil means the
+                -- book never chose, an empty list means it cleared them
+                local tags = shared.getBookTags(file)
+                local tags_managed = tags ~= nil
+                local meta_parts = {
                     tostring(series or ""),
                     tostring(series_index or ""),
                     tostring(language or ""),
@@ -472,7 +476,16 @@ function M:buildBook(file, live_annotations)
                     tostring(status or ""),
                     tostring(progress or ""),
                     table.concat(keywords, "\31"),
-                }, "\31")
+                }
+                -- only a book that actually carries tags changes its
+                -- hash: an upgrade must not rewrite the whole library,
+                -- and an explicit clear still differs from the tags it
+                -- replaces, so the next export removes them
+                if tags_managed and #tags > 0 then
+                    meta_parts[#meta_parts + 1] = "booktags:"
+                        .. table.concat(tags, "\31")
+                end
+                local meta = table.concat(meta_parts, "\31")
                 book = {
                     file = file,
                     title = title,
@@ -485,7 +498,10 @@ function M:buildBook(file, live_annotations)
                     status = status,
                     progress = progress,
                     last_read = last_read,
+                    last_read_sort = lr,
                     keywords = keywords,
+                    tags = tags or {},
+                    tags_managed = tags_managed,
                     count = #annotations,
                     annotations = annotations,
                     bookmarks = bookmarks,
@@ -559,6 +575,7 @@ function M:buildIndexEntries(dir, export_records)
                 progress = book.progress,
                 last_read = book.last_read and render.fmtDate(book.last_read)
                     or "",
+                last_read_sort = book.last_read_sort,
                 cover = has_cover and cover_rel or nil,
             }
         end
@@ -816,7 +833,10 @@ function M:runExport(files, opts)
 
     if with_index then
         local index_path = dir .. "/" .. INDEX_FILENAME
-        if exported > 0 or not lfs.attributes(index_path) then
+        -- index_dirty: the order changed (or the file is missing) but
+        -- no book did, so the index alone has to be rebuilt
+        if exported > 0 or not lfs.attributes(index_path)
+                or getSetting("index_dirty", false) then
             -- the index keeps its zone when its own switch says so, or
             -- when the global switch covers it: no book choice turns it
             -- on behind the reader's back any more
@@ -831,6 +851,7 @@ function M:runExport(files, opts)
                 show_covers = getSetting("covers", false),
                 notes_title = index_title,
                 markers = index_preserve,
+                index_order = getSetting("index_order", "author"),
             })
             -- the index is a region too: the reader may have annotated it
             local content = index_md
@@ -915,6 +936,8 @@ function M:runExport(files, opts)
                 setSetting("index_regions",
                     merge.fingerprints(merge.split(index_md)))
                 setSetting("index_disk", md5(content))
+                -- the order the index was built with is now on disk
+                setSetting("index_dirty", false)
                 -- covers pulled in by the backfill above join the upload
                 for __, path in ipairs(new_covers) do
                     written[#written + 1] = path

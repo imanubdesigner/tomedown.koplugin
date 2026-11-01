@@ -290,6 +290,54 @@ local t4 = rich:find("  - gothic-fiction", 1, true)
 T.check(t1 and t2 and t3 and t4 and t1 < t2 and t2 < t3 and t3 < t4,
     "tags: ebook, highlights, then the book keywords")
 
+-- per book tags: chosen at the book menu, washed in with ebook,
+-- highlights and the keywords, and receipted in the internal ledger
+local bookTagged = render.buildBookMd({
+    title = "Blackwater",
+    keywords = { "horror" },
+    tags = { "Horror", "Psicologico", "ebook" },
+    tags_managed = true,
+    count = 1,
+    annotations = { { text = "X" } },
+})
+local b1 = bookTagged:find("  - ebook", 1, true)
+local b2 = bookTagged:find("  - highlights", 1, true)
+local b3 = bookTagged:find("  - horror", 1, true)
+local b4 = bookTagged:find("  - Psicologico", 1, true)
+T.check(b1 and b2 and b3 and b4 and b1 < b2 and b2 < b3 and b3 < b4,
+    "the book tags join the list after the keywords, without duplicates")
+T.check(select(2, (bookTagged:match("tags:\n(.-)\ntomedown_book_tags:")
+        or ""):gsub("%- ebook", "")) == 1,
+    "ebook is written once even when the book chose it too")
+T.check(T.contains(bookTagged,
+        "  - Psicologico\ntomedown_book_tags:\n  - Horror\n  - Psicologico\n  - ebook\n---"),
+    "the ledger lists only the tags the menu manages")
+T.check(not T.contains(bookTagged, "tomedown_book_tags:\n  - horror"),
+    "a keyword is not in the ledger")
+T.check(T.contains(render.buildBookMd({
+    title = "T", tags = { "Horror" }, tags_managed = true,
+    count = 0, annotations = {},
+}, { markers = false }), "tomedown_book_tags:\n  - Horror"),
+    "the ledger of chosen tags is written without markers too")
+
+local bookUnmanaged = render.buildBookMd({
+    title = "T", keywords = { "horror" }, count = 0, annotations = {},
+})
+T.check(not T.contains(bookUnmanaged, "tomedown_book_tags"),
+    "a book that never chose writes no ledger")
+
+-- cleared tags: the empty ledger is the signal the merge needs, and it
+-- exists only with markers (without them the whole file is rewritten)
+local cleared = render.buildBookMd({
+    title = "T", tags = {}, tags_managed = true, count = 0, annotations = {},
+})
+T.check(T.contains(cleared, "tomedown_book_tags: []"),
+    "cleared tags leave an empty ledger")
+T.check(not T.contains(render.buildBookMd({
+    title = "T", tags = {}, tags_managed = true, count = 0, annotations = {},
+}, { markers = false }), "tomedown_book_tags"),
+    "no ledger without markers: the file is replaced whole")
+
 local idxBook = render.buildBookMd({
     title = "T",
     series = "S",
@@ -434,7 +482,7 @@ T.check(T.contains(rows, "| Michael McDowell | 2 |"), "author and count in the r
 T.check(T.contains(rows, "| A \\| B | 0 |"), "pipes escaped, count zero")
 local order = rows:find("[[Michael McDowell - Blackwater\\|Blackwater]]", 1, true)
 local order2 = rows:find("[[Altro Autore - Altro\\|Altro]]", 1, true)
-T.check(order < order2, "the index keeps the order of the books it received")
+T.check(order2 < order, "author order is the default for My books")
 T.check(not T.contains(rows, "### "), "no group headings when every book is plain")
 local plain_rows = (rows:gsub(" hash=%w+", ""))
 T.check(T.contains(plain_rows,
@@ -529,6 +577,61 @@ local posC = sorted:find("[[C\\|C]]", 1, true)
 T.check(posA and posB and posC and posA < posB and posB < posC,
     "series books read by series, then by position")
 
+-- My books: the four index orders, descending for last read and count
+local orderBooks = {
+    { link = "A", title = "Zeta", author = "Anna", count = 1,
+        last_read = "2026-01-01", last_read_sort = 100 },
+    { link = "B", title = "Alfa", author = "Bruno", count = 2,
+        last_read = "2026-03-01", last_read_sort = 300 },
+    { link = "C", title = "Beta", author = "Carla", count = 5,
+        last_read = "2026-02-01", last_read_sort = 200 },
+}
+local function positions(md, links)
+    local out = {}
+    for __, link in ipairs(links) do
+        out[#out + 1] = md:find("[[" .. link .. "\\|", 1, true)
+    end
+    for i = 2, #out do
+        if not (out[i - 1] and out[i] and out[i - 1] < out[i]) then
+            return false
+        end
+    end
+    return #out > 0
+end
+T.check(positions(render.buildIndexMd(orderBooks, {}), { "A", "B", "C" }),
+    "default order: author")
+T.check(positions(render.buildIndexMd(orderBooks, { index_order = "title" }),
+        { "B", "C", "A" }), "title order")
+T.check(positions(render.buildIndexMd(orderBooks, { index_order = "last_read" }),
+        { "B", "C", "A" }), "last read, newest first")
+T.check(positions(render.buildIndexMd(orderBooks, { index_order = "highlights" }),
+        { "C", "B", "A" }), "highlights, most first")
+local tie = render.buildIndexMd({
+    { link = "T2", title = "Beta", author = "Anna", count = 1 },
+    { link = "T1", title = "Alfa", author = "Anna", count = 1 },
+}, {})
+T.check(positions(tie, { "T1", "T2" }),
+    "ties fall back to the title in author order")
+local unread = render.buildIndexMd({
+    { link = "Old", title = "Old", author = "A", count = 1,
+        last_read_sort = 100 },
+    { link = "Never", title = "Never", author = "B", count = 1 },
+}, { index_order = "last_read" })
+T.check(positions(unread, { "Old", "Never" }),
+    "a book never read goes last in last-read order")
+local withSeries = render.buildIndexMd({
+    { link = "P1", title = "Zeta", author = "Anna", count = 1 },
+    { link = "S2", title = "Second", series = "Saga", series_index = 2, count = 1 },
+    { link = "P2", title = "Alfa", author = "Bruno", count = 1 },
+    { link = "S1", title = "First", series = "Saga", series_index = 1, count = 1 },
+}, { index_order = "title" })
+local s1 = withSeries:find("[[S1\\|First]]", 1, true)
+local s2 = withSeries:find("[[S2\\|Second]]", 1, true)
+local p1 = withSeries:find("[[P2\\|Alfa]]", 1, true)
+local p2 = withSeries:find("[[P1\\|Zeta]]", 1, true)
+T.check(s1 and s2 and s1 < s2, "a title order leaves the series in its own order")
+T.check(p1 and p2 and p1 < p2, "and sorts My books by title")
+
 -- index v3: progress, last read and the special count
 local rich = render.buildIndexMd({
     {
@@ -620,6 +723,15 @@ T.check(render.sanitizeTag("fantasy \240\159\144\137") == "fantasy-\240\159\144\
     "emoji (multi-byte) survives")
 local clean_once = render.sanitizeTag("Occult & Supernatural")
 T.check(render.sanitizeTag(clean_once) == clean_once, "sanitizeTag is idempotent")
+
+-- parseTagList: the comma separated field of the book menu
+local parsed = render.parseTagList("Horror, psicologico, Horror, , Sci-Fi!")
+T.check(#parsed == 3 and parsed[1] == "Horror" and parsed[2] == "psicologico"
+        and parsed[3] == "Sci-Fi",
+    "tags split on commas, sanitized, deduplicated case-insensitively")
+T.check(#render.parseTagList("  ,  , ") == 0, "empty field: no tags")
+T.check(#render.parseTagList(nil) == 0, "nil field: no tags")
+T.check(render.parseTagList("A\nB")[2] == "B", "newlines split tags too")
 
 -- through the exporter: dirty keywords render sanitized, dead ones vanish
 local tagged = render.buildBookMd({

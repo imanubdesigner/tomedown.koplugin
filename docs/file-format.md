@@ -73,13 +73,41 @@ the same text comes out translated (see [Languages](developing.md#languages)).
 | `highlights`, `special` | how many highlights, and how many are starred |
 | `status` | `reading`, `abandoned` or `complete` |
 | `progress` | the reading position, for example `"96%"` |
-| `tags` | `ebook`, `highlights`, and the book's own keywords |
+| `tags` | `ebook`, `highlights`, the book's own keywords and the tags chosen from its menu |
+| `tomedown_book_tags` | the book's own tags that this plugin manages, only with *Keep my notes* (see below) |
 | `cover` | `"covers/Author - Title.jpg"`, only with *Include book covers* |
 
 Every keyword is normalised into a valid Obsidian tag: spaces become `-`, and
 only letters, numbers, `-`, `_`, `/` and non-ASCII characters (accents, emoji)
 survive, everything else (`;`, `'`, `=`, `[`, `]`…) is dropped. A field
 KOReader does not know (ISBN, for instance) is simply not there.
+
+Tags chosen from *Current book → Tags: %1* go through the same normalisation
+and join the frontmatter at the next export, without duplicates: `ebook`,
+`highlights`, the book's keywords and the book's own tags are one list.
+Every file with tags chosen from the menu also carries
+`tomedown_book_tags`, the ledger of the tags this plugin added for the book:
+
+```yaml
+tags:
+  - ebook
+  - highlights
+  - horror
+  - psychological
+tomedown_book_tags:
+  - horror
+  - psychological
+```
+
+The ledger is a property, not a tag, so Obsidian does not count it in its tag
+panel. It is what lets a merge tell the tags the book's menu owns from the
+ones you wrote by hand: remove `psychological` from the menu and the next
+export drops it from `tags` while `my-own-tag` stays; clear the field and the
+ledger goes with the tags it names. With *Keep my notes* off the file is
+rewritten whole, so a clear needs no ledger: the old tags leave with the old
+file. With it on, a clear writes `tomedown_book_tags: []`, the signal the
+merge uses to drop the old managed tags, and the empty ledger is not written
+back.
 
 ## Highlights
 
@@ -203,5 +231,11 @@ never drop a two-digit `96%` onto a line of its own, and a dash when it has
 none. The last read date has a column of its own, the same goes for a missing
 series, and a book with starred highlights shows them as `· ★42` next to the
 count.
+
+*My books* is ordered by author and then title by default. *Settings → Files →
+Index order* switches it to title, last read or highlights: last read and
+highlights run newest and most first, with author and title as tie-breakers,
+and a book never read goes last. Series books keep their own order by series
+and position whatever the setting says.
 
 ![Hovering a title in the index opens a preview of the book's note: the bold highlight recap heading, the chapter heading and the highlight](../assets/obsidian/00_index_preview.png)

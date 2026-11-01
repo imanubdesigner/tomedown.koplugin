@@ -102,6 +102,9 @@ msgstr "Cartella locale: %1"
 msgid "Create an index note (%1)"
 msgstr "Crea una nota indice (%1)"
 
+msgid "Index order: %1"
+msgstr "Ordine dell'indice: %1"
+
 msgid "Export this book"
 msgstr "Esporta questo libro"
 
@@ -110,6 +113,18 @@ msgstr "Esporta i libri nuovi e modificati"
 
 msgid "Keep my notes in this book"
 msgstr "Tieni le mie note in questo libro"
+
+msgid "Tags for this book"
+msgstr "Tag per questo libro"
+
+msgid "Tags: %1"
+msgstr "Tag: %1"
+
+msgid "none"
+msgstr "nessuno"
+
+msgid "separate tags with commas; applied at the next export"
+msgstr "separa i tag con virgole; vengono applicati alla prossima esportazione"
 
 msgid "Turn off Keep my notes for %1? Your notes will not be lost. A .bak copy is created."
 msgstr "Spegnere «Tieni le mie note» per %1? Le tue note non andranno perse. Verrà creato un file .bak."
@@ -181,6 +196,9 @@ msgstr "Libro"
 
 msgid "Author"
 msgstr "Autore"
+
+msgid "Title"
+msgstr "Titolo"
 
 msgid "Series"
 msgstr "Serie"

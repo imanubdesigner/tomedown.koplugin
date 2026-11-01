@@ -22,6 +22,7 @@ local ffiUtil = require("ffi/util")
 local T = ffiUtil.template
 local _ = require("tomedown_i18n")
 local Update = require("tomedown_update")
+local render = require("tomedown_render")
 local shared = require("tomedown_shared")
 
 local INDEX_FILENAME = shared.INDEX_FILENAME
@@ -31,6 +32,8 @@ local getNotesTitle = shared.getNotesTitle
 local setBookNotesTitle = shared.setBookNotesTitle
 local getBookPreserve = shared.getBookPreserve
 local setBookPreserve = shared.setBookPreserve
+local getBookTags = shared.getBookTags
+local setBookTags = shared.setBookTags
 local getIndexPreserve = shared.getIndexPreserve
 local readIfExists = shared.readIfExists
 local isZoned = shared.isZoned
@@ -203,6 +206,79 @@ function M:editNotesTitle(touchmenu, file)
     UIManager:show(dialog)
 end
 
+-- Tags for the open book, chosen where the book is read. The list is
+-- stored per book file and reaches the frontmatter at the next export,
+-- together with ebook, highlights and the book's own keywords. A book
+-- that never chose keeps no entry at all; an empty list is stored only
+-- when the reader clears a list that existed, because that is the
+-- signal the merge needs to drop the tags this menu used to manage
+-- while leaving the tags written by hand alone.
+function M:editBookTags(touchmenu, file)
+    if not file then
+        return
+    end
+    local dialog
+    local previous = getBookTags(file) or {}
+    dialog = InputDialog:new{
+        title = _("Tags for this book"),
+        input = table.concat(previous, ", "),
+        hint = _("separate tags with commas; applied at the next export"),
+        buttons = {
+            {
+                {
+                    text = _("Cancel"),
+                    id = "close",
+                    callback = function()
+                        UIManager:close(dialog)
+                    end,
+                },
+            },
+            {
+                {
+                    text = _("Save"),
+                    callback = function()
+                        local tags = render.parseTagList(
+                            dialog:getInputText() or "")
+                        local stored = getBookTags(file)
+                        -- an untouched empty field on a book that never
+                        -- chose says nothing: it must not store an empty
+                        -- choice (which would start managing its tags)
+                        if stored == nil and #tags == 0 then
+                            UIManager:close(dialog)
+                            if touchmenu and touchmenu.updateItems then
+                                touchmenu:updateItems()
+                            end
+                            return
+                        end
+                        local unchanged = stored ~= nil
+                            and #stored == #tags
+                        if unchanged then
+                            for i = 1, #tags do
+                                if tostring(stored[i]):lower()
+                                        ~= tags[i]:lower() then
+                                    unchanged = false
+                                    break
+                                end
+                            end
+                        end
+                        if not unchanged then
+                            setBookTags(file, tags)
+                            -- this book's file carries the old tags: the
+                            -- next export rewrites it, and only it
+                            self:invalidateExportHash(file)
+                        end
+                        UIManager:close(dialog)
+                        if touchmenu and touchmenu.updateItems then
+                            touchmenu:updateItems()
+                        end
+                    end,
+                },
+            },
+        },
+    }
+    UIManager:show(dialog)
+end
+
 -- menu
 
 function M:genPickerMenu()
@@ -337,6 +413,17 @@ function M:invalidateExportHash(file)
     end
 end
 
+-- The order of the "My books" table in the index. Changing it rewrites
+-- no book: index_dirty tells the next export to rebuild the index alone,
+-- even when every book would otherwise be skipped.
+local function setIndexOrder(order)
+    if getSetting("index_order", "author") == order then
+        return
+    end
+    setSetting("index_order", order)
+    setSetting("index_dirty", true)
+end
+
 function M:genSettingsMenu()
     -- Files: what is written and where. Static since 1.1: none of its
     -- rows depends on a switch, so the group is the same table every
@@ -359,6 +446,65 @@ function M:genSettingsMenu()
             callback = function()
                 setSetting("with_index", not getSetting("with_index", true))
             end,
+        },
+        {
+            text_func = function()
+                local labels = {
+                    author = _("Author"),
+                    title = _("Title"),
+                    last_read = _("Last read"),
+                    highlights = _("Highlights"),
+                }
+                local current = getSetting("index_order", "author")
+                return T(_("Index order: %1"),
+                    labels[current] or labels.author)
+            end,
+            sub_item_table = {
+                {
+                    text = _("Author"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return getSetting("index_order", "author") == "author"
+                    end,
+                    callback = function()
+                        setIndexOrder("author")
+                    end,
+                },
+                {
+                    text = _("Title"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return getSetting("index_order", "author") == "title"
+                    end,
+                    callback = function()
+                        setIndexOrder("title")
+                    end,
+                },
+                {
+                    text = _("Last read"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return getSetting("index_order", "author") == "last_read"
+                    end,
+                    callback = function()
+                        setIndexOrder("last_read")
+                    end,
+                },
+                {
+                    text = _("Highlights"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return getSetting("index_order", "author") == "highlights"
+                    end,
+                    callback = function()
+                        setIndexOrder("highlights")
+                    end,
+                },
+            },
         },
         {
             text = _("Include page bookmarks"),
@@ -1286,6 +1432,16 @@ function M:genCurrentBookMenu()
             -- the heading row below exists only while this book keeps a
             -- zone to name
             self:refreshCurrentBookMenu(touchmenu)
+        end,
+    }
+    rows[#rows + 1] = {
+        text_func = function()
+            local tags = getBookTags(file)
+            return T(_("Tags: %1"),
+                tags and #tags > 0 and table.concat(tags, ", ") or _("none"))
+        end,
+        callback = function(touchmenu)
+            self:editBookTags(touchmenu, file)
         end,
     }
     if not getSetting("preserve", false) and getBookPreserve(file) then

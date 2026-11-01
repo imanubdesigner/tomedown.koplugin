@@ -34,6 +34,13 @@ T.check(i18n("Check for updates (v%1)") == "Controlla aggiornamenti (v%1)",
     "it: check for updates row")
 T.check(i18n("Update available!") == "Aggiornamento disponibile!", "it: update dialog title")
 T.check(i18n("stringa non presente") == "stringa non presente", "it: falls back to msgid")
+T.check(i18n("Tags for this book") == "Tag per questo libro",
+    "it: book tags dialog title")
+T.check(i18n("Tags: %1") == "Tag: %1", "it: book tags row")
+T.check(i18n("none") == "nessuno", "it: empty book tags")
+T.check(i18n("Index order: %1") == "Ordine dell'indice: %1",
+    "it: index order row")
+T.check(i18n("Title") == "Titolo", "it: title order")
 
 -- 4. explicit getter
 T.check(i18n.gettext("Book index") == "Indice dei libri", "gettext() same as __call")
