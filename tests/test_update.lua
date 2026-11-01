@@ -94,7 +94,9 @@ T.check(Update.getAvailableVersion() == nil, "no update known yet")
 -- PATCH < MINOR < MAJOR, all strictly above INSTALLED
 local function versionParts(v)
     local p = {}
-    for x in tostring(v):gsub("^v", ""):gmatch("([^.]+)") do
+    -- drop the tag prefix and a prerelease suffix ("1.1.3-beta.1" -> "1.1.3")
+    local base = tostring(v):gsub("^v", ""):match("^([^%-]+)") or ""
+    for x in base:gmatch("([^.]+)") do
         p[#p + 1] = tonumber(x) or 0
     end
     return p
