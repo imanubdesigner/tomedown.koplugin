@@ -3,12 +3,12 @@ Tests for tomedown_update.lua and the update entries in Settings:
 version display, manual check (up to date / fixes shown / failure /
 offline gate), version jumps (0.2.0 -> 1.0), background check
 (throttle, Wi-Fi gate, notification) and the install flow
-("Update and restart": download, unpack over the plugin folder,
-restart prompt, fallbacks) - all against a fake GitHub response, so
-nothing here touches the network. The last section covers the second
-host (the Codeberg mirror): a GitHub that errors or answers nothing
-must still leave the check with a list, and the page we open follows
-the host that actually answered.
+("Update and restart": download, unpack next to the plugin, check the
+new tree, swap it in, restart prompt, fallbacks) - all against a fake
+GitHub response, so nothing here touches the network. The last section
+covers the second host (the Codeberg mirror): a GitHub that errors or
+answers nothing must still leave the check with a list, and the page we
+open follows the host that actually answered.
 --]]
 local HERE = arg[0]:match("^(.*)/") or "."
 package.path = HERE .. "/?.lua;" .. package.path
@@ -412,8 +412,8 @@ local Archiver = require("ffi/archiver")
 local lfs = require("libs/libkoreader-lfs")
 local cache_dir = require("datastorage"):getSettingsDir() .. "/tomedown_cache"
 
--- 10a. happy path: download the zip, unpack it over the plugin folder,
--- ask for the restart, restart on confirm
+-- 10a. happy path: download the zip, unpack it next to the plugin,
+-- check the tree, swap it in, ask for the restart, restart on confirm
 resetWidgets()
 Update._resetState()
 Archiver.reset()

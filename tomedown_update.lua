@@ -10,9 +10,10 @@ background check enabled, a new release is noticed on
 its own (KOReader start and menu open, at most once an hour). When one
 is found the release notes of every newer release are shown together
 (the fixes, newest first) with an "Update and restart" button that
-downloads the release zip, unpacks it over the plugin folder and asks
-to restart KOReader - any failure falls back to opening the releases
-page so the zip can be taken by hand.
+downloads the release zip, unpacks it next to the plugin folder, checks
+the new tree and only then swaps it in, asking to restart KOReader - any
+failure leaves the installed copy alone and falls back to opening the
+releases page so the zip can be taken by hand.
 
 Everything goes through the releases API of this repository: GitHub
 first, the Codeberg mirror second - both answer with the same release
@@ -1137,9 +1138,9 @@ local function installBody(zip_url, new_version)
 end
 
 --- Install the release zip: gate, download into a cache dir, unpack it
--- over this plugin's own folder, then ask to restart KOReader. Any
--- failure falls back to the releases page (manual zip) or an error
--- message - the old version keeps running either way.
+-- into a folder next to this plugin, check that tree, swap it in and ask
+-- to restart KOReader. Any failure falls back to the releases page
+-- (manual zip) or an error message - the old version keeps running.
 function Update.install(zip_url, new_version)
     if Update.gateOnConnection(function()
         Update.install(zip_url, new_version)
