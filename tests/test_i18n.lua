@@ -34,6 +34,16 @@ T.check(i18n("Check for updates (v%1)") == "Controlla aggiornamenti (v%1)",
     "it: check for updates row")
 T.check(i18n("Update available!") == "Aggiornamento disponibile!", "it: update dialog title")
 T.check(i18n("stringa non presente") == "stringa non presente", "it: falls back to msgid")
+T.check(i18n("Tags for this book") == "Tag per questo libro",
+    "it: book tags dialog title")
+T.check(i18n("Tags: %1") == "Tag: %1", "it: book tags row")
+T.check(i18n("none") == "nessuno", "it: empty book tags")
+T.check(i18n("Index order: %1") == "Ordine dell'indice: %1",
+    "it: index order row")
+T.check(i18n("Title") == "Titolo", "it: title order")
+T.check(i18n("Tags made only of numbers are ignored: %1")
+        == "I tag composti solo da numeri vengono ignorati: %1",
+    "it: numeric-only tags notice")
 
 -- 4. explicit getter
 T.check(i18n.gettext("Book index") == "Indice dei libri", "gettext() same as __call")
@@ -44,13 +54,52 @@ T.check(i18n("Book index") == "Indice dei libri", "it_IT -> it.po")
 setLang("it-IT")
 T.check(i18n("Book index") == "Indice dei libri", "it-IT -> it.po")
 
--- 6. language without a translation file: msgid
-setLang("fr")
-T.check(i18n("Book index") == "Book index", "fr without po -> msgid")
+-- 6. the four new catalogs
 setLang("de")
-T.check(i18n("No chapter") == "No chapter", "de without po -> msgid")
+T.check(i18n("Book index") == "Buchindex", "de: Book index")
+T.check(i18n("No chapter") == "Kein Kapitel", "de: No chapter")
+T.check(i18n("%1 files exported locally") == "%1 Dateien lokal exportiert",
+    "de: notification with placeholder")
+T.check(i18n("Check for updates (v%1)") == "Nach Updates suchen (v%1)",
+    "de: check for updates row")
+T.check(i18n("Tags") == "Tags", "de: index Tags cell")
 
--- 7. the index table is translated cell by cell now (v1.0.0: adaptive
+setLang("fr")
+T.check(i18n("Book index") == "Index des livres", "fr: Book index")
+T.check(i18n("No chapter") == "Sans chapitre", "fr: No chapter")
+T.check(i18n("%1 files exported locally") == "%1 fichiers exportés localement",
+    "fr: notification with placeholder")
+T.check(i18n("Tags") == "Tags", "fr: index Tags cell")
+
+setLang("es")
+T.check(i18n("Book index") == "Índice de libros", "es: Book index")
+T.check(i18n("No chapter") == "Sin capítulo", "es: No chapter")
+T.check(i18n("%1 files exported locally") == "%1 archivos exportados localmente",
+    "es: notification with placeholder")
+T.check(i18n("Tags") == "Etiquetas", "es: index Tags cell")
+
+setLang("pt_BR")
+T.check(i18n("Book index") == "Índice de livros", "pt_BR: Book index")
+T.check(i18n("No chapter") == "Sem capítulo", "pt_BR: No chapter")
+T.check(i18n("%1 files exported locally") == "%1 arquivos exportados localmente",
+    "pt_BR: notification with placeholder")
+T.check(i18n("Tags") == "Tags", "pt_BR: index Tags cell")
+
+-- 7. regional variants fall back to the two-letter language
+setLang("de_AT")
+T.check(i18n("Book index") == "Buchindex", "de_AT -> de.po")
+setLang("fr_CA")
+T.check(i18n("No chapter") == "Sans chapitre", "fr_CA -> fr.po")
+setLang("es_MX")
+T.check(i18n("Book index") == "Índice de libros", "es_MX -> es.po")
+setLang("pt_BR")
+T.check(i18n("No chapter") == "Sem capítulo", "pt_BR -> pt_BR.po")
+
+-- 8. a language without a translation file: msgid
+setLang("nl")
+T.check(i18n("Book index") == "Book index", "nl without po -> msgid")
+
+-- 9. the index table is translated cell by cell now (v1.0.0: adaptive
 -- columns, status word merged with the reading bar)
 setLang("it")
 T.check(i18n("Book") == "Libro", "it: cell Book")
@@ -62,14 +111,15 @@ T.check(i18n("%1 special") == "%1 special", "it: special count")
 T.check(i18n("Series books") == "Libri in serie", "it: heading series")
 T.check(i18n("My books") == "I miei libri", "it: heading plain")
 T.check(i18n("Cover") == "Copertina", "it: cell Cover")
+T.check(i18n("Tags") == "Tag", "it: cell Tags")
 
--- 8. the language changes even after loading (reload)
+-- 10. the language changes even after loading (reload)
 setLang(nil)
 T.check(i18n("Book index") == "Book index", "back to no language")
 setLang("it")
 T.check(i18n("Book index") == "Indice dei libri", "back in Italian")
 
--- 9. language read from G_reader_settings when GetText does not know it
+-- 11. language read from G_reader_settings when GetText does not know it
 setLang(nil)
 local saved_setting = nil
 G_reader_settings = G_reader_settings or {
@@ -84,7 +134,7 @@ saved_setting = "it"
 T.check(i18n("Book index") == "Indice dei libri", "language from G_reader_settings")
 saved_setting = nil
 
--- 10. render uses the translations at runtime
+-- 12. render uses the translations at runtime
 setLang("it")
 local render = require("tomedown_render")
 local md = render.buildBookMd({
@@ -116,10 +166,31 @@ T.check(T.contains(index,
 setLang("en")
 T.check(T.contains(render.buildIndexMd({}, {}), 'title: "Book index"'), "back to English")
 
--- 11. the same render instance sees the language change (no caching)
+-- 13. the same render instance sees the language change (no caching)
 setLang("it")
 T.check(T.contains(render.buildBookMd({
     title = "L", count = 1, annotations = { { text = "X" } },
 }), "evidenziati"), "no catalog caching in render")
+
+-- 14. the new catalogs reach the render too
+setLang("de")
+T.check(T.contains(render.buildBookMd({
+    title = "B", count = 1, annotations = { { text = "X" } },
+}), "# **1 Markierung**"), "de: render translates the count")
+setLang("fr")
+T.check(T.contains(render.buildBookMd({
+    title = "L",
+    count = 2,
+    annotations = { { text = "X", chapter = "Chapitre I" }, { text = "Y" } },
+}, { no_chapter_label = i18n("No chapter") }), "\n# Sans chapitre"),
+    "fr: chapter label translated")
+setLang("es")
+T.check(T.contains(render.buildBookMd({
+    title = "L", count = 1, annotations = { { text = "X" } },
+}), "# **1 subrayado**"), "es: render translates the count")
+setLang("pt_BR")
+T.check(T.contains(render.buildBookMd({
+    title = "L", count = 2, annotations = { { text = "X" }, { text = "Y" } },
+}), "# **2 destaques**"), "pt_BR: render translates the count")
 
 T.finish("test_i18n")

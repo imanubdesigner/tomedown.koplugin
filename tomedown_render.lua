@@ -110,10 +110,20 @@ local function yamlQuote(s)
     return '"' .. s .. '"'
 end
 
+-- Values YAML would read as something other than a string. Quoting
+-- them keeps the tags and the ledger a list of strings: an unquoted
+-- `1500` or `true` makes Obsidian show the whole property as an array.
+local YAML_RESERVED = {
+    ["true"] = true, ["false"] = true, ["yes"] = true, ["no"] = true,
+    ["on"] = true, ["off"] = true, ["y"] = true, ["n"] = true,
+    ["null"] = true, ["nan"] = true, ["inf"] = true,
+}
+
 -- list item: plain when YAML-safe, quoted otherwise
 local function yamlListItem(s)
     s = tostring(s)
-    if s:match("^[%w][%w%s%-_%.']*$") then
+    if s:match("^[%a_][%w%s%-_%.']*$")
+            and not YAML_RESERVED[s:lower()] then
         return s
     end
     return yamlQuote(s)
@@ -126,7 +136,9 @@ end
 -- list, so anything else (";", "'", "=", "[", "\\", ...) never reaches
 -- the frontmatter. All non-ASCII bytes (accents, emoji) survive
 -- untouched, runs of "-" are collapsed and the edge ones are trimmed.
--- The result is idempotent. The caller drops the empty ones.
+-- Obsidian also needs at least one non-numerical character, so a tag
+-- made only of digits is not a tag and comes back empty. The result is
+-- idempotent. The caller drops the empty ones.
 function render.sanitizeTag(s)
     if s == nil then
         return ""
@@ -143,7 +155,42 @@ function render.sanitizeTag(s)
     s = s:gsub("%-+", "-")
     s = s:gsub("^%-+", "")
     s = s:gsub("%-+$", "")
+    if s:match("^%d+$") then
+        return ""
+    end
     return s
+end
+
+--- Split a comma separated list into valid Obsidian tags. Every part
+-- goes through sanitizeTag, empty parts are dropped and duplicates are
+-- removed case-insensitively, keeping the first spelling the reader
+-- used. The result is what the book's own menu stores and what both the
+-- tags list and the managed-tags ledger write. The second return value
+-- names the parts that were made only of digits: they are not tags for
+-- Obsidian, so the menu can say they were ignored.
+function render.parseTagList(text)
+    local out, seen, rejected, seen_rejected = {}, {}, {}, {}
+    if type(text) ~= "string" then
+        return out, rejected
+    end
+    for part in text:gmatch("[^,\n]+") do
+        local tag = render.sanitizeTag(part)
+        if tag ~= "" then
+            local key = tag:lower()
+            if not seen[key] then
+                seen[key] = true
+                out[#out + 1] = tag
+            end
+        else
+            local raw = part:gsub("^%s+", ""):gsub("%s+$", "")
+            local key = raw:lower()
+            if raw:match("%d") and not seen_rejected[key] then
+                seen_rejected[key] = true
+                rejected[#rejected + 1] = raw
+            end
+        end
+    end
+    return out, rejected
 end
 
 -- "2026-09-26 10:11:12" -> "26/09/2026"
@@ -300,6 +347,8 @@ book = {
     series, series_index, language, pages,     -- optional frontmatter
     status, progress,                          -- optional frontmatter
     keywords = { ... },                        -- optional, appended to tags
+    tags = { ... },                            -- optional, chosen per book
+    tags_managed = true,                       -- write the managed-tags ledger
     annotations = {
         { text, note, chapter, page, date, special },
         ...
@@ -372,12 +421,54 @@ function render.buildBookMd(book, opts)
         add("progress: " .. yamlQuote(book.progress))
     end
     add("tags:")
-    add("  - ebook")
-    add("  - " .. _("highlights"))
-    for __, kw in ipairs(book.keywords or {}) do
-        local tag = render.sanitizeTag(kw)
+    local seen_tags = {}
+    local function addTag(tag)
+        tag = render.sanitizeTag(tag)
         if tag ~= "" then
-            add("  - " .. yamlListItem(tag))
+            local key = tag:lower()
+            if not seen_tags[key] then
+                seen_tags[key] = true
+                add("  - " .. yamlListItem(tag))
+            end
+        end
+    end
+    addTag("ebook")
+    addTag(_("highlights"))
+    for __, kw in ipairs(book.keywords or {}) do
+        addTag(kw)
+    end
+    -- Tags chosen from the book's own menu. `tomedown_book_tags` below
+    -- is the ledger of what this plugin owns: the next merge drops an
+    -- old managed tag when it is gone from here, while tags the reader
+    -- wrote by hand stay. The ledger of chosen tags is written in every
+    -- file, so turning Keep my notes on later still knows what belongs
+    -- to the menu; the empty ledger is the signal for a clear and needs
+    -- markers, because without them the whole file is replaced and
+    -- there is nothing to remove.
+    local managed, seen_managed = {}, {}
+    if book.tags_managed then
+        for __, tag in ipairs(book.tags or {}) do
+            tag = render.sanitizeTag(tag)
+            if tag ~= "" then
+                local key = tag:lower()
+                if not seen_managed[key] then
+                    seen_managed[key] = true
+                    managed[#managed + 1] = tag
+                end
+            end
+        end
+    end
+    for __, tag in ipairs(managed) do
+        addTag(tag)
+    end
+    if book.tags_managed and (#managed > 0 or markers) then
+        if #managed > 0 then
+            add("tomedown_book_tags:")
+            for __, tag in ipairs(managed) do
+                add("  - " .. yamlListItem(tag))
+            end
+        else
+            add("tomedown_book_tags: []")
         end
     end
     add("---")
@@ -674,6 +765,53 @@ function render.buildIndexMd(books, opts)
             < tostring(b.title or ""):lower()
     end)
 
+    -- The books outside a series are the "My books" table, and its
+    -- order is the reader's: the four choices in Settings. Series books
+    -- keep their own order above and are never touched by this. Ties
+    -- fall back to author and title, so two exports always agree.
+    local order = opts.index_order
+    if order ~= "title" and order ~= "last_read" and order ~= "highlights" then
+        order = "author"
+    end
+    local function text(b, key)
+        return tostring(b[key] or ""):lower()
+    end
+    local function byAuthor(a, b)
+        local aa, ba = text(a, "author"), text(b, "author")
+        if aa ~= ba then
+            return aa < ba
+        end
+        local at, bt = text(a, "title"), text(b, "title")
+        if at ~= bt then
+            return at < bt
+        end
+        return tostring(a.link or "") < tostring(b.link or "")
+    end
+    table.sort(plain_books, function(a, b)
+        if order == "title" then
+            local at, bt = text(a, "title"), text(b, "title")
+            if at ~= bt then
+                return at < bt
+            end
+            return byAuthor(a, b)
+        elseif order == "last_read" then
+            local aa = tonumber(a.last_read_sort) or 0
+            local bb = tonumber(b.last_read_sort) or 0
+            if aa ~= bb then
+                return aa > bb
+            end
+            return byAuthor(a, b)
+        elseif order == "highlights" then
+            local aa = tonumber(a.count) or 0
+            local bb = tonumber(b.count) or 0
+            if aa ~= bb then
+                return aa > bb
+            end
+            return byAuthor(a, b)
+        end
+        return byAuthor(a, b)
+    end)
+
     local function filled(v)
         return v ~= nil and tostring(v) ~= ""
     end
@@ -685,6 +823,26 @@ function render.buildIndexMd(books, opts)
         end
         return false
     end
+    -- the index shows the tags chosen from the book menu, as the
+    -- clickable #tag Obsidian understands; the entries are sanitized
+    -- again because an older file or a test may hand in raw values
+    local function tagsText(tags)
+        if type(tags) ~= "table" then
+            return ""
+        end
+        local seen, out = {}, {}
+        for __, tag in ipairs(tags) do
+            tag = render.sanitizeTag(tag)
+            if tag ~= "" then
+                local key = tag:lower()
+                if not seen[key] then
+                    seen[key] = true
+                    out[#out + 1] = "#" .. tag
+                end
+            end
+        end
+        return table.concat(out, " ")
+    end
 
     local function addTable(list, with_series)
         local has_author = any_filled(list, "author")
@@ -694,6 +852,13 @@ function render.buildIndexMd(books, opts)
         local has_status = any_filled(list, "status")
             or any_filled(list, "progress")
         local has_last_read = any_filled(list, "last_read")
+        local has_tags = false
+        for __, b in ipairs(list) do
+            if tagsText(b.tags) ~= "" then
+                has_tags = true
+                break
+            end
+        end
         local header, align = {}, {}
         local function column(title, separator)
             header[#header + 1] = title
@@ -708,6 +873,9 @@ function render.buildIndexMd(books, opts)
         end
         if with_series then
             column(_("Series"))
+        end
+        if has_tags then
+            column(_("Tags"))
         end
         if has_status then
             column(_("Status"))
@@ -772,6 +940,10 @@ function render.buildIndexMd(books, opts)
             end
             if with_series then
                 cells[#cells + 1] = series
+            end
+            if has_tags then
+                local tag_text = tagsText(b.tags)
+                cells[#cells + 1] = tag_text ~= "" and tag_text or "—"
             end
             if has_status then
                 cells[#cells + 1] = status_cell

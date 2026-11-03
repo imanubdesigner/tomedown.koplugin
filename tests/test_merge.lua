@@ -392,6 +392,139 @@ local oddFm = merge.mergeFrontmatter('broken\nline\nwithout key', renderedFm)
 T.check(oddFm == renderedFm .. "\nbroken\nline\nwithout key",
     "an unplaceable line is kept verbatim instead of dropping the rest")
 
+-- per book tags: the internal ledger tells the merge which tags this
+-- plugin owns; the reader's own tags are never in it
+local managedDisk = table.concat({
+    'tomedown: "1.0"',
+    'title: "Blackwater"',
+    "tags:",
+    "  - ebook",
+    "  - highlights",
+    "  - my-tag",
+    "  - Horror",
+    "  - Psicologico",
+    "tomedown_book_tags:",
+    "  - Horror",
+    "  - Psicologico",
+}, "\n")
+local managedRendered = table.concat({
+    'tomedown: "1.0"',
+    'title: "Blackwater"',
+    "tags:",
+    "  - ebook",
+    "  - highlights",
+    "  - Horror",
+    "tomedown_book_tags:",
+    "  - Horror",
+}, "\n")
+local tfm = merge.mergeFrontmatter(managedDisk, managedRendered)
+T.check(T.contains(tfm, "  - Horror"), "a managed tag still chosen stays")
+T.check(not T.contains(tfm, "Psicologico"),
+    "a managed tag removed from the menu is dropped")
+T.check(T.contains(tfm, "  - my-tag"), "a hand-written tag is never dropped")
+T.check(T.contains(tfm, "tomedown_book_tags:\n  - Horror"),
+    "the ledger is rewritten with the surviving tag")
+
+local clearedRendered = table.concat({
+    'tomedown: "1.0"',
+    'title: "Blackwater"',
+    "tags:",
+    "  - ebook",
+    "  - highlights",
+    "tomedown_book_tags: []",
+}, "\n")
+local cfm = merge.mergeFrontmatter(managedDisk, clearedRendered)
+T.check(not T.contains(cfm, "Horror") and not T.contains(cfm, "Psicologico"),
+    "clearing drops every managed tag")
+T.check(T.contains(cfm, "  - my-tag"),
+    "clearing keeps the hand-written tag")
+T.check(not T.contains(cfm, "tomedown_book_tags"),
+    "the empty ledger is not written back")
+
+-- a render with no ledger at all (the book never chose, or the settings
+-- were reset) manages nothing: the file's tags and ledger stay as they are
+local unmanagedRendered = table.concat({
+    'tomedown: "1.0"',
+    'title: "Blackwater"',
+    "tags:",
+    "  - ebook",
+    "  - highlights",
+    "  - horror",
+}, "\n")
+local ufm = merge.mergeFrontmatter(managedDisk, unmanagedRendered)
+T.check(T.contains(ufm, "  - Horror") and T.contains(ufm, "  - Psicologico"),
+    "no ledger: the old managed tags stay")
+T.check(T.contains(ufm, "  - my-tag"), "no ledger: the hand-written tag stays")
+T.check(T.contains(ufm, "tomedown_book_tags:"),
+    "no ledger: the file's ledger is preserved")
+
+-- quoting does not hide a managed tag
+local quotedDisk = managedDisk:gsub("  %- Horror", '  - "Horror"')
+local qfm = merge.mergeFrontmatter(quotedDisk, clearedRendered)
+T.check(not qfm:lower():find("horror", 1, true),
+    "a quoted managed tag is recognised and dropped")
+
+-- a tag made only of digits is not a tag for Obsidian: an old export
+-- may still carry it, and the union cleans it out while the rest stays
+local numericDisk = table.concat({
+    'tomedown: "1.0"',
+    'title: "Blackwater"',
+    "tags:",
+    "  - ebook",
+    "  - 1500",
+    "  - Horror",
+    "  - my-tag",
+    "tomedown_book_tags:",
+    "  - 1500",
+    "  - Horror",
+}, "\n")
+local numericRendered = table.concat({
+    'tomedown: "1.0"',
+    'title: "Blackwater"',
+    "tags:",
+    "  - ebook",
+    "  - Horror",
+    "tomedown_book_tags:",
+    "  - Horror",
+}, "\n")
+local nfm = merge.mergeFrontmatter(numericDisk, numericRendered)
+T.check(not T.contains(nfm, "1500"),
+    "a numeric tag is dropped from the merged frontmatter")
+T.check(T.contains(nfm, "  - Horror"), "the valid managed tag stays")
+T.check(T.contains(nfm, "  - my-tag"), "the hand-written tag stays")
+T.check(T.contains(nfm, "tomedown_book_tags:\n  - Horror"),
+    "the ledger is rewritten without the numeric tag")
+
+-- the .bak round trip: a restored copy still loses the tags the menu
+-- removed, because the render names them in its empty ledger again
+local taggedBook = {
+    title = "Blackwater", author = "Michael McDowell",
+    exported = "2026-09-26", count = 1, annotations = annB,
+    tags = { "Horror", "Psicologico" }, tags_managed = true,
+}
+local clearedBook = {
+    title = "Blackwater", author = "Michael McDowell",
+    exported = "2026-09-26", count = 1, annotations = annB,
+    tags = {}, tags_managed = true,
+}
+local managedRender = render.buildBookMd(taggedBook)
+local clearedRender = render.buildBookMd(clearedBook)
+local taggedOut = merge.apply(fresh, managedRender, fps, { mode = "preserve" })
+T.check(T.contains(taggedOut, "  - Horror")
+        and T.contains(taggedOut, "tomedown_book_tags:"),
+    "the tagged export lands in the file")
+local managedFps = merge.fingerprints(merge.split(managedRender))
+local clearedOut = merge.apply(taggedOut, clearedRender, managedFps,
+    { mode = "preserve" })
+T.check(not T.contains(clearedOut, "  - Horror")
+        and not T.contains(clearedOut, "tomedown_book_tags"),
+    "the cleared export removes the managed tags")
+local restoredOut = merge.apply(taggedOut, clearedRender, managedFps,
+    { mode = "preserve" })
+T.check(not T.contains(restoredOut, "  - Horror"),
+    "a restored .bak does not bring the removed tag back")
+
+
 -- one odd line in the file's front matter: kept, not dropped
 local oddDisk = rendered:gsub("highlights: 1",
     "highlights: 1\nrating : 5", 1)

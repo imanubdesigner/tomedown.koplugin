@@ -7,7 +7,7 @@
 ![The five Tomedown settings groups](../assets/menu/settings/settings_menu.png)
 
 Everything here is stored in KOReader's settings and applies to every book.
-The per-book choice and heading live in the book's own menu: see
+The per-book choice, heading and tags live in the book's own menu: see
 [Keep my notes](keep-my-notes.md).
 
 ## Files
@@ -18,6 +18,7 @@ The per-book choice and heading live in the book's own menu: see
 |---|---|
 | *Local folder* | defaults to `clipboard/tomedown` inside KOReader's data folder; tap it to browse with KOReader's folder picker (long-press a folder to choose it) |
 | *Create an index note (00 - Index.md)* | builds the Obsidian tables: a stats line on top, then series books and the rest, each with the columns it actually has (links, author, series, highlights with stars, status over the progress bar, last read) |
+| *Index order: %1* | the order of the *My books* table: **Author** (the default), **Title**, **Last read** or **Highlights**. Last read and highlights run newest and most first, with author and title as tie-breakers; series books keep their own order by series and position. Changing it rebuilds only the index at the next export, without rewriting a single book |
 | *Include page bookmarks* | off by default: adds a `# Page bookmarks` section (bookmarked page + note) after the highlights |
 | *Include book covers* | off by default: exports every cover into `covers/` and embeds it in the book file and in the index; the cover leaves the device after a successful upload, the vault copy is the master one. Requires **Obsidian 1.8.1 or newer** |
 | *Export when I close a book* | off by default: exports the book when you close it, and again (silently, no network) before the device suspends |
@@ -25,6 +26,13 @@ The per-book choice and heading live in the book's own menu: see
 Ticking or unticking *Include book covers* rewrites every already exported
 file on the next export: the stored hash is invalidated, so *Export new and
 changed books* re-sends everything once.
+
+*Index order* is different: the setting marks the index as stale, and the
+next export rebuilds `00 - Index.md` alone even when every book is unchanged.
+With the index switched off the choice is remembered for the next time it is
+created.
+
+![The index order menu: Author, Title, Last read or Highlights](../assets/menu/settings/index_order_menu.png)
 
 Covers are always exported in full colour, whatever the device: the
 extraction forces colour rendering even on greyscale e-ink screens.
