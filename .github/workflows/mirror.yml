@@ -32,7 +32,7 @@ permissions:
 
 env:
   # the one place that names the Codeberg repository
-  CB_REPO: imanubdesigner/tomedown.koplugin
+  CB_REPO: ${{ github.repository }}
 
 jobs:
   mirror:
