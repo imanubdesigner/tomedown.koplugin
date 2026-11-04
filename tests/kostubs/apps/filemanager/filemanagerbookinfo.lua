@@ -10,6 +10,16 @@ function BookInfo.extendProps(props, file)
     for k, v in pairs(props or {}) do
         out[k] = v
     end
+    -- the real BookInfo overlays custom_props over the original ones;
+    -- the docsettings stub keeps them in memory for the book-info tests
+    local ok, DocSettings = pcall(require, "docsettings")
+    local custom = ok and file and DocSettings.getCustomProps
+        and DocSettings.getCustomProps(file) or nil
+    if custom then
+        for k, v in pairs(custom) do
+            out[k] = v
+        end
+    end
     local fallback = file and file:match("([^/]+)%..*$") or file
     out.display_title = out.title or fallback
     if not out.authors and out.author then

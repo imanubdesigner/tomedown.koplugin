@@ -107,6 +107,136 @@ local function setBookTags(file, tags)
     setSetting("book_tags", all)
 end
 
+local function clearBookTags(file)
+    if not file then
+        return
+    end
+    local all = getSetting("book_tags", {})
+    all[file] = nil
+    setSetting("book_tags", all)
+end
+
+-- Imported book info: the explicit, per-book switch that lets Tomedown
+-- read rating, review, publication date, reading dates, collections and
+-- the shared keywords into the note. A book stays exactly as 1.2.0 left
+-- it until it is imported; once imported, the flag also gates ownership
+-- of the new frontmatter keys and the automatic updates. Keyed like
+-- "exports" (the book file path).
+local function getBookImported(file)
+    if not file then
+        return false
+    end
+    return getSetting("bookinfo_imported", {})[file] == true
+end
+
+local function setBookImported(file, on)
+    if not file then
+        return
+    end
+    local all = getSetting("bookinfo_imported", {})
+    if on then
+        all[file] = true
+    else
+        all[file] = nil
+    end
+    setSetting("bookinfo_imported", all)
+end
+
+-- Automatic updates of imported books. On by default, but it only ever
+-- applies to imported books: a normal book is never touched by it.
+local function getAutoBookInfo()
+    return getSetting("bookinfo_auto", true) ~= false
+end
+
+local function setAutoBookInfo(on)
+    setSetting("bookinfo_auto", on and true or false)
+end
+
+-- Per-field date overrides for an imported book. A nil value means
+-- "use the automatic date"; an empty string is never stored. The map is
+-- keyed by the book file path, then by field name.
+local DATE_OVERRIDE_FIELDS = {
+    published = true, date_started = true, date_finished = true,
+}
+
+local function getBookOverride(file, field)
+    if not file or not DATE_OVERRIDE_FIELDS[field] then
+        return nil
+    end
+    local value = getSetting("bookinfo_dates", {})[file]
+    value = type(value) == "table" and value[field] or nil
+    return type(value) == "string" and value ~= "" and value or nil
+end
+
+local function setBookOverride(file, field, value)
+    if not file or not DATE_OVERRIDE_FIELDS[field] then
+        return
+    end
+    local all = getSetting("bookinfo_dates", {})
+    local book = type(all[file]) == "table" and all[file] or {}
+    book[field] = type(value) == "string" and value ~= "" and value or nil
+    if next(book) then
+        all[file] = book
+    else
+        all[file] = nil
+    end
+    setSetting("bookinfo_dates", all)
+end
+
+local function clearBookOverrides(file)
+    if not file then
+        return
+    end
+    local all = getSetting("bookinfo_dates", {})
+    all[file] = nil
+    setSetting("bookinfo_dates", all)
+end
+
+-- What the auto-update hooks compare against: the summary fields and
+-- the shared keywords as they were at the last export. Saved only by a
+-- successful export, so a modification made while the feature is off is
+-- still seen when it comes back on.
+local function getBookInfoSnapshot(file)
+    if not file then
+        return nil
+    end
+    local snapshot = getSetting("bookinfo_snapshot", {})[file]
+    return type(snapshot) == "table" and snapshot or nil
+end
+
+local function setBookInfoSnapshot(file, snapshot)
+    if not file then
+        return
+    end
+    local all = getSetting("bookinfo_snapshot", {})
+    all[file] = snapshot
+    setSetting("bookinfo_snapshot", all)
+end
+
+local function clearBookInfoSnapshot(file)
+    if not file then
+        return
+    end
+    local all = getSetting("bookinfo_snapshot", {})
+    all[file] = nil
+    setSetting("bookinfo_snapshot", all)
+end
+
+-- A one-shot marker: the note has to lose the imported fields before
+-- the import flag goes away. Used only by "Remove imported book info".
+local function getBookInfoRemoval(file)
+    return file ~= nil and getSetting("bookinfo_removal", {})[file] == true
+end
+
+local function setBookInfoRemoval(file, on)
+    if not file then
+        return
+    end
+    local all = getSetting("bookinfo_removal", {})
+    all[file] = on and true or nil
+    setSetting("bookinfo_removal", all)
+end
+
 -- Where a book goes: nil is the normal state (exported and shown in
 -- the index), "index" keeps it out of the index only, "none" stops the
 -- export too. The note already written is never deleted: both states
@@ -357,6 +487,19 @@ return {
     setBookPreserve = setBookPreserve,
     getBookTags = getBookTags,
     setBookTags = setBookTags,
+    clearBookTags = clearBookTags,
+    getBookImported = getBookImported,
+    setBookImported = setBookImported,
+    getAutoBookInfo = getAutoBookInfo,
+    setAutoBookInfo = setAutoBookInfo,
+    getBookOverride = getBookOverride,
+    setBookOverride = setBookOverride,
+    clearBookOverrides = clearBookOverrides,
+    getBookInfoSnapshot = getBookInfoSnapshot,
+    setBookInfoSnapshot = setBookInfoSnapshot,
+    clearBookInfoSnapshot = clearBookInfoSnapshot,
+    getBookInfoRemoval = getBookInfoRemoval,
+    setBookInfoRemoval = setBookInfoRemoval,
     getBookExclusion = getBookExclusion,
     setBookExclusion = setBookExclusion,
     getKnownTags = getKnownTags,

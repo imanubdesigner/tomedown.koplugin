@@ -25,6 +25,8 @@ local _ = require("tomedown_i18n")
 local Update = require("tomedown_update")
 local render = require("tomedown_render")
 local shared = require("tomedown_shared")
+local metadata = require("tomedown_metadata")
+local pubdate = require("tomedown_pubdate")
 
 local INDEX_FILENAME = shared.INDEX_FILENAME
 local getSetting = shared.getSetting
@@ -35,6 +37,11 @@ local getBookPreserve = shared.getBookPreserve
 local setBookPreserve = shared.setBookPreserve
 local getBookTags = shared.getBookTags
 local setBookTags = shared.setBookTags
+local getBookImported = shared.getBookImported
+local getAutoBookInfo = shared.getAutoBookInfo
+local setAutoBookInfo = shared.setAutoBookInfo
+local getBookOverride = shared.getBookOverride
+local setBookOverride = shared.setBookOverride
 local getBookExclusion = shared.getBookExclusion
 local setBookExclusion = shared.setBookExclusion
 local getIndexPreserve = shared.getIndexPreserve
@@ -217,6 +224,33 @@ end
 -- signal the merge needs to drop the tags this menu used to manage
 -- while leaving the tags written by hand alone.
 function M:saveBookTags(file, tags)
+    local function same(a, b)
+        if not a or #a ~= #b then
+            return false
+        end
+        for i = 1, #b do
+            if tostring(a[i]):lower() ~= b[i]:lower() then
+                return false
+            end
+        end
+        return true
+    end
+    if getBookImported(file) then
+        -- the shared keyword list is the source of truth for an imported
+        -- book: KOReader, Bookshelf and Tomedown all read and write it,
+        -- so a tag removed here cannot come back from another copy
+        if same(metadata.tags(file), tags) then
+            return false
+        end
+        if not metadata.writeKeywords(file, tags) then
+            UIManager:show(InfoMessage:new{
+                text = _("Could not write the tags. Book information was left as it was."),
+            })
+            return false
+        end
+        self:invalidateExportHash(file)
+        return true
+    end
     local stored = getBookTags(file)
     -- an untouched empty field on a book that never chose says
     -- nothing: it must not store an empty choice (which would start
@@ -224,16 +258,7 @@ function M:saveBookTags(file, tags)
     if stored == nil and #tags == 0 then
         return false
     end
-    local unchanged = stored ~= nil and #stored == #tags
-    if unchanged then
-        for i = 1, #tags do
-            if tostring(stored[i]):lower() ~= tags[i]:lower() then
-                unchanged = false
-                break
-            end
-        end
-    end
-    if unchanged then
+    if same(stored, tags) then
         return false
     end
     setBookTags(file, tags)
@@ -244,6 +269,9 @@ function M:saveBookTags(file, tags)
 end
 
 local function currentBookTags(file)
+    if getBookImported(file) then
+        return metadata.tags(file)
+    end
     return render.parseTagList(
         table.concat(getBookTags(file) or {}, ", "))
 end
@@ -679,6 +707,268 @@ function M:editBookVisibility(file, touchmenu)
     return dialog
 end
 
+-- ------------------------------------------------ imported book information
+
+local BOOKINFO_DATE_LABELS = {
+    published = _("Published"),
+    date_started = _("Started reading"),
+    date_finished = _("Finished reading"),
+}
+
+local BOOKINFO_DATE_RESET = {
+    published = _("Use the book's publication date"),
+    date_started = _("Use the automatic start date"),
+    date_finished = _("Use the automatic finish date"),
+}
+
+--- The status BookList knows for a closed book. `reading` is KOReader's
+-- default for an opened book that never chose another one.
+function M:bookInfoStatus(file)
+    local info = BookList.getBookInfo(file)
+    local status = info and info.status
+    if status == "reading" or status == "abandoned" or status == "complete" then
+        return status
+    end
+    return "reading"
+end
+
+function M:bookInfoStatusLabel(file)
+    local labels = {
+        reading = _("Reading"),
+        complete = _("Complete"),
+        abandoned = _("Abandoned"),
+    }
+    return labels[self:bookInfoStatus(file)] or labels.reading
+end
+
+--- Write the note of one book now. Used by an explicit Tomedown edit:
+-- with the automatic update off the change only invalidates the stored
+-- hash, exactly as a tag or date edit from KOReader does.
+function M:afterBookInfoEdit(file, touchmenu)
+    self:invalidateExportHash(file)
+    if getAutoBookInfo() then
+        self:runExport({ file }, { auto = "bookinfo" })
+    else
+        UIManager:show(Notification:new{
+            text = _("Saved. It will be written at the next export."),
+            timeout = 3,
+        })
+    end
+    if touchmenu and touchmenu.updateItems then
+        touchmenu:updateItems()
+    end
+end
+
+--- Mark a book as imported and write its note at once. The import is
+-- explicit: the caller asked for this one book.
+function M:importBookInfo(file, touchmenu)
+    if not file or getBookImported(file) then
+        return false
+    end
+    if not BookList.hasBookBeenOpened(file) then
+        UIManager:show(InfoMessage:new{
+            text = _("KOReader has not opened this book yet."),
+        })
+        return false
+    end
+    if not metadata.import(file) then
+        return false
+    end
+    self:invalidateExportHash(file)
+    self:runExport({ file }, { force = true })
+    self:refreshCurrentBookMenu(touchmenu)
+    return true
+end
+
+function M:confirmImportBookInfo(file, touchmenu)
+    if not file or getBookImported(file) then
+        return
+    end
+    local title = ffiUtil.basename(file)
+    UIManager:show(ConfirmBox:new{
+        text = T(_("Import the rating, review, publication date, reading dates and collections of %1 into its note? Your notes are kept."), title),
+        ok_text = _("Import"),
+        cancel_text = _("Cancel"),
+        ok_callback = function()
+            self:importBookInfo(file, touchmenu)
+        end,
+    })
+end
+
+--- Remove the imported fields from the note, then stop managing the
+-- book. The note itself and its tags are never deleted.
+function M:removeBookInfo(file, touchmenu)
+    if not file or not getBookImported(file) then
+        return false
+    end
+    local book = self:buildBook(file)
+    local md_path = book and (self:getLocalDir() .. "/" .. book.base .. ".md")
+    if not book or not md_path or not lfs.attributes(md_path, "mode") then
+        -- nothing on disk to clean: just stop managing the book
+        metadata.forget(file)
+        self:refreshCurrentBookMenu(touchmenu)
+        return true
+    end
+    shared.setBookInfoRemoval(file, true)
+    self:invalidateExportHash(file)
+    -- runExport deletes the fields through the bookinfo ownership and
+    -- clears the flag only after the file was written
+    self:runExport({ file }, { force = true })
+    local removed = not getBookImported(file)
+    if not removed then
+        -- the write failed: keep the book managed, the .bak and the
+        -- error window say why
+        shared.setBookInfoRemoval(file, false)
+    end
+    self:refreshCurrentBookMenu(touchmenu)
+    return removed
+end
+
+function M:confirmRemoveBookInfo(file, touchmenu)
+    if not file or not getBookImported(file) then
+        return
+    end
+    local title = ffiUtil.basename(file)
+    UIManager:show(ConfirmBox:new{
+        text = T(_("Remove rating, review, dates and collections from the note of %1? The note and its tags stay. Tomedown stops updating this book."), title),
+        ok_text = _("Remove"),
+        cancel_text = _("Cancel"),
+        ok_callback = function()
+            self:removeBookInfo(file, touchmenu)
+        end,
+    })
+end
+
+--- Label of one imported date: the value and whether it is fixed by
+-- the reader or comes from the book, KOReader or the statistics.
+function M:bookInfoDateLabel(file, field)
+    local label = BOOKINFO_DATE_LABELS[field]
+    local status = self:bookInfoStatus(file)
+    local value = metadata.effectiveDate(file, field, status)
+    if not value then
+        return T(_("%1: not available"), label)
+    end
+    if getBookOverride(file, field) then
+        return T(_("%1: %2 (fixed)"), label, value)
+    end
+    return T(_("%1: %2"), label, value)
+end
+
+function M:editBookInfoDate(file, field, touchmenu)
+    if not file or not BOOKINFO_DATE_LABELS[field] then
+        return
+    end
+    local override = getBookOverride(file, field)
+    local automatic = metadata.autoDate(file, field,
+        self:bookInfoStatus(file))
+    local dialog
+    dialog = InputDialog:new{
+        title = T(_("%1: date"), BOOKINFO_DATE_LABELS[field]),
+        input = override or automatic or "",
+        hint = _("YYYY-MM-DD (or YYYY); leave empty for the automatic date"),
+        buttons = {
+            {
+                {
+                    text = _("Cancel"),
+                    id = "close",
+                    callback = function()
+                        UIManager:close(dialog)
+                    end,
+                },
+            },
+            {
+                {
+                    text = _("Save"),
+                    callback = function()
+                        local text = dialog:getInputText() or ""
+                        text = text:gsub("^%s+", ""):gsub("%s+$", "")
+                        local date
+                        if text ~= "" then
+                            date = pubdate.parseDate(text)
+                            if not date then
+                                UIManager:show(Notification:new{
+                                    text = _("That is not a date: use YYYY, YYYY-MM or YYYY-MM-DD."),
+                                    timeout = 3,
+                                })
+                                return
+                            end
+                        end
+                        setBookOverride(file, field, date)
+                        UIManager:close(dialog)
+                        self:afterBookInfoEdit(file, touchmenu)
+                    end,
+                },
+            },
+        },
+    }
+    UIManager:show(dialog)
+    return dialog
+end
+
+function M:bookInfoDateMenu(file)
+    local rows = {}
+    for __, field in ipairs({ "published", "date_started", "date_finished" }) do
+        rows[#rows + 1] = {
+            text_func = function()
+                return self:bookInfoDateLabel(file, field)
+            end,
+            callback = function(touchmenu)
+                self:editBookInfoDate(file, field, touchmenu)
+            end,
+        }
+        if getBookOverride(file, field) then
+            rows[#rows + 1] = {
+                text = BOOKINFO_DATE_RESET[field],
+                callback = function(touchmenu)
+                    setBookOverride(file, field, nil)
+                    self:afterBookInfoEdit(file, touchmenu)
+                end,
+            }
+        end
+    end
+    return rows
+end
+
+--- Rating, review and status are edited with KOReader's own panel: it
+-- already writes summary.rating, summary.note and summary.status, and
+-- the sidecar hook turns that write into an automatic export.
+function M:openBookStatusEditor(file)
+    local status_ui = self.ui and self.ui.status
+    if self.ui and self.ui.document and self.ui.document.file == file
+            and status_ui and status_ui.onShowBookStatus then
+        status_ui:onShowBookStatus()
+        return true
+    end
+    UIManager:show(InfoMessage:new{
+        text = _("Open the book to edit rating, review and status with KOReader's own panel."),
+    })
+    return false
+end
+
+function M:bookInfoRatingLabel(file)
+    local rating = tonumber(metadata.summary(file).rating)
+    if rating and rating > 0 then
+        return T(_("Rating: %1/5"), rating)
+    end
+    return _("Rating: not set")
+end
+
+function M:bookInfoReviewLabel(file)
+    local note = metadata.summary(file).note
+    if type(note) == "string" and note ~= "" then
+        note = note:gsub("%s+", " ")
+        if #note > 40 then
+            note = note:sub(1, 40) .. "…"
+        end
+        return T(_("Review: %1"), note)
+    end
+    return _("Review: not set")
+end
+
+function M:bookInfoStatusRowLabel(file)
+    return T(_("Status: %1"), self:bookInfoStatusLabel(file))
+end
+
 function M:genSettingsMenu()
     -- Files: what is written and where. Static since 1.1: none of its
     -- rows depends on a switch, so the group is the same table every
@@ -802,6 +1092,71 @@ function M:genSettingsMenu()
             callback = function()
                 setSetting("auto_export",
                     not getSetting("auto_export", false))
+            end,
+        },
+    }
+
+    -- Book info: the imported fields are opt-in per book, the automatic
+    -- update is one global switch for the books that were imported, and
+    -- the bulk import is the one action that can cover the whole
+    -- library at once. It carries its own confirmation.
+    local function importableBookInfoFiles()
+        local files = {}
+        for __, file in ipairs(self:listBookFiles()) do
+            -- "Do not export" is the reader's choice and stays one: the
+            -- bulk action imports the books it can write, not those it
+            -- was told to leave alone
+            if getBookExclusion(file) ~= "none" then
+                files[#files + 1] = file
+            end
+        end
+        return files
+    end
+    local function importAllBookInfo()
+        local files = importableBookInfoFiles()
+        for __, file in ipairs(files) do
+            metadata.import(file)
+        end
+        -- only the imported books are written, and only those whose
+        -- information actually changed: a normal book keeps the file
+        -- 1.2.0 left, exported date included
+        local imported = {}
+        for __, file in ipairs(files) do
+            if getBookImported(file) then
+                imported[#imported + 1] = file
+            end
+        end
+        self:runExport(imported, { only_updated = true })
+    end
+    local bookinfo = {
+        {
+            text = _("Update book info automatically"),
+            checked_func = function()
+                return getAutoBookInfo()
+            end,
+            keep_menu_open = true,
+            callback = function()
+                setAutoBookInfo(not getAutoBookInfo())
+            end,
+        },
+        {
+            text = withIcon("\xEF\x80\xAD", _("Import book info for all books")),
+            enabled_func = function()
+                return #importableBookInfoFiles() > 0
+            end,
+            callback = function(touchmenu)
+                local count = #importableBookInfoFiles()
+                UIManager:show(ConfirmBox:new{
+                    text = T(_("Import rating, review, dates and collections for all %1 books? Their notes are rewritten, your own notes stay."), count),
+                    ok_text = _("Import all"),
+                    cancel_text = _("Cancel"),
+                    ok_callback = function()
+                        if touchmenu and touchmenu.closeMenu then
+                            touchmenu:closeMenu()
+                        end
+                        importAllBookInfo()
+                    end,
+                })
             end,
         },
     }
@@ -1151,6 +1506,8 @@ function M:genSettingsMenu()
     return {
         { text = withIcon("\xEF\x83\xB6", _("Files")), -- file-text
             sub_item_table = files },
+        { text = withIcon("\xEF\x81\x9A", _("Book info")), -- star-half
+            sub_item_table = bookinfo },
         { text = withIcon("\xEE\xB4\xBE", _("Cloud")), -- cloud-sync
             sub_item_table = cloud },
         { text = withIcon("\xEF\x89\x89", _("My notes")), -- sticky-note
@@ -1704,8 +2061,7 @@ function M:genCurrentBookMenu()
     }
     rows[#rows + 1] = {
         text_func = function()
-            local tags = render.parseTagList(
-                table.concat(getBookTags(file) or {}, ", "))
+            local tags = currentBookTags(file)
             return T(_("Tags: %1"),
                 #tags > 0 and table.concat(tags, ", ") or _("none"))
         end,
@@ -1741,6 +2097,57 @@ function M:genCurrentBookMenu()
             end,
         }
     end
+    -- Import is the explicit way in; once a book is imported its fields
+    -- stay editable here, next to the way out.
+    if not getBookImported(file) then
+        rows[#rows + 1] = {
+            text = _("Import book info"),
+            callback = function(touchmenu)
+                self:confirmImportBookInfo(file, touchmenu)
+            end,
+        }
+    else
+        -- rating, review and status use KOReader's own panel; the dates
+        -- and the way out are Tomedown's own rows
+        rows[#rows + 1] = {
+            text_func = function()
+                return self:bookInfoRatingLabel(file)
+            end,
+            callback = function()
+                self:openBookStatusEditor(file)
+            end,
+            separator = true,
+        }
+        rows[#rows + 1] = {
+            text_func = function()
+                return self:bookInfoReviewLabel(file)
+            end,
+            callback = function()
+                self:openBookStatusEditor(file)
+            end,
+        }
+        rows[#rows + 1] = {
+            text_func = function()
+                return self:bookInfoStatusRowLabel(file)
+            end,
+            callback = function()
+                self:openBookStatusEditor(file)
+            end,
+        }
+        rows[#rows + 1] = {
+            text = _("Dates…"),
+            sub_item_table_func = function()
+                return self:bookInfoDateMenu(file)
+            end,
+        }
+        rows[#rows + 1] = {
+            text = _("Remove imported book info…"),
+            callback = function(touchmenu)
+                self:confirmRemoveBookInfo(file, touchmenu)
+            end,
+            separator = true,
+        }
+    end
     return rows
 end
 
@@ -1751,7 +2158,7 @@ function M:genFileDialogButtons(file, is_file)
     if not file or not is_file then
         return nil
     end
-    return {
+    local buttons = {
         {
             text = _("Export this book"),
             enabled = BookList.hasBookBeenOpened(file),
@@ -1772,6 +2179,23 @@ function M:genFileDialogButtons(file, is_file)
             end,
         },
     }
+    if not getBookImported(file) then
+        buttons[#buttons + 1] = {
+            text = _("Import book info"),
+            enabled = BookList.hasBookBeenOpened(file),
+            callback = function()
+                self:confirmImportBookInfo(file)
+            end,
+        }
+    else
+        buttons[#buttons + 1] = {
+            text = _("Remove imported book info…"),
+            callback = function()
+                self:confirmRemoveBookInfo(file)
+            end,
+        }
+    end
+    return buttons
 end
 
 -- Rebuild the Current book submenu in place after its switch changes

@@ -14,4 +14,13 @@ function ffiUtil.basename(path)
     return tostring(path):match("([^/]+)$")
 end
 
+-- KOReader's realpath follows symlinks; the tests only need the same
+-- path back (and nil for a missing argument)
+function ffiUtil.realpath(path)
+    if not path then
+        return nil
+    end
+    return tostring(path)
+end
+
 return ffiUtil

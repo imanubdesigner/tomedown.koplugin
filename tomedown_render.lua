@@ -346,6 +346,9 @@ book = {
     title, author, exported, count,
     series, series_index, language, pages,     -- optional frontmatter
     status, progress,                          -- optional frontmatter
+    published, rating, review,                 -- optional, imported book info
+    date_started, date_finished,               -- optional, imported book info
+    collections = { ... },                     -- optional, imported book info
     keywords = { ... },                        -- optional, appended to tags
     tags = { ... },                            -- optional, chosen per book
     tags_managed = true,                       -- write the managed-tags ledger
@@ -419,6 +422,29 @@ function render.buildBookMd(book, opts)
     end
     if book.progress then
         add("progress: " .. yamlQuote(book.progress))
+    end
+    -- imported book information: only present when the reader imported
+    -- this one book from its menu, so a normal export is unchanged
+    if book.published then
+        add("published: " .. yamlQuote(book.published))
+    end
+    if book.rating then
+        add("rating: " .. tostring(book.rating))
+    end
+    if book.review then
+        add("review: " .. yamlQuote(book.review))
+    end
+    if book.date_started then
+        add("date_started: " .. yamlQuote(book.date_started))
+    end
+    if book.date_finished then
+        add("date_finished: " .. yamlQuote(book.date_finished))
+    end
+    if book.collections and #book.collections > 0 then
+        add("collections:")
+        for __, collection in ipairs(book.collections) do
+            add("  - " .. yamlListItem(collection))
+        end
     end
     add("tags:")
     local seen_tags = {}

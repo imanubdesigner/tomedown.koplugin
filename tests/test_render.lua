@@ -289,6 +289,56 @@ local t3 = rich:find("  - horror", 1, true)
 local t4 = rich:find("  - gothic-fiction", 1, true)
 T.check(t1 and t2 and t3 and t4 and t1 < t2 and t2 < t3 and t3 < t4,
     "tags: ebook, highlights, then the book keywords")
+for __, key in ipairs({ "published:", "rating:", "review:", "date_started:",
+        "date_finished:", "collections:" }) do
+    T.check(not rich:find(key, 1, true),
+        "a normal book carries no imported field: " .. key)
+end
+
+-- imported book information: present only when the reader imported this
+-- one book, in a fixed order before the tags
+local importedBook = render.buildBookMd({
+    title = "Blackwater",
+    author = "Michael McDowell",
+    exported = "2026-09-26",
+    count = 1,
+    status = "complete",
+    published = "1999-05",
+    rating = 4,
+    review = "Bello e davvero intenso.",
+    date_started = "2026-09-10",
+    date_finished = "2026-10-01",
+    collections = { "Fantascienza", "Da leggere" },
+    keywords = { "horror" },
+    annotations = { { text = "Riga.", page = "1" } },
+})
+T.check(T.contains(importedBook, 'published: "1999-05"'),
+    "the publication date is quoted")
+T.check(T.contains(importedBook, "rating: 4"), "the rating is a number")
+T.check(T.contains(importedBook, 'review: "Bello e davvero intenso."'),
+    "the review is a quoted one-liner")
+T.check(T.contains(importedBook, 'date_started: "2026-09-10"'),
+    "the reading start date")
+T.check(T.contains(importedBook, 'date_finished: "2026-10-01"'),
+    "the reading finish date")
+T.check(T.contains(importedBook, "collections:\n  - Fantascienza\n  - Da leggere"),
+    "the collections are a list")
+local importedFm = importedBook:match("^%-%-%-\n(.-)\n%-%-%-\n")
+local importedOrder = { "status:", "published:", "rating:", "review:",
+    "date_started:", "date_finished:", "collections:", "tags:" }
+local lastImported = 0
+for __, key in ipairs(importedOrder) do
+    local pos = importedFm and importedFm:find(key, 1, true)
+    if not pos or pos < lastImported then
+        lastImported = -1
+        break
+    end
+    lastImported = pos
+end
+T.check(lastImported ~= -1,
+    "the imported fields sit between progress and tags")
+T.check(T.contains(importedBook, '  - "rating"') == false,
+    "the rating field itself is never mistaken for a tag")
 
 -- per book tags: chosen at the book menu, washed in with ebook,
 -- highlights and the keywords, and receipted in the internal ledger

@@ -575,8 +575,8 @@ do
     store.tomedown.preserve = nil
     ui.document = { file = FILE }
     local current_book = plugin:genCurrentBookMenu()
-    T.check(#current_book == 3,
-        "the open book has keep, tags and visibility rows: " .. #current_book)
+    T.check(#current_book == 4,
+        "the open book has keep, tags, visibility and import rows: " .. #current_book)
     T.check(current_book[2].text_func() == "Tags: none",
         "the tags row starts empty")
     local refreshed = 0
@@ -1016,7 +1016,7 @@ T.check(sub[3].enabled_func() == true, "export all books enabled")
 do
     ui.document = { file = FILE }
     local current = sub[5].sub_item_table_func()
-    T.check(#current == 3, "Current book starts with keep, tags and visibility: "
+    T.check(#current == 4, "Current book starts with keep, tags, visibility and import: "
         .. #current)
     T.check(current[1].text == "Keep my notes in this book",
         "the per book keep row")
@@ -1073,8 +1073,8 @@ do
     T.check(plugin:genFileDialogButtons(FILE, false) == nil,
         "a folder gets no Tomedown row")
     local file_rows = ui.file_dialog_rows.tomedown(FILE, true)
-    T.check(file_rows and #file_rows == 3,
-        "the file dialog has export, tags and visibility: "
+    T.check(file_rows and #file_rows == 4,
+        "the file dialog has export, tags, visibility and import: "
             .. tostring(file_rows and #file_rows))
     local saved_run = plugin.runExport
     local forced
@@ -1099,18 +1099,19 @@ do
 end
 
 local settings = plugin:genSettingsMenu()
-T.check(#settings == 5, "settings groups: " .. #settings)
+T.check(#settings == 6, "settings groups: " .. #settings)
 T.check(settings[1].text == "\xEF\x83\xB6  Files", "files group with icon")
 T.check(settings[1].sub_item_table ~= nil, "Files is a static group")
-T.check(settings[2].text == "\xEE\xB4\xBE  Cloud", "cloud group with icon")
-T.check(settings[3].text == "\xEF\x89\x89  My notes", "my notes group with icon")
-T.check(settings[4].text == "\xEE\xB5\x91  Highlights for Obsidian",
+T.check(settings[2].text == "\xEF\x81\x9A  Book info", "book info group with icon")
+T.check(settings[3].text == "\xEE\xB4\xBE  Cloud", "cloud group with icon")
+T.check(settings[4].text == "\xEF\x89\x89  My notes", "my notes group with icon")
+T.check(settings[5].text == "\xEE\xB5\x91  Highlights for Obsidian",
     "highlights group with icon")
-T.check(settings[5].text == "\xEE\xB6\xAE  Updates", "updates group with icon")
+T.check(settings[6].text == "\xEE\xB6\xAE  Updates", "updates group with icon")
 -- Cloud: three fixed rows since 1.1. The row that brings the cloud copy
 -- back now lives in My notes, where the notes are.
-local cloud = settings[2].sub_item_table
-local updates = settings[5].sub_item_table
+local cloud = settings[3].sub_item_table
+local updates = settings[6].sub_item_table
 T.check(#cloud == 3, "cloud rows without a server: " .. #cloud)
 T.check(#updates == 4, "updates rows: " .. #updates)
 T.check(cloud[1].text == "Upload to cloud", "upload entry")
@@ -1164,7 +1165,7 @@ T.check(files[7].checked_func() == false, "auto-export off by default")
 -- My notes: the global switch, the index switch while the global one is
 -- off, the headings of the zones, and the cloud merge. Rebuilt on open
 -- and in place when a switch in it flips.
-local notes = settings[3].sub_item_table_func()
+local notes = settings[4].sub_item_table_func()
 T.check(#notes == 2, "notes rows with preserve off: " .. #notes)
 T.check(notes[1].text == "Keep my notes: all books", "global switch entry")
 T.check(notes[1].checked_func() == false,
@@ -1178,7 +1179,7 @@ T.check(notes[3] == nil,
 
 -- Highlights for Obsidian: its own group since 1.1, the three rows that
 -- speak about the highlights themselves
-local highlights = settings[4].sub_item_table
+local highlights = settings[5].sub_item_table
 T.check(#highlights == 3, "highlights rows: " .. #highlights)
 T.check(highlights[1].text == "Treat every highlight as special",
     "callout entry")
@@ -1210,7 +1211,7 @@ T.check(highlights[2].enabled_func() == true,
 -- flipping preserve shows the heading row in the open group, without
 -- leaving it, and takes the index rows away: with the switch on it
 -- alone governs every file, so nothing else is on show
-local live = settings[3].sub_item_table_func()
+local live = settings[4].sub_item_table_func()
 local open_menu = { item_table = live }
 live[1].callback(open_menu)
 T.check(store.tomedown.preserve == true, "preserve toggled on")
@@ -1254,11 +1255,11 @@ store.tomedown.preserve = nil
 -- (v1.1): there is no index to keep edits in without it
 files[2].callback()
 T.check(store.tomedown.with_index == false, "index generation toggled off")
-live = plugin:genSettingsMenu()[3].sub_item_table_func()
+live = plugin:genSettingsMenu()[4].sub_item_table_func()
 T.check(#live == 1, "the index row leaves with the index: " .. #live)
 files[2].callback()
 T.check(store.tomedown.with_index == true, "index generation back on")
-live = plugin:genSettingsMenu()[3].sub_item_table_func()
+live = plugin:genSettingsMenu()[4].sub_item_table_func()
 T.check(#live == 2, "the index row comes back with the index: " .. #live)
 T.check(live[2].checked_func() == false,
     "the index switch still follows the global one")
@@ -1271,7 +1272,7 @@ T.check(live[2].checked_func() == false,
 do
 uploadSetup()
 store.tomedown.preserve = false
-local notes_live = settings[3].sub_item_table_func()
+local notes_live = settings[4].sub_item_table_func()
 T.check(#notes_live == 2,
     "no Merge row with preserve off: " .. #notes_live)
 
@@ -1279,12 +1280,12 @@ T.check(#notes_live == 2,
 -- lives in its own menu, so a preserved book brings no Merge row here
 -- (the choice is cleared again below)
 store.tomedown.preserve_books = { [FILE] = true }
-notes_live = settings[3].sub_item_table_func()
+notes_live = settings[4].sub_item_table_func()
 T.check(#notes_live == 2,
     "no Merge row for a preserved book while the global is off: "
         .. #notes_live)
 store.tomedown.preserve_books = nil
-notes_live = settings[3].sub_item_table_func()
+notes_live = settings[4].sub_item_table_func()
 T.check(#notes_live == 2,
     "no Merge row once the book's choice is cleared: " .. #notes_live)
 
@@ -1302,13 +1303,13 @@ T.check(notes_live[3].text == "Bring in edits made in Obsidian",
 -- back without it, so the row leaves
 cloud[1].callback()
 T.check(store.tomedown.upload == false, "upload toggled off")
-notes_live = settings[3].sub_item_table_func()
+notes_live = settings[4].sub_item_table_func()
 T.check(#notes_live == 2,
     "Merge row leaves when upload goes off: " .. #notes_live)
 
 -- flip the global switch off again with upload on: same rebuild
 cloud[1].callback() -- upload back on
-notes_live = settings[3].sub_item_table_func()
+notes_live = settings[4].sub_item_table_func()
 notes_menu = { item_table = notes_live }
 notes_live[1].callback(notes_menu) -- preserve off
 T.check(store.tomedown.preserve == false, "preserve off again")
@@ -2658,8 +2659,8 @@ do
     -- zone gets its own heading row, right under the switch that keeps
     -- it, and the copies left by the sections above sit under that
     current_book = sub[5].sub_item_table_func()
-    T.check(#current_book == 5,
-        "15b: the heading and the copies join the submenu: "
+    T.check(#current_book == 6,
+        "15b: the heading, the copies and the import row join the submenu: "
             .. #current_book)
     T.check(current_book[4].text_func()
             == "Notes heading: My notes...",
@@ -2712,7 +2713,7 @@ do
     behaviour[2].callback()
     T.check(store.tomedown.preserve == false, "15b: and off again")
     current_book = sub[5].sub_item_table_func()
-    T.check(#current_book == 5,
+    T.check(#current_book == 6,
         "15b: the heading is back with the switch off: " .. #current_book)
     plugin:runExport({ FILE }, {})
     UIManager:runPending()
@@ -2792,7 +2793,7 @@ do
     -- goes from zoned to plain the file is kept whole as .bak, because
     -- the notes in it do not survive the rewrite.
     local index_row
-    for __, row in ipairs(plugin:genSettingsMenu()[3].sub_item_table_func()) do
+    for __, row in ipairs(plugin:genSettingsMenu()[4].sub_item_table_func()) do
         if row.text == "Keep my notes: index" then
             index_row = row
             break
@@ -2821,7 +2822,7 @@ do
     -- alone, and every export hash goes with it (the index is only
     -- rebuilt along with the books, so the new heading needs every
     -- file to be written again).
-    live = plugin:genSettingsMenu()[3].sub_item_table_func()
+    live = plugin:genSettingsMenu()[4].sub_item_table_func()
     T.check(#live == 3
             and live[3].text_func() == "Index notes heading: My notes...",
         "15d: the index heading row sits under its switch: "
@@ -2842,7 +2843,7 @@ do
     T.check(store.tomedown.exports[FILE] == nil
             or store.tomedown.exports[FILE].hash == nil,
         "15d: every export hash goes: the index rides along with the books")
-    live = plugin:genSettingsMenu()[3].sub_item_table_func()
+    live = plugin:genSettingsMenu()[4].sub_item_table_func()
     T.check(live[#live].text_func() == "Index notes heading: Appunti dell'indice",
         "15d: the row shows the new name: "
             .. tostring(live[#live].text_func and live[#live].text_func()))
@@ -2873,7 +2874,7 @@ do
         "15d: an explicit off is stored for the index")
     -- with the index written plain there is no zone left to name: the
     -- row under its switch goes away with it
-    live = plugin:genSettingsMenu()[3].sub_item_table_func()
+    live = plugin:genSettingsMenu()[4].sub_item_table_func()
     T.check(#live == 2 and live[2].text == "Keep my notes: index",
         "15d: the heading row leaves when the index is plain: " .. #live)
     plugin:runExport({ FILE }, {})
@@ -3112,12 +3113,12 @@ do
     -- brings no heading row while the global toggle is off
     current_book = sub[5].sub_item_table_func()
     current_book[1].callback() -- the book keeps its zone again
-    live = plugin:genSettingsMenu()[3].sub_item_table_func()
+    live = plugin:genSettingsMenu()[4].sub_item_table_func()
     T.check(#live == 2,
         "15b: a preserved book brings no heading row: "
             .. #live)
     behaviour[2].callback() -- the global switch on: the row appears
-    live = plugin:genSettingsMenu()[3].sub_item_table_func()
+    live = plugin:genSettingsMenu()[4].sub_item_table_func()
     T.check(#live == 2,
         "15b: the heading row appears with preserve on: "
             .. #live)
@@ -4275,6 +4276,274 @@ do
         "25: deleting the older copy leaves no row")
     ui.document = nil
     store.tomedown.preserve = false
+end
+
+-- ----------------- 26. imported book info, end to end
+--
+-- The metadata a book carries in KOReader is opt-in: a normal export
+-- must stay byte for byte the 1.2.0 file. Once imported, the fields are
+-- written and owned; removing them takes them out again without
+-- touching the note, the reader's zone or the tags.
+do
+    local DataStorage = require("datastorage")
+    local DocSettings = require("docsettings")
+    local SQ3 = require("lua-ljsqlite3/init")
+    local shared = require("tomedown_shared")
+    local DATA = DataStorage:getSettingsDir()
+    local COLLECTION = DATA .. "/collection.lua"
+
+    local function wr(path, content)
+        local f = assert(io.open(path, "wb"))
+        f:write(content)
+        f:close()
+    end
+
+    -- a clean slate for this section: no import flags, no tag choices,
+    -- no stored hashes and no sidecar cache from the earlier tests
+    DocSettings.reset()
+    SQ3.reset()
+    store.tomedown.book_tags = nil
+    store.tomedown.bookinfo_imported = nil
+    store.tomedown.bookinfo_auto = nil
+    store.tomedown.bookinfo_dates = nil
+    store.tomedown.bookinfo_snapshot = nil
+    store.tomedown.bookinfo_removal = nil
+    store.tomedown.exports = nil
+    store.tomedown.preserve = true
+    shared.setBookExclusion(FILE2, nil)
+
+    local START = os.time({ year = 2026, month = 9, day = 10, hour = 12 })
+    local START_DATE = os.date("%Y-%m-%d", START)
+    BookList.registry[FILE].doc_props = {
+        title = "Blackwater",
+        authors = "Michael McDowell",
+        keywords = "Horror, Gotico",
+    }
+    BookList.registry[FILE].summary = {
+        rating = 4,
+        note = "Bello\n\ne davvero intenso.",
+        status = "complete",
+        modified = "2026-10-01",
+    }
+    BookList.registry[FILE].partial_md5_checksum = "abc123"
+    SQ3.books = { ["abc123"] = { id = 7, start = START } }
+    wr(DATA .. "/statistics.sqlite3", "")
+    DocSettings.setCustomProps(FILE, { keywords = "Horror, Gotico" })
+    wr(COLLECTION, "return {\n"
+        .. '  ["Fantascienza"] = { { file = "' .. FILE .. '" } },\n'
+        .. '  ["Preferiti"] = { { file = "' .. FILE .. '" } },\n'
+        .. "}\n")
+
+    os.remove(MD_PATH)
+    plugin:runExport({ FILE }, {})
+    UIManager:runPending()
+    local baseline = T.readFile(MD_PATH) or ""
+    T.check(baseline ~= "", "26: the baseline book is exported")
+    for __, key in ipairs({ "published:", "rating:", "review:",
+            "date_started:", "date_finished:", "collections:" }) do
+        T.check(not baseline:find(key, 1, true),
+            "26: a normal export carries no imported field: " .. key)
+    end
+    T.check(not T.contains(baseline, "Fantascienza")
+            and not baseline:find("collections:", 1, true),
+        "26: the imported collections do not leak into a normal export")
+    T.check(T.contains(baseline, "  - Horror"),
+        "26: the book's own keywords still tag a normal export")
+    local baseline_hash = store.tomedown.exports[FILE].hash
+
+    -- the same export again, with only_updated: nothing to rewrite. The
+    -- metadata is there in KOReader, but the book was never imported.
+    plugin:runExport({ FILE }, { only_updated = true })
+    UIManager:runPending()
+    T.check(T.readFile(MD_PATH) == baseline,
+        "26: a second run leaves the normal book byte for byte")
+    T.check(store.tomedown.exports[FILE].hash == baseline_hash,
+        "26: and the 1.2.0 fingerprint is unchanged")
+    T.check(T.contains(Notification.last_text or "", "1 files unchanged, skipped"),
+        "26: the book was skipped, not rewritten: "
+            .. tostring(Notification.last_text))
+
+    -- the reader's own text in the file must survive the import
+    baseline = baseline:gsub("(exported: [^\n]+\n)", '%1mood: "cupo"\n', 1)
+    baseline = baseline:gsub("(<!%-%- tomedown:begin body)",
+        "Nota del lettore.\n\n%1", 1)
+    wr(MD_PATH, baseline)
+    shared.setBookOverride(FILE, "published", "1999-05")
+
+    ui.document = { file = FILE }
+    local current = plugin:genCurrentBookMenu()
+    local import_row
+    for __, row in ipairs(current) do
+        if row.text == "Import book info" then
+            import_row = row
+        end
+    end
+    T.check(import_row ~= nil, "26: the open book offers the import")
+    ConfirmBox.last = nil
+    import_row.callback(nil)
+    T.check(ConfirmBox.last ~= nil
+            and T.contains(ConfirmBox.last.text or "", "Blackwater.epub")
+            and T.contains(ConfirmBox.last.text or "", "Your notes are kept"),
+        "26: the import asks first and names the book")
+    T.check(ConfirmBox.last and ConfirmBox.last.ok_text == "Import",
+        "26: the import has its own ok label")
+    ConfirmBox.last.ok_callback()
+    UIManager:runPending()
+
+    T.check(shared.getBookImported(FILE), "26: the book is imported")
+    local imported = T.readFile(MD_PATH) or ""
+    T.check(T.contains(imported, 'published: "1999-05"'),
+        "26: the publication date is written")
+    T.check(T.contains(imported, "rating: 4"), "26: the rating is written")
+    T.check(T.contains(imported, 'review: "Bello e davvero intenso."'),
+        "26: the review is folded to one line")
+    T.check(T.contains(imported, 'date_started: "' .. START_DATE .. '"'),
+        "26: the start date comes from the statistics")
+    T.check(T.contains(imported, 'date_finished: "2026-10-01"'),
+        "26: the finish date comes from the completed summary")
+    T.check(T.contains(imported,
+            "collections:\n  - Fantascienza\n  - Preferiti"),
+        "26: the collections are written sorted")
+    T.check(T.contains(imported, "  - Horror")
+            and T.contains(imported, "  - Gotico"),
+        "26: the shared keywords become tags")
+    T.check(T.contains(imported, "Nota del lettore."),
+        "26: the reader's zone is kept through the import")
+    T.check(T.contains(imported, 'mood: "cupo"'),
+        "26: the reader's own frontmatter key is kept")
+    T.check(T.contains(imported, "nota utente"),
+        "26: the highlights and their notes are still there")
+    T.check(shared.getBookInfoSnapshot(FILE) ~= nil,
+        "26: the import stores the automatic-update snapshot")
+
+    local after_import = plugin:genCurrentBookMenu()
+    local rating_row
+    for __, row in ipairs(after_import) do
+        if type(row.text_func) == "function"
+                and T.contains(row.text_func(), "Rating:") then
+            rating_row = row
+        end
+    end
+    T.check(rating_row ~= nil
+            and rating_row.text_func() == "Rating: 4/5",
+        "26: the open book shows the imported rating")
+
+    -- removal: the imported fields go, the note, the reader's text and
+    -- the tags stay, and Tomedown stops managing the book
+    local remove_row
+    for __, row in ipairs(after_import) do
+        if row.text and row.text:find("Remove imported", 1, true) then
+            remove_row = row
+        end
+    end
+    T.check(remove_row ~= nil, "26: the imported book offers the removal")
+    ConfirmBox.last = nil
+    remove_row.callback(nil)
+    T.check(ConfirmBox.last ~= nil
+            and T.contains(ConfirmBox.last.text or "",
+                "The note and its tags stay"),
+        "26: the removal says what is kept")
+    T.check(ConfirmBox.last and ConfirmBox.last.ok_text == "Remove",
+        "26: the removal has its own ok label")
+    ConfirmBox.last.ok_callback()
+    UIManager:runPending()
+
+    T.check(not shared.getBookImported(FILE),
+        "26: the book is no longer managed")
+    T.check(shared.getBookInfoSnapshot(FILE) == nil,
+        "26: the snapshot is gone")
+    T.check(shared.getBookOverride(FILE, "published") == nil,
+        "26: the date overrides are gone")
+    local removed = T.readFile(MD_PATH) or ""
+    for __, key in ipairs({ "published:", "rating:", "review:",
+            "date_started:", "date_finished:", "collections:" }) do
+        T.check(not removed:find(key, 1, true),
+            "26: the removal deletes the imported field: " .. key)
+    end
+    T.check(T.contains(removed, "Nota del lettore."),
+        "26: the reader's zone survives the removal")
+    T.check(T.contains(removed, 'mood: "cupo"'),
+        "26: the reader's key survives the removal")
+    T.check(T.contains(removed, "nota utente"),
+        "26: the highlights and notes survive the removal")
+    T.check(T.contains(removed, "  - Horror")
+            and T.contains(removed, "  - Gotico"),
+        "26: the tags survive the removal")
+    local kept_tags = shared.getBookTags(FILE)
+    T.check(kept_tags and (kept_tags[1] == "Horror"
+            or kept_tags[1] == "Gotico") and #kept_tags == 2,
+        "26: the tags become the book's own chosen list")
+    local props = DocSettings.getCustomProps(FILE)
+    T.check(props and props.keywords == "Horror, Gotico",
+        "26: the shared keywords are untouched")
+
+    -- bulk import: its own confirmation, only the books it may write,
+    -- and the excluded book is left exactly as it was
+    BookList.registry[FILE3].summary = { rating = 5, status = "reading" }
+    store.tomedown.bookinfo_imported = nil
+    store.tomedown.bookinfo_dates = nil
+    store.tomedown.bookinfo_snapshot = nil
+    store.tomedown.bookinfo_removal = nil
+    plugin:runExport({ FILE2 }, { force = true })
+    UIManager:runPending()
+    local file2_before = T.readFile(DIR .. "/N_A - LibroVecchio.md") or ""
+    T.check(file2_before ~= "", "26: the excluded book has a note to keep")
+    shared.setBookExclusion(FILE2, "none")
+    store.tomedown.exports[FILE2].hash = nil
+
+    local bookinfo_group = plugin:genSettingsMenu()[2]
+    T.check(bookinfo_group.text == "\xEF\x81\x9A  Book info",
+        "26: the Book info group keeps its glyph")
+    local bookinfo_rows = bookinfo_group.sub_item_table
+    T.check(#bookinfo_rows == 2, "26: two rows in the Book info group")
+    T.check(bookinfo_rows[1].text == "Update book info automatically"
+            and bookinfo_rows[1].checked_func() == true,
+        "26: automatic updates are on by default")
+    T.check(bookinfo_rows[2].text == "\xEF\x80\xAD  Import book info for all books",
+        "26: the bulk import has its own glyph: "
+            .. bookinfo_rows[2].text)
+    local closed = false
+    ConfirmBox.last = nil
+    bookinfo_rows[2].callback({ closeMenu = function()
+        closed = true
+    end })
+    T.check(ConfirmBox.last ~= nil
+            and T.contains(ConfirmBox.last.text or "", "all 2 books"),
+        "26: the bulk import asks first and skips the excluded book")
+    T.check(ConfirmBox.last and ConfirmBox.last.ok_text == "Import all",
+        "26: the bulk import has its own ok label")
+    ConfirmBox.last.ok_callback()
+    UIManager:runPending()
+    T.check(closed, "26: the menu closes before the bulk export")
+
+    T.check(shared.getBookImported(FILE), "26: the first book is imported again")
+    T.check(shared.getBookImported(FILE3), "26: the third book is imported")
+    T.check(not shared.getBookImported(FILE2),
+        "26: the excluded book is not imported")
+    local bulk = T.readFile(DIR .. "/Autore X - Senza Meta.md") or ""
+    T.check(T.contains(bulk, "rating: 5"),
+        "26: the bulk import writes the imported fields")
+    T.check(not T.contains(bulk, "date_finished:"),
+        "26: a book still being read has no finish date")
+    T.check(T.readFile(DIR .. "/N_A - LibroVecchio.md") == file2_before,
+        "26: the excluded book's note is untouched")
+    T.check(store.tomedown.exports[FILE2].hash == nil,
+        "26: and it was not recorded as exported")
+    T.check(T.contains(Notification.last_text or "", "2 files exported"),
+        "26: only the imported books are written: "
+            .. tostring(Notification.last_text))
+
+    ui.document = nil
+    os.remove(COLLECTION)
+    os.remove(DATA .. "/statistics.sqlite3")
+    SQ3.reset()
+    store.tomedown.preserve = false
+    store.tomedown.bookinfo_imported = nil
+    store.tomedown.bookinfo_dates = nil
+    store.tomedown.bookinfo_snapshot = nil
+    store.tomedown.bookinfo_removal = nil
+    store.tomedown.book_tags = nil
+    shared.setBookExclusion(FILE2, nil)
 end
 
 T.finish("test_main")

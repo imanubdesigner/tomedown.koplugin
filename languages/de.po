@@ -617,3 +617,103 @@ msgstr "Andere Tags…"
 
 msgid "Clear all tags"
 msgstr "Alle Tags löschen"
+
+# imported book info (v1.3.0)
+msgid "Could not write the tags. Book information was left as it was."
+msgstr "Die Tags konnten nicht geschrieben werden. Die Buchinformationen wurden nicht geändert."
+
+msgid "Published"
+msgstr "Veröffentlicht"
+
+msgid "Started reading"
+msgstr "Lesebeginn"
+
+msgid "Finished reading"
+msgstr "Leseende"
+
+msgid "Use the book's publication date"
+msgstr "Veröffentlichungsdatum des Buchs verwenden"
+
+msgid "Use the automatic start date"
+msgstr "Automatisches Startdatum verwenden"
+
+msgid "Use the automatic finish date"
+msgstr "Automatisches Enddatum verwenden"
+
+msgid "Saved. It will be written at the next export."
+msgstr "Gespeichert. Wird beim nächsten Export geschrieben."
+
+msgid "KOReader has not opened this book yet."
+msgstr "KOReader hat dieses Buch noch nicht geöffnet."
+
+msgid "Import the rating, review, publication date, reading dates and collections of %1 into its note? Your notes are kept."
+msgstr "Bewertung, Rezension, Veröffentlichungsdatum, Lesedaten und Sammlungen von %1 in die Notiz importieren? Deine Notizen bleiben erhalten."
+
+msgid "Import"
+msgstr "Importieren"
+
+msgid "Remove rating, review, dates and collections from the note of %1? The note and its tags stay. Tomedown stops updating this book."
+msgstr "Bewertung, Rezension, Daten und Sammlungen aus der Notiz von %1 entfernen? Die Notiz und ihre Tags bleiben. Tomedown aktualisiert dieses Buch nicht mehr."
+
+msgid "Remove"
+msgstr "Entfernen"
+
+msgid "%1: not available"
+msgstr "%1: nicht verfügbar"
+
+msgid "%1: %2 (fixed)"
+msgstr "%1: %2 (fest)"
+
+msgid "%1: %2"
+msgstr "%1: %2"
+
+msgid "%1: date"
+msgstr "%1: Datum"
+
+msgid "YYYY-MM-DD (or YYYY); leave empty for the automatic date"
+msgstr "JJJJ-MM-TT (oder JJJJ); leer lassen für das automatische Datum"
+
+msgid "That is not a date: use YYYY, YYYY-MM or YYYY-MM-DD."
+msgstr "Das ist kein Datum: JJJJ, JJJJ-MM oder JJJJ-MM-TT verwenden."
+
+msgid "Open the book to edit rating, review and status with KOReader's own panel."
+msgstr "Öffne das Buch, um Bewertung, Rezension und Status im KOReader-Fenster zu bearbeiten."
+
+msgid "Rating: %1/5"
+msgstr "Bewertung: %1/5"
+
+msgid "Rating: not set"
+msgstr "Bewertung: nicht gesetzt"
+
+msgid "Review: %1"
+msgstr "Rezension: %1"
+
+msgid "Review: not set"
+msgstr "Rezension: nicht gesetzt"
+
+msgid "Status: %1"
+msgstr "Status: %1"
+
+msgid "Update book info automatically"
+msgstr "Buchinformationen automatisch aktualisieren"
+
+msgid "Import book info for all books"
+msgstr "Buchinformationen aller Bücher importieren"
+
+msgid "Import rating, review, dates and collections for all %1 books? Their notes are rewritten, your own notes stay."
+msgstr "Bewertung, Rezension, Daten und Sammlungen für alle %1 Bücher importieren? Ihre Notizen werden neu geschrieben, deine Notizen bleiben."
+
+msgid "Import all"
+msgstr "Alle importieren"
+
+msgid "Book info"
+msgstr "Buchinformationen"
+
+msgid "Import book info"
+msgstr "Buchinformationen importieren"
+
+msgid "Dates…"
+msgstr "Daten…"
+
+msgid "Remove imported book info…"
+msgstr "Importierte Buchinformationen entfernen…"

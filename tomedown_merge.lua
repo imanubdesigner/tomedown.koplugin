@@ -28,6 +28,16 @@ local OWNED = {
     exported = true, highlights = true, status = true, progress = true,
 }
 
+-- Keys owned only while a book has been imported into Tomedown: they
+-- come from the reader's KOReader data, so the exporter must be able to
+-- take them out again when the reader stops managing the book. A book
+-- that was never imported keeps those keys as the reader's own.
+local BOOKINFO_OWNED = {
+    published = true, rating = true, review = true,
+    date_started = true, date_finished = true, collections = true,
+}
+merge.BOOKINFO_OWNED = BOOKINFO_OWNED
+
 -- Patterns are tolerant on purpose: the suffix after the region name
 -- (the human-readable hint) and the end marker's own name are ignored,
 -- so files written by older builds keep parsing. The hash inside a
@@ -257,9 +267,12 @@ local function tagSet(block)
     return set
 end
 
-function merge.mergeFrontmatter(disk_fm, rendered_fm)
+function merge.mergeFrontmatter(disk_fm, rendered_fm, extra_owned)
     local disk = parseFm(disk_fm)
     local rendered = parseFm(rendered_fm)
+    local function owned(key)
+        return OWNED[key] or (extra_owned and extra_owned[key])
+    end
     local old_managed = tagSet(disk.blocks.tomedown_book_tags)
     local new_managed = tagSet(rendered.blocks.tomedown_book_tags)
     local manages_tags = rendered.blocks.tomedown_book_tags ~= nil
@@ -307,7 +320,7 @@ function merge.mergeFrontmatter(disk_fm, rendered_fm)
     end
     -- keys the exporter dropped or never knew: the user's, kept as is
     for __, key in ipairs(disk.order) do
-        if not OWNED[key] and key ~= "tags" and not rendered.blocks[key] then
+        if not owned(key) and key ~= "tags" and not rendered.blocks[key] then
             for __, line in ipairs(disk.blocks[key]) do
                 out[#out + 1] = line
             end
@@ -453,13 +466,13 @@ end
 -- a file without markers of its own: its text becomes the zone above
 -- the generated block, nothing of it is lost (and the current heading
 -- of the write zone joins on top, when one is given)
-local function adopt(disk_md, rendered, title)
+local function adopt(disk_md, rendered, title, extra_owned)
     local disk_fm, disk_body = disk_md:match("^%-%-%-\n(.-)\n%-%-%-\n(.*)$")
     if not disk_fm then
         disk_body = disk_md
     end
     local out = {
-        fm = disk_fm and merge.mergeFrontmatter(disk_fm, rendered.fm)
+        fm = disk_fm and merge.mergeFrontmatter(disk_fm, rendered.fm, extra_owned)
             or rendered.fm,
         blocks = {},
     }
@@ -476,7 +489,7 @@ end
 -- and the old generated content is dropped (the render has it again).
 -- Regions the reader had edited survive only in the .bak the caller
 -- writes: flagged through info.backup.
-local function migrate(disk, rendered, stored_fps, title)
+local function migrate(disk, rendered, stored_fps, title, extra_owned)
     stored_fps = stored_fps or {}
     local edited, tail_chunks = {}, {}
     for i, b in ipairs(disk.blocks) do
@@ -491,7 +504,7 @@ local function migrate(disk, rendered, stored_fps, title)
         end
     end
     local out = {
-        fm = merge.mergeFrontmatter(disk.fm, rendered.fm),
+        fm = merge.mergeFrontmatter(disk.fm, rendered.fm, extra_owned),
         blocks = {},
     }
     out.blocks[1] = { kind = "zone",
@@ -659,6 +672,9 @@ end
 -- opts.notes_title: title of the heading that names the write zone
 --             (current with render.notesHeading); "" exports the zone
 --             without a heading, nil leaves the zone's heading alone
+-- opts.bookinfo: the book's information is imported, so the keys in
+--             BOOKINFO_OWNED belong to the exporter: a key it no
+--             longer renders is deleted from the front matter
 --
 -- Returns the text to write and info = { reason, edited, backup }:
 -- "overwrite" | "legacy" | "adopt" | "format" | "shape" |
@@ -670,6 +686,7 @@ function merge.apply(disk_md, rendered_md, stored_fps, opts)
     if opts.mode ~= "preserve" then
         return rendered_md, { reason = "overwrite", edited = {} }
     end
+    local extra_owned = opts.bookinfo and BOOKINFO_OWNED or nil
     local rendered = merge.split(rendered_md)
     if not rendered then
         -- preserve folds the render into the file on disk: with no
@@ -688,19 +705,20 @@ function merge.apply(disk_md, rendered_md, stored_fps, opts)
             -- across, and the file as it was is kept whole as .bak
             local disk_fm = disk_md:match("^%-%-%-\n(.-)\n%-%-%-\n")
             local content = disk_fm and merge.join({
-                fm = merge.mergeFrontmatter(disk_fm, rendered.fm),
+                fm = merge.mergeFrontmatter(disk_fm, rendered.fm, extra_owned),
                 blocks = rendered.blocks,
             }) or rendered_md
             return content, { reason = "legacy", edited = {},
                 backup = true }
         end
-        return adopt(disk_md, rendered, opts.notes_title),
+        return adopt(disk_md, rendered, opts.notes_title, extra_owned),
             { reason = "adopt", edited = {} }
     end
     local disk_names = regionNames(disk)
     if disk_names ~= regionNames(rendered) then
         if disk_names == "preamble,highlights,bookmarks" then
-            return migrate(disk, rendered, stored_fps, opts.notes_title)
+            return migrate(disk, rendered, stored_fps, opts.notes_title,
+                extra_owned)
         end
         return rendered_md, { reason = "shape", edited = {} }
     end
@@ -709,7 +727,7 @@ function merge.apply(disk_md, rendered_md, stored_fps, opts)
         -- the layout still matches: only the block is regenerated, the
         -- zones and front matter (a key the user added) come across
         return merge.join({
-            fm = merge.mergeFrontmatter(disk.fm, rendered.fm),
+            fm = merge.mergeFrontmatter(disk.fm, rendered.fm, extra_owned),
             blocks = withZones(disk, rendered, opts.notes_title),
         }), { reason = "format", edited = {} }
     end
@@ -723,7 +741,7 @@ function merge.apply(disk_md, rendered_md, stored_fps, opts)
         end
     end
     return merge.join({
-        fm = merge.mergeFrontmatter(disk.fm, rendered.fm),
+        fm = merge.mergeFrontmatter(disk.fm, rendered.fm, extra_owned),
         blocks = withZones(disk, rendered, opts.notes_title),
     }), {
         reason = "merged",

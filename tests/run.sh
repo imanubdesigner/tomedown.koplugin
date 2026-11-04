@@ -36,6 +36,10 @@ echo "=== test_po"
 "$LUA" test_po.lua
 echo "=== test_i18n"
 "$LUA" test_i18n.lua
+echo "=== test_pubdate"
+"$LUA" test_pubdate.lua
+echo "=== test_metadata"
+"$LUA" test_metadata.lua
 echo "=== test_main"
 "$LUA" test_main.lua
 echo "=== test_update"

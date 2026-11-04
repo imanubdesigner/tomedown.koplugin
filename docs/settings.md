@@ -2,13 +2,14 @@
 
 [Back to the README](../README.md).
 
-☰ menu → **Tomedown** → **Settings**, in five groups:
+☰ menu → **Tomedown** → **Settings**, in six groups:
 
-![The five Tomedown settings groups](../assets/menu/settings/settings_menu.png)
+![The Tomedown settings groups](../assets/menu/settings/settings_menu.png)
 
 Everything here is stored in KOReader's settings and applies to every book.
-The per-book choice, heading and tags live in the book's own menu: see
-[Keep my notes](keep-my-notes.md).
+The per-book choice, heading, tags and imported book information live in the
+book's own menu: see [Keep my notes](keep-my-notes.md) and
+[File format](file-format.md#imported-book-information).
 
 ## Files
 
@@ -37,6 +38,21 @@ created.
 
 Covers are always exported in full colour, whatever the device: the
 extraction forces colour rendering even on greyscale e-ink screens.
+
+## Book info
+
+| Entry | What to do |
+|---|---|
+| *Update book info automatically* | on by default: once a book has been imported, a change to its rating, review, status, tags, collections or dates rewrites that one note about two seconds later. Off, the fields wait for the next normal export |
+| *Import book info for all books* | asks first, then imports every book KOReader has opened except the ones set to *Do not export*, and writes only the imported books. Books whose information never changed keep their file |
+
+The import itself is always explicit: *Current book → Import book info* for
+the open book, or the same row on a long-press in the file browser, History
+or Bookshelf. A book that was never imported carries none of these fields, so
+a normal export stays exactly as it was. *Remove imported book info* takes the
+fields out again and leaves the note, the highlights and the tags in place.
+[File format](file-format.md#imported-book-information) lists the fields and
+where each one comes from.
 
 ## Cloud
 

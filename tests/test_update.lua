@@ -170,12 +170,12 @@ resetWidgets()
 fakeReleases({})
 
 local settings = plugin:genSettingsMenu()
-T.check(#settings == 5, "settings groups: " .. #settings)
+T.check(#settings == 6, "settings groups: " .. #settings)
 -- Files and Cloud are fixed groups; the rows that come and go with the
 -- switches live in My notes (test_main checks them)
 local files = settings[1].sub_item_table
-local cloud = settings[2].sub_item_table
-local updates = settings[5].sub_item_table
+local cloud = settings[3].sub_item_table
+local updates = settings[6].sub_item_table
 T.check(files[5].text == "Include page bookmarks", "page bookmarks row")
 T.check(#cloud == 3, "cloud rows without a server: " .. #cloud)
 T.check(updates[1].text_func() == "Check for updates (v" .. INSTALLED .. ")",
@@ -266,7 +266,7 @@ T.check(T.contains(viewer.text, "issue #12"), "inline #12 kept: " .. tostring(vi
 T.check(Update.getAvailableVersion() == MAJOR,
     "cached available version: " .. tostring(Update.getAvailableVersion()))
 
-local check_row = plugin:genSettingsMenu()[5].sub_item_table[1]
+local check_row = plugin:genSettingsMenu()[6].sub_item_table[1]
 T.check(check_row.text_func() == "Update available: v" .. INSTALLED
         .. " → v" .. MAJOR,
     "check row shows the update: " .. check_row.text_func())
@@ -666,8 +666,8 @@ resetWidgets()
 Update._resetState()
 NetworkMgr.connected = true
 settings = plugin:genSettingsMenu()
-T.check(#settings == 5, "settings groups with the beta row: " .. #settings)
-updates = settings[5].sub_item_table
+T.check(#settings == 6, "settings groups with the beta row: " .. #settings)
+updates = settings[6].sub_item_table
 developer = updates[4].sub_item_table_func()
 T.check(developer[1].text == "Receive beta versions", "beta versions row")
 T.check(developer[1].checked_func() == false, "beta versions off by default")

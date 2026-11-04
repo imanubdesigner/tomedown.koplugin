@@ -29,6 +29,7 @@ local _ = require("tomedown_i18n")
 local Update = require("tomedown_update")
 
 local shared = require("tomedown_shared")
+local metadata = require("tomedown_metadata")
 local SETTINGS_KEY = shared.SETTINGS_KEY
 local DEFAULT_LOCAL_SUBDIR = shared.DEFAULT_LOCAL_SUBDIR
 local getSetting = shared.getSetting
@@ -143,6 +144,9 @@ function Tomedown:init()
     -- outcome shown by the Status panel.
     -- before anything reads the upload default (the pending flush below)
     self:migrateDefaults()
+    -- watch the places where KOReader writes book information: imported
+    -- books only, and only while the automatic update is on
+    metadata.attach(self)
     if getSetting("update_check", false) then
         -- quiet check shortly after KOReader starts; the same check also
         -- runs when the menu is opened (both throttled to once an hour)

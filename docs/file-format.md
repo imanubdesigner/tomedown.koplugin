@@ -73,6 +73,7 @@ the same text comes out translated (see [Languages](developing.md#languages)).
 | `highlights`, `special` | how many highlights, and how many are starred |
 | `status` | `reading`, `abandoned` or `complete` |
 | `progress` | the reading position, for example `"96%"` |
+| `published`, `rating`, `review`, `date_started`, `date_finished`, `collections` | imported from KOReader, only after *Import book info* (see below) |
 | `tags` | `ebook`, `highlights`, the book's own keywords and the tags chosen from its menu |
 | `tomedown_book_tags` | the book's own tags that this plugin manages, only with *Keep my notes* (see below) |
 | `cover` | `"covers/Author - Title.jpg"`, only with *Include book covers* |
@@ -110,6 +111,55 @@ rewritten whole, so a clear needs no ledger: the old tags leave with the old
 file. With it on, a clear writes `tomedown_book_tags: []`, the signal the
 merge uses to drop the old managed tags, and the empty ledger is not written
 back.
+
+## Imported book information
+
+Tomedown can also write the information KOReader already holds about a book:
+the rating, the review, the publication date, the reading dates and the
+collections. It is **opt-in for every single book**: a normal export carries
+none of these fields, so installing a new version of the plugin never rewrites
+the notes you already have.
+
+Open the book's menu and tap *Import book info* (or long-press the book in the
+file browser, History or Bookshelf and use the same row). Tomedown asks once,
+then writes the fields and from that moment keeps them up to date. The import
+works only for a book KOReader has opened.
+
+```yaml
+published: "1999-05"
+rating: 4
+review: "Bello e davvero intenso."
+date_started: "2026-09-10"
+date_finished: "2026-10-01"
+collections:
+  - Fantascienza
+  - Preferiti
+```
+
+| Field | Where it comes from |
+|---|---|
+| `published` | the date written inside the book file: EPUB/KEPUB, PDF, MOBI/AZW/AZW3/PRC, FB2/FB2.ZIP and CBZ/CBR/CB7/CBT. Years (`1999`) and months (`1999-05`) are kept as they are |
+| `rating` | KOReader's rating, 1 to 5 stars |
+| `review` | KOReader's review note, folded to a single line in 1.3.0 |
+| `date_started` | the first reading session in KOReader's statistics |
+| `date_finished` | the date KOReader marked the book complete |
+| `collections` | the KOReader collections the book belongs to, sorted |
+
+Every field stays editable from the book's menu: rating, review and status use
+KOReader's own panel, tags open the usual editor, and each date has a row of
+its own with a reset to the automatic value. Collections are read from
+KOReader: Tomedown does not edit them.
+
+With *Settings → Book info → Update book info automatically* on (the default)
+a change to the rating, review, status, tags, collections or dates rewrites
+that one book about two seconds later. With it off, the fields are written at
+the next normal export. *Import book info for all books* does the first import
+for the whole library after a confirmation and skips the books set to *Do not
+export*.
+
+*Remove imported book info* deletes those fields from the note and stops
+Tomedown from managing the book. The note, the highlights and the tags stay;
+the current tags become the book's own chosen list.
 
 ## Highlights
 

@@ -141,8 +141,11 @@ On every export:
   and unioned with the new ones (a tag removed from the book's menu leaves
   through its `tomedown_book_tags` receipt, see
   [Tags for one book](#tags-for-one-book)), and a property only you added
-  (`rating: 5`, an alias…) survives, even a line the parser cannot place is
-  kept verbatim at the end.
+  (`mood: "cupo"`, an alias…) survives, even a line the parser cannot place is
+  kept verbatim at the end. Once a book's information is imported, Tomedown
+  also owns `published`, `rating`, `review`, `date_started`, `date_finished`
+  and `collections` for that book: it writes them and removes them again when
+  you stop managing it (see [File format](file-format.md#imported-book-information)).
 
 With Keep my notes off the file is regenerated at every export. Text typed
 into it can only be kept when Keep my notes comes back on, and lands in

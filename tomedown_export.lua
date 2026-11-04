@@ -27,6 +27,7 @@ local render = require("tomedown_render")
 local merge = require("tomedown_merge")
 local Cover = require("tomedown_cover")
 local shared = require("tomedown_shared")
+local metadata = require("tomedown_metadata")
 
 local INDEX_FILENAME = shared.INDEX_FILENAME
 local FILENAME_TEMPLATE = shared.FILENAME_TEMPLATE
@@ -317,6 +318,24 @@ local function parseKeywords(keywords)
     return deduped
 end
 
+local function bookinfoMeta(fields, tags)
+    if not fields then
+        return nil
+    end
+    local parts = {
+        tostring(fields.rating or ""),
+        tostring(fields.review or ""),
+        tostring(fields.published or ""),
+        tostring(fields.date_started or ""),
+        tostring(fields.date_finished or ""),
+        table.concat(fields.collections or {}, "\30"),
+        -- the shared keyword list belongs here too: clearing every tag
+        -- has to change the hash even when the managed ledger was empty
+        table.concat(tags or {}, "\30"),
+    }
+    return table.concat(parts, "\31")
+end
+
 local function hashBook(title, author, annotations, meta, bookmarks)
     local parts = {
         -- render format version: bumping it makes every stored hash stale,
@@ -471,11 +490,31 @@ function M:buildBook(file, live_annotations)
                 -- The stored list is sanitized again: an older build let
                 -- a number alone through, and filtering it here keeps it
                 -- out of the hash too, so the next export rewrites the
-                -- old file instead of taking it for unchanged
-                local stored_tags = shared.getBookTags(file)
-                local tags = stored_tags and render.parseTagList(
-                    table.concat(stored_tags, ", ")) or nil
-                local tags_managed = tags ~= nil
+                -- old file instead of taking it for unchanged.
+                --
+                -- An imported book uses the shared keyword list instead:
+                -- KOReader, Bookshelf and Tomedown all read and write
+                -- the same custom_props.keywords, so a tag removed in
+                -- either place stays removed. The ledger is always on
+                -- for these books, an empty list included, because the
+                -- empty ledger is what tells the merge to drop them.
+                local imported = shared.getBookImported(file)
+                local removing = imported and shared.getBookInfoRemoval(file)
+                local tags, tags_managed
+                if imported then
+                    tags = metadata.tags(file, props)
+                    tags_managed = true
+                else
+                    local stored_tags = shared.getBookTags(file)
+                    tags = stored_tags and render.parseTagList(
+                        table.concat(stored_tags, ", ")) or nil
+                    tags_managed = tags ~= nil
+                end
+                local bookinfo
+                if imported and not removing then
+                    bookinfo = metadata.collect(file, status,
+                        ds:readSetting("summary"), props)
+                end
                 local meta_parts = {
                     tostring(series or ""),
                     tostring(series_index or ""),
@@ -492,6 +531,14 @@ function M:buildBook(file, live_annotations)
                 if tags_managed and #tags > 0 then
                     meta_parts[#meta_parts + 1] = "booktags:"
                         .. table.concat(tags, "\31")
+                end
+                -- the imported fields join the hash only for imported
+                -- books: a normal book keeps the 1.2.0 fingerprint, so
+                -- installing 1.3.0 rewrites nothing
+                local bookinfo_meta = imported
+                    and (bookinfoMeta(bookinfo, tags) or "removed") or nil
+                if bookinfo_meta then
+                    meta_parts[#meta_parts + 1] = "bookinfo:" .. bookinfo_meta
                 end
                 local meta = table.concat(meta_parts, "\31")
                 book = {
@@ -510,6 +557,13 @@ function M:buildBook(file, live_annotations)
                     keywords = keywords,
                     tags = tags or {},
                     tags_managed = tags_managed,
+                    imported = imported,
+                    published = bookinfo and bookinfo.published,
+                    rating = bookinfo and bookinfo.rating,
+                    review = bookinfo and bookinfo.review,
+                    date_started = bookinfo and bookinfo.date_started,
+                    date_finished = bookinfo and bookinfo.date_finished,
+                    collections = bookinfo and bookinfo.collections,
                     count = #annotations,
                     annotations = annotations,
                     bookmarks = bookmarks,
@@ -624,7 +678,7 @@ function M:runExport(files, opts)
     local with_index = getSetting("with_index", true)
 
     local info
-    if not silent and opts.auto ~= "close" then
+    if not silent and opts.auto ~= "close" and opts.auto ~= "bookinfo" then
         -- auto close: one book straight from the .sdr, the export is
         -- milliseconds - the widget would only flash one more e-ink
         -- refresh between the close and the result notification
@@ -821,7 +875,8 @@ function M:runExport(files, opts)
                     if old then
                         local merged, info = merge.apply(old, md,
                             record and record.regions,
-                            { mode = mode, notes_title = getNotesTitle(file) })
+                            { mode = mode, notes_title = getNotesTitle(file),
+                              bookinfo = book.imported })
                         content = merged
                         if restored or recovered then
                             -- the parked file stays in .bak as it is: it is
@@ -873,6 +928,15 @@ function M:runExport(files, opts)
                             -- next run needs no copy of it (ownCopy above)
                             disk = md5(content),
                         }
+                        if shared.getBookInfoRemoval(file) then
+                            -- the fields are gone from the note: the book
+                            -- stops being managed, tags stay editable in
+                            -- the shared keyword list
+                            metadata.forget(file)
+                        elseif book.imported then
+                            -- what the next automatic update compares to
+                            metadata.saveSnapshot(file)
+                        end
                     else
                         errors[#errors + 1] = book.base .. ": " .. tostring(err)
                     end
@@ -1038,6 +1102,11 @@ function M:runExport(files, opts)
         if opts.auto == "close" and exported == 0 and #errors == 0 then
             return
         end
+        -- book info update: silent when it worked, the error window
+        -- below is the only thing the reader ever sees from it
+        if opts.auto == "bookinfo" and #errors == 0 then
+            return
+        end
         self:showResult(exported, skipped, errors, offline_pending,
             opts.auto, backups, excluded)
     end
@@ -1046,6 +1115,9 @@ function M:runExport(files, opts)
             UIManager:show(InfoMessage:new{
                 text = T(_("Cloud: %1 uploaded, %2 errors"), uploaded, upload_failed),
             })
+            return
+        end
+        if opts.auto == "bookinfo" then
             return
         end
         UIManager:show(Notification:new{
@@ -1123,6 +1195,9 @@ end
 local function autoTriggerLabel(auto)
     if auto == "close" then
         return _("Closing")
+    end
+    if auto == "bookinfo" then
+        return _("Book info")
     end
     return nil
 end

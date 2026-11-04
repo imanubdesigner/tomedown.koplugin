@@ -43,6 +43,9 @@ them in Obsidian. No app in the middle.
 - **Tags for the book you are reading**: add them from the open book's menu,
   choosing from the tags already used in your library, and they join its
   frontmatter and the index, ready to filter in Obsidian;
+- **Rating, review and dates in the note**: import them from KOReader one book
+  at a time (or for the whole library at once) and Tomedown keeps them up to
+  date as you read, without touching a book you never imported;
 - **A book can stay out of the way**: hide it from the index, or stop exporting
   it altogether, without deleting the note already written;
 - **Your notes survive**: write in the file from Obsidian and the next export
@@ -207,15 +210,16 @@ on top.
 | **Export new and changed books** | only the books whose highlights changed since the last export (per-book hash)                                                                                 |
 | **Repair all files**             | writes every file again from KOReader's reading history: for a file deleted by mistake or a sync that went wrong                                              |
 | **Choose books…**                | a list with checkboxes: tick the volumes and export just those                                                                                                |
-| **Current book**                 | the rows that name the open book: *Keep my notes in this book*, *Tags: %1*, *Book visibility: %1*, *Notes heading: %1* and *Backup copies…*, explained in [Keep my notes](docs/keep-my-notes.md) |
+| **Current book**                 | the rows that name the open book: *Keep my notes in this book*, *Tags: %1*, *Book visibility: %1*, *Notes heading: %1*, *Backup copies…* and the book-info rows, explained in [Keep my notes](docs/keep-my-notes.md) and [File format](docs/file-format.md#imported-book-information) |
 | **Upload all files again**       | re-uploads every file already in the local folder, after comparing each one with its cloud copy                                                               |
 | **Last export**                  | a wide popup, one line per entry: network, server, pending uploads, the last export and upload with timestamp and outcome                                     |
-| **Settings**                     | the five groups, described in [Settings](docs/settings.md)                                                                                                    |
+| **Settings**                     | the six groups, described in [Settings](docs/settings.md)                                                                                                    |
 | **About**                        | a popup with the logo, the installed version, the description and the GitHub link                                                                             |
 
 Long-pressing a book in the file browser, in History or in Bookshelf adds the
-same per-book actions to KOReader's file dialog: *Export this book*, *Tags…*
-and *Book visibility…*.
+same per-book actions to KOReader's file dialog: *Export this book*, *Tags…*,
+*Book visibility…* and *Import book info* (or *Remove imported book info* once
+the book is managed).
 
 ![The Last export popup: every entry on its own line, the labels in bold](assets/menu/settings/new_status_popup_messages.png)
 
