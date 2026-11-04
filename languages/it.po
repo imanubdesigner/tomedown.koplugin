@@ -570,3 +570,50 @@ msgstr "Evidenziazioni per Obsidian"
 
 msgid "On for all books"
 msgstr "Attivo per tutti i libri"
+
+# exclusion and Reading now (v1.3.0)
+msgid "Book visibility"
+msgstr "Visibilità del libro"
+
+msgid "Book visibility…"
+msgstr "Visibilità del libro…"
+
+msgid "Book visibility: normal"
+msgstr "Visibilità del libro: normale"
+
+msgid "Book visibility: hidden from the index"
+msgstr "Visibilità del libro: nascosto dall'indice"
+
+msgid "Book visibility: not exported"
+msgstr "Visibilità del libro: non esportato"
+
+msgid "Export and show in the index"
+msgstr "Esporta e mostra nell'indice"
+
+msgid "Export, but hide from the index"
+msgstr "Esporta, ma nascondi dall'indice"
+
+msgid "Do not export"
+msgstr "Non esportare"
+
+msgid "%1 files excluded from the export"
+msgstr "%1 file esclusi dall'esportazione"
+
+msgid "Reading now"
+msgstr "In lettura ora"
+
+msgid "Show Reading now in the index"
+msgstr "Mostra «In lettura ora» nell'indice"
+
+msgid "Every exported book is hidden from the index."
+msgstr "Tutti i libri esportati sono nascosti dall'indice."
+
+# tag suggestions (v1.3.0)
+msgid "Tags…"
+msgstr "Tag…"
+
+msgid "Other tags…"
+msgstr "Altri tag…"
+
+msgid "Clear all tags"
+msgstr "Rimuovi tutti i tag"

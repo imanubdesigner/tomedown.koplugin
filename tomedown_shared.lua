@@ -107,6 +107,70 @@ local function setBookTags(file, tags)
     setSetting("book_tags", all)
 end
 
+-- Where a book goes: nil is the normal state (exported and shown in
+-- the index), "index" keeps it out of the index only, "none" stops the
+-- export too. The note already written is never deleted: both states
+-- only decide what the next runs do. The map is keyed like "exports"
+-- (the book file path).
+local function getBookExclusion(file)
+    if not file then
+        return nil
+    end
+    local value = getSetting("book_exclusions", {})[file]
+    if value == "index" or value == "none" then
+        return value
+    end
+    return nil
+end
+
+local function setBookExclusion(file, value)
+    if not file then
+        return
+    end
+    local all = getSetting("book_exclusions", {})
+    if value == "index" or value == "none" then
+        all[file] = value
+    else
+        all[file] = nil
+    end
+    setSetting("book_exclusions", all)
+end
+
+-- Tags seen while exporting, for the suggestions in the tag menu: a
+-- map keyed by the lowercase tag, each entry { name = <tag>, count =
+-- <books> }. The count is the largest number of books one run has seen
+-- carrying that tag, not a running total: a single-book export (auto
+-- close) must not make one tag look more common than the whole library.
+local function getKnownTags()
+    local known = getSetting("known_tags", {})
+    if type(known) ~= "table" then
+        return {}
+    end
+    return known
+end
+
+local function mergeKnownTags(counts)
+    if type(counts) ~= "table" then
+        return
+    end
+    local known = getKnownTags()
+    local changed = false
+    for key, entry in pairs(counts) do
+        if type(entry) == "table" and type(entry.name) == "string" then
+            local previous = known[key]
+            local count = tonumber(entry.count) or 0
+            if type(previous) ~= "table"
+                    or (tonumber(previous.count) or 0) < count then
+                known[key] = { name = entry.name, count = count }
+                changed = true
+            end
+        end
+    end
+    if changed then
+        setSetting("known_tags", known)
+    end
+end
+
 -- The index is a file like the others, and since 1.1 it carries its
 -- own switch: it keeps its zone when the reader asks for it, and
 -- otherwise follows the global default. It used to ride along with
@@ -293,6 +357,10 @@ return {
     setBookPreserve = setBookPreserve,
     getBookTags = getBookTags,
     setBookTags = setBookTags,
+    getBookExclusion = getBookExclusion,
+    setBookExclusion = setBookExclusion,
+    getKnownTags = getKnownTags,
+    mergeKnownTags = mergeKnownTags,
     getIndexPreserve = getIndexPreserve,
     readIfExists = readIfExists,
     ownCopy = ownCopy,

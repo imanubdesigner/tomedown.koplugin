@@ -44,6 +44,14 @@ T.check(i18n("Title") == "Titolo", "it: title order")
 T.check(i18n("Tags made only of numbers are ignored: %1")
         == "I tag composti solo da numeri vengono ignorati: %1",
     "it: numeric-only tags notice")
+T.check(i18n("Reading now") == "In lettura ora", "it: Reading now heading")
+T.check(i18n("Book visibility: not exported")
+        == "Visibilità del libro: non esportato",
+    "it: visibility state")
+T.check(i18n("%1 files excluded from the export")
+        == "%1 file esclusi dall'esportazione",
+    "it: exclusion count")
+T.check(i18n("Other tags…") == "Altri tag…", "it: free-text tags row")
 
 -- 4. explicit getter
 T.check(i18n.gettext("Book index") == "Indice dei libri", "gettext() same as __call")

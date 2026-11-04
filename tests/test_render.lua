@@ -566,13 +566,53 @@ T.check(T.contains(covered,
     "cover cell in the index row")
 T.check(T.contains(covered, "| Saga #2 |"), "series cell with the series index")
 T.check(T.contains(covered, "| Reading | 3 |"), "status cell translated to English")
-T.check(not T.contains(covered, "### "), "a lone group gets no heading")
+T.check(T.contains(covered, "### Reading now"),
+    "a book being read gets the short section above the index")
+T.check(not T.contains(covered, "### My books"),
+    "a lone plain group still gets no My books heading")
 -- a book without a series/status/cover drops those columns, no dash
 local sparse = render.buildIndexMd({
     { link = "B", title = "B", author = "Au", count = 1 },
 }, { show_covers = false })
 T.check(T.contains(sparse, "| [[B\\|B]] | Au | 1 |"),
     "missing series/status drop their columns, no cover cell")
+
+-- Reading now: repeats the books being read above the full index, latest
+-- opening first, and disappears when empty or when the setting is off.
+local readingIndex = render.buildIndexMd({
+    { link = "Autore - Primo", title = "Primo", author = "Autore",
+        status = "reading", count = 1, last_read_sort = 10,
+        progress = "20%" },
+    { link = "Autore - Secondo", title = "Secondo", author = "Autore",
+        status = "reading", count = 2, last_read_sort = 20,
+        progress = "70%" },
+    { link = "Altro - Finito", title = "Finito", author = "Altro",
+        status = "complete", count = 3, series = "Saga" },
+})
+local readingSection = readingIndex:match("### Reading now(.-)###")
+T.check(readingSection ~= nil, "the Reading now section is there")
+local firstReading = readingSection and readingSection:find("\\|Primo]]", 1, true)
+local secondReading = readingSection and readingSection:find("\\|Secondo]]", 1, true)
+T.check(firstReading and secondReading and secondReading < firstReading,
+    "Reading now sorts by the latest opening")
+T.check(readingSection and T.contains(readingSection, "Reading<br>")
+        and T.contains(readingSection, "▰▰▱▱▱▱▱▱▱▱&nbsp;20%"),
+    "Reading now keeps the status and the progress bar")
+T.check(readingIndex:find("### Reading now", 1, true)
+        < readingIndex:find("### Series books", 1, true),
+    "Reading now sits above the series and My books tables")
+T.check(not T.contains(render.buildIndexMd({
+    { link = "B", title = "B", author = "Au", status = "complete", count = 1 },
+}, {}), "### Reading now"), "no section when nothing is being read")
+T.check(not T.contains(render.buildIndexMd({
+    { link = "B", title = "B", author = "Au", status = "reading", count = 1 },
+}, { reading_now = false }), "### Reading now"),
+    "the setting removes the section")
+local hiddenEmpty = render.buildIndexMd({}, { hidden_books = 2 })
+T.check(T.contains(hiddenEmpty, "_Every exported book is hidden from the index._"),
+    "the empty state names the hidden books")
+T.check(not T.contains(hiddenEmpty, "No exported books"),
+    "the old empty message is not used when every book is hidden")
 
 -- index v4: per-book tags, in a column of their own only when used
 local indexTags = render.buildIndexMd({

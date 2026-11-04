@@ -570,3 +570,50 @@ msgstr "Surlignages pour Obsidian"
 
 msgid "On for all books"
 msgstr "Activé pour tous les livres"
+
+# exclusion and Reading now (v1.3.0)
+msgid "Book visibility"
+msgstr "Visibilité du livre"
+
+msgid "Book visibility…"
+msgstr "Visibilité du livre…"
+
+msgid "Book visibility: normal"
+msgstr "Visibilité du livre : normale"
+
+msgid "Book visibility: hidden from the index"
+msgstr "Visibilité du livre : masqué de l'index"
+
+msgid "Book visibility: not exported"
+msgstr "Visibilité du livre : non exporté"
+
+msgid "Export and show in the index"
+msgstr "Exporter et afficher dans l'index"
+
+msgid "Export, but hide from the index"
+msgstr "Exporter, mais masquer de l'index"
+
+msgid "Do not export"
+msgstr "Ne pas exporter"
+
+msgid "%1 files excluded from the export"
+msgstr "%1 fichiers exclus de l'export"
+
+msgid "Reading now"
+msgstr "Lectures en cours"
+
+msgid "Show Reading now in the index"
+msgstr "Afficher « Lectures en cours » dans l'index"
+
+msgid "Every exported book is hidden from the index."
+msgstr "Tous les livres exportés sont masqués de l'index."
+
+# tag suggestions (v1.3.0)
+msgid "Tags…"
+msgstr "Tags…"
+
+msgid "Other tags…"
+msgstr "Autres tags…"
+
+msgid "Clear all tags"
+msgstr "Supprimer tous les tags"

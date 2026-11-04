@@ -9,6 +9,7 @@ plugin class.
 ]]
 
 local BookList = require("ui/widget/booklist")
+local ButtonDialog = require("ui/widget/buttondialog")
 local ConfirmBox = require("ui/widget/confirmbox")
 local Device = require("device")
 local Font = require("ui/font")
@@ -34,6 +35,8 @@ local getBookPreserve = shared.getBookPreserve
 local setBookPreserve = shared.setBookPreserve
 local getBookTags = shared.getBookTags
 local setBookTags = shared.setBookTags
+local getBookExclusion = shared.getBookExclusion
+local setBookExclusion = shared.setBookExclusion
 local getIndexPreserve = shared.getIndexPreserve
 local readIfExists = shared.readIfExists
 local isZoned = shared.isZoned
@@ -213,18 +216,117 @@ end
 -- when the reader clears a list that existed, because that is the
 -- signal the merge needs to drop the tags this menu used to manage
 -- while leaving the tags written by hand alone.
-function M:editBookTags(touchmenu, file)
+function M:saveBookTags(file, tags)
+    local stored = getBookTags(file)
+    -- an untouched empty field on a book that never chose says
+    -- nothing: it must not store an empty choice (which would start
+    -- managing its tags)
+    if stored == nil and #tags == 0 then
+        return false
+    end
+    local unchanged = stored ~= nil and #stored == #tags
+    if unchanged then
+        for i = 1, #tags do
+            if tostring(stored[i]):lower() ~= tags[i]:lower() then
+                unchanged = false
+                break
+            end
+        end
+    end
+    if unchanged then
+        return false
+    end
+    setBookTags(file, tags)
+    -- this book's file carries the old tags: the next export rewrites
+    -- it, and only it
+    self:invalidateExportHash(file)
+    return true
+end
+
+local function currentBookTags(file)
+    return render.parseTagList(
+        table.concat(getBookTags(file) or {}, ", "))
+end
+
+-- Suggested tags, most used first. The cache filled during export holds
+-- the books' own keywords; the per-book choices and the tags selected
+-- here are folded in too, so a tag that only ever came from the menu is
+-- still offered. Returns a list of { tag, count }.
+function M:tagSuggestions(file, limit)
+    local scores = {}
+    local function add(tag, count)
+        tag = render.sanitizeTag(tag)
+        if tag == "" then
+            return
+        end
+        local key = tag:lower()
+        local entry = scores[key]
+        if not entry then
+            entry = { tag = tag, count = 0 }
+            scores[key] = entry
+        end
+        count = tonumber(count) or 0
+        if count > entry.count then
+            entry.count = count
+        end
+    end
+    for key, entry in pairs(shared.getKnownTags()) do
+        if type(entry) == "table" then
+            add(entry.name or key, entry.count)
+        end
+    end
+    -- count how many books chose each tag from the menu, one per book
+    for __, tags in pairs(getSetting("book_tags", {})) do
+        local seen = {}
+        for ___, tag in ipairs(tags or {}) do
+            tag = render.sanitizeTag(tag)
+            local key = tag:lower()
+            if tag ~= "" and not seen[key] then
+                seen[key] = true
+                add(tag, 0)
+                scores[key].menu_count = (scores[key].menu_count or 0) + 1
+            end
+        end
+    end
+    for key, entry in pairs(scores) do
+        if entry.menu_count and entry.menu_count > entry.count then
+            entry.count = entry.menu_count
+        end
+    end
+    for __, tag in ipairs(currentBookTags(file)) do
+        add(tag, 0)
+    end
+    local list = {}
+    for __, entry in pairs(scores) do
+        list[#list + 1] = { tag = entry.tag, count = entry.count }
+    end
+    table.sort(list, function(a, b)
+        if a.count ~= b.count then
+            return a.count > b.count
+        end
+        return a.tag:lower() < b.tag:lower()
+    end)
+    if limit and #list > limit then
+        local kept = {}
+        for i = 1, limit do
+            kept[i] = list[i]
+        end
+        return kept
+    end
+    return list
+end
+
+-- Free text, for a tag nobody has used yet.
+function M:editBookTagsText(touchmenu, file)
     if not file then
         return
     end
     local dialog
     -- invalid tags stored by an older build (a number alone, say) are
     -- not shown: the field starts on what Obsidian can actually use
-    local previous = render.parseTagList(
-        table.concat(getBookTags(file) or {}, ", "))
     dialog = InputDialog:new{
         title = _("Tags for this book"),
-        input = table.concat(previous, ", "),
+        input = table.concat(currentBookTags(file), ", "),
         hint = _("separate tags with commas; applied at the next export"),
         buttons = {
             {
@@ -242,51 +344,122 @@ function M:editBookTags(touchmenu, file)
                     callback = function()
                         local tags, rejected = render.parseTagList(
                             dialog:getInputText() or "")
-                        local function finish()
-                            UIManager:close(dialog)
-                            if touchmenu and touchmenu.updateItems then
-                                touchmenu:updateItems()
-                            end
-                            if #rejected > 0 then
-                                UIManager:show(Notification:new{
-                                    text = T(
-                                        _("Tags made only of numbers are ignored: %1"),
-                                        table.concat(rejected, ", ")),
-                                })
-                            end
+                        self:saveBookTags(file, tags)
+                        UIManager:close(dialog)
+                        if touchmenu and touchmenu.updateItems then
+                            touchmenu:updateItems()
                         end
-                        local stored = getBookTags(file)
-                        -- an untouched empty field on a book that never
-                        -- chose says nothing: it must not store an empty
-                        -- choice (which would start managing its tags)
-                        if stored == nil and #tags == 0 then
-                            finish()
-                            return
+                        if #rejected > 0 then
+                            UIManager:show(Notification:new{
+                                text = T(
+                                    _("Tags made only of numbers are ignored: %1"),
+                                    table.concat(rejected, ", ")),
+                            })
                         end
-                        local unchanged = stored ~= nil
-                            and #stored == #tags
-                        if unchanged then
-                            for i = 1, #tags do
-                                if tostring(stored[i]):lower()
-                                        ~= tags[i]:lower() then
-                                    unchanged = false
-                                    break
-                                end
-                            end
-                        end
-                        if not unchanged then
-                            setBookTags(file, tags)
-                            -- this book's file carries the old tags: the
-                            -- next export rewrites it, and only it
-                            self:invalidateExportHash(file)
-                        end
-                        finish()
                     end,
                 },
             },
         },
     }
     UIManager:show(dialog)
+end
+
+-- The tags of one book: the ones already used elsewhere (a tap toggles
+-- them) plus the free-text field and the way to clear everything. The
+-- dialog rebuilds after a toggle so every label shows the new state.
+function M:editBookTags(touchmenu, file)
+    if not file then
+        return
+    end
+    local selected = currentBookTags(file)
+    local selected_by_key = {}
+    for __, tag in ipairs(selected) do
+        selected_by_key[tag:lower()] = true
+    end
+    local shown = self:tagSuggestions(file, 12)
+    local in_list = {}
+    for __, entry in ipairs(shown) do
+        in_list[entry.tag:lower()] = true
+    end
+    -- the tags already on this book stay reachable even when their count
+    -- is low and the list is capped
+    for __, tag in ipairs(selected) do
+        if not in_list[tag:lower()] then
+            shown[#shown + 1] = { tag = tag, count = 0 }
+            in_list[tag:lower()] = true
+        end
+    end
+    local dialog
+    local buttons = {}
+    local row = {}
+    local function toggle(tag)
+        local now, seen = {}, {}
+        for __, current in ipairs(currentBookTags(file)) do
+            if current:lower() ~= tag:lower() and not seen[current:lower()] then
+                seen[current:lower()] = true
+                now[#now + 1] = current
+            end
+        end
+        if not selected_by_key[tag:lower()] then
+            now[#now + 1] = tag
+        end
+        self:saveBookTags(file, now)
+        UIManager:close(dialog)
+        self:editBookTags(touchmenu, file)
+    end
+    for __, entry in ipairs(shown) do
+        local checked = selected_by_key[entry.tag:lower()]
+        row[#row + 1] = {
+            text = (checked and "✓ " or "") .. entry.tag,
+            callback = function() toggle(entry.tag) end,
+        }
+        if #row == 2 then
+            buttons[#buttons + 1] = row
+            row = {}
+        end
+    end
+    if #row > 0 then
+        buttons[#buttons + 1] = row
+    end
+    buttons[#buttons + 1] = {
+        {
+            text = _("Other tags…"),
+            callback = function()
+                UIManager:close(dialog)
+                self:editBookTagsText(touchmenu, file)
+            end,
+        },
+    }
+    if #selected > 0 then
+        buttons[#buttons + 1] = {
+            {
+                text = _("Clear all tags"),
+                callback = function()
+                    self:saveBookTags(file, {})
+                    UIManager:close(dialog)
+                    self:editBookTags(touchmenu, file)
+                end,
+            },
+        }
+    end
+    buttons[#buttons + 1] = {
+        {
+            text = _("Close"),
+            id = "close",
+            callback = function()
+                UIManager:close(dialog)
+                if touchmenu and touchmenu.updateItems then
+                    touchmenu:updateItems()
+                end
+            end,
+        },
+    }
+    dialog = ButtonDialog:new{
+        title = _("Tags for this book"),
+        buttons = buttons,
+    }
+    UIManager:show(dialog)
+    return dialog
 end
 
 -- menu
@@ -434,6 +607,78 @@ local function setIndexOrder(order)
     setSetting("index_dirty", true)
 end
 
+-- Where the book goes. The file already written is never deleted: the
+-- state decides what the next exports do, and the index alone is told
+-- to rebuild because no book file has to change.
+local function setBookExclusionState(file, value)
+    if getBookExclusion(file) == value then
+        return false
+    end
+    setBookExclusion(file, value)
+    setSetting("index_dirty", true)
+    return true
+end
+
+function M:bookVisibilityLabel(file)
+    local state = getBookExclusion(file)
+    if state == "index" then
+        return _("Book visibility: hidden from the index")
+    elseif state == "none" then
+        return _("Book visibility: not exported")
+    end
+    return _("Book visibility: normal")
+end
+
+function M:editBookVisibility(file, touchmenu)
+    if not file then
+        return
+    end
+    local dialog
+    local current = getBookExclusion(file)
+    local function label(value, text)
+        return (current == value and "✓ " or "") .. text
+    end
+    local function choose(value)
+        setBookExclusionState(file, value)
+        UIManager:close(dialog)
+        if touchmenu and touchmenu.updateItems then
+            touchmenu:updateItems()
+        end
+    end
+    dialog = ButtonDialog:new{
+        title = _("Book visibility"),
+        buttons = {
+            {
+                {
+                    text = label(nil, _("Export and show in the index")),
+                    callback = function() choose(nil) end,
+                },
+            },
+            {
+                {
+                    text = label("index", _("Export, but hide from the index")),
+                    callback = function() choose("index") end,
+                },
+            },
+            {
+                {
+                    text = label("none", _("Do not export")),
+                    callback = function() choose("none") end,
+                },
+            },
+            {
+                {
+                    text = _("Cancel"),
+                    id = "close",
+                    callback = function() UIManager:close(dialog) end,
+                },
+            },
+        },
+    }
+    UIManager:show(dialog)
+    return dialog
+end
+
 function M:genSettingsMenu()
     -- Files: what is written and where. Static since 1.1: none of its
     -- rows depends on a switch, so the group is the same table every
@@ -515,6 +760,17 @@ function M:genSettingsMenu()
                     end,
                 },
             },
+        },
+        {
+            text = _("Show Reading now in the index"),
+            checked_func = function()
+                return getSetting("reading_now", true)
+            end,
+            keep_menu_open = true,
+            callback = function()
+                setSetting("reading_now", not getSetting("reading_now", true))
+                setSetting("index_dirty", true)
+            end,
         },
         {
             text = _("Include page bookmarks"),
@@ -1289,7 +1545,9 @@ function M:genBookMenu()
                 if touchmenu and touchmenu.closeMenu then
                     touchmenu:closeMenu()
                 end
-                self:runExport({ current }, {})
+                -- asked for this book by name: "Do not export" stops
+                -- automatic runs, not this one
+                self:runExport({ current }, { force = true })
             end,
         }
     end
@@ -1455,6 +1713,14 @@ function M:genCurrentBookMenu()
             self:editBookTags(touchmenu, file)
         end,
     }
+    rows[#rows + 1] = {
+        text_func = function()
+            return self:bookVisibilityLabel(file)
+        end,
+        callback = function(touchmenu)
+            self:editBookVisibility(file, touchmenu)
+        end,
+    }
     if not getSetting("preserve", false) and getBookPreserve(file) then
         rows[#rows + 1] = {
             text_func = function()
@@ -1476,6 +1742,36 @@ function M:genCurrentBookMenu()
         }
     end
     return rows
+end
+
+-- The buttons Tomedown adds to KOReader's file dialog (the long press on
+-- a file in the file manager, History, Collections and Bookshelf). The
+-- same row serves every host: only the path arrives, never a document.
+function M:genFileDialogButtons(file, is_file)
+    if not file or not is_file then
+        return nil
+    end
+    return {
+        {
+            text = _("Export this book"),
+            enabled = BookList.hasBookBeenOpened(file),
+            callback = function()
+                self:runExport({ file }, { force = true })
+            end,
+        },
+        {
+            text = _("Tags…"),
+            callback = function()
+                self:editBookTags(nil, file)
+            end,
+        },
+        {
+            text = _("Book visibility…"),
+            callback = function()
+                self:editBookVisibility(file)
+            end,
+        },
+    }
 end
 
 -- Rebuild the Current book submenu in place after its switch changes

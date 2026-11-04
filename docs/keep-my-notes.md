@@ -52,11 +52,13 @@ the global switch on, both of its rows are hidden.
 ### Tags for one book
 
 *Tags: %1*, in the open book's menu, holds the tags of that book alone. The
-field starts on the tags already stored; separate them with commas and save,
-and they join `ebook`, `highlights` and the book's own keywords at the next
-export (right away when the book is exported on close). Clearing the field
-drops them. A tag made only of digits (`1500`) is ignored, because Obsidian
-does not accept it: use `1500s` or `anno-1500`.
+dialog lists the tags already used in your library, most used first: tap one
+to add it, tap it again to remove it. *Other tags…* opens the comma separated
+field for a tag nobody has used yet, and *Clear all tags* empties the list.
+The chosen tags join `ebook`, `highlights` and the book's own keywords at the
+next export (right away when the book is exported on close). A tag made only
+of digits (`1500`) is ignored, because Obsidian does not accept it: use
+`1500s` or `anno-1500`.
 
 ![The tags dialog, one book's tags in a comma separated field](../assets/menu/reader/add_tag_menu.png)
 
@@ -67,6 +69,16 @@ Obsidian is not in the receipt and survives. Clearing the field removes both
 the managed tags and the receipt; with Keep my notes on, the clear is
 recorded as an empty ledger (`tomedown_book_tags: []`) so the next merge
 knows to drop the old ones.
+
+### Where a book goes
+
+*Book visibility: %1*, in the same menu, chooses what the next exports do with
+that book: keep it in the index, export it but leave it out of the index, or
+stop exporting it. The note already written is never deleted, and the choice
+belongs to the book, so it survives later exports of the rest of the library.
+*Export this book*, tapped on purpose, still works for a book set to *not
+exported*. The same row sits in KOReader's file dialog when you long-press a
+book in the file browser, in History or in Bookshelf, together with *Tags…*.
 
 ## The zone and the block
 

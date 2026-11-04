@@ -704,7 +704,11 @@ function render.buildIndexMd(books, opts)
     add("")
 
     if #books == 0 then
-        add("_" .. _("No exported books with highlights.") .. "_")
+        local empty = _("No exported books with highlights.")
+        if (tonumber(opts.hidden_books) or 0) > 0 then
+            empty = _("Every exported book is hidden from the index.")
+        end
+        add("_" .. empty .. "_")
         add("")
         if markers then
             table.insert(out, region_from, render.beginMarker("index",
@@ -954,6 +958,32 @@ function render.buildIndexMd(books, opts)
             end
             cells[#cells + 1] = count_txt
             add("| " .. table.concat(cells, " | ") .. " |")
+        end
+    end
+
+    -- A shortcut for the books being read: same table, repeated on
+    -- purpose, sorted by the last time they were opened. It sits above
+    -- the full index and disappears when nothing is being read.
+    if opts.reading_now ~= false then
+        local reading = {}
+        for __, b in ipairs(books) do
+            if b.status == "reading" then
+                reading[#reading + 1] = b
+            end
+        end
+        table.sort(reading, function(a, b)
+            local aa = tonumber(a.last_read_sort) or 0
+            local bb = tonumber(b.last_read_sort) or 0
+            if aa ~= bb then
+                return aa > bb
+            end
+            return byAuthor(a, b)
+        end)
+        if #reading > 0 then
+            add("### " .. _("Reading now"))
+            add("")
+            addTable(reading, any_filled(reading, "series"))
+            add("")
         end
     end
 

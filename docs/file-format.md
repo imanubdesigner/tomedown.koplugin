@@ -244,4 +244,12 @@ highlights run newest and most first, with author and title as tie-breakers,
 and a book never read goes last. Series books keep their own order by series
 and position whatever the setting says.
 
+While at least one book is being read, a *Reading now* section repeats those
+books above the series and *My books* tables, latest opening first. It is on
+by default and *Settings → Files → Show Reading now in the index* takes it
+away. A book set to *Book visibility: hidden from the index* or *not
+exported*, from its own menu or from the file dialog, is left out of every
+table; when every exported book is hidden the index says so instead of
+claiming the library is empty.
+
 ![Hovering a title in the index opens a preview of the book's note: the bold highlight recap heading, the chapter heading and the highlight](../assets/obsidian/00_index_preview.png)

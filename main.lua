@@ -125,6 +125,15 @@ end
 
 function Tomedown:init()
     self.ui.menu:registerToMainMenu(self)
+    -- The file dialog hook exists on the FileManager instance, which is
+    -- also the object Bookshelf reads (FileManager.instance). Registering
+    -- there gives both hosts the same Tomedown row; in the reader there is
+    -- no file dialog and nothing is registered.
+    if type(self.ui.addFileDialogButtons) == "function" then
+        self.ui:addFileDialogButtons("tomedown", function(file, is_file)
+            return self:genFileDialogButtons(file, is_file)
+        end)
+    end
     -- Do NOT insert this instance into self.ui here: KOReader runs init()
     -- inside createPluginInstance and inserts the instance itself right
     -- after, via registerModule (ReaderUI and FileManager both do). An
