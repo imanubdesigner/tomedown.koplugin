@@ -28,6 +28,8 @@ if [ ! -f "$PLUGIN/main.lua" ]; then
     exit 1
 fi
 
+mkdir -p kodata
+
 echo "=== test_render"
 "$LUA" test_render.lua
 echo "=== test_merge"
