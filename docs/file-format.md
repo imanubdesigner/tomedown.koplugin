@@ -112,6 +112,17 @@ file. With it on, a clear writes `tomedown_book_tags: []`, the signal the
 merge uses to drop the old managed tags, and the empty ledger is not written
 back.
 
+*Current book → Book info → Tags: %1 → Delete tags…* (also reachable from *Tags…* on a
+long-press) lists every tag offered in the tag menu: the suggestion cache, the
+per-book choices and, for imported books, the shared keywords. Each deletion
+asks first, then removes the tag from every managed list, from the imported
+keyword lists and from the suggestion cache, and remembers the deletion so
+future exports do not re-add it from book metadata; the notes drop it at the
+next export. An empty `book_tags` list is kept on purpose, because it is the
+signal that clears the old tags from the note; a missing entry would mean the
+book never chose. Tags written by hand stay, and if an imported book cannot be
+updated the manager names it and leaves its keywords untouched.
+
 ## Imported book information
 
 Tomedown can also write the information KOReader already holds about a book:
@@ -120,7 +131,7 @@ collections. It is **opt-in for every single book**: a normal export carries
 none of these fields, so installing a new version of the plugin never rewrites
 the notes you already have.
 
-Open the book's menu and tap *Import book info* (or long-press the book in the
+Open *Current book → Book info* and tap *Import book info* (or long-press the book in the
 file browser, History or Bookshelf and use the same row). Tomedown asks once,
 then writes the fields and from that moment keeps them up to date. The import
 works only for a book KOReader has opened.
@@ -270,29 +281,45 @@ in the vault is the master one. Obsidian renders such images starting with
 The index uses wiki links (`[[…]]`), opened natively by Obsidian and by most
 Markdown apps; the body opens with a rule and a stats line (books, highlights,
 starred specials) above the table, and with covers enabled the first column
-shows the cover image (120×160 box):
+shows the cover image (120×160 box). By default the tags chosen from
+*Current book → Tags: %1* sit under the book title, after a thin rule, so a
+long list never widens the table:
 
 ```markdown
-| <img src="covers/Michael McDowell - Blackwater.jpg" alt="" style="object-fit:contain;width:120px;height:160px"> | [[Michael McDowell - Blackwater\|Blackwater]] | Michael McDowell | Blackwater #1 | #Horror #Southern-Gothic | Complete<br>▰▰▰▰▰▰▰▰▰▰&nbsp;96% | 26/09/2026 | 150 · ★42 |
+| <img src="covers/Michael McDowell - Blackwater.jpg" alt="" style="object-fit:contain;width:120px;height:160px"> | [[Michael McDowell - Blackwater\|Blackwater]]<hr style="margin:12px 0 10px 0;border:0;border-top:1px solid rgba(128,128,128,0.45)">#Horror #Southern-Gothic | Michael McDowell | Blackwater #1 | Complete<br>▰▰▰▰▰▰▰▰▰▰&nbsp;96% | 26/09/2026 | 150 · ★42 |
 ```
 
-Without the option the cover column disappears. The Tags column holds the tags
-chosen from *Current book → Tags: %1*, written as clickable `#tag` values
-separated by a space. It appears only when at least one book in that table has
-tags and sits between Series and Status, so a library that never used them
-keeps exactly the table it had before. The Status cell holds whatever
-the book has: the status word on the first line, the progress bar under it
-with the percentage glued to the bar by a no-break space, so Obsidian can
-never drop a two-digit `96%` onto a line of its own, and a dash when it has
-none. The last read date has a column of its own, the same goes for a missing
-series, and a book with starred highlights shows them as `· ★42` next to the
-count.
+Without the option the cover column disappears. Tags are written as clickable
+`#tag` values separated by a space or a line break. A table cell does not wrap,
+so a long list is split into lines of at most 24 characters: the table keeps
+its width and never needs horizontal scrolling. A library that never used tags
+keeps exactly the table it had before. The Status cell holds whatever the book has: the
+status word on the first line, the progress bar under it with the percentage
+glued to the bar by a no-break space, so Obsidian can never drop a two-digit
+`96%` onto a line of its own, and a dash when it has none. The last read date
+has a column of its own, the same goes for a missing series, and a book with
+starred highlights shows them as `· ★42` next to the count.
 
-*My books* is ordered by author and then title by default. *Settings → Files →
-Index order* switches it to title, last read or highlights: last read and
-highlights run newest and most first, with author and title as tie-breakers,
-and a book never read goes last. Series books keep their own order by series
-and position whatever the setting says.
+*Settings → Files → Index layout* offers three shapes:
+
+| Layout | What changes |
+|---|---|
+| *Tags under the title* (the default) | the tags sit in the Book cell under the title, after a thin rule; Status and Last read keep separate columns |
+| *Tags column* | the tags move to their own column between Series and Status; Status and Last read keep separate columns |
+| *Tags column, compact* | the tags keep their column and Status and Last read merge into one, headed *Status · Last read* when both are present |
+
+Changing the layout marks the index as stale: the next export rebuilds
+`00 - Index.md` alone, without rewriting a book note. An unknown value falls
+back to *Tags under the title*. Upgrading from 1.2.0 applies the default
+layout to an existing install and rebuilds the index once.
+
+Each group keeps its heading even when it is alone: *Series books* and
+*My books* are always named, in that order, and a lone table is no longer
+mistaken for a duplicate of the one above. *My books* is ordered by author and
+then title by default. *Settings → Files → Index order* switches it to title,
+last read or highlights: last read and highlights run newest and most first,
+with author and title as tie-breakers, and a book never read goes last. Series
+books keep their own order by series and position whatever the setting says.
 
 While at least one book is being read, a *Reading now* section repeats those
 books above the series and *My books* tables, latest opening first. It is on

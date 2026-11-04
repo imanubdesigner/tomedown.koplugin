@@ -559,12 +559,15 @@ T.check(T.contains(rows, "| A \\| B | 0 |"), "pipes escaped, count zero")
 local order = rows:find("[[Michael McDowell - Blackwater\\|Blackwater]]", 1, true)
 local order2 = rows:find("[[Altro Autore - Altro\\|Altro]]", 1, true)
 T.check(order2 < order, "author order is the default for My books")
-T.check(not T.contains(rows, "### "), "no group headings when every book is plain")
+T.check(T.contains(rows, "### My books"),
+    "the plain group keeps its heading even when it is alone")
+T.check(not T.contains(rows, "### Series books"),
+    "no series heading without series books")
 local plain_rows = (rows:gsub(" hash=%w+", ""))
 T.check(T.contains(plain_rows,
     "---\n\n\n" .. render.beginMarker("index")
-    .. "\n\n---\n\n**2 books** · **2 highlights**\n\n| Book |"),
-    "the stats line sits between the frontmatter rule and the table")
+    .. "\n\n---\n\n**2 books** · **2 highlights**\n\n### My books\n\n| Book |"),
+    "the stats line, the heading and then the table")
 
 local single = render.buildIndexMd({
     {
@@ -618,8 +621,10 @@ T.check(T.contains(covered, "| Saga #2 |"), "series cell with the series index")
 T.check(T.contains(covered, "| Reading | 3 |"), "status cell translated to English")
 T.check(T.contains(covered, "### Reading now"),
     "a book being read gets the short section above the index")
+T.check(T.contains(covered, "### Series books"),
+    "a lone series group keeps its heading")
 T.check(not T.contains(covered, "### My books"),
-    "a lone plain group still gets no My books heading")
+    "no plain heading without plain books")
 -- a book without a series/status/cover drops those columns, no dash
 local sparse = render.buildIndexMd({
     { link = "B", title = "B", author = "Au", count = 1 },
@@ -664,7 +669,9 @@ T.check(T.contains(hiddenEmpty, "_Every exported book is hidden from the index._
 T.check(not T.contains(hiddenEmpty, "No exported books"),
     "the old empty message is not used when every book is hidden")
 
--- index v4: per-book tags, in a column of their own only when used
+-- index v4: per-book tags. The default keeps them under the title,
+-- after a thin rule with room around it; the old column is the second
+-- layout, and the third folds the date into the status cell.
 local indexTags = render.buildIndexMd({
     {
         link = "Au - Tagged", title = "Tagged", author = "Au", series = "Saga",
@@ -672,10 +679,10 @@ local indexTags = render.buildIndexMd({
         status = "reading", count = 1,
     },
     { link = "Au - Plain", title = "Plain", author = "Au", count = 1 },
-}, {})
+}, { index_layout = "tags_column" })
 T.check(T.contains(indexTags,
         "| Book | Author | Series | Tags | Status | Highlights |"),
-    "Tags sits between Series and Status")
+    "the tags column sits between Series and Status")
 T.check(T.contains(indexTags,
         "| [[Au - Tagged\\|Tagged]] | Au | Saga #1 | #Horror #Psicologico |"),
     "the tags are clickable, separated by a space")
@@ -683,16 +690,88 @@ T.check(T.contains(indexTags, "| Book | Author | Highlights |"),
     "a table with no tags of its own keeps no Tags column")
 T.check(not T.contains(indexTags, "| [[Au - Plain\\|Plain]] | Au | — | 1 |"),
     "the untagged table gets no empty Tags cell")
-T.check(not T.contains(rows, "| Tags |"),
-    "no Tags column when every book is untagged")
+
+local tagsBelow = render.buildIndexMd({
+    {
+        link = "Au - Tagged", title = "Tagged", author = "Au",
+        tags = { "Horror", "Psicologico" }, count = 1,
+    },
+}, {})
+T.check(not T.contains(tagsBelow, "| Tags |"),
+    "the default layout has no Tags column to widen the table")
+T.check(T.contains(tagsBelow,
+        "[[Au - Tagged\\|Tagged]]<hr style=\"margin:12px 0 10px 0;"
+        .. "border:0;border-top:1px solid rgba(128,128,128,0.45)\">"
+        .. "#Horror #Psicologico |"),
+    "the tags sit under the title after a spaced thin rule in the same cell")
+
+local wrappedTags = render.buildIndexMd({
+    {
+        link = "A - Manningtree", title = "Manningtree", author = "A", count = 1,
+        tags = { "Strega", "Paranormale", "Vecchie", "football", "1500s" },
+    },
+}, {})
+T.check(T.contains(wrappedTags,
+        "#Strega #Paranormale<br>#Vecchie #football<br>#1500s"),
+    "a long tag list wraps inside the cell instead of widening it")
+
 local dirtyIndexTags = render.buildIndexMd({
     {
         link = "B", title = "B", author = "A", count = 1,
         tags = { "Horror tales", "1500", "horror-tales", "" },
     },
-}, {})
+}, { index_layout = "tags_column" })
 T.check(T.contains(dirtyIndexTags, "| #Horror-tales |"),
     "raw index tags are sanitized, deduplicated and numbers dropped")
+
+-- the compact layout folds Status and Last read into a single column
+local compactIndex = render.buildIndexMd({
+    {
+        link = "Au - One", title = "One", author = "Au", status = "reading",
+        count = 2, progress = "6%", last_read = "2026-10-01",
+    },
+    {
+        link = "Au - Two", title = "Two", author = "Au", count = 1,
+        status = "complete",
+    },
+}, { index_layout = "tags_column_compact" })
+T.check(T.contains(compactIndex, "| Status · Last read | Highlights |"),
+    "the compact layout has one status and date column")
+T.check(T.contains(compactIndex,
+        "| Reading · 01/10/2026<br>▰▱▱▱▱▱▱▱▱▱&nbsp;6% | 2 |"),
+    "the date joins the status word, the bar keeps its own line")
+T.check(T.contains(compactIndex, "| Complete | 1 |"),
+    "a book with no date shows the status alone in the merged column")
+local compactSingle = render.buildIndexMd({
+    { link = "B", title = "B", author = "A", count = 1,
+        last_read = "2026-10-02" },
+}, { index_layout = "tags_column_compact" })
+T.check(T.contains(compactSingle, "| Last read | Highlights |"),
+    "the merged column drops the missing half from its title")
+T.check(T.contains(compactSingle, "| 02/10/2026 | 1 |"),
+    "a date alone still fills the merged column")
+local bogusLayout = render.buildIndexMd({
+    { link = "B", title = "B", author = "A", count = 1,
+        tags = { "Horror" } },
+}, { index_layout = "bogus" })
+T.check(T.contains(bogusLayout, "### My books")
+        and not T.contains(bogusLayout, "| Tags |"),
+    "an unknown layout falls back to tags under the title")
+
+-- imported book rating stars in the index
+T.check(render.stars(nil) == nil and render.stars(0) == nil
+        and render.stars(6) == nil,
+    "stars returns nil outside 1..5")
+T.check(render.stars(4) == "★★★★☆" and render.stars(5) == "★★★★★",
+    "stars formats 1..5 as five-star glyphs")
+local ratedIndex = render.buildIndexMd({
+    {
+        link = "Au - Rated", title = "Rated", author = "Au",
+        status = "complete", progress = "100%", rating = 4, count = 3,
+    },
+}, {})
+T.check(T.contains(ratedIndex, "Complete<br>▰▰▰▰▰▰▰▰▰▰&nbsp;100%<br>★★★★☆"),
+    "an imported rating appears under the status and progress bar")
 
 -- index v3: two groups, each with its own columns and a heading
 local split = render.buildIndexMd({

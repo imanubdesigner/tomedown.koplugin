@@ -238,12 +238,12 @@ A few things worth knowing:
   receives the local copy as it is; with *Bring in edits made in Obsidian*
   off, the copy on the device always wins.
 
-## Backup copies…
+## Backup copies
 
-Inside a book, *Backup copies…* in the Tomedown menu lists the copies that
-sit beside that book's file (the notes set aside and the safety copy, each
+Inside a book, *Backup copies* in the Tomedown menu lists the copies that
+sit beside that book's file (the saved notes and the safety copy, each
 with the day it was saved) and deletes one when you tap it and confirm. The
-box says what the copy holds, and warns when the notes set aside are the only
+box says what the copy holds, and warns when the saved notes copy is the only
 place those notes are right now. The row appears only while the book has a
 copy, and leaves with the last one.
 

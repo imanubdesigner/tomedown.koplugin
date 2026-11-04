@@ -638,6 +638,7 @@ function M:buildIndexEntries(dir, export_records)
                     series_index = book.series_index,
                     tags = book.tags or {},
                     status = book.status,
+                    rating = book.rating,
                     count = book.count,
                     special = special,
                     progress = book.progress,
@@ -969,6 +970,7 @@ function M:runExport(files, opts)
                 notes_title = index_title,
                 markers = index_preserve,
                 index_order = getSetting("index_order", "author"),
+                index_layout = getSetting("index_layout", "tags_below"),
                 hidden_books = hidden,
                 reading_now = getSetting("reading_now", true),
             })

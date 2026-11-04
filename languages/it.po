@@ -511,14 +511,14 @@ msgstr "lascia vuoto per non esportare l'intestazione"
 msgid "Write your thoughts, your emotions, your questions."
 msgstr "Scrivi i tuoi pensieri, le tue emozioni, le tue domande."
 
-msgid "Backup copies…"
-msgstr "Copie di backup…"
+msgid "Backup copies"
+msgstr "Copie di backup"
 
 msgid "Safety copy"
 msgstr "Copia di sicurezza"
 
-msgid "Notes set aside"
-msgstr "Note messe da parte"
+msgid "Saved notes"
+msgstr "Note salvate"
 
 msgid "Older copy"
 msgstr "Copia precedente"
@@ -712,8 +712,35 @@ msgstr "Informazioni libro"
 msgid "Import book info"
 msgstr "Importa informazioni libro"
 
-msgid "Dates…"
-msgstr "Date…"
+msgid "Dates"
+msgstr "Date"
 
 msgid "Remove imported book info…"
 msgstr "Rimuovi informazioni importate…"
+
+msgid "Index layout: %1"
+msgstr "Layout dell'indice: %1"
+
+msgid "Tags under the title"
+msgstr "Tag sotto il titolo"
+
+msgid "Tags column"
+msgstr "Colonna Tag"
+
+msgid "Tags column, compact"
+msgstr "Colonna Tag, compatto"
+
+msgid "Delete tags…"
+msgstr "Elimina tag…"
+
+msgid "No tags to delete."
+msgstr "Nessun tag da eliminare."
+
+msgid "Delete a tag from every book"
+msgstr "Elimina un tag da tutti i libri"
+
+msgid "Delete #%1 from every book? It leaves the notes at the next export; tags written by hand stay."
+msgstr "Eliminare #%1 da tutti i libri? Sparirà dalle note al prossimo export; i tag scritti a mano restano."
+
+msgid "Some books could not be updated: the tag is still in their keywords."
+msgstr "Alcuni libri non sono stati aggiornati: il tag è ancora nelle loro parole chiave."

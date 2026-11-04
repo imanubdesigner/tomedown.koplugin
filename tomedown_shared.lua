@@ -284,9 +284,14 @@ local function mergeKnownTags(counts)
         return
     end
     local known = getKnownTags()
+    local deleted = getSetting("deleted_tags", {})
+    if type(deleted) ~= "table" then
+        deleted = {}
+    end
     local changed = false
     for key, entry in pairs(counts) do
-        if type(entry) == "table" and type(entry.name) == "string" then
+        if type(entry) == "table" and type(entry.name) == "string"
+                and not deleted[key] then
             local previous = known[key]
             local count = tonumber(entry.count) or 0
             if type(previous) ~= "table"
@@ -298,6 +303,46 @@ local function mergeKnownTags(counts)
     end
     if changed then
         setSetting("known_tags", known)
+    end
+end
+
+-- Drop one tag from the suggestion cache and remember the deletion so
+-- future exports do not re-add it from book metadata. The menu passes
+-- the sanitized spelling; the key is case-insensitive.
+local function forgetKnownTag(tag)
+    if type(tag) ~= "string" or tag == "" then
+        return false
+    end
+    local key = tag:lower()
+    local known = getKnownTags()
+    local had = known[key] ~= nil
+    if had then
+        known[key] = nil
+        setSetting("known_tags", known)
+    end
+    local deleted = getSetting("deleted_tags", {})
+    if type(deleted) ~= "table" then
+        deleted = {}
+    end
+    if not deleted[key] then
+        deleted[key] = true
+        setSetting("deleted_tags", deleted)
+    end
+    return had
+end
+
+local function allowKnownTag(tag)
+    if type(tag) ~= "string" or tag == "" then
+        return
+    end
+    local deleted = getSetting("deleted_tags", {})
+    if type(deleted) ~= "table" then
+        return
+    end
+    local key = tag:lower()
+    if deleted[key] then
+        deleted[key] = nil
+        setSetting("deleted_tags", deleted)
     end
 end
 
@@ -504,6 +549,8 @@ return {
     setBookExclusion = setBookExclusion,
     getKnownTags = getKnownTags,
     mergeKnownTags = mergeKnownTags,
+    forgetKnownTag = forgetKnownTag,
+    allowKnownTag = allowKnownTag,
     getIndexPreserve = getIndexPreserve,
     readIfExists = readIfExists,
     ownCopy = ownCopy,

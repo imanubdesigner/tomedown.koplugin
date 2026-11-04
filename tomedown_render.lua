@@ -89,6 +89,19 @@ function render.progressPct(progress)
     return tostring(pct) .. "%"
 end
 
+-- Five-star rating for the index cell: "★★★★☆", or nil when unset.
+function render.stars(rating)
+    local r = tonumber(rating)
+    if not r then
+        return nil
+    end
+    r = math.floor(r + 0.5)
+    if r < 1 or r > 5 then
+        return nil
+    end
+    return string.rep("★", r) .. string.rep("☆", 5 - r)
+end
+
 -- Short digest of a generated block: the hash written inside its begin
 -- marker and read back by the merge to prove the block still matches
 -- what the exporter generated. Whitespace around the block never
@@ -687,14 +700,15 @@ end
 --[[
 books = { { link, title, author, series, series_index, status, count,
             special, progress, last_read, cover } }
-opts = { title, exported, show_covers }
+opts = { title, exported, show_covers, index_layout }
 The books land in two tables: those that belong to a series, and the
-rest — a heading each only when both groups exist. The columns adapt
-to what each group holds: Series only on the series books, Author,
-Status, Progress and Last read only when at least one book of the
-group has them; Book and Highlights are always there (with the
-special count in the cell), the cover column only with
-opts.show_covers.
+rest, each under its own heading. The columns adapt to what each group
+holds: Series only on the series books, Author, Status and Last read
+only when at least one book of the group has them; Book and Highlights
+are always there (with the special count in the cell), the cover column
+only with opts.show_covers. Tags either sit under the book title, with
+a rule between the two (the default), or in a column of their own; the
+date can be folded into the status cell for the narrow column layout.
 ]]
 function render.buildIndexMd(books, opts)
     opts = opts or {}
@@ -768,6 +782,17 @@ function render.buildIndexMd(books, opts)
         complete = _("Complete"),
         abandoned = _("Abandoned"),
     }
+
+    -- How the table carries the tags and the last read date. The
+    -- default keeps the tags under the book title, where they cannot
+    -- widen the table; the two "tags_column" layouts are the older
+    -- shape, with the compact one folding the date into the status.
+    local layout = opts.index_layout
+    if layout ~= "tags_column" and layout ~= "tags_column_compact" then
+        layout = "tags_below"
+    end
+    local tags_below = layout == "tags_below"
+    local merged_dates = layout == "tags_column_compact"
 
     -- the books split into the ones that belong to a series and the
     -- rest: one table each, a heading only when both exist
@@ -855,24 +880,42 @@ function render.buildIndexMd(books, opts)
     end
     -- the index shows the tags chosen from the book menu, as the
     -- clickable #tag Obsidian understands; the entries are sanitized
-    -- again because an older file or a test may hand in raw values
-    local function tagsText(tags)
+    -- again because an older file or a test may hand in raw values.
+    -- A table cell does not wrap, so a long list is broken into short
+    -- lines here: one long line is what makes the table scroll.
+    local tag_line_width = 24
+    local function tagsLines(tags)
         if type(tags) ~= "table" then
-            return ""
+            return {}
         end
-        local seen, out = {}, {}
+        local seen, lines, current = {}, {}, nil
         for __, tag in ipairs(tags) do
             tag = render.sanitizeTag(tag)
             if tag ~= "" then
                 local key = tag:lower()
                 if not seen[key] then
                     seen[key] = true
-                    out[#out + 1] = "#" .. tag
+                    local piece = "#" .. tag
+                    if current == nil then
+                        current = piece
+                    elseif #current + 1 + #piece <= tag_line_width then
+                        current = current .. " " .. piece
+                    else
+                        lines[#lines + 1] = current
+                        current = piece
+                    end
                 end
             end
         end
-        return table.concat(out, " ")
+        if current ~= nil then
+            lines[#lines + 1] = current
+        end
+        return lines
     end
+    -- A thin rule with room above and below, used when the tags sit
+    -- under the title instead of in a column of their own.
+    local tag_separator = '<hr style="margin:12px 0 10px 0;border:0;'
+        .. 'border-top:1px solid rgba(128,128,128,0.45)">'
 
     local function addTable(list, with_series)
         local has_author = any_filled(list, "author")
@@ -881,14 +924,20 @@ function render.buildIndexMd(books, opts)
         -- three lines deep inside one cell
         local has_status = any_filled(list, "status")
             or any_filled(list, "progress")
+            or any_filled(list, "rating")
         local has_last_read = any_filled(list, "last_read")
         local has_tags = false
-        for __, b in ipairs(list) do
-            if tagsText(b.tags) ~= "" then
-                has_tags = true
-                break
+        if not tags_below then
+            for __, b in ipairs(list) do
+                if #tagsLines(b.tags) > 0 then
+                    has_tags = true
+                    break
+                end
             end
         end
+        -- the compact layout has one column for both facts; when only
+        -- one of them is present, the title drops the missing half
+        local one_date_column = merged_dates and (has_status or has_last_read)
         local header, align = {}, {}
         local function column(title, separator)
             header[#header + 1] = title
@@ -907,11 +956,23 @@ function render.buildIndexMd(books, opts)
         if has_tags then
             column(_("Tags"))
         end
-        if has_status then
-            column(_("Status"))
-        end
-        if has_last_read then
-            column(_("Last read"))
+        if one_date_column then
+            local title
+            if has_status and has_last_read then
+                title = _("Status") .. " · " .. _("Last read")
+            elseif has_status then
+                title = _("Status")
+            else
+                title = _("Last read")
+            end
+            column(title)
+        else
+            if has_status then
+                column(_("Status"))
+            end
+            if has_last_read then
+                column(_("Last read"))
+            end
         end
         column(_("Highlights"), "---:")
         add("| " .. table.concat(header, " | ") .. " |")
@@ -937,11 +998,47 @@ function render.buildIndexMd(books, opts)
                 -- the star speaks every language: 12 · ★3
                 count_txt = count_txt .. " · ★" .. tostring(special)
             end
+            local tag_lines = tagsLines(b.tags)
+            local book_cell = link
+            if tags_below and #tag_lines > 0 then
+                book_cell = link .. tag_separator
+                    .. table.concat(tag_lines, "<br>")
+            end
             -- word over the bar, the percentage glued to the bar with a
             -- no-break space so Obsidian can never drop it on its own line;
             -- nothing to show is a dash, as it always was
+            local date_text = filled(b.last_read)
+                and render.fmtDate(tostring(b.last_read)) or nil
+            local rating_stars = render.stars(b.rating)
             local status_cell = "—"
-            if has_status then
+            if one_date_column then
+                local parts = {}
+                if b.status and status_labels[b.status] then
+                    parts[#parts + 1] = status_labels[b.status]
+                end
+                if date_text then
+                    if #parts > 0 then
+                        parts[1] = parts[1] .. " · " .. date_text
+                    else
+                        parts[1] = date_text
+                    end
+                end
+                local bar = render.progressBar(b.progress)
+                local pct = render.progressPct(b.progress)
+                if bar and pct then
+                    parts[#parts + 1] = bar .. "&nbsp;" .. pct
+                elseif bar then
+                    parts[#parts + 1] = bar
+                elseif pct then
+                    parts[#parts + 1] = pct
+                end
+                if rating_stars then
+                    parts[#parts + 1] = rating_stars
+                end
+                if #parts > 0 then
+                    status_cell = table.concat(parts, "<br>")
+                end
+            elseif has_status then
                 local parts = {}
                 if b.status and status_labels[b.status] then
                     parts[#parts + 1] = status_labels[b.status]
@@ -955,6 +1052,9 @@ function render.buildIndexMd(books, opts)
                 elseif pct then
                     parts[#parts + 1] = pct
                 end
+                if rating_stars then
+                    parts[#parts + 1] = rating_stars
+                end
                 if #parts > 0 then
                     status_cell = table.concat(parts, "<br>")
                 end
@@ -964,7 +1064,7 @@ function render.buildIndexMd(books, opts)
                 cells[#cells + 1] = b.cover and render.coverImg(b.cover, 120, 160)
                     or ""
             end
-            cells[#cells + 1] = link
+            cells[#cells + 1] = book_cell
             if has_author then
                 cells[#cells + 1] = author
             end
@@ -972,15 +1072,18 @@ function render.buildIndexMd(books, opts)
                 cells[#cells + 1] = series
             end
             if has_tags then
-                local tag_text = tagsText(b.tags)
+                local tag_text = table.concat(tag_lines, "<br>")
                 cells[#cells + 1] = tag_text ~= "" and tag_text or "—"
             end
-            if has_status then
+            if one_date_column then
                 cells[#cells + 1] = status_cell
-            end
-            if has_last_read then
-                cells[#cells + 1] = filled(b.last_read)
-                    and render.fmtDate(tostring(b.last_read)) or "—"
+            else
+                if has_status then
+                    cells[#cells + 1] = status_cell
+                end
+                if has_last_read then
+                    cells[#cells + 1] = date_text or "—"
+                end
             end
             cells[#cells + 1] = count_txt
             add("| " .. table.concat(cells, " | ") .. " |")
@@ -1013,17 +1116,18 @@ function render.buildIndexMd(books, opts)
         end
     end
 
-    if #series_books > 0 and #plain_books > 0 then
+    -- Each group keeps a heading even when it is alone: the second
+    -- table used to arrive with no title at all, which looked like a
+    -- duplicate of the one above.
+    if #series_books > 0 then
         add("### " .. _("Series books"))
         add("")
         addTable(series_books, true)
         add("")
+    end
+    if #plain_books > 0 then
         add("### " .. _("My books"))
         add("")
-        addTable(plain_books, false)
-    elseif #series_books > 0 then
-        addTable(series_books, true)
-    else
         addTable(plain_books, false)
     end
 

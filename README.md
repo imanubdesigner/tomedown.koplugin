@@ -210,7 +210,7 @@ on top.
 | **Export new and changed books** | only the books whose highlights changed since the last export (per-book hash)                                                                                 |
 | **Repair all files**             | writes every file again from KOReader's reading history: for a file deleted by mistake or a sync that went wrong                                              |
 | **Choose books…**                | a list with checkboxes: tick the volumes and export just those                                                                                                |
-| **Current book**                 | the rows that name the open book: *Keep my notes in this book*, *Tags: %1*, *Book visibility: %1*, *Notes heading: %1*, *Backup copies…* and the book-info rows, explained in [Keep my notes](docs/keep-my-notes.md) and [File format](docs/file-format.md#imported-book-information) |
+| **Current book**                 | the rows that name the open book: *Keep my notes in this book*, *Book info* (*Tags: %1* and the book-info rows), *Book visibility: %1*, *Notes heading: %1* and *Backup copies*, explained in [Keep my notes](docs/keep-my-notes.md) and [File format](docs/file-format.md#imported-book-information) |
 | **Upload all files again**       | re-uploads every file already in the local folder, after comparing each one with its cloud copy                                                               |
 | **Last export**                  | a wide popup, one line per entry: network, server, pending uploads, the last export and upload with timestamp and outcome                                     |
 | **Settings**                     | the six groups, described in [Settings](docs/settings.md)                                                                                                    |
@@ -280,9 +280,9 @@ Above the generated block you get a heading and two blank lines of room:
 everything you write there, and your own frontmatter properties, survives
 every export. *Keep my notes in this book*, in the open book's menu, does the
 same for one book alone, and *Keep my notes: index* for `00 - Index.md`.
-*Tags: %1*, in the same menu, adds the tags of that one book: the ones already
-used in your library come first, with counts, and *Other tags…* writes a new
-one. They join `ebook`, `highlights` and its own keywords, and the ones you
+*Tags: %1*, inside *Current book → Book info*, adds the tags of that one book: the ones already
+used in your library come first, most used first, and *Other tags…* writes a
+new one. They join `ebook`, `highlights` and its own keywords, and the ones you
 remove there leave the file at the next export while the tags you wrote by
 hand stay. *Book visibility: %1* keeps the book in the index, hides it from
 the index only, or stops exporting it, without ever deleting the note already
@@ -291,7 +291,7 @@ written.
 Two copies sit beside the file when they are needed: `.bak` holds your notes
 when Keep my notes goes off, and `.bak.1` is the safety copy for text that
 cannot come back by itself. On, off, on: your notes come back each time.
-*Backup copies…* lists them and lets you read or delete them.
+*Backup copies* lists them and lets you read or delete them.
 
 With Keep my notes off the files are rewritten at every export: treat them as
 read-only, or your edits disappear next time.

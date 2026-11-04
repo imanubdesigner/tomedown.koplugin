@@ -176,7 +176,7 @@ T.check(#settings == 6, "settings groups: " .. #settings)
 local files = settings[1].sub_item_table
 local cloud = settings[3].sub_item_table
 local updates = settings[6].sub_item_table
-T.check(files[5].text == "Include page bookmarks", "page bookmarks row")
+T.check(files[6].text == "Include page bookmarks", "page bookmarks row")
 T.check(#cloud == 3, "cloud rows without a server: " .. #cloud)
 T.check(updates[1].text_func() == "Check for updates (v" .. INSTALLED .. ")",
     "check row: " .. updates[1].text_func())

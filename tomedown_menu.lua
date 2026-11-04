@@ -248,6 +248,9 @@ function M:saveBookTags(file, tags)
             })
             return false
         end
+        for __, tag in ipairs(tags or {}) do
+            shared.allowKnownTag(tag)
+        end
         self:invalidateExportHash(file)
         return true
     end
@@ -262,6 +265,9 @@ function M:saveBookTags(file, tags)
         return false
     end
     setBookTags(file, tags)
+    for __, tag in ipairs(tags or {}) do
+        shared.allowKnownTag(tag)
+    end
     -- this book's file carries the old tags: the next export rewrites
     -- it, and only it
     self:invalidateExportHash(file)
@@ -472,6 +478,17 @@ function M:editBookTags(touchmenu, file)
     end
     buttons[#buttons + 1] = {
         {
+            text = _("Delete tags…"),
+            callback = function()
+                UIManager:close(dialog)
+                self:showTagManager(function()
+                    self:editBookTags(touchmenu, file)
+                end)
+            end,
+        },
+    }
+    buttons[#buttons + 1] = {
+        {
             text = _("Close"),
             id = "close",
             callback = function()
@@ -484,6 +501,188 @@ function M:editBookTags(touchmenu, file)
     }
     dialog = ButtonDialog:new{
         title = _("Tags for this book"),
+        buttons = buttons,
+    }
+    UIManager:show(dialog)
+    return dialog
+end
+
+-- The tags that appear in the tag menu: the suggestion cache, the
+-- per-book choices from the menu and the shared keyword lists of
+-- imported books. Each entry carries the number of books that currently
+-- assign the tag (0 when it lives only in the suggestion cache).
+function M:managedTags()
+    local scores = {}
+    local function add(tag, file)
+        tag = render.sanitizeTag(tag)
+        if tag == "" then
+            return
+        end
+        local key = tag:lower()
+        local entry = scores[key]
+        if not entry then
+            entry = { tag = tag, books = {} }
+            scores[key] = entry
+        end
+        if file and not entry.books[file] then
+            entry.books[file] = true
+            entry.count = (entry.count or 0) + 1
+        end
+    end
+    for key, entry in pairs(shared.getKnownTags()) do
+        if type(entry) == "table" then
+            add(entry.name or key, nil)
+        end
+    end
+    for file, tags in pairs(getSetting("book_tags", {})) do
+        if type(tags) == "table" then
+            for __, tag in ipairs(tags) do
+                add(tag, file)
+            end
+        end
+    end
+    for file in pairs(getSetting("bookinfo_imported", {})) do
+        if getBookImported(file) then
+            for __, tag in ipairs(metadata.tags(file)) do
+                add(tag, file)
+            end
+        end
+    end
+    local list = {}
+    for __, entry in pairs(scores) do
+        list[#list + 1] = { tag = entry.tag, count = entry.count or 0 }
+    end
+    table.sort(list, function(a, b)
+        return a.tag:lower() < b.tag:lower()
+    end)
+    return list
+end
+
+-- Delete one managed tag everywhere. An empty list is kept on purpose:
+-- it is the signal the export needs to drop the old tags from the note,
+-- where a missing entry would mean "this book never chose". Returns the
+-- imported books whose keywords could not be written.
+function M:deleteManagedTag(tag)
+    tag = render.sanitizeTag(tag)
+    if tag == "" then
+        return {}
+    end
+    local key = tag:lower()
+    local affected, failed = {}, {}
+    local all = getSetting("book_tags", {})
+    for file, tags in pairs(all) do
+        if type(tags) == "table" then
+            local kept, changed = {}, false
+            for __, current in ipairs(tags) do
+                if render.sanitizeTag(current):lower() == key then
+                    changed = true
+                else
+                    kept[#kept + 1] = current
+                end
+            end
+            if changed then
+                all[file] = kept
+                affected[file] = true
+            end
+        end
+    end
+    setSetting("book_tags", all)
+    for file in pairs(getSetting("bookinfo_imported", {})) do
+        if getBookImported(file) then
+            local tags = metadata.tags(file)
+            local kept, changed = {}, false
+            for __, current in ipairs(tags) do
+                if render.sanitizeTag(current):lower() == key then
+                    changed = true
+                else
+                    kept[#kept + 1] = current
+                end
+            end
+            if changed then
+                if metadata.writeKeywords(file, kept) then
+                    affected[file] = true
+                else
+                    failed[#failed + 1] = file
+                end
+            end
+        end
+    end
+    shared.forgetKnownTag(tag)
+    for file in pairs(affected) do
+        self:invalidateExportHash(file)
+    end
+    setSetting("index_dirty", true)
+    return failed
+end
+
+-- The list behind "Delete tags…". Two buttons per row, the number of
+-- books in parentheses when the tag is assigned; a tap asks first, then
+-- deletes it from every managed list and from the suggestion cache. The
+-- dialog rebuilds after each deletion, so the list shrinks under the
+-- reader's eyes. `quiet` skips the empty-state message when the manager
+-- is reopened after the last deletion.
+function M:showTagManager(on_close, quiet)
+    local tags = self:managedTags()
+    if #tags == 0 then
+        if not quiet then
+            UIManager:show(InfoMessage:new{
+                text = _("No tags to delete."),
+            })
+        end
+        if on_close then
+            on_close()
+        end
+        return
+    end
+    local dialog
+    local buttons = {}
+    local row = {}
+    for __, entry in ipairs(tags) do
+        local label = entry.count > 0
+            and (entry.tag .. " (" .. tostring(entry.count) .. ")")
+            or entry.tag
+        row[#row + 1] = {
+            text = label,
+            callback = function()
+                UIManager:show(ConfirmBox:new{
+                    text = T(_("Delete #%1 from every book? It leaves the notes at the next export; tags written by hand stay."), entry.tag),
+                    ok_text = _("Delete"),
+                    cancel_text = _("Cancel"),
+                    ok_callback = function()
+                        local failed = self:deleteManagedTag(entry.tag)
+                        UIManager:close(dialog)
+                        if #failed > 0 then
+                            UIManager:show(InfoMessage:new{
+                                text = _("Some books could not be updated: the tag is still in their keywords."),
+                            })
+                        end
+                        self:showTagManager(on_close, true)
+                    end,
+                })
+            end,
+        }
+        if #row == 2 then
+            buttons[#buttons + 1] = row
+            row = {}
+        end
+    end
+    if #row > 0 then
+        buttons[#buttons + 1] = row
+    end
+    buttons[#buttons + 1] = {
+        {
+            text = _("Close"),
+            id = "close",
+            callback = function()
+                UIManager:close(dialog)
+                if on_close then
+                    on_close()
+                end
+            end,
+        },
+    }
+    dialog = ButtonDialog:new{
+        title = _("Delete a tag from every book"),
         buttons = buttons,
     }
     UIManager:show(dialog)
@@ -635,6 +834,16 @@ local function setIndexOrder(order)
     setSetting("index_dirty", true)
 end
 
+-- The shape of the index table. Like the order, it changes no book:
+-- the next export rebuilds the index alone.
+local function setIndexLayout(layout)
+    if getSetting("index_layout", "tags_below") == layout then
+        return
+    end
+    setSetting("index_layout", layout)
+    setSetting("index_dirty", true)
+end
+
 -- Where the book goes. The file already written is never deleted: the
 -- state decides what the next exports do, and the index alone is told
 -- to rebuild because no book file has to change.
@@ -776,7 +985,7 @@ function M:importBookInfo(file, touchmenu)
     end
     self:invalidateExportHash(file)
     self:runExport({ file }, { force = true })
-    self:refreshCurrentBookMenu(touchmenu)
+    self:refreshBookInfoMenu(touchmenu, file)
     return true
 end
 
@@ -806,7 +1015,7 @@ function M:removeBookInfo(file, touchmenu)
     if not book or not md_path or not lfs.attributes(md_path, "mode") then
         -- nothing on disk to clean: just stop managing the book
         metadata.forget(file)
-        self:refreshCurrentBookMenu(touchmenu)
+        self:refreshBookInfoMenu(touchmenu, file)
         return true
     end
     shared.setBookInfoRemoval(file, true)
@@ -820,7 +1029,7 @@ function M:removeBookInfo(file, touchmenu)
         -- error window say why
         shared.setBookInfoRemoval(file, false)
     end
-    self:refreshCurrentBookMenu(touchmenu)
+    self:refreshBookInfoMenu(touchmenu, file)
     return removed
 end
 
@@ -1047,6 +1256,53 @@ function M:genSettingsMenu()
                     end,
                     callback = function()
                         setIndexOrder("highlights")
+                    end,
+                },
+            },
+        },
+        {
+            text_func = function()
+                local labels = {
+                    tags_below = _("Tags under the title"),
+                    tags_column = _("Tags column"),
+                    tags_column_compact = _("Tags column, compact"),
+                }
+                local current = getSetting("index_layout", "tags_below")
+                return T(_("Index layout: %1"),
+                    labels[current] or labels.tags_below)
+            end,
+            sub_item_table = {
+                {
+                    text = _("Tags under the title"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return getSetting("index_layout", "tags_below") == "tags_below"
+                    end,
+                    callback = function()
+                        setIndexLayout("tags_below")
+                    end,
+                },
+                {
+                    text = _("Tags column"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return getSetting("index_layout", "tags_below") == "tags_column"
+                    end,
+                    callback = function()
+                        setIndexLayout("tags_column")
+                    end,
+                },
+                {
+                    text = _("Tags column, compact"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return getSetting("index_layout", "tags_below") == "tags_column_compact"
+                    end,
+                    callback = function()
+                        setIndexLayout("tags_column_compact")
                     end,
                 },
             },
@@ -1809,7 +2065,7 @@ local function backupLabel(copy)
     if copy.slot == ".bak.1" then
         return _("Safety copy")
     elseif copy.zoned then
-        return _("Notes set aside")
+        return _("Saved notes")
     end
     return _("Older copy")
 end
@@ -2060,13 +2316,9 @@ function M:genCurrentBookMenu()
         end,
     }
     rows[#rows + 1] = {
-        text_func = function()
-            local tags = currentBookTags(file)
-            return T(_("Tags: %1"),
-                #tags > 0 and table.concat(tags, ", ") or _("none"))
-        end,
-        callback = function(touchmenu)
-            self:editBookTags(touchmenu, file)
+        text = _("Book info"),
+        sub_item_table_func = function()
+            return self:genBookInfoMenu(file)
         end,
     }
     rows[#rows + 1] = {
@@ -2091,14 +2343,34 @@ function M:genCurrentBookMenu()
     -- one by one and deleted only after a question
     if #self:bookBackups(file) > 0 then
         rows[#rows + 1] = {
-            text = withIcon("\xEF\x83\x87", _("Backup copies…")),
+            text = withIcon("\xEF\x83\x87", _("Backup copies")),
             sub_item_table_func = function()
                 return self:genBackupsMenu(file)
             end,
         }
     end
-    -- Import is the explicit way in; once a book is imported its fields
-    -- stay editable here, next to the way out.
+    return rows
+end
+
+-- The metadata rows of the open book: tags are always there, followed
+-- by Import book info or, once imported, by rating, review, status,
+-- dates and Remove imported book info.
+function M:genBookInfoMenu(file)
+    local rows = {}
+    if not file then
+        return rows
+    end
+    rows[#rows + 1] = {
+        text_func = function()
+            local tags = currentBookTags(file)
+            return T(_("Tags: %1"),
+                #tags > 0 and table.concat(tags, ", ") or _("none"))
+        end,
+        callback = function(touchmenu)
+            self:editBookTags(touchmenu, file)
+        end,
+        separator = true,
+    }
     if not getBookImported(file) then
         rows[#rows + 1] = {
             text = _("Import book info"),
@@ -2116,7 +2388,6 @@ function M:genCurrentBookMenu()
             callback = function()
                 self:openBookStatusEditor(file)
             end,
-            separator = true,
         }
         rows[#rows + 1] = {
             text_func = function()
@@ -2135,17 +2406,17 @@ function M:genCurrentBookMenu()
             end,
         }
         rows[#rows + 1] = {
-            text = _("Dates…"),
+            text = _("Dates"),
             sub_item_table_func = function()
                 return self:bookInfoDateMenu(file)
             end,
+            separator = true,
         }
         rows[#rows + 1] = {
             text = _("Remove imported book info…"),
             callback = function(touchmenu)
                 self:confirmRemoveBookInfo(file, touchmenu)
             end,
-            separator = true,
         }
     end
     return rows
@@ -2208,6 +2479,23 @@ function M:refreshCurrentBookMenu(touchmenu)
     end
     local live = touchmenu.item_table
     local fresh = self:genCurrentBookMenu()
+    for i = #live, 1, -1 do
+        live[i] = nil
+    end
+    for _, item in ipairs(fresh) do
+        live[#live + 1] = item
+    end
+    if touchmenu.updateItems then
+        touchmenu:updateItems()
+    end
+end
+
+function M:refreshBookInfoMenu(touchmenu, file)
+    if not touchmenu or not touchmenu.item_table then
+        return
+    end
+    local live = touchmenu.item_table
+    local fresh = self:genBookInfoMenu(file or self:getCurrentFile())
     for i = #live, 1, -1 do
         live[i] = nil
     end
