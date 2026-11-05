@@ -7,8 +7,8 @@ local merge = require("tomedown_merge")
 
 local function renderBook(annotations, opts)
     return render.buildBookMd({
-        title = "Blackwater",
-        author = "Michael McDowell",
+        title = "The Three Impostors",
+        author = "Arthur Machen",
         exported = "2026-09-26",
         count = #annotations,
         annotations = annotations,
@@ -113,7 +113,7 @@ T.check(info.reason == "merged" and #info.edited == 0,
 -- a v0.8 export: our front matter, no markers — rebuilt once
 local legacy08 = table.concat({
     "---",
-    'title: "Blackwater"',
+    'title: "The Three Impostors"',
     "exported: 2026-01-01",
     "highlights: 1",
     "tags:",
@@ -296,8 +296,8 @@ T.check(T.contains(out, "Nuova frase."),
 local old3 = table.concat({
     "---",
     'tomedown: "1.0"',
-    'title: "Blackwater"',
-    'author: "Michael McDowell"',
+    'title: "The Three Impostors"',
+    'author: "Arthur Machen"',
     "exported: 2026-09-26",
     "tags:",
     "  - ebook",
@@ -359,7 +359,7 @@ T.check(info.reason == "restructured" and info.backup
 -- ------------------------------------------------------------ frontmatter
 local diskFm = table.concat({
     'tomedown: "1.0"',
-    'title: "Blackwater"',
+    'title: "The Three Impostors"',
     'status: "abandoned"',
     "exported: 2020-01-01",
     'language: "it"',
@@ -371,7 +371,7 @@ local diskFm = table.concat({
 }, "\n")
 local renderedFm = table.concat({
     'tomedown: "1.0"',
-    'title: "Blackwater"',
+    'title: "The Three Impostors"',
     'status: "reading"',
     "exported: 2026-09-26",
     "tags:",
@@ -396,7 +396,7 @@ T.check(oddFm == renderedFm .. "\nbroken\nline\nwithout key",
 -- owns these keys, so a removal can take them out again
 local importedDisk = table.concat({
     'tomedown: "1.0"',
-    'title: "Blackwater"',
+    'title: "The Three Impostors"',
     'status: "complete"',
     'published: "1999-05"',
     "rating: 4",
@@ -415,7 +415,7 @@ local importedDisk = table.concat({
 }, "\n")
 local removedRender = table.concat({
     'tomedown: "1.0"',
-    'title: "Blackwater"',
+    'title: "The Three Impostors"',
     'status: "complete"',
     "tags:",
     "  - ebook",
@@ -449,7 +449,7 @@ T.check(T.contains(plainFm, "collections:\n  - Fantascienza\n  - Da leggere"),
 -- a fresh import's values win over what the note held before
 local freshRender = table.concat({
     'tomedown: "1.0"',
-    'title: "Blackwater"',
+    'title: "The Three Impostors"',
     'status: "complete"',
     'published: "2001"',
     "rating: 5",
@@ -476,8 +476,8 @@ T.check(T.contains(ffm, "collections:\n  - Saga")
 
 -- and apply threads the ownership through the preserve merge
 local importedDoc = render.buildBookMd({
-    title = "Blackwater",
-    author = "Michael McDowell",
+    title = "The Three Impostors",
+    author = "Arthur Machen",
     exported = "2026-09-26",
     count = 1,
     status = "complete",
@@ -493,8 +493,8 @@ local importedDoc = render.buildBookMd({
 local importedDiskDoc = importedDoc:gsub("(exported: [^\n]+\n)",
     '%1mood: "cupo"\n', 1)
 local removedDoc = render.buildBookMd({
-    title = "Blackwater",
-    author = "Michael McDowell",
+    title = "The Three Impostors",
+    author = "Arthur Machen",
     exported = "2026-09-26",
     count = 1,
     status = "complete",
@@ -523,7 +523,7 @@ T.check(T.contains(keptDoc, 'published: "1999-05"')
 -- plugin owns; the reader's own tags are never in it
 local managedDisk = table.concat({
     'tomedown: "1.0"',
-    'title: "Blackwater"',
+    'title: "The Three Impostors"',
     "tags:",
     "  - ebook",
     "  - highlights",
@@ -536,7 +536,7 @@ local managedDisk = table.concat({
 }, "\n")
 local managedRendered = table.concat({
     'tomedown: "1.0"',
-    'title: "Blackwater"',
+    'title: "The Three Impostors"',
     "tags:",
     "  - ebook",
     "  - highlights",
@@ -554,7 +554,7 @@ T.check(T.contains(tfm, "tomedown_book_tags:\n  - Horror"),
 
 local clearedRendered = table.concat({
     'tomedown: "1.0"',
-    'title: "Blackwater"',
+    'title: "The Three Impostors"',
     "tags:",
     "  - ebook",
     "  - highlights",
@@ -572,7 +572,7 @@ T.check(not T.contains(cfm, "tomedown_book_tags"),
 -- were reset) manages nothing: the file's tags and ledger stay as they are
 local unmanagedRendered = table.concat({
     'tomedown: "1.0"',
-    'title: "Blackwater"',
+    'title: "The Three Impostors"',
     "tags:",
     "  - ebook",
     "  - highlights",
@@ -595,7 +595,7 @@ T.check(not qfm:lower():find("horror", 1, true),
 -- may still carry it, and the union cleans it out while the rest stays
 local numericDisk = table.concat({
     'tomedown: "1.0"',
-    'title: "Blackwater"',
+    'title: "The Three Impostors"',
     "tags:",
     "  - ebook",
     "  - 1500",
@@ -607,7 +607,7 @@ local numericDisk = table.concat({
 }, "\n")
 local numericRendered = table.concat({
     'tomedown: "1.0"',
-    'title: "Blackwater"',
+    'title: "The Three Impostors"',
     "tags:",
     "  - ebook",
     "  - Horror",
@@ -625,12 +625,12 @@ T.check(T.contains(nfm, "tomedown_book_tags:\n  - Horror"),
 -- the .bak round trip: a restored copy still loses the tags the menu
 -- removed, because the render names them in its empty ledger again
 local taggedBook = {
-    title = "Blackwater", author = "Michael McDowell",
+    title = "The Three Impostors", author = "Arthur Machen",
     exported = "2026-09-26", count = 1, annotations = annB,
     tags = { "Horror", "Psicologico" }, tags_managed = true,
 }
 local clearedBook = {
-    title = "Blackwater", author = "Michael McDowell",
+    title = "The Three Impostors", author = "Arthur Machen",
     exported = "2026-09-26", count = 1, annotations = annB,
     tags = {}, tags_managed = true,
 }

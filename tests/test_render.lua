@@ -5,8 +5,8 @@ local T = require("common")
 local render = require("tomedown_render")
 
 local book = {
-    title = "Blackwater",
-    author = "Michael McDowell",
+    title = "The Three Impostors",
+    author = "Arthur Machen",
     exported = "2026-09-26",
     count = 2,
     annotations = {
@@ -28,8 +28,8 @@ local book = {
 
 local md = render.buildBookMd(book)
 T.check(md:sub(1, 4) == "---\n", "frontmatter opens with ---")
-T.check(T.contains(md, 'title: "Blackwater"'), "frontmatter title")
-T.check(T.contains(md, 'author: "Michael McDowell"'), "frontmatter author")
+T.check(T.contains(md, 'title: "The Three Impostors"'), "frontmatter title")
+T.check(T.contains(md, 'author: "Arthur Machen"'), "frontmatter author")
 T.check(T.contains(md, "exported: 2026-09-26"), "frontmatter exported")
 T.check(T.contains(md, "highlights: 2"), "frontmatter highlights")
 T.check(T.contains(md, "special: 0"), "frontmatter special count")
@@ -41,8 +41,8 @@ T.check(not T.contains(md, "language:"), "no language line when absent")
 T.check(not T.contains(md, "pages:"), "no pages line when absent")
 T.check(not T.contains(md, "status:"), "no status line when absent")
 T.check(not T.contains(md, "progress:"), "no progress line when absent")
-T.check(not T.contains(md, "# Blackwater"), "no h1 in the body")
-T.check(not T.contains(md, "*Michael McDowell*"), "author stays in the frontmatter only")
+T.check(not T.contains(md, "# The Three Impostors"), "no h1 in the body")
+T.check(not T.contains(md, "*Arthur Machen*"), "author stays in the frontmatter only")
 T.check(T.contains(md, "# **2 highlights**"), "highlight count as a heading")
 T.check(T.contains(md, "\n# Capitolo I"), "first chapter")
 T.check(T.contains(md, "\n# Capitolo II"), "second chapter")
@@ -250,9 +250,9 @@ T.check(T.contains(escaped, 'author: "A\\\\B"'), "backslash in the author")
 
 -- ---------------------------------------------------------- rich frontmatter
 local rich = render.buildBookMd({
-    title = "Blackwater",
-    author = "Michael McDowell",
-    series = "Blackwater",
+    title = "The Three Impostors",
+    author = "Arthur Machen",
+    series = "The Three Impostors",
     series_index = 3,
     language = "it",
     pages = 1140,
@@ -263,7 +263,7 @@ local rich = render.buildBookMd({
     keywords = { "horror", "gothic-fiction" },
     annotations = { { text = "Riga.", page = "1" } },
 })
-T.check(T.contains(rich, 'series: "Blackwater"'), "frontmatter series")
+T.check(T.contains(rich, 'series: "The Three Impostors"'), "frontmatter series")
 T.check(T.contains(rich, "series_index: 3"), "series_index as a number, unquoted")
 T.check(T.contains(rich, 'language: "it"'), "frontmatter language")
 T.check(T.contains(rich, "pages: 1140"), "frontmatter pages")
@@ -298,8 +298,8 @@ end
 -- imported book information: present only when the reader imported this
 -- one book, in a fixed order before the tags
 local importedBook = render.buildBookMd({
-    title = "Blackwater",
-    author = "Michael McDowell",
+    title = "The Three Impostors",
+    author = "Arthur Machen",
     exported = "2026-09-26",
     count = 1,
     status = "complete",
@@ -343,7 +343,7 @@ T.check(T.contains(importedBook, '  - "rating"') == false,
 -- per book tags: chosen at the book menu, washed in with ebook,
 -- highlights and the keywords, and receipted in the internal ledger
 local bookTagged = render.buildBookMd({
-    title = "Blackwater",
+    title = "The Three Impostors",
     keywords = { "horror" },
     tags = { "Horror", "Psicologico", "ebook" },
     tags_managed = true,
@@ -467,10 +467,10 @@ T.check(select(2, onlyBookmarks:gsub("\n%-%-%-\n", "")) == 2,
 T.check(not T.contains(md, "Page bookmarks"), "no section without bookmarks")
 
 -- ---------------------------------------------------------------- cover
-local withCover = render.buildBookMd(book, { cover = "covers/Blackwater.jpg" })
-T.check(T.contains(withCover, 'cover: "covers/Blackwater.jpg"'), "cover in the frontmatter")
+local withCover = render.buildBookMd(book, { cover = "covers/The Three Impostors.jpg" })
+T.check(T.contains(withCover, 'cover: "covers/The Three Impostors.jpg"'), "cover in the frontmatter")
 T.check(T.contains(withCover,
-    '<p align="center"><img src="covers/Blackwater.jpg" alt="" style="object-fit:contain;width:400px;height:533px"></p>'),
+    '<p align="center"><img src="covers/The Three Impostors.jpg" alt="" style="object-fit:contain;width:400px;height:533px"></p>'),
     "cover embedded in the body, centered")
 T.check(T.contains(withCover, "</p>\n\n---\n\n# **2 highlights**"),
     "the rule between the cover and the highlights heading")
@@ -532,9 +532,9 @@ T.check(not T.contains(index, "click a title"), "no stats line without books")
 
 local rows = render.buildIndexMd({
     {
-        link = "Michael McDowell - Blackwater",
-        title = "Blackwater",
-        author = "Michael McDowell",
+        link = "Arthur Machen - The Three Impostors",
+        title = "The Three Impostors",
+        author = "Arthur Machen",
         count = 2,
     },
     {
@@ -553,10 +553,10 @@ T.check(not T.contains(rows, "| Cover |"), "no cover column when the option is o
 T.check(not T.contains(rows, "Last export"),
     "the export date column is gone")
 T.check(T.contains(rows, "|:---|:---|---:|"), "table separators")
-T.check(T.contains(rows, "[[Michael McDowell - Blackwater\\|Blackwater]]"), "wikilink with alias")
-T.check(T.contains(rows, "| Michael McDowell | 2 |"), "author and count in the row")
+T.check(T.contains(rows, "[[Arthur Machen - The Three Impostors\\|The Three Impostors]]"), "wikilink with alias")
+T.check(T.contains(rows, "| Arthur Machen | 2 |"), "author and count in the row")
 T.check(T.contains(rows, "| A \\| B | 0 |"), "pipes escaped, count zero")
-local order = rows:find("[[Michael McDowell - Blackwater\\|Blackwater]]", 1, true)
+local order = rows:find("[[Arthur Machen - The Three Impostors\\|The Three Impostors]]", 1, true)
 local order2 = rows:find("[[Altro Autore - Altro\\|Altro]]", 1, true)
 T.check(order2 < order, "author order is the default for My books")
 T.check(T.contains(rows, "### My books"),
@@ -707,7 +707,7 @@ T.check(T.contains(tagsBelow,
 
 local wrappedTags = render.buildIndexMd({
     {
-        link = "A - Manningtree", title = "Manningtree", author = "A", count = 1,
+        link = "Jerome K. Jerome - Three Men in a Boat", title = "Three Men in a Boat", author = "A", count = 1,
         tags = { "Strega", "Paranormale", "Vecchie", "football", "1500s" },
     },
 }, {})
@@ -979,7 +979,7 @@ T.check(#digitLed == 1 and digitLed[1] == "1500s"
 
 -- through the exporter: dirty keywords render sanitized, dead ones vanish
 local tagged = render.buildBookMd({
-    title = "Blackwater",
+    title = "The Three Impostors",
     keywords = { "Occult & Supernatural", "!!!", "American Horror tales" },
     count = 1,
     annotations = { { text = "X" } },

@@ -8,22 +8,20 @@ and its tag left out.
 
 ```markdown
 ---
-title: "Blackwater"
-author: "Michael McDowell"
-series: "Blackwater"
-series_index: 1
-language: "it"
-pages: 1140
-exported: 2026-09-26
-highlights: 150
-special: 42
-status: "complete"
-progress: "96%"
+title: "The Three Impostors"
+author: "Arthur Machen"
+language: "en"
+pages: 210
+exported: 2026-11-05
+highlights: 14
+special: 2
+status: "reading"
+progress: "38%"
 tags:
   - ebook
   - highlights
   - horror
-  - gothic-fiction
+  - weird-fiction
 ---
 ## My notes... <!-- tomedown:notes -->
 
@@ -31,21 +29,20 @@ tags:
 
 ---
 
-# **150 highlights · ★ 42 special**
+# **14 highlights · ★ 2 special**
 
 ---
 
 # Chapter I
 
-> First highlighted sentence.
-> Second line of the same highlight.
+> It is an old story; but it is ever new to those who have the eyes to see and the heart to feel.
 
-- **p. 10** · 02/09/2026 10:00
+- **p. 15** · 05/11/2026 10:20
   - **NOTE:** *to reread*
 
 > Another highlight.
 
-- **p. 12** · 03/09/2026 11:30
+- **p. 18** · 05/11/2026 11:30
 
 ---
 
@@ -214,28 +211,19 @@ off. A notification confirms every change.
 Marking it costs a single tap. **Selecting text** puts the row right under
 *Highlight*: one tap creates the highlight and flags it.
 
-![The highlight menu on a fresh selection: Special Highlight sits right under Highlight](../assets/menu/highlights/special_highlights_big_menu.png)
-
 **Tapping an existing highlight** opens the compact edit menu (trash, Style,
 Color, …), with the same row at the bottom. The label says what the tap will
 do: *Special Highlight* flags it, *Remove Special Highlight* takes the flag
 off, and a notification confirms either way.
 
-![The compact edit menu with Special Highlight as the bottom row](../assets/menu/highlights/special_highlights_small_menu.png)
-![The compact edit menu with Remove Special Highlight as the bottom row](../assets/menu/highlights/remove_special_highlights_small_menu.png)
-
 The full menu behind the "…" button carries the same row, so a flagged
 highlight always offers its own undo and a missed one can still be flagged.
-
-![The full menu on a flagged highlight: Remove Special Highlight](../assets/menu/highlights/remove_special_highlights_big_menu.png)
 
 Callouts are an Obsidian convention. In **Notion** (and in GitHub, which only
 knows its own few alerts) the marker imports as the literal text
 `[!highlight]` inside the quote: quote, page and note all arrive, only the
 coloured box is missing. The word in brackets is the flag itself, there to be
 deleted or ignored.
-
-![In Obsidian the flagged highlight renders as a callout while the plain quotes stay quotes](../assets/obsidian/markdown_special_highlights.png)
 
 ### Links to a single highlight
 
@@ -274,8 +262,6 @@ is the embedded one (or the custom cover KOReader knows), resized into an
 in the vault is the master one. Obsidian renders such images starting with
 **version 1.8.1**.
 
-![The exported note in Obsidian: the properties, the rule, the centered cover and your notes as bullets under each highlight](../assets/obsidian/markdown_tags_cover.png)
-
 ## The index
 
 The index uses wiki links (`[[…]]`), opened natively by Obsidian and by most
@@ -286,7 +272,7 @@ shows the cover image (120×160 box). By default the tags chosen from
 long list never widens the table:
 
 ```markdown
-| <img src="covers/Michael McDowell - Blackwater.jpg" alt="" style="object-fit:contain;width:120px;height:160px"> | [[Michael McDowell - Blackwater\|Blackwater]]<hr style="margin:12px 0 10px 0;border:0;border-top:1px solid rgba(128,128,128,0.45)">#Horror #Southern-Gothic | Michael McDowell | Blackwater #1 | Complete<br>▰▰▰▰▰▰▰▰▰▰&nbsp;96% | 26/09/2026 | 150 · ★42 |
+| <img src="covers/Edgar Wallace - The Three Just Men.jpg" alt="" style="object-fit:contain;width:120px;height:160px"> | [[Edgar Wallace - The Three Just Men\|The Three Just Men]]<hr style="margin:12px 0 10px 0;border:0;border-top:1px solid rgba(128,128,128,0.45)">#mystery #crime | Edgar Wallace | The Four Just Men #4 | Complete<br>▰▰▰▰▰▰▰▰▰▰&nbsp;100%<br>★★★★★ | 05/11/2026 | 22 · ★5 |
 ```
 
 Without the option the cover column disappears. Tags are written as clickable
@@ -328,5 +314,3 @@ away. A book set to *Book visibility: hidden from the index* or *not
 exported*, from its own menu or from the file dialog, is left out of every
 table; when every exported book is hidden the index says so instead of
 claiming the library is empty.
-
-![Hovering a title in the index opens a preview of the book's note: the bold highlight recap heading, the chapter heading and the highlight](../assets/obsidian/00_index_preview.png)

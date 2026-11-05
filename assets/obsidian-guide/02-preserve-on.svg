@@ -29,7 +29,7 @@
   <path id="svg_8" d="m366,270c0,-5.43379 4.56621,-10 10,-10l750,0c5.43379,0 10,4.56621 10,10l0,693c0,5.43379 -4.56621,10 -10,10l-750,0c-5.43379,0 -10,-4.56621 -10,-10l0,-693z" opacity="undefined" stroke-width="1.5" stroke="#E3E1DD" fill="#FFFFFF"/>
   <path id="svg_9" fill="#F5F5F4" d="m366,270q0,-10 10,-10l750,0q10,0 10,10l0,28l-770,0l0,-28z"/>
   <line id="svg_10" stroke="#E3E1DD" y2="298" x2="1136" y1="298" x1="366" class="hair"/>
-  <text id="svg_11" fill="#37352F" font-family="'SF Mono', Menlo, Consolas, 'JetBrains Mono', 'Liberation Mono', 'DejaVu Sans Mono', monospace" font-size="12.5" y="284" x="390" class="code">Blackwater.md</text>
+  <text id="svg_11" fill="#37352F" font-family="'SF Mono', Menlo, Consolas, 'JetBrains Mono', 'Liberation Mono', 'DejaVu Sans Mono', monospace" font-size="12.5" y="284" x="390" class="code">The Three Impostors.md</text>
   <text id="svg_12" fill="#9B9A97" font-family="'SF Mono', Menlo, Consolas, 'JetBrains Mono', 'Liberation Mono', 'DejaVu Sans Mono', monospace" text-anchor="middle" font-size="13" y="284" x="1114" class="comment">×</text>
   <path id="svg_13" fill="#FAFAF9" d="m406,298l-40,0l0,665q0,10 10,10l30,0l0,-675z"/>
   <line id="svg_14" stroke="#E3E1DD" y2="973" x2="406" y1="298" x1="406" class="hair"/>
@@ -41,8 +41,8 @@
   <rect id="svg_20" fill="#9B9A97" rx="1.5" height="3" width="10" y="418" x="378"/>
   <text id="svg_21" fill="#37352F" font-family="'SF Mono', Menlo, Consolas, 'JetBrains Mono', 'Liberation Mono', 'DejaVu Sans Mono', monospace" font-size="12.5" y="326" x="430" class="code">---</text>
   <text id="svg_22" fill="#37352F" font-family="'SF Mono', Menlo, Consolas, 'JetBrains Mono', 'Liberation Mono', 'DejaVu Sans Mono', monospace" font-size="12.5" y="347" x="430" class="code">tomedown: "1.0"</text>
-  <text id="svg_23" fill="#37352F" font-family="'SF Mono', Menlo, Consolas, 'JetBrains Mono', 'Liberation Mono', 'DejaVu Sans Mono', monospace" font-size="12.5" y="368" x="430" class="code">title: "Blackwater"</text>
-  <text id="svg_24" fill="#37352F" font-family="'SF Mono', Menlo, Consolas, 'JetBrains Mono', 'Liberation Mono', 'DejaVu Sans Mono', monospace" font-size="12.5" y="389" x="430" class="code">author: "Michael McDowell"</text>
+  <text id="svg_23" fill="#37352F" font-family="'SF Mono', Menlo, Consolas, 'JetBrains Mono', 'Liberation Mono', 'DejaVu Sans Mono', monospace" font-size="12.5" y="368" x="430" class="code">title: "The Three Impostors"</text>
+  <text id="svg_24" fill="#37352F" font-family="'SF Mono', Menlo, Consolas, 'JetBrains Mono', 'Liberation Mono', 'DejaVu Sans Mono', monospace" font-size="12.5" y="389" x="430" class="code">author: "Arthur Machen"</text>
   <text id="svg_25" fill="#37352F" font-family="'SF Mono', Menlo, Consolas, 'JetBrains Mono', 'Liberation Mono', 'DejaVu Sans Mono', monospace" font-size="12.5" y="410" x="430" class="code">exported: 2026-10-07</text>
   <text id="svg_26" fill="#37352F" font-family="'SF Mono', Menlo, Consolas, 'JetBrains Mono', 'Liberation Mono', 'DejaVu Sans Mono', monospace" font-size="12.5" y="431" x="430" class="code">highlights: 150</text>
   <text id="svg_27" fill="#37352F" font-family="'SF Mono', Menlo, Consolas, 'JetBrains Mono', 'Liberation Mono', 'DejaVu Sans Mono', monospace" font-size="12.5" y="452" x="430" class="code">special: 42</text>
@@ -104,11 +104,11 @@
   <rect id="svg_83" stroke-width="1.5" stroke="#E3E1DD" fill="#FFFFFF" rx="10" height="300" width="620" y="1010" x="64"/>
   <path id="svg_84" fill="#F5F5F4" d="m64,1020q0,-10 10,-10l600,0q10,0 10,10l0,24l-620,0l0,-24z"/>
   <line id="svg_85" stroke="#E3E1DD" y2="1044" x2="684" y1="1044" x1="64" class="hair"/>
-  <text id="svg_86" fill="#37352F" font-family="'SF Mono', Menlo, Consolas, 'JetBrains Mono', 'Liberation Mono', 'DejaVu Sans Mono', monospace" font-size="12" y="1034" x="88" class="code">Blackwater.md</text>
+  <text id="svg_86" fill="#37352F" font-family="'SF Mono', Menlo, Consolas, 'JetBrains Mono', 'Liberation Mono', 'DejaVu Sans Mono', monospace" font-size="12" y="1034" x="88" class="code">The Three Impostors.md</text>
   <text id="svg_87" fill="#9B9A97" font-family="'SF Mono', Menlo, Consolas, 'JetBrains Mono', 'Liberation Mono', 'DejaVu Sans Mono', monospace" text-anchor="middle" font-size="12" y="1034" x="662" class="comment">×</text>
   <rect id="svg_88" stroke="#E9E9E7" fill="#F7F7F7" rx="6" height="58" width="330" y="1062" x="88"/>
   <text id="svg_89" fill="#9B9A97" font-family="'Helvetica Neue', Helvetica, Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif" font-size="11.5" y="1084" x="102" class="uim">title</text>
-  <text id="svg_90" fill="#37352F" font-family="'Helvetica Neue', Helvetica, Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif" font-weight="700" font-size="11.5" y="1084" x="196" class="ui">Blackwater</text>
+  <text id="svg_90" fill="#37352F" font-family="'Helvetica Neue', Helvetica, Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif" font-weight="700" font-size="11.5" y="1084" x="196" class="ui">The Three Impostors</text>
   <text id="svg_91" fill="#9B9A97" font-family="'Helvetica Neue', Helvetica, Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif" font-size="11.5" y="1106" x="102" class="uim">progress</text>
   <text id="svg_92" fill="#37352F" font-family="'Helvetica Neue', Helvetica, Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif" font-weight="700" font-size="11.5" y="1106" x="196" class="ui">96%</text>
   <text id="svg_93" fill="#37352F" font-family="'Helvetica Neue', Helvetica, Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif" font-weight="700" font-size="21" y="1160" x="88" class="ui">My notes...</text>
