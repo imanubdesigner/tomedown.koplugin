@@ -136,12 +136,12 @@ local ui = {
 
 local DATA = DataStorage:getFullDataDir()
 local DIR = DATA .. "/clipboard/tomedown"
-local FILE = "/mnt/us/Bookshelf/Blackwater.epub"
+local FILE = "/mnt/us/Bookshelf/The Three Impostors.epub"
 local FILE2 = "/mnt/us/Bookshelf/LibroVecchio.epub"
 local FILE3 = "/mnt/us/Bookshelf/Senza Meta.epub"
 local FILE_DIM = "/mnt/us/Bookshelf/Dim.epub"
 local FILE4 = "/mnt/us/Bookshelf/SoloBookmark.epub"
-local BASE = "Michael McDowell - Blackwater"
+local BASE = "Arthur Machen - The Three Impostors"
 local MD_PATH = DIR .. "/" .. BASE .. ".md"
 local INDEX_PATH = DIR .. "/00 - Index.md"
 
@@ -197,7 +197,7 @@ end
 BookList.setRegistry({
     [FILE] = {
         annotations = modernAnnotations(),
-        doc_props = { title = "Blackwater", authors = "Michael McDowell" },
+        doc_props = { title = "The Three Impostors", authors = "Arthur Machen" },
     },
     [FILE2] = {
         highlight = {
@@ -343,11 +343,11 @@ UIManager:runPending()
 local md = T.readFile(MD_PATH)
 T.check(md ~= nil, "book md written to " .. MD_PATH)
 if md then
-    T.check(T.contains(md, 'title: "Blackwater"'), "frontmatter title")
-    T.check(T.contains(md, 'author: "Michael McDowell"'), "frontmatter author")
+    T.check(T.contains(md, 'title: "The Three Impostors"'), "frontmatter title")
+    T.check(T.contains(md, 'author: "Arthur Machen"'), "frontmatter author")
     T.check(T.contains(md, "highlights: 2"), "only the valid highlights")
     T.check(T.contains(md, "  - ebook"), "tag ebook")
-    T.check(not T.contains(md, "# Blackwater"), "no h1 in the body")
+    T.check(not T.contains(md, "# The Three Impostors"), "no h1 in the body")
     T.check(T.contains(md, "# **2 highlights**"), "count")
     T.check(T.contains(md, "\n# Capitolo I"), "chapter 1")
     T.check(T.contains(md, "\n# Capitolo II"), "chapter 2")
@@ -368,7 +368,7 @@ T.check(lfs.attributes(DIR .. "/covers", "mode") ~= "directory",
 local index = T.readFile(INDEX_PATH)
 T.check(index ~= nil, "index written")
 if index then
-    T.check(T.contains(index, "[[Michael McDowell - Blackwater\\|Blackwater]]"),
+    T.check(T.contains(index, "[[Arthur Machen - The Three Impostors\\|The Three Impostors]]"),
         "wikilink in the index")
     T.check(T.contains(index, "| 2 |"), "index columns (count)")
     T.check(T.contains(index, os.date("%d/%m/%Y")),
@@ -400,11 +400,11 @@ do
     plugin:runExport({}, {})
     UIManager:runPending()
     local by_title = T.readFile(INDEX_PATH) or ""
-    local b = by_title:find("\\|Blackwater]]", 1, true)
     local l = by_title:find("\\|LibroVecchio]]", 1, true)
     local s = by_title:find("\\|Senza Meta]]", 1, true)
-    T.check(b and l and s and b < l and l < s,
-        "title order: Blackwater, LibroVecchio, Senza Meta")
+    local t = by_title:find("\\|The Three Impostors]]", 1, true)
+    T.check(l and s and t and l < s and s < t,
+        "title order: LibroVecchio, Senza Meta, The Three Impostors")
     T.check(store.tomedown.index_dirty == false,
         "the flag is cleared once the index is written")
     T.check(T.contains(Notification.last_text or "", "No files exported"),
@@ -415,11 +415,11 @@ do
     plugin:runExport({}, {})
     UIManager:runPending()
     local by_author = T.readFile(INDEX_PATH) or ""
-    local ax = by_author:find("\\|Senza Meta]]", 1, true)
-    local mm = by_author:find("\\|Blackwater]]", 1, true)
     local na = by_author:find("\\|LibroVecchio]]", 1, true)
-    T.check(na and ax and mm and na < ax and ax < mm,
-        "author order is the default again")
+    local am = by_author:find("\\|The Three Impostors]]", 1, true)
+    local ax = by_author:find("\\|Senza Meta]]", 1, true)
+    T.check(na and am and ax and na < am and am < ax,
+        "author order is the default again: N/A, Arthur Machen, Autore X")
     T.check(store.tomedown.index_dirty == false,
         "the flag is cleared again")
 end
@@ -648,9 +648,9 @@ end
 -- ------------------------------------ 4b. rich frontmatter from doc settings
 local rec = BookList.registry[FILE]
 rec.doc_props = {
-    title = "Blackwater",
-    authors = "Michael McDowell",
-    series = "Blackwater",
+    title = "The Three Impostors",
+    authors = "Arthur Machen",
+    series = "The Three Impostors",
     series_index = 4,
     language = "it",
     keywords = "horror, gothic-fiction, Occult & Supernatural, "
@@ -665,7 +665,7 @@ UIManager:runPending()
 local richMd = T.readFile(MD_PATH)
 T.check(richMd ~= nil, "re-export with the new metadata")
 if richMd then
-    T.check(T.contains(richMd, 'series: "Blackwater"'), "series from doc_props")
+    T.check(T.contains(richMd, 'series: "The Three Impostors"'), "series from doc_props")
     T.check(T.contains(richMd, "series_index: 4"), "series_index as a number")
     T.check(T.contains(richMd, 'language: "it"'), "language from doc_props")
     T.check(T.contains(richMd, "pages: 300"), "pages from doc settings")
@@ -692,7 +692,7 @@ end
 -- the index reads what the book record carries: series, status,
 -- progress and when it was last opened
 local rich_index = T.readFile(INDEX_PATH)
-T.check(T.contains(rich_index or "", "| Blackwater #4 | Complete<br>"),
+T.check(T.contains(rich_index or "", "| The Three Impostors #4 | Complete<br>"),
     "the index row carries the series and the status")
 T.check(T.contains(rich_index or "", "▰▰▰▰▰▰▰▰▰▰&nbsp;96% |"),
     "the reading bar with the percent glued to it")
@@ -2623,7 +2623,7 @@ do
     T.check(ConfirmBox.last ~= nil,
         "15b: turning preserve off asks for confirmation first")
     T.check(ConfirmBox.last ~= nil
-            and T.contains(ConfirmBox.last.text or "", "Blackwater.epub"),
+            and T.contains(ConfirmBox.last.text or "", "The Three Impostors.epub"),
         "15b: the box names the book: "
             .. tostring(ConfirmBox.last and ConfirmBox.last.text))
     T.check(ConfirmBox.last ~= nil and ConfirmBox.last.ok_text == "Turn off",
@@ -2904,14 +2904,14 @@ do
     local disk_props16, disk_annotations16 = rec16.doc_props, rec16.annotations
 
     -- the .sdr on disk: the last flush, without the series
-    rec16.doc_props = { title = "Blackwater", authors = "Michael McDowell" }
+    rec16.doc_props = { title = "The Three Impostors", authors = "Arthur Machen" }
 
     -- the book is open: KOReader has already read the metadata from the epub
     ui.document = { file = FILE }
     ui.doc_props = {
-        title = "Blackwater",
-        authors = "Michael McDowell",
-        series = "Wayward Pines",
+        title = "The Three Impostors",
+        authors = "Arthur Machen",
+        series = "The Four Just Men",
         series_index = 1,
     }
     -- and two highlights that never reached the disk
@@ -2933,7 +2933,7 @@ do
     -- come from the live props (it is missing on disk)
     plugin.book_cache = nil
     local stale_book16 = plugin:buildBook(FILE)
-    T.check(stale_book16 ~= nil and stale_book16.series == "Wayward Pines",
+    T.check(stale_book16 ~= nil and stale_book16.series == "The Four Just Men",
         "buildBook: series from the live props of the open book: "
             .. tostring(stale_book16 and stale_book16.series))
     local disk_count16 = stale_book16 and stale_book16.count or 0
@@ -2954,7 +2954,7 @@ do
         end
     end
     T.check(entry16 ~= nil, "the open book is in the index entries")
-    T.check(entry16 ~= nil and entry16.series == "Wayward Pines",
+    T.check(entry16 ~= nil and entry16.series == "The Four Just Men",
         "index entry: series from the live props: "
             .. tostring(entry16 and entry16.series))
     T.check(entry16 ~= nil and entry16.count == disk_count16 + 2,
@@ -2966,10 +2966,10 @@ do
     plugin:runExport({ FILE }, {})
     UIManager:runPending()
     local md16 = T.readFile(MD_PATH) or ""
-    T.check(T.contains(md16, 'series: "Wayward Pines"'),
+    T.check(T.contains(md16, 'series: "The Four Just Men"'),
         "book file: series from the live props")
     local index16 = T.readFile(INDEX_PATH) or ""
-    T.check(T.contains(index16, "Wayward Pines #1"),
+    T.check(T.contains(index16, "The Four Just Men #1"),
         "index: the row lands in the series table")
 
     -- a failed index write is reported instead of passing silently (a file

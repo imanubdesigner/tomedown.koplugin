@@ -57,7 +57,7 @@
   <text class="struct" x="128" y="312" font-size="10.5">---</text>
   <text class="code" x="128" y="330" font-size="10.5">tomedown: "1.0"</text>
   <text class="code" x="128" y="348" font-size="10.5">title: "Book index"</text>
-  <text class="code" x="128" y="366" font-size="10.5">exported: "2026-10-07"</text>
+  <text class="code" x="128" y="366" font-size="10.5">exported: "2026-11-05"</text>
   <text class="code" x="128" y="384" font-size="10.5">tags:</text>
   <text class="code" x="128" y="402" font-size="10.5">  - ebook</text>
   <text class="code" x="128" y="420" font-size="10.5">  - index</text>
@@ -72,18 +72,18 @@
   <!-- the marker and the generated block -->
   <text class="comment" x="128" y="570" font-size="10.5">&lt;!-- tomedown:begin index hash=2a50b55d — generated below: do not edit inside … write your notes above --&gt;</text>
   <text class="struct" x="128" y="606" font-size="9.5">---</text>
-  <text class="struct" x="128" y="648" font-size="11">**14 books** · **89 highlights** · **★ 16 special**</text>
+  <text class="struct" x="128" y="648" font-size="11">**5 books** · **33 highlights** · **★ 4 special**</text>
   <text class="struct" x="128" y="686" font-size="10.5">### Series books</text>
   <text class="code" x="128" y="722" font-size="9.5">| Book | Author | Series | Status | Last read | Highlights |</text>
   <text class="code" x="128" y="740" font-size="9.5">|:---|:---|:---|:---|:---|---:|</text>
-  <text class="code" x="128" y="758" font-size="9.5">| [[Blake Crouch - Pines\|Pines]] | Blake Crouch | Wayward Pines #1 | Reading&lt;br&gt;▰▰▰▰▰▱▱▱▱▱&amp;nbsp;40% | 07/10/2026 | 7 |</text>
-  <text class="code" x="128" y="776" font-size="9.5">| [[Blake Crouch - Uscita\|Uscita]] | Blake Crouch | Wayward Pines #2 | Complete&lt;br&gt;▰▰▰▰▰▰▰▰▰▰&amp;nbsp;100% | 06/10/2026 | 5 |</text>
-  <text class="code" x="128" y="794" font-size="9.5">| [[Blake Crouch - Ritorno\|Ritorno]] | Blake Crouch | Wayward Pines #3 | — | — | 9 · ★2 |</text>
+  <text class="code" x="128" y="758" font-size="9.5">| [[Edgar Wallace - The Four Just Men\|The Four Just Men]] | Edgar Wallace | The Four Just Men #1 | Reading&lt;br&gt;▰▰▰▰▰▱▱▱▱▱&amp;nbsp;40% | 05/11/2026 | 8 |</text>
+  <text class="code" x="128" y="776" font-size="9.5">| [[Edgar Wallace - The Council of Justice\|The Council of Justice]] | Edgar Wallace | The Four Just Men #2 | Complete&lt;br&gt;▰▰▰▰▰▰▰▰▰▰&amp;nbsp;100% | 04/11/2026 | 12 |</text>
+  <text class="code" x="128" y="794" font-size="9.5">| [[Edgar Wallace - The Three Just Men\|The Three Just Men]] | Edgar Wallace | The Four Just Men #5 | — | — | 4 · ★1 |</text>
   <text class="struct" x="128" y="832" font-size="10.5">### My books</text>
   <text class="code" x="128" y="868" font-size="9.5">| Book | Author | Status | Last read | Highlights |</text>
   <text class="code" x="128" y="886" font-size="9.5">|:---|:---|:---|:---|---:|</text>
-  <text class="code" x="128" y="904" font-size="9.5">| [[Albert Camus - Lo straniero\|Lo straniero]] | Albert Camus | Reading&lt;br&gt;▰▰▰▰▰▰▰▰▰▰&amp;nbsp;96% | 30/09/2026 | 150 · ★42 |</text>
-  <text class="code" x="128" y="922" font-size="9.5">| [[Alex North - Le Ombre\|Le Ombre]] | Alex North | Complete&lt;br&gt;▰▰▰▰▰▰▰▰▰▰&amp;nbsp;100% | 01/10/2026 | 10 |</text>
+  <text class="code" x="128" y="904" font-size="9.5">| [[Arthur Machen - The Three Impostors\|The Three Impostors]] | Arthur Machen | Reading&lt;br&gt;▰▰▰▰▰▰▰▰▰▰&amp;nbsp;96% | 05/11/2026 | 5 · ★1 |</text>
+  <text class="code" x="128" y="922" font-size="9.5">| [[Jerome K. Jerome - Three Men in a Boat\|Three Men in a Boat]] | Jerome K. Jerome | Complete&lt;br&gt;▰▰▰▰▰▰▰▰▰▰&amp;nbsp;100% | 05/11/2026 | 4 · ★2 |</text>
   <text class="comment" x="128" y="958" font-size="10.5">&lt;!-- tomedown:end index --&gt;</text>
 
   <!-- ============ notes column: one box per note, one curve per arrow ============ -->
@@ -134,7 +134,7 @@
   <text class="code" x="88" y="1054" font-size="12">00 - Index.md</text>
   <text class="comment" x="1114" y="1054" font-size="12" text-anchor="middle">×</text>
 
-  <text class="body" x="96" y="1096" font-size="15"><tspan font-weight="700">14 books</tspan> · <tspan font-weight="700">89 highlights</tspan> · <tspan font-weight="700">★ 16 special</tspan></text>
+  <text class="body" x="96" y="1096" font-size="15"><tspan font-weight="700">5 books</tspan> · <tspan font-weight="700">33 highlights</tspan> · <tspan font-weight="700">★ 4 special</tspan></text>
 
   <text class="menu" x="96" y="1136" font-size="18">Series books</text>
   <text class="menu" x="96" y="1170" font-size="12.5">Book</text>
@@ -144,12 +144,12 @@
   <text class="menu" x="900" y="1170" font-size="12.5">Last read</text>
   <text class="menu" x="1104" y="1170" font-size="12.5" text-anchor="end">Highlights</text>
   <line class="hair" x1="96" y1="1180" x2="1104" y2="1180"/>
-  <text class="ui link" x="96" y="1204" font-size="13">Pines</text>
-  <text class="ui" x="376" y="1204" font-size="13">Blake Crouch</text>
-  <text class="ui" x="526" y="1204" font-size="13">Wayward Pines #1</text>
+  <text class="ui link" x="96" y="1204" font-size="13">The Four Just Men</text>
+  <text class="ui" x="376" y="1204" font-size="13">Edgar Wallace</text>
+  <text class="ui" x="526" y="1204" font-size="13">The Four Just Men #1</text>
   <text class="ui" x="700" y="1204" font-size="13">Reading</text>
-  <text class="ui" x="900" y="1204" font-size="13">07/10/2026</text>
-  <text class="ui" x="1104" y="1204" font-size="13" text-anchor="end">7</text>
+  <text class="ui" x="900" y="1204" font-size="13">05/11/2026</text>
+  <text class="ui" x="1104" y="1204" font-size="13" text-anchor="end">8</text>
   <g fill="#37352F">
     <rect x="701" y="1210" width="11" height="10"/>
     <rect x="714" y="1210" width="11" height="10"/>
@@ -165,12 +165,12 @@
     <rect x="818.5" y="1210.5" width="10" height="9"/>
   </g>
   <text class="ui" x="833" y="1220" font-size="13">40%</text>
-  <text class="ui link" x="96" y="1250" font-size="13">Uscita</text>
-  <text class="ui" x="376" y="1250" font-size="13">Blake Crouch</text>
-  <text class="ui" x="526" y="1250" font-size="13">Wayward Pines #2</text>
+  <text class="ui link" x="96" y="1250" font-size="13">The Council of Justice</text>
+  <text class="ui" x="376" y="1250" font-size="13">Edgar Wallace</text>
+  <text class="ui" x="526" y="1250" font-size="13">The Four Just Men #2</text>
   <text class="ui" x="700" y="1250" font-size="13">Complete</text>
-  <text class="ui" x="900" y="1250" font-size="13">06/10/2026</text>
-  <text class="ui" x="1104" y="1250" font-size="13" text-anchor="end">5</text>
+  <text class="ui" x="900" y="1250" font-size="13">04/11/2026</text>
+  <text class="ui" x="1104" y="1250" font-size="13" text-anchor="end">12</text>
   <g fill="#37352F">
     <rect x="701" y="1256" width="11" height="10"/>
     <rect x="714" y="1256" width="11" height="10"/>
@@ -184,12 +184,12 @@
     <rect x="818" y="1256" width="11" height="10"/>
   </g>
   <text class="ui" x="833" y="1266" font-size="13">100%</text>
-  <text class="ui link" x="96" y="1296" font-size="13">Ritorno</text>
-  <text class="ui" x="376" y="1296" font-size="13">Blake Crouch</text>
-  <text class="ui" x="526" y="1296" font-size="13">Wayward Pines #3</text>
+  <text class="ui link" x="96" y="1296" font-size="13">The Three Just Men</text>
+  <text class="ui" x="376" y="1296" font-size="13">Edgar Wallace</text>
+  <text class="ui" x="526" y="1296" font-size="13">The Four Just Men #5</text>
   <text class="ui" x="700" y="1296" font-size="13">—</text>
   <text class="ui" x="900" y="1296" font-size="13">—</text>
-  <text class="ui" x="1104" y="1296" font-size="13" text-anchor="end">9 · ★2</text>
+  <text class="ui" x="1104" y="1296" font-size="13" text-anchor="end">4 · ★1</text>
   <line class="hair" x1="96" y1="1320" x2="1104" y2="1320"/>
 
   <text class="menu" x="96" y="1358" font-size="18">My books</text>
@@ -199,11 +199,11 @@
   <text class="menu" x="760" y="1392" font-size="12.5">Last read</text>
   <text class="menu" x="1104" y="1392" font-size="12.5" text-anchor="end">Highlights</text>
   <line class="hair" x1="96" y1="1402" x2="1104" y2="1402"/>
-  <text class="ui link" x="96" y="1426" font-size="13">Lo straniero</text>
-  <text class="ui" x="376" y="1426" font-size="13">Albert Camus</text>
+  <text class="ui link" x="96" y="1426" font-size="13">The Three Impostors</text>
+  <text class="ui" x="376" y="1426" font-size="13">Arthur Machen</text>
   <text class="ui" x="560" y="1426" font-size="13">Reading</text>
-  <text class="ui" x="760" y="1426" font-size="13">30/09/2026</text>
-  <text class="ui" x="1104" y="1426" font-size="13" text-anchor="end">150 · ★42</text>
+  <text class="ui" x="760" y="1426" font-size="13">05/11/2026</text>
+  <text class="ui" x="1104" y="1426" font-size="13" text-anchor="end">5 · ★1</text>
   <g fill="#37352F">
     <rect x="561" y="1432" width="11" height="10"/>
     <rect x="574" y="1432" width="11" height="10"/>
@@ -217,11 +217,11 @@
     <rect x="678" y="1432" width="11" height="10"/>
   </g>
   <text class="ui" x="693" y="1442" font-size="13">96%</text>
-  <text class="ui link" x="96" y="1472" font-size="13">Le Ombre</text>
-  <text class="ui" x="376" y="1472" font-size="13">Alex North</text>
+  <text class="ui link" x="96" y="1472" font-size="13">Three Men in a Boat</text>
+  <text class="ui" x="376" y="1472" font-size="13">Jerome K. Jerome</text>
   <text class="ui" x="560" y="1472" font-size="13">Complete</text>
-  <text class="ui" x="760" y="1472" font-size="13">01/10/2026</text>
-  <text class="ui" x="1104" y="1472" font-size="13" text-anchor="end">10</text>
+  <text class="ui" x="760" y="1472" font-size="13">05/11/2026</text>
+  <text class="ui" x="1104" y="1472" font-size="13" text-anchor="end">4 · ★2</text>
   <g fill="#37352F">
     <rect x="561" y="1478" width="11" height="10"/>
     <rect x="574" y="1478" width="11" height="10"/>

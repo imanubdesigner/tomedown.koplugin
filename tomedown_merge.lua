@@ -113,9 +113,9 @@ local function zoneParagraphs(zone)
     end
     local out = {}
     for para in (table.concat(keep, "\n") .. "\n\n"):gmatch("(.-)\n%s*\n") do
-        para = para:gsub("^%s+", ""):gsub("%s+$", "")
-        if para ~= "" then
-            out[#out + 1] = para
+        local trimmed = para:gsub("^%s+", ""):gsub("%s+$", "")
+        if trimmed ~= "" then
+            out[#out + 1] = trimmed
         end
     end
     return out
