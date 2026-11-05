@@ -1273,9 +1273,7 @@ function M:bookInfoStatusRowLabel(file)
 end
 
 function M:genSettingsMenu()
-    -- Files: what is written and where. Static since 1.1: none of its
-    -- rows depends on a switch, so the group is the same table every
-    -- time it opens.
+    -- Files: filesystem storage, naming templates and folder layouts.
     local files = {
         {
             text_func = function()
@@ -1283,165 +1281,6 @@ function M:genSettingsMenu()
             end,
             callback = function(touchmenu)
                 self:editLocalDir(touchmenu)
-            end,
-        },
-        {
-            text = T(_("Create an index note (%1)"), INDEX_FILENAME),
-            checked_func = function()
-                return getSetting("with_index", true)
-            end,
-            keep_menu_open = true,
-            callback = function()
-                setSetting("with_index", not getSetting("with_index", true))
-            end,
-        },
-        {
-            text_func = function()
-                local labels = {
-                    author = _("Author"),
-                    title = _("Title"),
-                    last_read = _("Last read"),
-                    highlights = _("Highlights"),
-                }
-                local current = getSetting("index_order", "author")
-                return T(_("Index order: %1"),
-                    labels[current] or labels.author)
-            end,
-            sub_item_table = {
-                {
-                    text = _("Author"),
-                    radio = true,
-                    keep_menu_open = true,
-                    checked_func = function()
-                        return getSetting("index_order", "author") == "author"
-                    end,
-                    callback = function()
-                        setIndexOrder("author")
-                    end,
-                },
-                {
-                    text = _("Title"),
-                    radio = true,
-                    keep_menu_open = true,
-                    checked_func = function()
-                        return getSetting("index_order", "author") == "title"
-                    end,
-                    callback = function()
-                        setIndexOrder("title")
-                    end,
-                },
-                {
-                    text = _("Last read"),
-                    radio = true,
-                    keep_menu_open = true,
-                    checked_func = function()
-                        return getSetting("index_order", "author") == "last_read"
-                    end,
-                    callback = function()
-                        setIndexOrder("last_read")
-                    end,
-                },
-                {
-                    text = _("Highlights"),
-                    radio = true,
-                    keep_menu_open = true,
-                    checked_func = function()
-                        return getSetting("index_order", "author") == "highlights"
-                    end,
-                    callback = function()
-                        setIndexOrder("highlights")
-                    end,
-                },
-            },
-        },
-        {
-            text_func = function()
-                local labels = {
-                    tags_below = _("Tags under the title"),
-                    tags_column = _("Tags column"),
-                    tags_column_compact = _("Tags column, compact"),
-                }
-                local current = getSetting("index_layout", "tags_below")
-                return T(_("Index layout: %1"),
-                    labels[current] or labels.tags_below)
-            end,
-            sub_item_table = {
-                {
-                    text = _("Tags under the title"),
-                    radio = true,
-                    keep_menu_open = true,
-                    checked_func = function()
-                        return getSetting("index_layout", "tags_below") == "tags_below"
-                    end,
-                    callback = function()
-                        setIndexLayout("tags_below")
-                    end,
-                },
-                {
-                    text = _("Tags column"),
-                    radio = true,
-                    keep_menu_open = true,
-                    checked_func = function()
-                        return getSetting("index_layout", "tags_below") == "tags_column"
-                    end,
-                    callback = function()
-                        setIndexLayout("tags_column")
-                    end,
-                },
-                {
-                    text = _("Tags column, compact"),
-                    radio = true,
-                    keep_menu_open = true,
-                    checked_func = function()
-                        return getSetting("index_layout", "tags_below") == "tags_column_compact"
-                    end,
-                    callback = function()
-                        setIndexLayout("tags_column_compact")
-                    end,
-                },
-            },
-        },
-        {
-            text = _("Show Reading now in the index"),
-            checked_func = function()
-                return getSetting("reading_now", true)
-            end,
-            keep_menu_open = true,
-            callback = function()
-                setSetting("reading_now", not getSetting("reading_now", true))
-                setSetting("index_dirty", true)
-            end,
-        },
-        {
-            text = _("Include page bookmarks"),
-            checked_func = function()
-                return getSetting("include_bookmarks", false)
-            end,
-            keep_menu_open = true,
-            callback = function()
-                setSetting("include_bookmarks", not getSetting("include_bookmarks", false))
-            end,
-        },
-        {
-            text = _("Include book covers"),
-            checked_func = function()
-                return getSetting("covers", false)
-            end,
-            keep_menu_open = true,
-            callback = function()
-                setSetting("covers", not getSetting("covers", false))
-                self:invalidateExportHashes()
-            end,
-        },
-        {
-            text = _("Export when I close a book"),
-            checked_func = function()
-                return getSetting("auto_export", false)
-            end,
-            keep_menu_open = true,
-            callback = function()
-                setSetting("auto_export",
-                    not getSetting("auto_export", false))
             end,
         },
         {
@@ -1568,6 +1407,147 @@ function M:genSettingsMenu()
             },
         },
         {
+            text = T(_("Create a reading digest (%1)"), DIGEST_FILENAME),
+            checked_func = function()
+                return getSetting("with_digest", false)
+            end,
+            keep_menu_open = true,
+            callback = function()
+                setSetting("with_digest", not getSetting("with_digest", false))
+            end,
+        },
+        {
+            text = _("Export when I close a book"),
+            checked_func = function()
+                return getSetting("auto_export", false)
+            end,
+            keep_menu_open = true,
+            callback = function()
+                setSetting("auto_export",
+                    not getSetting("auto_export", false))
+            end,
+        },
+    }
+
+    -- Index: all settings for 00 - Index.md.
+    local index = {
+        {
+            text = T(_("Create an index note (%1)"), INDEX_FILENAME),
+            checked_func = function()
+                return getSetting("with_index", true)
+            end,
+            keep_menu_open = true,
+            callback = function()
+                setSetting("with_index", not getSetting("with_index", true))
+            end,
+        },
+        {
+            text_func = function()
+                local labels = {
+                    author = _("Author"),
+                    title = _("Title"),
+                    last_read = _("Last read"),
+                    highlights = _("Highlights"),
+                }
+                local current = getSetting("index_order", "author")
+                return T(_("Index order: %1"),
+                    labels[current] or labels.author)
+            end,
+            sub_item_table = {
+                {
+                    text = _("Author"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return getSetting("index_order", "author") == "author"
+                    end,
+                    callback = function()
+                        setIndexOrder("author")
+                    end,
+                },
+                {
+                    text = _("Title"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return getSetting("index_order", "author") == "title"
+                    end,
+                    callback = function()
+                        setIndexOrder("title")
+                    end,
+                },
+                {
+                    text = _("Last read"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return getSetting("index_order", "author") == "last_read"
+                    end,
+                    callback = function()
+                        setIndexOrder("last_read")
+                    end,
+                },
+                {
+                    text = _("Highlights"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return getSetting("index_order", "author") == "highlights"
+                    end,
+                    callback = function()
+                        setIndexOrder("highlights")
+                    end,
+                },
+            },
+        },
+        {
+            text_func = function()
+                local labels = {
+                    tags_below = _("Tags under the title"),
+                    tags_column = _("Tags column"),
+                    tags_column_compact = _("Tags column, compact"),
+                }
+                local current = getSetting("index_layout", "tags_below")
+                return T(_("Index layout: %1"),
+                    labels[current] or labels.tags_below)
+            end,
+            sub_item_table = {
+                {
+                    text = _("Tags under the title"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return getSetting("index_layout", "tags_below") == "tags_below"
+                    end,
+                    callback = function()
+                        setIndexLayout("tags_below")
+                    end,
+                },
+                {
+                    text = _("Tags column"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return getSetting("index_layout", "tags_below") == "tags_column"
+                    end,
+                    callback = function()
+                        setIndexLayout("tags_column")
+                    end,
+                },
+                {
+                    text = _("Tags column, compact"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return getSetting("index_layout", "tags_below") == "tags_column_compact"
+                    end,
+                    callback = function()
+                        setIndexLayout("tags_column_compact")
+                    end,
+                },
+            },
+        },
+        {
             text_func = function()
                 local labels = {
                     wikilink = _("Obsidian wikilink"),
@@ -1602,6 +1582,21 @@ function M:genSettingsMenu()
                 },
             },
         },
+        {
+            text = _("Show Reading now in the index"),
+            checked_func = function()
+                return getSetting("reading_now", true)
+            end,
+            keep_menu_open = true,
+            callback = function()
+                setSetting("reading_now", not getSetting("reading_now", true))
+                setSetting("index_dirty", true)
+            end,
+        },
+    }
+
+    -- Style: note formatting, highlights, bookmarks and covers.
+    local style = {
         {
             text_func = function()
                 local labels = {
@@ -1644,13 +1639,87 @@ function M:genSettingsMenu()
             },
         },
         {
-            text = T(_("Create a reading digest (%1)"), DIGEST_FILENAME),
+            text_func = function()
+                local labels = {
+                    callout = _("Callout"),
+                    bold = _("Bold"),
+                }
+                return T(_("How special highlights look: %1"),
+                    labels[getSetting("special_marker", "callout")]
+                        or labels.callout)
+            end,
+            enabled_func = function()
+                return not getSetting("callout", false)
+            end,
+            keep_menu_open = true,
+            sub_item_table = {
+                {
+                    text = _("Callout"),
+                    radio = true,
+                    checked_func = function()
+                        return getSetting("special_marker", "callout") == "callout"
+                    end,
+                    keep_menu_open = true,
+                    callback = function()
+                        setSetting("special_marker", "callout")
+                        self:invalidateExportHashes()
+                    end,
+                },
+                {
+                    text = _("Bold"),
+                    radio = true,
+                    checked_func = function()
+                        return getSetting("special_marker", "callout") == "bold"
+                    end,
+                    keep_menu_open = true,
+                    callback = function()
+                        setSetting("special_marker", "bold")
+                        self:invalidateExportHashes()
+                    end,
+                },
+            },
+        },
+        {
+            text = _("Treat every highlight as special"),
             checked_func = function()
-                return getSetting("with_digest", false)
+                return getSetting("callout", false)
             end,
             keep_menu_open = true,
             callback = function()
-                setSetting("with_digest", not getSetting("with_digest", false))
+                setSetting("callout", not getSetting("callout", false))
+                self:invalidateExportHashes()
+            end,
+        },
+        {
+            text = _("Add link IDs to highlights"),
+            checked_func = function()
+                return getSetting("block_ids", false)
+            end,
+            keep_menu_open = true,
+            callback = function()
+                setSetting("block_ids", not getSetting("block_ids", false))
+                self:invalidateExportHashes()
+            end,
+        },
+        {
+            text = _("Include book covers"),
+            checked_func = function()
+                return getSetting("covers", false)
+            end,
+            keep_menu_open = true,
+            callback = function()
+                setSetting("covers", not getSetting("covers", false))
+                self:invalidateExportHashes()
+            end,
+        },
+        {
+            text = _("Include page bookmarks"),
+            checked_func = function()
+                return getSetting("include_bookmarks", false)
+            end,
+            keep_menu_open = true,
+            callback = function()
+                setSetting("include_bookmarks", not getSetting("include_bookmarks", false))
             end,
         },
     }
@@ -1886,77 +1955,6 @@ function M:genSettingsMenu()
         return rows
     end
 
-    -- The three rows that speak about the highlights themselves: how a
-    -- Special Highlight is marked in the note, and whether every quote
-    -- carries its stable block id. Static: no row here appears or
-    -- disappears (the marker row is grayed out while every highlight is
-    -- a callout, because then there is nothing left to choose).
-    local highlights = {
-        {
-            text = _("Treat every highlight as special"),
-            checked_func = function()
-                return getSetting("callout", false)
-            end,
-            keep_menu_open = true,
-            callback = function()
-                setSetting("callout", not getSetting("callout", false))
-                self:invalidateExportHashes()
-            end,
-        },
-        {
-            text_func = function()
-                local labels = {
-                    callout = _("Callout"),
-                    bold = _("Bold"),
-                }
-                return T(_("How special highlights look: %1"),
-                    labels[getSetting("special_marker", "callout")]
-                        or labels.callout)
-            end,
-            enabled_func = function()
-                return not getSetting("callout", false)
-            end,
-            keep_menu_open = true,
-            sub_item_table = {
-                {
-                    text = _("Callout"),
-                    radio = true,
-                    checked_func = function()
-                        return getSetting("special_marker", "callout") == "callout"
-                    end,
-                    keep_menu_open = true,
-                    callback = function()
-                        setSetting("special_marker", "callout")
-                        self:invalidateExportHashes()
-                    end,
-                },
-                {
-                    text = _("Bold"),
-                    radio = true,
-                    checked_func = function()
-                        return getSetting("special_marker", "callout") == "bold"
-                    end,
-                    keep_menu_open = true,
-                    callback = function()
-                        setSetting("special_marker", "bold")
-                        self:invalidateExportHashes()
-                    end,
-                },
-            },
-        },
-        {
-            text = _("Add link IDs to highlights"),
-            checked_func = function()
-                return getSetting("block_ids", false)
-            end,
-            keep_menu_open = true,
-            callback = function()
-                setSetting("block_ids", not getSetting("block_ids", false))
-                self:invalidateExportHashes()
-            end,
-        },
-    }
-
     -- Beta versions: everything that is not meant for daily use, in its
     -- own submenu. Receive beta versions first; while it is ticked a
     -- beta "Check for beta updates" sits right below it, then a
@@ -2065,6 +2063,10 @@ function M:genSettingsMenu()
     return {
         { text = withIcon("\xEF\x83\xB6", _("Files")), -- file-text
             sub_item_table = files },
+        { text = withIcon("\xEE\xBC\xB4", _("Index")), -- table-of-contents
+            sub_item_table = index },
+        { text = withIcon("\xEE\x9F\xA2", _("Style")), -- brush
+            sub_item_table = style },
         { text = withIcon("\xEF\x81\x9A", _("Book info")), -- star-half
             sub_item_table = bookinfo },
         { text = withIcon("\xEE\xB4\xBE", _("Cloud")), -- cloud-sync
@@ -2074,8 +2076,6 @@ function M:genSettingsMenu()
                 notes_table = buildNotesRows()
                 return notes_table
             end },
-        { text = withIcon("\xEE\xB5\x91", _("Highlights for Obsidian")), -- marker
-            sub_item_table = highlights },
         { text = withIcon("\xEE\xB6\xAE", _("Updates")), -- update
             sub_item_table = updates },
     }
@@ -2492,6 +2492,15 @@ function M:genBookMenu()
         end,
     }
     rows[#rows + 1] = {
+        text = withIcon("\xEF\x87\xAA", _("Export reading digest")),
+        enabled_func = function()
+            return #self:listBookFiles() > 0
+        end,
+        callback = function(touchmenu)
+            self:exportDigest(touchmenu)
+        end,
+    }
+    rows[#rows + 1] = {
         text = withIcon("\xEE\xB9\x94", _("Choose books…")),
         sub_item_table_func = function()
             return self:genPickerMenu()
@@ -2510,15 +2519,6 @@ function M:genBookMenu()
             separator = true,
         }
     end
-    rows[#rows + 1] = {
-        text = withIcon("\xEF\x87\xAA", _("Export reading digest")),
-        enabled_func = function()
-            return #self:listBookFiles() > 0
-        end,
-        callback = function(touchmenu)
-            self:exportDigest(touchmenu)
-        end,
-    }
     rows[#rows + 1] = {
         text = withIcon("\xEE\xB4\xBE", _("Upload all files again")),
         enabled_func = function()

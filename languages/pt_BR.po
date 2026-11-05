@@ -565,9 +565,6 @@ msgstr "Última exportação"
 msgid "My notes"
 msgstr "Minhas notas"
 
-msgid "Highlights for Obsidian"
-msgstr "Destaques para Obsidian"
-
 msgid "On for all books"
 msgstr "Ativado para todos os livros"
 
@@ -816,3 +813,9 @@ msgstr "Criar um resumo de leitura (%1)"
 
 msgid "Export reading digest"
 msgstr "Exportar resumo de leitura"
+
+msgid "Index"
+msgstr "Índice"
+
+msgid "Style"
+msgstr "Estilo"

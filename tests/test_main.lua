@@ -968,12 +968,12 @@ T.check(#sub == 10, "main menu entries: " .. #sub)
 T.check(sub[1].text == "\xEE\x89\xBC  Export this book", "menu item 1")
 T.check(sub[2].text == "\xEE\xA4\xB5  Export new and changed books", "menu item 2")
 T.check(sub[3].text == "\xEE\xA7\x99  Repair all files", "menu item 3")
-T.check(sub[4].text == "\xEE\xB9\x94  Choose books…", "menu item 4")
-T.check(sub[4].separator == true, "separator after Choose books")
-T.check(sub[5].text == "\xEF\x81\x80  Current book",
-    "menu item 5, the per book submenu")
-T.check(sub[5].separator == true, "separator after Current book")
-T.check(sub[6].text == "\xEF\x87\xAA  Export reading digest", "menu item 6")
+T.check(sub[4].text == "\xEF\x87\xAA  Export reading digest", "menu item 4")
+T.check(sub[5].text == "\xEE\xB9\x94  Choose books…", "menu item 5")
+T.check(sub[5].separator == true, "separator after Choose books")
+T.check(sub[6].text == "\xEF\x81\x80  Current book",
+    "menu item 6, the per book submenu")
+T.check(sub[6].separator == true, "separator after Current book")
 T.check(sub[7].text == "\xEE\xB4\xBE  Upload all files again", "menu item 7")
 T.check(sub[8].text == "\xEF\x83\xA4  Last export", "menu item 8")
 T.check(sub[8].separator == true, "separator before Settings")
@@ -1007,11 +1007,13 @@ T.check(#dashboard == 8,
     "no book rows on the dashboard: " .. #dashboard)
 T.check(dashboard[1].text == "\xEE\xA4\xB5  Export new and changed books",
     "the dashboard menu starts on the first row that needs no book")
-T.check(dashboard[3].text == "\xEE\xB9\x94  Choose books…"
-        and dashboard[3].separator == true,
-    "Choose books closes the first group on the dashboard")
-T.check(dashboard[4].text == "\xEF\x87\xAA  Export reading digest",
+T.check(dashboard[2].text == "\xEE\xA7\x99  Repair all files",
+    "Repair all files sits second")
+T.check(dashboard[3].text == "\xEF\x87\xAA  Export reading digest",
     "the dashboard includes Export reading digest")
+T.check(dashboard[4].text == "\xEE\xB9\x94  Choose books…"
+        and dashboard[4].separator == true,
+    "Choose books closes the first group on the dashboard")
 T.check(dashboard[5].text == "\xEE\xB4\xBE  Upload all files again",
     "the dashboard skips Current book")
 T.check(dashboard[6].text == "\xEF\x83\xA4  Last export"
@@ -1039,7 +1041,7 @@ T.check(sub[3].enabled_func() == true, "export all books enabled")
 -- reason on the right, since the switch is disabled but not hidden.
 do
     ui.document = { file = FILE }
-    local current = sub[5].sub_item_table_func()
+    local current = sub[6].sub_item_table_func()
     T.check(#current == 3, "Current book starts with keep, Book info and visibility: "
         .. #current)
     T.check(current[1].text == "Keep my notes in this book",
@@ -1163,107 +1165,134 @@ do
 end
 
 local settings = plugin:genSettingsMenu()
-T.check(#settings == 6, "settings groups: " .. #settings)
+T.check(#settings == 7, "settings groups: " .. #settings)
 T.check(settings[1].text == "\xEF\x83\xB6  Files", "files group with icon")
 T.check(settings[1].sub_item_table ~= nil, "Files is a static group")
-T.check(settings[2].text == "\xEF\x81\x9A  Book info", "book info group with icon")
-T.check(settings[3].text == "\xEE\xB4\xBE  Cloud", "cloud group with icon")
-T.check(settings[4].text == "\xEF\x89\x89  My notes", "my notes group with icon")
-T.check(settings[5].text == "\xEE\xB5\x91  Highlights for Obsidian",
-    "highlights group with icon")
-T.check(settings[6].text == "\xEE\xB6\xAE  Updates", "updates group with icon")
+T.check(settings[2].text == "\xEE\xBC\xB4  Index", "index group with icon")
+T.check(settings[2].sub_item_table ~= nil, "Index is a static group")
+T.check(settings[3].text == "\xEE\x9F\xA2  Style", "style group with icon")
+T.check(settings[3].sub_item_table ~= nil, "Style is a static group")
+T.check(settings[4].text == "\xEF\x81\x9A  Book info", "book info group with icon")
+T.check(settings[5].text == "\xEE\xB4\xBE  Cloud", "cloud group with icon")
+T.check(settings[6].text == "\xEF\x89\x89  My notes", "my notes group with icon")
+T.check(settings[7].text == "\xEE\xB6\xAE  Updates", "updates group with icon")
 -- Cloud: three fixed rows since 1.1. The row that brings the cloud copy
 -- back now lives in My notes, where the notes are.
-local cloud = settings[3].sub_item_table
-local updates = settings[6].sub_item_table
+local cloud = settings[5].sub_item_table
+local updates = settings[7].sub_item_table
 T.check(#cloud == 3, "cloud rows without a server: " .. #cloud)
 T.check(#updates == 4, "updates rows: " .. #updates)
 T.check(cloud[1].text == "Upload to cloud", "upload entry")
 T.check(cloud[2].text_func() == "Server and folder: not set", "server not set")
 T.check(T.contains(cloud[3].text_func(), "Remote folder: not set"), "remote folder not set")
--- Files: thirteen static rows, none of them appears or disappears
+-- Files: five static rows
 local files = settings[1].sub_item_table
-T.check(#files == 13, "files rows: " .. #files)
+T.check(#files == 5, "files rows: " .. #files)
 T.check(T.contains(files[1].text_func(), "clipboard/tomedown"), "default local folder")
-T.check(files[2].text == "Create an index note (00 - Index.md)",
-    "index entry with the file name")
-T.check(files[3].text_func() == "Index order: Author",
-    "index order entry: " .. files[3].text_func())
-local order_rows = files[3].sub_item_table
-T.check(order_rows and #order_rows == 4,
-    "four index orders: " .. tostring(order_rows and #order_rows))
-T.check(order_rows[1].text == "Author" and order_rows[1].radio == true
-        and order_rows[1].checked_func() == true,
-    "author is the default index order")
-T.check(order_rows[2].text == "Title" and order_rows[2].checked_func() == false,
-    "title order is offered")
-T.check(order_rows[3].text == "Last read", "last read order is offered")
-T.check(order_rows[4].text == "Highlights", "highlights order is offered")
-order_rows[2].callback()
-T.check(store.tomedown.index_order == "title", "title order chosen")
-T.check(store.tomedown.index_dirty == true,
-    "choosing another order asks for an index rebuild")
-T.check(files[3].text_func() == "Index order: Title",
-    "the row names the chosen order: " .. files[3].text_func())
-T.check(order_rows[2].checked_func() == true
-        and order_rows[1].checked_func() == false,
-    "the radio follows the choice")
-store.tomedown.index_dirty = nil
-order_rows[2].callback()
-T.check(store.tomedown.index_dirty == nil,
-    "choosing the order already set asks for nothing")
-order_rows[1].callback()
-T.check(store.tomedown.index_order == "author", "author chosen back")
-T.check(store.tomedown.index_dirty == true,
-    "and the index is asked to rebuild again")
-store.tomedown.index_dirty = nil
-T.check(files[4].text_func() == "Index layout: Tags under the title",
-    "the layout row names the default: " .. files[4].text_func())
+T.check(files[2].text_func() == "File name template: Author - Title", "filename template entry")
+T.check(files[3].text_func() == "Folder organization: Single folder", "folder organization entry")
+T.check(files[4].text == "Create a reading digest (00 - Reading Digest.md)", "reading digest entry")
+T.check(files[5].text == "Export when I close a book", "auto-export entry")
+T.check(files[5].checked_func() == false, "auto-export off by default")
+
+-- Index: five static rows
 do
-    local layout_rows = files[4].sub_item_table
-    T.check(layout_rows and #layout_rows == 3,
-        "three index layouts: " .. tostring(layout_rows and #layout_rows))
-    T.check(layout_rows[1].text == "Tags under the title"
-            and layout_rows[1].radio == true
-            and layout_rows[1].checked_func() == true,
-        "tags under the title is the default layout")
-    T.check(layout_rows[2].text == "Tags column", "the tags column is offered")
-    T.check(layout_rows[3].text == "Tags column, compact",
-        "the compact tags column is offered")
-    layout_rows[2].callback()
-    T.check(store.tomedown.index_layout == "tags_column",
-        "the tags column chosen")
+    local index_group = settings[2].sub_item_table
+    T.check(#index_group == 5, "index rows: " .. #index_group)
+    T.check(index_group[1].text == "Create an index note (00 - Index.md)",
+        "index entry with the file name")
+    T.check(index_group[2].text_func() == "Index order: Author",
+        "index order entry: " .. index_group[2].text_func())
+    local order_rows = index_group[2].sub_item_table
+    T.check(order_rows and #order_rows == 4,
+        "four index orders: " .. tostring(order_rows and #order_rows))
+    T.check(order_rows[1].text == "Author" and order_rows[1].radio == true
+            and order_rows[1].checked_func() == true,
+        "author is the default index order")
+    T.check(order_rows[2].text == "Title" and order_rows[2].checked_func() == false,
+        "title order is offered")
+    T.check(order_rows[3].text == "Last read", "last read order is offered")
+    T.check(order_rows[4].text == "Highlights", "highlights order is offered")
+    order_rows[2].callback()
+    T.check(store.tomedown.index_order == "title", "title order chosen")
     T.check(store.tomedown.index_dirty == true,
-        "a layout change asks for an index rebuild")
-    T.check(files[4].text_func() == "Index layout: Tags column",
-        "the row names the chosen layout: " .. files[4].text_func())
-    T.check(layout_rows[2].checked_func() == true
-            and layout_rows[1].checked_func() == false,
-        "the layout radio follows the choice")
+        "choosing another order asks for an index rebuild")
+    T.check(index_group[2].text_func() == "Index order: Title",
+        "the row names the chosen order: " .. index_group[2].text_func())
+    T.check(order_rows[2].checked_func() == true
+            and order_rows[1].checked_func() == false,
+        "the radio follows the choice")
     store.tomedown.index_dirty = nil
-    layout_rows[2].callback()
+    order_rows[2].callback()
     T.check(store.tomedown.index_dirty == nil,
-        "choosing the layout already set asks for nothing")
-    layout_rows[3].callback()
-    T.check(store.tomedown.index_layout == "tags_column_compact"
-            and store.tomedown.index_dirty == true,
-        "the compact layout chosen, the index asked to rebuild")
+        "choosing the order already set asks for nothing")
+    order_rows[1].callback()
+    T.check(store.tomedown.index_order == "author", "author chosen back")
+    T.check(store.tomedown.index_dirty == true,
+        "and the index is asked to rebuild again")
     store.tomedown.index_dirty = nil
-    layout_rows[1].callback()
-    T.check(store.tomedown.index_layout == "tags_below"
-            and store.tomedown.index_dirty == true,
-        "the default layout chosen back")
-    store.tomedown.index_dirty = nil
+    T.check(index_group[3].text_func() == "Index layout: Tags under the title",
+        "the layout row names the default: " .. index_group[3].text_func())
+    do
+        local layout_rows = index_group[3].sub_item_table
+        T.check(layout_rows and #layout_rows == 3,
+            "three index layouts: " .. tostring(layout_rows and #layout_rows))
+        T.check(layout_rows[1].text == "Tags under the title"
+                and layout_rows[1].radio == true
+                and layout_rows[1].checked_func() == true,
+            "tags under the title is the default layout")
+        T.check(layout_rows[2].text == "Tags column", "the tags column is offered")
+        T.check(layout_rows[3].text == "Tags column, compact",
+            "the compact tags column is offered")
+        layout_rows[2].callback()
+        T.check(store.tomedown.index_layout == "tags_column",
+            "the tags column chosen")
+        T.check(store.tomedown.index_dirty == true,
+            "a layout change asks for an index rebuild")
+        T.check(index_group[3].text_func() == "Index layout: Tags column",
+            "the row names the chosen layout: " .. index_group[3].text_func())
+        T.check(layout_rows[2].checked_func() == true
+                and layout_rows[1].checked_func() == false,
+            "the layout radio follows the choice")
+        store.tomedown.index_dirty = nil
+        layout_rows[2].callback()
+        T.check(store.tomedown.index_dirty == nil,
+            "choosing the layout already set asks for nothing")
+        layout_rows[3].callback()
+        T.check(store.tomedown.index_layout == "tags_column_compact"
+                and store.tomedown.index_dirty == true,
+            "the compact layout chosen, the index asked to rebuild")
+        store.tomedown.index_dirty = nil
+        layout_rows[1].callback()
+        T.check(store.tomedown.index_layout == "tags_below"
+                and store.tomedown.index_dirty == true,
+            "the default layout chosen back")
+        store.tomedown.index_dirty = nil
+    end
+    T.check(index_group[4].text_func() == "Index links: Obsidian wikilink",
+        "index links entry")
+    T.check(index_group[5].text == "Show Reading now in the index",
+        "Reading now entry")
+    T.check(index_group[5].checked_func() == true, "Reading now on by default")
 end
-T.check(files[5].text == "Show Reading now in the index",
-    "Reading now entry")
-T.check(files[5].checked_func() == true, "Reading now on by default")
-T.check(files[6].text == "Include page bookmarks", "page bookmarks entry")
-T.check(files[6].checked_func() == false, "page bookmarks off by default")
-T.check(files[7].text == "Include book covers", "covers entry")
-T.check(files[7].checked_func() == false, "covers off by default")
-T.check(files[8].text == "Export when I close a book", "auto-export entry")
-T.check(files[8].checked_func() == false, "auto-export off by default")
+
+-- Style: six static rows
+do
+    local style_group = settings[3].sub_item_table
+    T.check(#style_group == 6, "style rows: " .. #style_group)
+    T.check(style_group[1].text_func() == "Personal notes format: Inline", "note style entry")
+    T.check(type(style_group[2].text_func) == "function", "special marker row present")
+    T.check(T.contains(style_group[2].text_func(), "Callout"),
+        "special marker default Callout")
+    T.check(style_group[3].text == "Treat every highlight as special", "callout entry")
+    T.check(style_group[3].checked_func() == false, "callout off by default")
+    T.check(style_group[4].text == "Add link IDs to highlights", "block ids entry")
+    T.check(style_group[4].checked_func() == false, "block ids off by default")
+    T.check(style_group[5].text == "Include book covers", "covers entry")
+    T.check(style_group[5].checked_func() == false, "covers off by default")
+    T.check(style_group[6].text == "Include page bookmarks", "page bookmarks entry")
+    T.check(style_group[6].checked_func() == false, "page bookmarks off by default")
+end
 
 -- ------------------------------- 5a3. deleting tags from every book
 --
@@ -1448,7 +1477,7 @@ end
 -- My notes: the global switch, the index switch while the global one is
 -- off, the headings of the zones, and the cloud merge. Rebuilt on open
 -- and in place when a switch in it flips.
-local notes = settings[4].sub_item_table_func()
+local notes = settings[6].sub_item_table_func()
 T.check(#notes == 2, "notes rows with preserve off: " .. #notes)
 T.check(notes[1].text == "Keep my notes: all books", "global switch entry")
 T.check(notes[1].checked_func() == false,
@@ -1460,13 +1489,12 @@ T.check(notes[2].checked_func() == false,
 T.check(notes[3] == nil,
     "no heading row while preserve is off and the index is plain")
 
--- Highlights for Obsidian: its own group since 1.1, the three rows that
--- speak about the highlights themselves
-local highlights = settings[5].sub_item_table
-T.check(#highlights == 3, "highlights rows: " .. #highlights)
-T.check(highlights[1].text == "Treat every highlight as special",
+-- Style: note formatting and highlights
+local highlights = settings[3].sub_item_table
+T.check(#highlights == 6, "style rows: " .. #highlights)
+T.check(highlights[3].text == "Treat every highlight as special",
     "callout entry")
-T.check(highlights[1].checked_func() == false, "callout off by default")
+T.check(highlights[3].checked_func() == false, "callout off by default")
 T.check(type(highlights[2].text_func) == "function", "special marker row present")
 T.check(T.contains(highlights[2].text_func(), "Callout"),
     "special marker default Callout")
@@ -1480,21 +1508,21 @@ T.check(marker_items[1].text == "Callout" and marker_items[1].checked_func(),
     "the callout choice is the one on")
 T.check(marker_items[2].text == "Bold" and marker_items[2].checked_func() == false,
     "the bold choice starts off")
-T.check(highlights[3].text == "Add link IDs to highlights", "block ids entry")
-T.check(highlights[3].checked_func() == false, "block ids off by default")
+T.check(highlights[4].text == "Add link IDs to highlights", "block ids entry")
+T.check(highlights[4].checked_func() == false, "block ids off by default")
 -- with every highlight becoming a callout the marker row has nothing
 -- left to choose, and graying it out is the only way to say so
-highlights[1].callback()
+highlights[3].callback()
 T.check(highlights[2].enabled_func() == false,
     "special marker row disabled while every highlight is a callout")
-highlights[1].callback()
+highlights[3].callback()
 T.check(highlights[2].enabled_func() == true,
     "special marker row back once the callout option is off")
 
 -- flipping preserve shows the heading row in the open group, without
 -- leaving it, and takes the index rows away: with the switch on it
 -- alone governs every file, so nothing else is on show
-local live = settings[4].sub_item_table_func()
+local live = settings[6].sub_item_table_func()
 local open_menu = { item_table = live }
 live[1].callback(open_menu)
 T.check(store.tomedown.preserve == true, "preserve toggled on")
@@ -1536,13 +1564,13 @@ store.tomedown.preserve = nil
 
 -- Generate off takes the index keep row away too, and back on brings it
 -- (v1.1): there is no index to keep edits in without it
-files[2].callback()
+settings[2].sub_item_table[1].callback()
 T.check(store.tomedown.with_index == false, "index generation toggled off")
-live = plugin:genSettingsMenu()[4].sub_item_table_func()
+live = plugin:genSettingsMenu()[6].sub_item_table_func()
 T.check(#live == 1, "the index row leaves with the index: " .. #live)
-files[2].callback()
+settings[2].sub_item_table[1].callback()
 T.check(store.tomedown.with_index == true, "index generation back on")
-live = plugin:genSettingsMenu()[4].sub_item_table_func()
+live = plugin:genSettingsMenu()[6].sub_item_table_func()
 T.check(#live == 2, "the index row comes back with the index: " .. #live)
 T.check(live[2].checked_func() == false,
     "the index switch still follows the global one")
@@ -1555,7 +1583,7 @@ T.check(live[2].checked_func() == false,
 do
 uploadSetup()
 store.tomedown.preserve = false
-local notes_live = settings[4].sub_item_table_func()
+local notes_live = settings[6].sub_item_table_func()
 T.check(#notes_live == 2,
     "no Merge row with preserve off: " .. #notes_live)
 
@@ -1563,12 +1591,12 @@ T.check(#notes_live == 2,
 -- lives in its own menu, so a preserved book brings no Merge row here
 -- (the choice is cleared again below)
 store.tomedown.preserve_books = { [FILE] = true }
-notes_live = settings[4].sub_item_table_func()
+notes_live = settings[6].sub_item_table_func()
 T.check(#notes_live == 2,
     "no Merge row for a preserved book while the global is off: "
         .. #notes_live)
 store.tomedown.preserve_books = nil
-notes_live = settings[4].sub_item_table_func()
+notes_live = settings[6].sub_item_table_func()
 T.check(#notes_live == 2,
     "no Merge row once the book's choice is cleared: " .. #notes_live)
 
@@ -1586,13 +1614,13 @@ T.check(notes_live[3].text == "Bring in edits made in Obsidian",
 -- back without it, so the row leaves
 cloud[1].callback()
 T.check(store.tomedown.upload == false, "upload toggled off")
-notes_live = settings[4].sub_item_table_func()
+notes_live = settings[6].sub_item_table_func()
 T.check(#notes_live == 2,
     "Merge row leaves when upload goes off: " .. #notes_live)
 
 -- flip the global switch off again with upload on: same rebuild
 cloud[1].callback() -- upload back on
-notes_live = settings[4].sub_item_table_func()
+notes_live = settings[6].sub_item_table_func()
 notes_menu = { item_table = notes_live }
 notes_live[1].callback(notes_menu) -- preserve off
 T.check(store.tomedown.preserve == false, "preserve off again")
@@ -1610,7 +1638,7 @@ end
 -- the rows that used to sit in the Style and Behaviour submenus, kept
 -- under the names the sections below toggle: auto-export in Files and
 -- the global switch in My notes
-local behaviour = { [1] = files[8], [2] = notes[1] }
+local behaviour = { [1] = files[5], [2] = notes[1] }
 T.check(updates[1].text_func() == "Check for updates (v"
         .. Update.getInstalledVersion() .. ")",
     "check row carries the installed version: " .. updates[1].text_func())
@@ -1729,13 +1757,13 @@ cloud[1].callback()
 T.check(store.tomedown.upload == true, "upload enabled from the default off")
 cloud[1].callback()
 T.check(store.tomedown.upload == false, "upload disabled again")
-files[2].callback()
+settings[2].sub_item_table[1].callback()
 T.check(store.tomedown.with_index == false, "index disabled")
-files[2].callback()
+settings[2].sub_item_table[1].callback()
 T.check(store.tomedown.with_index == true, "index re-enabled")
-files[6].callback()
+settings[3].sub_item_table[6].callback()
 T.check(store.tomedown.include_bookmarks == true, "page bookmarks enabled")
-files[6].callback()
+settings[3].sub_item_table[6].callback()
 T.check(store.tomedown.include_bookmarks == false, "page bookmarks disabled")
 developer[1].callback()
 T.check(store.tomedown.beta_releases == true, "beta releases enabled")
@@ -1968,7 +1996,7 @@ store.tomedown = { import_prompt_done = true }
 
 -- ----------------------------------------------- 5b. page bookmarks
 
-files[6].callback() -- enable "Include page bookmarks"
+settings[3].sub_item_table[6].callback() -- enable "Include page bookmarks"
 T.check(store.tomedown.include_bookmarks == true, "page bookmarks enabled for the export")
 plugin:runExport({ FILE }, {})
 UIManager:runPending()
@@ -2004,7 +2032,7 @@ if onlyBmMd then
 end
 
 -- disabled again: the section disappears
-files[6].callback()
+settings[3].sub_item_table[6].callback()
 T.check(store.tomedown.include_bookmarks == false, "page bookmarks disabled again")
 plugin:runExport({ FILE }, {})
 UIManager:runPending()
@@ -2545,30 +2573,30 @@ NetworkMgr.connected = true
 uploadSetup()
 plugin:runExport({ FILE }, {})
 T.check(store.tomedown.exports[FILE].hash ~= nil, "hash stored by the export")
-files[7].callback()
+settings[3].sub_item_table[5].callback()
 T.check(store.tomedown.covers == true, "covers toggled on")
 T.check(store.tomedown.exports[FILE].hash == nil,
     "the covers toggle invalidates the stored hash")
-files[7].callback()
+settings[3].sub_item_table[5].callback()
 T.check(store.tomedown.covers == false, "covers toggled off again")
 plugin:runExport({ FILE }, {})
 T.check(store.tomedown.exports[FILE].hash ~= nil, "hash back after the export")
-highlights[1].callback()
+highlights[3].callback()
 T.check(store.tomedown.callout == true, "callout toggled on")
 T.check(store.tomedown.exports[FILE].hash == nil,
     "the callout toggle invalidates the stored hash too")
-highlights[1].callback()
+highlights[3].callback()
 
 -- the same for the two rows the Highlights group took over: neither
 -- special_marker nor block_ids is part of hashBook, so choosing one has
 -- to wipe the stored hashes or the book would never be rewritten
 plugin:runExport({ FILE }, {})
 T.check(store.tomedown.exports[FILE].hash ~= nil, "hash back before the next flip")
-highlights[3].callback()
+highlights[4].callback()
 T.check(store.tomedown.block_ids == true, "block ids toggled on")
 T.check(store.tomedown.exports[FILE].hash == nil,
     "the block ids toggle invalidates the stored hash too")
-highlights[3].callback()
+highlights[4].callback()
 plugin:runExport({ FILE }, {})
 T.check(store.tomedown.exports[FILE].hash ~= nil, "hash back once again")
 marker_items[2].callback()
@@ -2945,7 +2973,7 @@ do
     behaviour[2].callback() -- global preserve off, the tomedown 0.8 way
     T.check(store.tomedown.preserve == false, "15b: the global switch is off")
     sub = menu_items.tomedown.sub_item_table_func()
-    local current_book = sub[5].sub_item_table_func()
+    local current_book = sub[6].sub_item_table_func()
     current_book[1].callback() -- the open book asks for its own zone
     T.check(store.tomedown.preserve_books
             and store.tomedown.preserve_books[FILE] == true,
@@ -2957,7 +2985,7 @@ do
     -- the Current book submenu is built on open: a book that keeps a
     -- zone gets its own heading row, right under the switch that keeps
     -- it, and the copies left by the sections above sit under that
-    current_book = sub[5].sub_item_table_func()
+    current_book = sub[6].sub_item_table_func()
     T.check(#current_book == 5,
         "15b: the heading and the copies join the submenu: "
             .. #current_book)
@@ -3000,7 +3028,7 @@ do
     -- stays where it is, and comes back when the switch goes off again)
     behaviour[2].callback()
     T.check(store.tomedown.preserve == true, "15b: the global switch is on")
-    current_book = sub[5].sub_item_table_func()
+    current_book = sub[6].sub_item_table_func()
     T.check(current_book[1].enabled_func() == false,
         "15b: the keep row is off while the global switch covers every book")
     T.check(current_book[1].checked_func() == false,
@@ -3011,7 +3039,7 @@ do
         "15b: the heading leaves with the global switch, the copies stay")
     behaviour[2].callback()
     T.check(store.tomedown.preserve == false, "15b: and off again")
-    current_book = sub[5].sub_item_table_func()
+    current_book = sub[6].sub_item_table_func()
     T.check(#current_book == 5,
         "15b: the heading is back with the switch off: " .. #current_book)
     plugin:runExport({ FILE }, {})
@@ -3024,7 +3052,7 @@ do
     -- A book that keeps a zone names it itself: the row under the
     -- switch opens the dialog, and the title is stored for that book
     -- alone. The index, when it has a zone, keeps the global heading.
-    current_book = sub[5].sub_item_table_func()
+    current_book = sub[6].sub_item_table_func()
     current_book[4].callback()
     T.check(InputDialog.last ~= nil
             and InputDialog.last.title == "Notes heading",
@@ -3047,9 +3075,9 @@ do
     -- Settings would leave it behind for good
     ui.document = { file = FILE2 }
     sub = menu_items.tomedown.sub_item_table_func()
-    current_book = sub[5].sub_item_table_func()
+    current_book = sub[6].sub_item_table_func()
     current_book[1].callback({ item_table = current_book })
-    current_book = sub[5].sub_item_table_func()
+    current_book = sub[6].sub_item_table_func()
     current_book[4].callback()
     T.check(InputDialog.last ~= nil
             and InputDialog.last.input_text == "My notes...",
@@ -3092,7 +3120,7 @@ do
     -- goes from zoned to plain the file is kept whole as .bak, because
     -- the notes in it do not survive the rewrite.
     local index_row
-    for __, row in ipairs(plugin:genSettingsMenu()[4].sub_item_table_func()) do
+    for __, row in ipairs(plugin:genSettingsMenu()[6].sub_item_table_func()) do
         if row.text == "Keep my notes: index" then
             index_row = row
             break
@@ -3121,7 +3149,7 @@ do
     -- alone, and every export hash goes with it (the index is only
     -- rebuilt along with the books, so the new heading needs every
     -- file to be written again).
-    live = plugin:genSettingsMenu()[4].sub_item_table_func()
+    live = plugin:genSettingsMenu()[6].sub_item_table_func()
     T.check(#live == 3
             and live[3].text_func() == "Index notes heading: My notes...",
         "15d: the index heading row sits under its switch: "
@@ -3142,7 +3170,7 @@ do
     T.check(store.tomedown.exports[FILE] == nil
             or store.tomedown.exports[FILE].hash == nil,
         "15d: every export hash goes: the index rides along with the books")
-    live = plugin:genSettingsMenu()[4].sub_item_table_func()
+    live = plugin:genSettingsMenu()[6].sub_item_table_func()
     T.check(live[#live].text_func() == "Index notes heading: Appunti dell'indice",
         "15d: the row shows the new name: "
             .. tostring(live[#live].text_func and live[#live].text_func()))
@@ -3173,7 +3201,7 @@ do
         "15d: an explicit off is stored for the index")
     -- with the index written plain there is no zone left to name: the
     -- row under its switch goes away with it
-    live = plugin:genSettingsMenu()[4].sub_item_table_func()
+    live = plugin:genSettingsMenu()[6].sub_item_table_func()
     T.check(#live == 2 and live[2].text == "Keep my notes: index",
         "15d: the heading row leaves when the index is plain: " .. #live)
     plugin:runExport({ FILE }, {})
@@ -3196,7 +3224,7 @@ do
     os.remove(MD_PATH .. ".bak")
     os.remove(MD_PATH .. ".bak.1")
     ConfirmBox.last = nil
-    current_book = sub[5].sub_item_table_func()
+    current_book = sub[6].sub_item_table_func()
     current_book[1].callback()
     UIManager:runPending()
     T.check(ConfirmBox.last ~= nil,
@@ -3222,7 +3250,7 @@ do
     -- confirming stores the off, rewrites the file plain there and then,
     -- and keeps what it held as .bak
     ConfirmBox.last = nil
-    current_book = sub[5].sub_item_table_func()
+    current_book = sub[6].sub_item_table_func()
     current_book[1].callback()
     UIManager:runPending()
     T.check(ConfirmBox.last ~= nil, "15b: the box comes back")
@@ -3410,14 +3438,14 @@ do
     -- the settings rows speak about the global switch only: a book's
     -- own choice lives in the book's own menu, so a preserved book
     -- brings no heading row while the global toggle is off
-    current_book = sub[5].sub_item_table_func()
+    current_book = sub[6].sub_item_table_func()
     current_book[1].callback() -- the book keeps its zone again
-    live = plugin:genSettingsMenu()[4].sub_item_table_func()
+    live = plugin:genSettingsMenu()[6].sub_item_table_func()
     T.check(#live == 2,
         "15b: a preserved book brings no heading row: "
             .. #live)
     behaviour[2].callback() -- the global switch on: the row appears
-    live = plugin:genSettingsMenu()[4].sub_item_table_func()
+    live = plugin:genSettingsMenu()[6].sub_item_table_func()
     T.check(#live == 2,
         "15b: the heading row appears with preserve on: "
             .. #live)
@@ -4801,7 +4829,7 @@ do
     shared.setBookExclusion(FILE2, "none")
     store.tomedown.exports[FILE2].hash = nil
 
-    local bookinfo_group = plugin:genSettingsMenu()[2]
+    local bookinfo_group = plugin:genSettingsMenu()[4]
     T.check(bookinfo_group.text == "\xEF\x81\x9A  Book info",
         "26: the Book info group keeps its glyph")
     local bookinfo_rows = bookinfo_group.sub_item_table
