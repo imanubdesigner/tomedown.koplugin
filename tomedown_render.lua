@@ -239,6 +239,37 @@ function render.alias(s)
     return s
 end
 
+-- URL-encode spaces and characters that break a standard Markdown link
+-- target `[label](target.md)`, while keeping UTF-8 and path slashes.
+function render.encodeLinkTarget(s)
+    s = tostring(s or "")
+    s = s:gsub("%%", "%%25")
+    s = s:gsub(" ", "%%20")
+    s = s:gsub("%(", "%%28")
+    s = s:gsub("%)", "%%29")
+    s = s:gsub("%[", "%%5B")
+    s = s:gsub("%]", "%%5D")
+    s = s:gsub("#", "%%23")
+    return s
+end
+
+-- Format a book link for the index table: either an Obsidian wikilink
+-- (`[[link\|title]]`) or a standard Markdown link (`[title](link.md)`).
+function render.bookLink(link, title, format)
+    local raw_link = tostring(link or "")
+    local alias = render.alias(title)
+    if format == "markdown" then
+        local label = alias ~= "" and alias or render.alias(raw_link)
+        local target = raw_link
+        if target:sub(-3):lower() ~= ".md" then
+            target = target .. ".md"
+        end
+        return "[" .. label .. "](" .. render.encodeLinkTarget(target) .. ")"
+    end
+    return alias ~= "" and ("[[" .. raw_link .. "\\|" .. alias .. "]]")
+        or ("[[" .. raw_link .. "]]")
+end
+
 -- the cover inside a .md file: a plain <img> tag with a fixed CSS box
 -- (Obsidian renders relative src paths since 1.8.1, object-fit is in
 -- the sanitizer whitelist, and the letterbox shows the theme background)
@@ -572,6 +603,8 @@ function render.buildBookMd(book, opts)
 
     local with_chapters = hasAnyChapter(annotations)
     local current_chapter = nil
+    local use_footnotes = opts.note_style == "footnote"
+    local footnotes = {}
 
     for __, a in ipairs(annotations) do
         if with_chapters then
@@ -636,25 +669,35 @@ function render.buildBookMd(book, opts)
                 note_lines = nil
             end
         end
-        if #meta > 0 then
-            add("- " .. table.concat(meta, " · "))
-        end
-        if note_lines then
-            local head = #meta > 0 and "  - " or "- "
-            local pad = #meta > 0 and "    " or "  "
-            local first = true
-            for __, line in ipairs(note_lines) do
-                if line:match("^%s*$") then
-                    add("")
-                elseif first then
-                    add(head .. "**NOTE:** *" .. line .. "*")
-                    first = false
-                else
-                    add(pad .. "*" .. line .. "*")
-                end
+        if use_footnotes and note_lines then
+            local fn_idx = #footnotes + 1
+            footnotes[fn_idx] = note_lines
+            if #meta > 0 then
+                add("- " .. table.concat(meta, " · ") .. " [^" .. fn_idx .. "]")
+            else
+                add("- [^" .. fn_idx .. "]")
             end
-        elseif #meta == 0 then
-            add("- …")
+        else
+            if #meta > 0 then
+                add("- " .. table.concat(meta, " · "))
+            end
+            if note_lines then
+                local head = #meta > 0 and "  - " or "- "
+                local pad = #meta > 0 and "    " or "  "
+                local first = true
+                for __, line in ipairs(note_lines) do
+                    if line:match("^%s*$") then
+                        add("")
+                    elseif first then
+                        add(head .. "**NOTE:** *" .. line .. "*")
+                        first = false
+                    else
+                        add(pad .. "*" .. line .. "*")
+                    end
+                end
+            elseif #meta == 0 then
+                add("- …")
+            end
         end
         open = true
     end
@@ -682,6 +725,27 @@ function render.buildBookMd(book, opts)
                 bmeta[1] = "…"
             end
             add("- " .. table.concat(bmeta, " · "))
+        end
+    end
+
+    if #footnotes > 0 then
+        if open then
+            add("")
+            add("---")
+        end
+        for fn_idx, lines in ipairs(footnotes) do
+            add("")
+            local first = true
+            for __, line in ipairs(lines) do
+                if line:match("^%s*$") then
+                    add("")
+                elseif first then
+                    add("[^" .. fn_idx .. "]: " .. line)
+                    first = false
+                else
+                    add("    " .. line)
+                end
+            end
         end
     end
     -- the region always closes on a blank line: the end marker never
@@ -979,9 +1043,7 @@ function render.buildIndexMd(books, opts)
         add("|" .. table.concat(align, "|") .. "|")
 
         for __, b in ipairs(list) do
-            local alias = render.alias(b.title)
-            local link = alias ~= "" and ("[[" .. tostring(b.link) .. "\\|" .. alias .. "]]")
-                or ("[[" .. tostring(b.link) .. "]]")
+            local link = render.bookLink(b.link, b.title, opts.index_links)
             local author = tostring(b.author or ""):gsub("|", "\\|")
                 :gsub("[\r\n]+", " ")
             local series = "—"
@@ -1139,6 +1201,267 @@ function render.buildIndexMd(books, opts)
         table.insert(out, region_from, render.beginMarker("index",
             render.digest(sliceText(out, region_from, #out))))
         add(render.endMarker("index"))
+    end
+    return table.concat(out, "\n") .. "\n"
+end
+
+--[[
+books = {
+    {
+        link, title, author,
+        annotations = {
+            { text, note, chapter, page, date, sort_time, sort_page, special },
+            ...
+        },
+    },
+    ...
+}
+opts = {
+    title, exported, index_links, callout, special_marker, note_style,
+}
+Builds a consolidated chronological reading digest (`00 - Reading Digest.md`),
+grouping highlights across all books by day (newest day first, and newest
+highlight first within each day).
+]]
+function render.buildDigestMd(books, opts)
+    opts = opts or {}
+    local title = opts.title or _("Reading digest")
+    local out = {}
+    local function add(s)
+        out[#out + 1] = s
+    end
+
+    local items = {}
+    local book_seen = {}
+    local total_books = 0
+    local total_special = 0
+    for __, b in ipairs(books or {}) do
+        local anns = b.annotations or {}
+        if #anns > 0 then
+            local bkey = tostring(b.link or b.title or "")
+            if not book_seen[bkey] then
+                book_seen[bkey] = true
+                total_books = total_books + 1
+            end
+        end
+        for ___, a in ipairs(anns) do
+            if a.special then
+                total_special = total_special + 1
+            end
+            local raw_dt = tostring(a.sort_time or "")
+            local day_iso = raw_dt:match("^(%d%d%d%d%-%d%d%-%d%d)")
+            local day_label
+            if day_iso then
+                day_label = render.fmtDate(day_iso)
+            elseif type(a.date) == "string" and a.date ~= "" then
+                day_label = a.date:match("^(%d%d/%d%d/%d%d%d%d)") or a.date
+                local d, m, y = day_label:match("^(%d%d)/(%d%d)/(%d%d%d%d)$")
+                if d and m and y then
+                    day_iso = y .. "-" .. m .. "-" .. d
+                end
+            end
+            items[#items + 1] = {
+                book_link = b.link or b.base or b.title or "",
+                book_title = b.title or b.link or "",
+                book_author = b.author,
+                text = a.text,
+                note = a.note,
+                chapter = a.chapter,
+                page = a.page,
+                date = a.date,
+                special = a.special,
+                sort_time = raw_dt,
+                sort_page = tonumber(a.sort_page) or 0,
+                day_key = day_iso or "0000-00-00",
+                day_label = day_label or _("Undated"),
+            }
+        end
+    end
+
+    table.sort(items, function(a, b)
+        if a.day_key ~= b.day_key then
+            return a.day_key > b.day_key
+        end
+        if a.sort_time ~= b.sort_time then
+            return a.sort_time > b.sort_time
+        end
+        local bt_a = tostring(a.book_title or ""):lower()
+        local bt_b = tostring(b.book_title or ""):lower()
+        if bt_a ~= bt_b then
+            return bt_a < bt_b
+        end
+        if a.sort_page ~= b.sort_page then
+            return a.sort_page < b.sort_page
+        end
+        return tostring(a.text or "") < tostring(b.text or "")
+    end)
+
+    add("---")
+    add('tomedown: "' .. render.FORMAT_VERSION .. '"')
+    add("title: " .. yamlQuote(title))
+    add("exported: " .. yamlQuote(opts.exported or os.date("%Y-%m-%d")))
+    add("highlights: " .. tostring(#items))
+    add("tags:")
+    add("  - ebook")
+    add("  - " .. _("digest"))
+    add("---")
+    add("")
+    add("---")
+    add("")
+
+    if #items == 0 then
+        add("_" .. _("No exported books with highlights.") .. "_")
+        add("")
+        return table.concat(out, "\n") .. "\n"
+    end
+
+    local books_txt = total_books == 1 and _("%1 book") or _("%1 books")
+    local highlights_txt = #items == 1 and _("%1 highlight")
+        or _("%1 highlights")
+    local stats = "**" .. (books_txt:gsub("%%1", tostring(total_books)))
+        .. "** · **" .. (highlights_txt:gsub("%%1", tostring(#items)))
+        .. "**"
+    if total_special > 0 then
+        stats = stats .. " · **★ "
+            .. (_("%1 special"):gsub("%%1", tostring(total_special))) .. "**"
+    end
+    add(stats)
+
+    local marker_global = opts.special_marker
+    if marker_global ~= "bold" then
+        marker_global = "callout"
+    end
+    local use_footnotes = opts.note_style == "footnote"
+    local footnotes = {}
+
+    local current_day = nil
+    local current_book = nil
+
+    for __, item in ipairs(items) do
+        if item.day_key ~= current_day then
+            if current_day ~= nil then
+                add("")
+                add("---")
+            end
+            add("")
+            add("## " .. item.day_label)
+            current_day = item.day_key
+            current_book = nil
+        end
+
+        local book_id = tostring(item.book_link) .. "\31" .. tostring(item.book_title)
+        if book_id ~= current_book then
+            add("")
+            local link = render.bookLink(item.book_link, item.book_title, opts.index_links)
+            if item.book_author and tostring(item.book_author) ~= "" then
+                add("### " .. link .. " — *" .. tostring(item.book_author) .. "*")
+            else
+                add("### " .. link)
+            end
+            current_book = book_id
+        end
+
+        add("")
+        local as_callout = opts.callout or (item.special and marker_global == "callout")
+        local as_bold = item.special and not opts.callout and marker_global == "bold"
+        if as_callout then
+            add("> [!highlight]")
+        end
+        local text = tostring(item.text or ""):gsub("\r\n", "\n"):gsub("\r", "\n")
+        local quote_lines = {}
+        for line in (text .. "\n"):gmatch("(.-)\n") do
+            quote_lines[#quote_lines + 1] = line
+        end
+        if as_bold then
+            wrapBold(quote_lines)
+        end
+        for __, line in ipairs(quote_lines) do
+            add("> " .. line)
+        end
+        add("")
+
+        local meta = {}
+        if item.chapter and tostring(item.chapter) ~= "" then
+            meta[#meta + 1] = "*" .. tostring(item.chapter) .. "*"
+        end
+        if item.page and tostring(item.page) ~= "" then
+            meta[#meta + 1] = "**p. " .. tostring(item.page) .. "**"
+        end
+        if item.date and tostring(item.date) ~= "" then
+            meta[#meta + 1] = tostring(item.date)
+        end
+
+        local note_lines
+        if item.note then
+            local body = tostring(item.note):gsub("\r\n", "\n"):gsub("\r", "\n")
+            note_lines = {}
+            for line in (body .. "\n"):gmatch("(.-)\n") do
+                note_lines[#note_lines + 1] = line
+            end
+            while #note_lines > 0 and note_lines[1]:match("^%s*$") do
+                table.remove(note_lines, 1)
+            end
+            while #note_lines > 0 and note_lines[#note_lines]:match("^%s*$") do
+                table.remove(note_lines)
+            end
+            if #note_lines == 0 then
+                note_lines = nil
+            end
+        end
+
+        if use_footnotes and note_lines then
+            local fn_idx = #footnotes + 1
+            footnotes[fn_idx] = note_lines
+            if #meta > 0 then
+                add("- " .. table.concat(meta, " · ") .. " [^" .. fn_idx .. "]")
+            else
+                add("- [^" .. fn_idx .. "]")
+            end
+        else
+            if #meta > 0 then
+                add("- " .. table.concat(meta, " · "))
+            end
+            if note_lines then
+                local head = #meta > 0 and "  - " or "- "
+                local pad = #meta > 0 and "    " or "  "
+                local first = true
+                for __, line in ipairs(note_lines) do
+                    if line:match("^%s*$") then
+                        add("")
+                    elseif first then
+                        add(head .. "**NOTE:** *" .. line .. "*")
+                        first = false
+                    else
+                        add(pad .. "*" .. line .. "*")
+                    end
+                end
+            elseif #meta == 0 then
+                add("- …")
+            end
+        end
+    end
+
+    if #footnotes > 0 then
+        add("")
+        add("---")
+        for fn_idx, lines in ipairs(footnotes) do
+            add("")
+            local first = true
+            for __, line in ipairs(lines) do
+                if line:match("^%s*$") then
+                    add("")
+                elseif first then
+                    add("[^" .. fn_idx .. "]: " .. line)
+                    first = false
+                else
+                    add("    " .. line)
+                end
+            end
+        end
+    end
+
+    if out[#out] ~= "" then
+        add("")
     end
     return table.concat(out, "\n") .. "\n"
 end

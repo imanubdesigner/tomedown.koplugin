@@ -29,6 +29,7 @@ local metadata = require("tomedown_metadata")
 local pubdate = require("tomedown_pubdate")
 
 local INDEX_FILENAME = shared.INDEX_FILENAME
+local DIGEST_FILENAME = shared.DIGEST_FILENAME
 local getSetting = shared.getSetting
 local setSetting = shared.setSetting
 local getNotesTitle = shared.getNotesTitle
@@ -45,6 +46,14 @@ local setBookOverride = shared.setBookOverride
 local getBookExclusion = shared.getBookExclusion
 local setBookExclusion = shared.setBookExclusion
 local getIndexPreserve = shared.getIndexPreserve
+local getFilenameTemplate = shared.getFilenameTemplate
+local setFilenameTemplate = shared.setFilenameTemplate
+local getFolderLayout = shared.getFolderLayout
+local setFolderLayout = shared.setFolderLayout
+local getIndexLinks = shared.getIndexLinks
+local setIndexLinks = shared.setIndexLinks
+local getNoteStyle = shared.getNoteStyle
+local setNoteStyle = shared.setNoteStyle
 local readIfExists = shared.readIfExists
 local isZoned = shared.isZoned
 
@@ -844,6 +853,91 @@ local function setIndexLayout(layout)
     setSetting("index_dirty", true)
 end
 
+local function setIndexLinksFormat(fmt)
+    if getIndexLinks() == fmt then
+        return
+    end
+    setIndexLinks(fmt)
+    setSetting("index_dirty", true)
+end
+
+function M:editCustomFilenameTemplate(touchmenu)
+    local dialog
+    dialog = InputDialog:new{
+        title = _("File name template"),
+        input = getFilenameTemplate(),
+        hint = _("%A author, %T title, %S series, %i series index"),
+        buttons = {
+            {
+                {
+                    text = _("Cancel"),
+                    id = "close",
+                    callback = function()
+                        UIManager:close(dialog)
+                    end,
+                },
+            },
+            {
+                {
+                    text = _("Save"),
+                    callback = function()
+                        local value = dialog:getInputText() or ""
+                        setFilenameTemplate(value)
+                        UIManager:close(dialog)
+                        if touchmenu and touchmenu.updateItems then
+                            touchmenu:updateItems()
+                        end
+                    end,
+                },
+            },
+        },
+    }
+    UIManager:show(dialog)
+    return dialog
+end
+
+function M:renameBookToTemplate(file, touchmenu)
+    if not file then
+        return false
+    end
+    local records = getSetting("exports", {})
+    local record = records[file]
+    if type(record) ~= "table" or not record.base then
+        return false
+    end
+    local old_base = record.base
+    record.base = nil
+    record.hash = nil
+    setSetting("exports", records)
+    setSetting("index_dirty", true)
+    self.book_cache = {}
+    local book = self:buildBook(file)
+    if book and book.base and book.base ~= old_base then
+        local dir = self:getLocalDir()
+        local old_md = dir .. "/" .. old_base .. ".md"
+        local new_md = dir .. "/" .. book.base .. ".md"
+        local new_dir = new_md:match("^(.*)/[^/]+$")
+        if new_dir and new_dir ~= dir then
+            local util = require("util")
+            util.makePath(new_dir)
+        end
+        if lfs.attributes(old_md, "mode") == "file"
+                and not lfs.attributes(new_md, "mode") then
+            os.rename(old_md, new_md)
+            for __, slot in ipairs({ ".bak", ".bak.1" }) do
+                if lfs.attributes(old_md .. slot, "mode") == "file" then
+                    os.rename(old_md .. slot, new_md .. slot)
+                end
+            end
+        end
+    end
+    self:runExport({ file }, { force = true })
+    if touchmenu and touchmenu.updateItems then
+        touchmenu:updateItems()
+    end
+    return true
+end
+
 -- Where the book goes. The file already written is never deleted: the
 -- state decides what the next exports do, and the index alone is told
 -- to rebuild because no book file has to change.
@@ -1348,6 +1442,215 @@ function M:genSettingsMenu()
             callback = function()
                 setSetting("auto_export",
                     not getSetting("auto_export", false))
+            end,
+        },
+        {
+            text_func = function()
+                local tpl = getFilenameTemplate()
+                local labels = {
+                    ["%A - %T"] = _("Author - Title"),
+                    ["%T (%A)"] = _("Title (Author)"),
+                    ["%T"] = _("Title only"),
+                }
+                return T(_("File name template: %1"), labels[tpl] or tpl)
+            end,
+            sub_item_table = {
+                {
+                    text = _("Author - Title"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return getFilenameTemplate() == "%A - %T"
+                    end,
+                    callback = function()
+                        setFilenameTemplate("%A - %T")
+                    end,
+                },
+                {
+                    text = _("Title (Author)"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return getFilenameTemplate() == "%T (%A)"
+                    end,
+                    callback = function()
+                        setFilenameTemplate("%T (%A)")
+                    end,
+                },
+                {
+                    text = _("Title only"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return getFilenameTemplate() == "%T"
+                    end,
+                    callback = function()
+                        setFilenameTemplate("%T")
+                    end,
+                },
+                {
+                    text = _("Custom template…"),
+                    callback = function(touchmenu)
+                        self:editCustomFilenameTemplate(touchmenu)
+                    end,
+                },
+            },
+        },
+        {
+            text_func = function()
+                local labels = {
+                    flat = _("Single folder"),
+                    author = _("By author"),
+                    series = _("By series"),
+                    status = _("By reading status"),
+                }
+                local current = getFolderLayout()
+                return T(_("Folder organization: %1"),
+                    labels[current] or labels.flat)
+            end,
+            sub_item_table = {
+                {
+                    text = _("Single folder"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return getFolderLayout() == "flat"
+                    end,
+                    callback = function()
+                        if getFolderLayout() ~= "flat" then
+                            setFolderLayout("flat")
+                            self:invalidateExportHashes()
+                        end
+                    end,
+                },
+                {
+                    text = _("By author"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return getFolderLayout() == "author"
+                    end,
+                    callback = function()
+                        if getFolderLayout() ~= "author" then
+                            setFolderLayout("author")
+                            self:invalidateExportHashes()
+                        end
+                    end,
+                },
+                {
+                    text = _("By series"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return getFolderLayout() == "series"
+                    end,
+                    callback = function()
+                        if getFolderLayout() ~= "series" then
+                            setFolderLayout("series")
+                            self:invalidateExportHashes()
+                        end
+                    end,
+                },
+                {
+                    text = _("By reading status"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return getFolderLayout() == "status"
+                    end,
+                    callback = function()
+                        if getFolderLayout() ~= "status" then
+                            setFolderLayout("status")
+                            self:invalidateExportHashes()
+                        end
+                    end,
+                },
+            },
+        },
+        {
+            text_func = function()
+                local labels = {
+                    wikilink = _("Obsidian wikilink"),
+                    markdown = _("Standard Markdown"),
+                }
+                local current = getIndexLinks()
+                return T(_("Index links: %1"),
+                    labels[current] or labels.wikilink)
+            end,
+            sub_item_table = {
+                {
+                    text = _("Obsidian wikilink"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return getIndexLinks() == "wikilink"
+                    end,
+                    callback = function()
+                        setIndexLinksFormat("wikilink")
+                    end,
+                },
+                {
+                    text = _("Standard Markdown"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return getIndexLinks() == "markdown"
+                    end,
+                    callback = function()
+                        setIndexLinksFormat("markdown")
+                    end,
+                },
+            },
+        },
+        {
+            text_func = function()
+                local labels = {
+                    inline = _("Inline"),
+                    footnote = _("Footnotes"),
+                }
+                local current = getNoteStyle()
+                return T(_("Personal notes format: %1"),
+                    labels[current] or labels.inline)
+            end,
+            sub_item_table = {
+                {
+                    text = _("Inline"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return getNoteStyle() == "inline"
+                    end,
+                    callback = function()
+                        if getNoteStyle() ~= "inline" then
+                            setNoteStyle("inline")
+                            self:invalidateExportHashes()
+                        end
+                    end,
+                },
+                {
+                    text = _("Footnotes"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return getNoteStyle() == "footnote"
+                    end,
+                    callback = function()
+                        if getNoteStyle() ~= "footnote" then
+                            setNoteStyle("footnote")
+                            self:invalidateExportHashes()
+                        end
+                    end,
+                },
+            },
+        },
+        {
+            text = T(_("Create a reading digest (%1)"), DIGEST_FILENAME),
+            checked_func = function()
+                return getSetting("with_digest", false)
+            end,
+            keep_menu_open = true,
+            callback = function()
+                setSetting("with_digest", not getSetting("with_digest", false))
             end,
         },
     }
@@ -2207,6 +2510,15 @@ function M:genBookMenu()
             separator = true,
         }
     end
+    rows[#rows + 1] = {
+        text = withIcon("\xEF\x87\xAA", _("Export reading digest")),
+        enabled_func = function()
+            return #self:listBookFiles() > 0
+        end,
+        callback = function(touchmenu)
+            self:exportDigest(touchmenu)
+        end,
+    }
     rows[#rows + 1] = {
         text = withIcon("\xEE\xB4\xBE", _("Upload all files again")),
         enabled_func = function()

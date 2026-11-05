@@ -15,6 +15,7 @@ local md5 = require("ffi/sha2").md5
 local SETTINGS_KEY = "tomedown"
 local DEFAULT_LOCAL_SUBDIR = "clipboard/tomedown"
 local INDEX_FILENAME = "00 - Index.md"
+local DIGEST_FILENAME = "00 - Reading Digest.md"
 local FILENAME_TEMPLATE = "%A - %T"
 
 -- settings (everything in G_reader_settings under a single key)
@@ -365,6 +366,74 @@ local function getIndexPreserve()
     return global
 end
 
+local function getFilenameTemplate()
+    local tpl = getSetting("filename_template", FILENAME_TEMPLATE)
+    if type(tpl) ~= "string" or tpl == "" then
+        return FILENAME_TEMPLATE
+    end
+    return tpl
+end
+
+local function setFilenameTemplate(tpl)
+    if type(tpl) ~= "string" then
+        tpl = ""
+    end
+    tpl = tpl:gsub("^%s+", ""):gsub("%s+$", "")
+    if tpl == "" or tpl == FILENAME_TEMPLATE then
+        setSetting("filename_template", nil)
+    else
+        setSetting("filename_template", tpl)
+    end
+end
+
+local function getFolderLayout()
+    local layout = getSetting("folder_layout", "flat")
+    if layout == "author" or layout == "series" or layout == "status" then
+        return layout
+    end
+    return "flat"
+end
+
+local function setFolderLayout(layout)
+    if layout == "author" or layout == "series" or layout == "status" then
+        setSetting("folder_layout", layout)
+    else
+        setSetting("folder_layout", nil)
+    end
+end
+
+local function getIndexLinks()
+    local fmt = getSetting("index_links", "wikilink")
+    if fmt == "markdown" then
+        return "markdown"
+    end
+    return "wikilink"
+end
+
+local function setIndexLinks(fmt)
+    if fmt == "markdown" then
+        setSetting("index_links", "markdown")
+    else
+        setSetting("index_links", nil)
+    end
+end
+
+local function getNoteStyle()
+    local style = getSetting("note_style", "inline")
+    if style == "footnote" then
+        return "footnote"
+    end
+    return "inline"
+end
+
+local function setNoteStyle(style)
+    if style == "footnote" then
+        setSetting("note_style", "footnote")
+    else
+        setSetting("note_style", nil)
+    end
+end
+
 local function readIfExists(path)
     local f = io.open(path, "rb")
     if not f then
@@ -523,6 +592,7 @@ return {
     SETTINGS_KEY = SETTINGS_KEY,
     DEFAULT_LOCAL_SUBDIR = DEFAULT_LOCAL_SUBDIR,
     INDEX_FILENAME = INDEX_FILENAME,
+    DIGEST_FILENAME = DIGEST_FILENAME,
     FILENAME_TEMPLATE = FILENAME_TEMPLATE,
     getSetting = getSetting,
     setSetting = setSetting,
@@ -552,6 +622,14 @@ return {
     forgetKnownTag = forgetKnownTag,
     allowKnownTag = allowKnownTag,
     getIndexPreserve = getIndexPreserve,
+    getFilenameTemplate = getFilenameTemplate,
+    setFilenameTemplate = setFilenameTemplate,
+    getFolderLayout = getFolderLayout,
+    setFolderLayout = setFolderLayout,
+    getIndexLinks = getIndexLinks,
+    setIndexLinks = setIndexLinks,
+    getNoteStyle = getNoteStyle,
+    setNoteStyle = setNoteStyle,
     readIfExists = readIfExists,
     ownCopy = ownCopy,
     isZoned = isZoned,

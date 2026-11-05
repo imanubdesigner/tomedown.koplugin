@@ -1153,4 +1153,128 @@ do
         "special marker: counts stay whatever the marker")
 end
 
+-- standard Markdown links in the index and footnotes in book notes (v1.4.0)
+do
+    T.check(render.bookLink("Arthur Machen - The Three Impostors", "The Three Impostors", "wikilink")
+        == "[[Arthur Machen - The Three Impostors\\|The Three Impostors]]",
+        "bookLink: wikilink default")
+    T.check(render.bookLink("Arthur Machen - The Three Impostors", "The Three Impostors", "markdown")
+        == "[The Three Impostors](Arthur%20Machen%20-%20The%20Three%20Impostors.md)",
+        "bookLink: standard markdown link encodes spaces")
+    T.check(render.bookLink("Arthur Machen/The Three Impostors (1895)", "The Three Impostors", "markdown")
+        == "[The Three Impostors](Arthur%20Machen/The%20Three%20Impostors%20%281895%29.md)",
+        "bookLink: subfolder slash kept, parentheses encoded")
+
+    local md_idx = render.buildIndexMd({
+        {
+            link = "Arthur Machen/Arthur Machen - The Three Impostors",
+            title = "The Three Impostors",
+            author = "Arthur Machen",
+            count = 2,
+        },
+    }, { index_links = "markdown" })
+    T.check(T.contains(md_idx,
+            "[The Three Impostors](Arthur%20Machen/Arthur%20Machen%20-%20The%20Three%20Impostors.md)"),
+        "index with markdown links")
+    T.check(not T.contains(md_idx, "[["), "no wikilink when markdown format is chosen")
+
+    local fn_book = render.buildBookMd({
+        title = "The Three Impostors",
+        author = "Arthur Machen",
+        count = 2,
+        annotations = {
+            {
+                text = "First passage.",
+                note = "First personal note\nSecond line",
+                chapter = "Chapter I",
+                page = "7",
+                date = "05/11/2026",
+            },
+            {
+                text = "Second passage.",
+                note = "Another note",
+                chapter = "Chapter II",
+                page = "14",
+            },
+        },
+    }, { note_style = "footnote" })
+    T.check(T.contains(fn_book, "- **p. 7** · 05/11/2026 [^1]"),
+        "footnote marker 1 on first highlight meta")
+    T.check(T.contains(fn_book, "- **p. 14** [^2]"),
+        "footnote marker 2 on second highlight meta")
+    T.check(not T.contains(fn_book, "**NOTE:**"),
+        "inline NOTE label omitted in footnote mode")
+    T.check(T.contains(fn_book, "[^1]: First personal note\n    Second line"),
+        "multiline footnote definition indented")
+    T.check(T.contains(fn_book, "[^2]: Another note"),
+        "second footnote definition")
+    T.check(fn_book:find("[^1]:", 1, true) < fn_book:find("tomedown:end body", 1, true),
+        "footnotes stay inside the generated body region")
+
+    -- Reading Digest (00 - Reading Digest.md)
+    local empty_digest = render.buildDigestMd({}, {})
+    T.check(T.contains(empty_digest, 'title: "Reading digest"'),
+        "digest default title in frontmatter")
+    T.check(T.contains(empty_digest, "  - digest"), "digest tag in frontmatter")
+    T.check(T.contains(empty_digest, "_No exported books with highlights._"),
+        "empty digest message")
+
+    local digest = render.buildDigestMd({
+        {
+            link = "Arthur Machen - The Three Impostors",
+            title = "The Three Impostors",
+            author = "Arthur Machen",
+            annotations = {
+                {
+                    text = "Older quote.",
+                    chapter = "Prologue",
+                    page = "5",
+                    date = "04/11/2026 10:00",
+                    sort_time = "2026-11-04 10:00:00",
+                    sort_page = 5,
+                },
+                {
+                    text = "Newer quote.",
+                    note = "Key passage",
+                    chapter = "Adventure of the Gold Tiberius",
+                    page = "18",
+                    date = "05/11/2026 21:15",
+                    sort_time = "2026-11-05 21:15:00",
+                    sort_page = 18,
+                    special = true,
+                },
+            },
+        },
+        {
+            link = "Edgar Wallace - The Three Just Men",
+            title = "The Three Just Men",
+            author = "Edgar Wallace",
+            annotations = {
+                {
+                    text = "Same day earlier.",
+                    page = "12",
+                    date = "05/11/2026 09:30",
+                    sort_time = "2026-11-05 09:30:00",
+                    sort_page = 12,
+                },
+            },
+        },
+    }, { index_links = "markdown", note_style = "footnote" })
+    T.check(T.contains(digest, "**2 books** · **3 highlights** · **★ 1 special**"),
+        "digest stats summary line")
+    local d_nov5 = digest:find("## 05/11/2026", 1, true)
+    local d_nov4 = digest:find("## 04/11/2026", 1, true)
+    T.check(d_nov5 and d_nov4 and d_nov5 < d_nov4,
+        "digest groups newest day first")
+    local q_newer = digest:find("> Newer quote.", 1, true)
+    local q_earlier = digest:find("> Same day earlier.", 1, true)
+    T.check(q_newer and q_earlier and q_newer < q_earlier,
+        "digest orders newest highlight first within the same day")
+    T.check(T.contains(digest,
+            "### [The Three Impostors](Arthur%20Machen%20-%20The%20Three%20Impostors.md) — *Arthur Machen*"),
+        "digest book heading uses configured link format and author")
+    T.check(T.contains(digest, "[^1]: Key passage"),
+        "digest supports footnote style for personal notes")
+end
+
 T.finish("test_render")

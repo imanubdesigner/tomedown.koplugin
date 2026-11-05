@@ -740,6 +740,17 @@ function M:reuploadAll(touchmenu)
     listDir(dir, function(entry)
         return entry:sub(-3) == ".md"
     end)
+    local ok_sub, iter_sub, obj_sub = pcall(lfs.dir, dir)
+    if ok_sub and iter_sub then
+        for entry in iter_sub, obj_sub do
+            if entry ~= "." and entry ~= ".." and entry ~= "covers"
+                    and lfs.attributes(dir .. "/" .. entry, "mode") == "directory" then
+                listDir(dir .. "/" .. entry, function(sub_entry)
+                    return sub_entry:sub(-3) == ".md"
+                end)
+            end
+        end
+    end
     -- covers still sitting on the device (upload was off, or the upload
     -- failed earlier) ride along with "Upload all files again"
     listDir(dir .. "/covers", function(entry)

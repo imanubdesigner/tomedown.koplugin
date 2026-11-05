@@ -30,6 +30,7 @@ local shared = require("tomedown_shared")
 local metadata = require("tomedown_metadata")
 
 local INDEX_FILENAME = shared.INDEX_FILENAME
+local DIGEST_FILENAME = shared.DIGEST_FILENAME
 local FILENAME_TEMPLATE = shared.FILENAME_TEMPLATE
 local getSetting = shared.getSetting
 local setSetting = shared.setSetting
@@ -38,6 +39,10 @@ local getBookPreserve = shared.getBookPreserve
 local getBookExclusion = shared.getBookExclusion
 local mergeKnownTags = shared.mergeKnownTags
 local getIndexPreserve = shared.getIndexPreserve
+local getFilenameTemplate = shared.getFilenameTemplate
+local getFolderLayout = shared.getFolderLayout
+local getIndexLinks = shared.getIndexLinks
+local getNoteStyle = shared.getNoteStyle
 local readIfExists = shared.readIfExists
 local ownCopy = shared.ownCopy
 local isZoned = shared.isZoned
@@ -374,22 +379,116 @@ local function hashBook(title, author, annotations, meta, bookmarks)
     return md5(table.concat(parts, "\n"))
 end
 
--- file name identical to the standard exporter's ("%A - %T")
-function M:fileBase(file, props)
+local function expandTemplateFallback(tpl, file, props)
+    local title = tostring(props and props.display_title or file or "")
+    local author = tostring(props and props.authors or "N/A")
+    local series = tostring(props and props.series or "")
+    local series_index = tostring(props and props.series_index or "")
+    local expanded = tostring(tpl or FILENAME_TEMPLATE):gsub("%%([%a])", function(code)
+        if code == "A" or code == "a" then
+            return author
+        elseif code == "T" or code == "t" then
+            return title
+        elseif code == "S" or code == "s" then
+            return series
+        elseif code == "i" then
+            return series_index
+        end
+        return "%" .. code
+    end)
+    return expanded
+end
+
+function M:computeFileBase(file, props, template)
+    local tpl = template or getFilenameTemplate()
     local name
     local bookinfo = self.ui and self.ui.bookinfo
     if bookinfo and bookinfo.expandString then
-        local ok, result = pcall(bookinfo.expandString, bookinfo, FILENAME_TEMPLATE, file, os.time())
+        local ok, result = pcall(bookinfo.expandString, bookinfo, tpl, file, os.time())
         if ok and type(result) == "string" and result ~= "" then
             name = result
         end
     end
     if not name then
-        local title = props and props.display_title or file
-        name = (props and props.authors or "N/A") .. " - " .. tostring(title)
+        name = expandTemplateFallback(tpl, file, props)
     end
     name = name:gsub("\r?\n", "; ")
-    return util.getSafeFilename(name, nil, nil, -1)
+    local safe = util.getSafeFilename(name, nil, nil, -1)
+    if safe == "" then
+        local fallback = expandTemplateFallback(FILENAME_TEMPLATE, file, props):gsub("\r?\n", "; ")
+        safe = util.getSafeFilename(fallback, nil, nil, -1)
+    end
+    local taken = {}
+    for other_file, rec in pairs(getSetting("exports", {})) do
+        if other_file ~= file and type(rec) == "table"
+                and type(rec.base) == "string" and rec.base ~= "" then
+            local leaf = rec.base:match("([^/]+)$") or rec.base
+            taken[leaf:lower()] = true
+        end
+    end
+    local candidate = safe
+    if taken[candidate:lower()] then
+        local n = 2
+        while taken[(safe .. "_" .. n):lower()] do
+            n = n + 1
+        end
+        candidate = safe .. "_" .. n
+    end
+    return candidate
+end
+
+function M:bookSubdir(props, status)
+    local layout = getFolderLayout()
+    if layout == "flat" then
+        return nil
+    end
+    local raw
+    if layout == "author" then
+        raw = props and props.authors
+        if type(raw) ~= "string" or raw:match("^%s*$") then
+            raw = _("Unknown author")
+        end
+    elseif layout == "series" then
+        raw = props and props.series
+        if type(raw) ~= "string" or raw:match("^%s*$") then
+            return nil
+        end
+    elseif layout == "status" then
+        local labels = {
+            reading = _("Reading"),
+            complete = _("Complete"),
+            abandoned = _("Abandoned"),
+        }
+        raw = status and labels[status] or _("Reading")
+    end
+    if not raw or raw == "" then
+        return nil
+    end
+    raw = tostring(raw):gsub("\r?\n", "; ")
+    local safe = util.getSafeFilename(raw, nil, nil, -1)
+    if safe == "" or safe:lower() == "covers" then
+        return nil
+    end
+    return safe
+end
+
+-- file name identical to the standard exporter's ("%A - %T") by default,
+-- or the active filename_template; once exported, a book keeps its base
+-- across metadata or template changes so existing notes are never orphaned
+function M:fileBase(file, props, status)
+    local record = file and getSetting("exports", {})[file]
+    local leaf
+    if type(record) == "table" and type(record.base) == "string"
+            and record.base ~= "" then
+        leaf = record.base:match("([^/]+)$") or record.base
+    else
+        leaf = self:computeFileBase(file, props)
+    end
+    local subdir = self:bookSubdir(props, status)
+    if subdir then
+        return subdir .. "/" .. leaf
+    end
+    return leaf
 end
 
 --- The vault-relative path of a book's cover, extracting the image the
@@ -399,7 +498,8 @@ function M:ensureCover(file, base, dir)
     if not getSetting("covers", false) then
         return nil
     end
-    local rel = Cover.relPath(base)
+    local leaf = tostring(base or ""):match("([^/]+)$") or tostring(base or "")
+    local rel = Cover.relPath(leaf)
     local document
     if self.ui and self.ui.document and self.ui.document.file == file then
         document = self.ui.document
@@ -449,12 +549,12 @@ function M:buildBook(file, live_annotations)
                 local props = BookInfo.extendProps(doc_props, file)
                 local title = props.display_title or file
                 local author = props.authors
-                local base = self:fileBase(file, props)
                 local info = BookList.getBookInfo(file)
                 local status = info and info.status
                 if status ~= "reading" and status ~= "abandoned" and status ~= "complete" then
                     status = nil
                 end
+                local base = self:fileBase(file, props, status)
                 local progress = ds:readSetting("percent_finished")
                 if type(progress) == "number" then
                     if progress > 1 then
@@ -615,7 +715,8 @@ function M:buildIndexEntries(dir, export_records)
                 -- the file stays where it is: only the index forgets it
                 hidden = hidden + 1
             else
-                local cover_rel = Cover.relPath(book.base)
+                local cover_leaf = book.base:match("([^/]+)$") or book.base
+                local cover_rel = Cover.relPath(cover_leaf)
                 local has_cover = lfs.attributes(dir .. "/" .. cover_rel, "mode") == "file"
                 if not has_cover and with_covers then
                     -- backfill: books exported before the option was turned on
@@ -659,6 +760,85 @@ function M:buildIndexEntries(dir, export_records)
         return tostring(a.title or ""):lower() < tostring(b.title or ""):lower()
     end)
     return entries, new_covers, hidden
+end
+
+function M:buildDigestBooks()
+    local list = {}
+    for __, file in ipairs(self:listBookFiles()) do
+        if getBookExclusion(file) == nil then
+            local open = self:openReader(file)
+            local live = open and open.annotation and open.annotation.annotations
+            local book = self:buildBook(file, live)
+            if book and book.annotations and #book.annotations > 0 then
+                list[#list + 1] = {
+                    link = book.base,
+                    title = book.title,
+                    author = book.author,
+                    annotations = book.annotations,
+                }
+            end
+        end
+    end
+    return list
+end
+
+function M:exportDigest(touchmenu)
+    if touchmenu and touchmenu.closeMenu then
+        touchmenu:closeMenu()
+    end
+    self.book_cache = {}
+    local dir = self:getLocalDir()
+    util.makePath(dir)
+    local digest_path = dir .. "/" .. DIGEST_FILENAME
+    local digest_books = self:buildDigestBooks()
+    local digest_md = render.buildDigestMd(digest_books, {
+        title = _("Reading digest"),
+        exported = os.date("%Y-%m-%d"),
+        index_links = getIndexLinks(),
+        callout = getSetting("callout", false),
+        special_marker = getSetting("special_marker", "callout"),
+        note_style = getNoteStyle(),
+    })
+    local ok, err = util.writeToFile(digest_md, digest_path, true, false, true)
+    if not ok then
+        UIManager:show(InfoMessage:new{
+            text = _("Errors:") .. "\n" .. DIGEST_FILENAME .. ": " .. tostring(err),
+        })
+        return false
+    end
+    local server = self:getServer()
+    local has_upload = getSetting("upload", false) and server ~= nil
+    if has_upload and not NetworkMgr:isConnected() then
+        self:markPendingUploads({ digest_path })
+        UIManager:show(Notification:new{
+            text = T(_("%1 files exported — upload when online"), 1),
+            timeout = 3,
+        })
+        return true
+    end
+    UIManager:show(Notification:new{
+        text = T(_("%1 files exported locally"), 1),
+        timeout = 3,
+    })
+    if has_upload then
+        local upload_info = self:showProgress(T(_("Uploading %1 files to the cloud…"), 1))
+        self:uploadPaths(server, { digest_path }, function(ok_count, fail_count, failed)
+            UIManager:close(upload_info)
+            if #failed > 0 then
+                self:markPendingUploads(failed)
+                UIManager:show(InfoMessage:new{
+                    text = T(_("Cloud: %1 uploaded, %2 errors"), ok_count, fail_count),
+                })
+            else
+                self:clearPendingUploads({ digest_path })
+                UIManager:show(Notification:new{
+                    text = T(_("Cloud: %1 files uploaded"), ok_count),
+                    timeout = 3,
+                })
+            end
+        end)
+    end
+    return true
 end
 
 
@@ -802,21 +982,35 @@ function M:runExport(files, opts)
                     and lfs.attributes(md_path) then
                     skipped = skipped + 1
                 else
+                    local md_dir = md_path:match("^(.*)/[^/]+$")
+                    if md_dir and md_dir ~= dir then
+                        util.makePath(md_dir)
+                    end
                     local cover_rel = self:ensureCover(file, book.base, dir)
+                    local book_cover = cover_rel
+                    if book_cover and book.base:find("/", 1, true) then
+                        book_cover = "../" .. book_cover
+                    end
                     local md = render.buildBookMd(book, {
                         no_chapter_label = _("No chapter"),
-                        cover = cover_rel,
+                        cover = book_cover,
                         callout = getSetting("callout", false),
                         block_ids = getSetting("block_ids", false),
                         special_marker = getSetting("special_marker", "callout"),
+                        note_style = getNoteStyle(),
                         notes_title = getNotesTitle(file),
                         markers = preserve,
                     })
                     -- fold the file on disk into the render: the reader's
                     -- zones and front matter come across, the block is rebuilt
                     local content = md
+                    local local_existing = readIfExists(md_path)
+                    if not local_existing and record and record.base
+                            and record.base ~= book.base then
+                        local_existing = readIfExists(dir .. "/" .. record.base .. ".md")
+                    end
                     local old, from_cloud = mergeBase(book.base .. ".md", md_path,
-                        readIfExists(md_path), preserve)
+                        local_existing, preserve)
                     -- Preserve coming back on brings the parked file back:
                     -- the file on disk is plain (no zone) while the .bak
                     -- holds the zoned file from the moment preserve went
@@ -971,6 +1165,7 @@ function M:runExport(files, opts)
                 markers = index_preserve,
                 index_order = getSetting("index_order", "author"),
                 index_layout = getSetting("index_layout", "tags_below"),
+                index_links = getIndexLinks(),
                 hidden_books = hidden,
                 reading_now = getSetting("reading_now", true),
             })
@@ -1069,6 +1264,28 @@ function M:runExport(files, opts)
                 -- another app: Obsidian on Windows, an editor anywhere)
                 errors[#errors + 1] = INDEX_FILENAME .. ": "
                     .. tostring(index_err)
+            end
+        end
+    end
+    if getSetting("with_digest", false) then
+        local digest_path = dir .. "/" .. DIGEST_FILENAME
+        if exported > 0 or not lfs.attributes(digest_path) then
+            local digest_books = self:buildDigestBooks()
+            local digest_md = render.buildDigestMd(digest_books, {
+                title = _("Reading digest"),
+                exported = os.date("%Y-%m-%d"),
+                index_links = getIndexLinks(),
+                callout = getSetting("callout", false),
+                special_marker = getSetting("special_marker", "callout"),
+                note_style = getNoteStyle(),
+            })
+            local digest_ok, digest_err =
+                util.writeToFile(digest_md, digest_path, true, false, true)
+            if digest_ok then
+                written[#written + 1] = digest_path
+            else
+                errors[#errors + 1] = DIGEST_FILENAME .. ": "
+                    .. tostring(digest_err)
             end
         end
     end

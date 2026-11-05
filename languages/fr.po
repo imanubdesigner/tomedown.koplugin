@@ -744,3 +744,75 @@ msgstr "Supprimer #%1 de tous les livres ? Il disparaîtra des notes au prochain
 
 msgid "Some books could not be updated: the tag is still in their keywords."
 msgstr "Certains livres n'ont pas pu être mis à jour : le tag figure toujours dans leurs mots-clés."
+
+msgid "Unknown author"
+msgstr "Auteur inconnu"
+
+msgid "File name template"
+msgstr "Modèle de nom de fichier"
+
+msgid "%A author, %T title, %S series, %i series index"
+msgstr "%A auteur, %T titre, %S série, %i tome"
+
+msgid "Author - Title"
+msgstr "Auteur - Titre"
+
+msgid "Title (Author)"
+msgstr "Titre (Auteur)"
+
+msgid "Title only"
+msgstr "Titre seul"
+
+msgid "File name template: %1"
+msgstr "Modèle de nom de fichier : %1"
+
+msgid "Custom template…"
+msgstr "Modèle personnalisé…"
+
+msgid "Single folder"
+msgstr "Dossier unique"
+
+msgid "By author"
+msgstr "Par auteur"
+
+msgid "By series"
+msgstr "Par série"
+
+msgid "By reading status"
+msgstr "Par statut de lecture"
+
+msgid "Folder organization: %1"
+msgstr "Organisation des dossiers : %1"
+
+msgid "Obsidian wikilink"
+msgstr "Wikilink Obsidian"
+
+msgid "Standard Markdown"
+msgstr "Markdown standard"
+
+msgid "Index links: %1"
+msgstr "Liens de l'index : %1"
+
+msgid "Inline"
+msgstr "En ligne"
+
+msgid "Footnotes"
+msgstr "Notes de bas de page"
+
+msgid "Personal notes format: %1"
+msgstr "Format des notes personnelles : %1"
+
+msgid "Reading digest"
+msgstr "Digest de lecture"
+
+msgid "digest"
+msgstr "digest"
+
+msgid "Undated"
+msgstr "Sans date"
+
+msgid "Create a reading digest (%1)"
+msgstr "Créer un digest de lecture (%1)"
+
+msgid "Export reading digest"
+msgstr "Exporter le digest de lecture"

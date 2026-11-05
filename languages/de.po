@@ -744,3 +744,75 @@ msgstr "#%1 aus allen Büchern löschen? Er verschwindet beim nächsten Export a
 
 msgid "Some books could not be updated: the tag is still in their keywords."
 msgstr "Einige Bücher konnten nicht aktualisiert werden: Der Tag ist noch in ihren Schlagwörtern enthalten."
+
+msgid "Unknown author"
+msgstr "Unbekannter Autor"
+
+msgid "File name template"
+msgstr "Dateinamenvorlage"
+
+msgid "%A author, %T title, %S series, %i series index"
+msgstr "%A Autor, %T Titel, %S Reihe, %i Bandnummer"
+
+msgid "Author - Title"
+msgstr "Autor - Titel"
+
+msgid "Title (Author)"
+msgstr "Titel (Autor)"
+
+msgid "Title only"
+msgstr "Nur Titel"
+
+msgid "File name template: %1"
+msgstr "Dateinamenvorlage: %1"
+
+msgid "Custom template…"
+msgstr "Eigene Vorlage…"
+
+msgid "Single folder"
+msgstr "Einzelner Ordner"
+
+msgid "By author"
+msgstr "Nach Autor"
+
+msgid "By series"
+msgstr "Nach Reihe"
+
+msgid "By reading status"
+msgstr "Nach Lesestatus"
+
+msgid "Folder organization: %1"
+msgstr "Ordnerstruktur: %1"
+
+msgid "Obsidian wikilink"
+msgstr "Obsidian-Wikilink"
+
+msgid "Standard Markdown"
+msgstr "Standard-Markdown"
+
+msgid "Index links: %1"
+msgstr "Links im Index: %1"
+
+msgid "Inline"
+msgstr "Inline"
+
+msgid "Footnotes"
+msgstr "Fußnoten"
+
+msgid "Personal notes format: %1"
+msgstr "Format persönlicher Notizen: %1"
+
+msgid "Reading digest"
+msgstr "Lese-Digest"
+
+msgid "digest"
+msgstr "digest"
+
+msgid "Undated"
+msgstr "Ohne Datum"
+
+msgid "Create a reading digest (%1)"
+msgstr "Lese-Digest erstellen (%1)"
+
+msgid "Export reading digest"
+msgstr "Lese-Digest exportieren"

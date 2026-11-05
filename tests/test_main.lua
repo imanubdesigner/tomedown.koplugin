@@ -964,7 +964,7 @@ T.check(menu_items.tomedown ~= nil, "menu entry registered")
 T.check(type(menu_items.tomedown.sub_item_table_func) == "function",
     "the book menu builds its rows on open")
 local sub = menu_items.tomedown.sub_item_table_func()
-T.check(#sub == 9, "main menu entries: " .. #sub)
+T.check(#sub == 10, "main menu entries: " .. #sub)
 T.check(sub[1].text == "\xEE\x89\xBC  Export this book", "menu item 1")
 T.check(sub[2].text == "\xEE\xA4\xB5  Export new and changed books", "menu item 2")
 T.check(sub[3].text == "\xEE\xA7\x99  Repair all files", "menu item 3")
@@ -973,12 +973,13 @@ T.check(sub[4].separator == true, "separator after Choose books")
 T.check(sub[5].text == "\xEF\x81\x80  Current book",
     "menu item 5, the per book submenu")
 T.check(sub[5].separator == true, "separator after Current book")
-T.check(sub[6].text == "\xEE\xB4\xBE  Upload all files again", "menu item 6")
-T.check(sub[7].text == "\xEF\x83\xA4  Last export", "menu item 7")
-T.check(sub[7].separator == true, "separator before Settings")
-T.check(sub[8].text == "\xEF\x80\x93  Settings", "menu item 8 with the cog")
-T.check(sub[8].separator ~= true, "no separator before About")
-T.check(sub[9].text == "\xEE\xA7\xBC  About", "menu item 9")
+T.check(sub[6].text == "\xEF\x87\xAA  Export reading digest", "menu item 6")
+T.check(sub[7].text == "\xEE\xB4\xBE  Upload all files again", "menu item 7")
+T.check(sub[8].text == "\xEF\x83\xA4  Last export", "menu item 8")
+T.check(sub[8].separator == true, "separator before Settings")
+T.check(sub[9].text == "\xEF\x80\x93  Settings", "menu item 9 with the cog")
+T.check(sub[9].separator ~= true, "no separator before About")
+T.check(sub[10].text == "\xEE\xA7\xBC  About", "menu item 10")
 
 local cover_entry = false
 local function scanCover(items)
@@ -1002,20 +1003,22 @@ ui.document = nil
 -- last one read, and must not bring either row back onto the dashboard
 store.lastfile = FILE
 local dashboard = menu_items.tomedown.sub_item_table_func()
-T.check(#dashboard == 7,
+T.check(#dashboard == 8,
     "no book rows on the dashboard: " .. #dashboard)
 T.check(dashboard[1].text == "\xEE\xA4\xB5  Export new and changed books",
     "the dashboard menu starts on the first row that needs no book")
 T.check(dashboard[3].text == "\xEE\xB9\x94  Choose books…"
         and dashboard[3].separator == true,
     "Choose books closes the first group on the dashboard")
-T.check(dashboard[4].text == "\xEE\xB4\xBE  Upload all files again",
+T.check(dashboard[4].text == "\xEF\x87\xAA  Export reading digest",
+    "the dashboard includes Export reading digest")
+T.check(dashboard[5].text == "\xEE\xB4\xBE  Upload all files again",
     "the dashboard skips Current book")
-T.check(dashboard[5].text == "\xEF\x83\xA4  Last export"
-        and dashboard[5].separator == true,
+T.check(dashboard[6].text == "\xEF\x83\xA4  Last export"
+        and dashboard[6].separator == true,
     "Last export sits where the book rows were")
-T.check(dashboard[6].text == "\xEF\x80\x93  Settings", "settings follows")
-T.check(dashboard[7].text == "\xEE\xA7\xBC  About", "about closes the dashboard menu")
+T.check(dashboard[7].text == "\xEF\x80\x93  Settings", "settings follows")
+T.check(dashboard[8].text == "\xEE\xA7\xBC  About", "about closes the dashboard menu")
 local offered_current = false
 for __, item in ipairs(dashboard) do
     if item.text and item.text:find("Current book", 1, true) then
@@ -1153,7 +1156,7 @@ do
 
     ui.document = nil
     store.lastfile = FILE
-    T.check(#menu_items.tomedown.sub_item_table_func() == 7,
+    T.check(#menu_items.tomedown.sub_item_table_func() == 8,
         "the keep row stays off the dashboard")
     store.lastfile = nil
     ui.document = { file = nil }
@@ -1178,9 +1181,9 @@ T.check(#updates == 4, "updates rows: " .. #updates)
 T.check(cloud[1].text == "Upload to cloud", "upload entry")
 T.check(cloud[2].text_func() == "Server and folder: not set", "server not set")
 T.check(T.contains(cloud[3].text_func(), "Remote folder: not set"), "remote folder not set")
--- Files: eight static rows, none of them appears or disappears
+-- Files: thirteen static rows, none of them appears or disappears
 local files = settings[1].sub_item_table
-T.check(#files == 8, "files rows: " .. #files)
+T.check(#files == 13, "files rows: " .. #files)
 T.check(T.contains(files[1].text_func(), "clipboard/tomedown"), "default local folder")
 T.check(files[2].text == "Create an index note (00 - Index.md)",
     "index entry with the file name")
@@ -1660,7 +1663,7 @@ end
 -- the About row opens the Bookshelf-style popup
 local shown_before = #UIManager.shown
 TextWidget.all = {}
-sub[9].callback()
+sub[10].callback()
 T.check(#UIManager.shown == shown_before + 1, "about popup shown")
 local dialog = UIManager.shown[#UIManager.shown]
 T.check(dialog ~= nil and dialog.__widget == "InputContainer",
@@ -4851,6 +4854,116 @@ do
     store.tomedown.bookinfo_removal = nil
     store.tomedown.book_tags = nil
     shared.setBookExclusion(FILE2, nil)
+end
+
+-- ------------------------------------------- 27. universal Markdown (v1.4.0)
+do
+    local shared = require("tomedown_shared")
+    cleanDir()
+    resetUpload()
+    store = {}
+    store.tomedown = {}
+    BookList.registry[FILE].annotations = modernAnnotations()
+    BookList.registry[FILE].doc_props = {
+        title = "The Three Impostors",
+        authors = "Arthur Machen",
+    }
+
+    -- 1. Stable identity: once exported, changing title/author or template
+    --    keeps the existing file name so user notes are never orphaned.
+    plugin:runExport({ FILE }, {})
+    UIManager:runPending()
+    T.check(store.tomedown.exports[FILE]
+            and store.tomedown.exports[FILE].base == BASE,
+        "27: initial export records base: "
+            .. tostring(store.tomedown.exports[FILE]
+                and store.tomedown.exports[FILE].base))
+    BookList.registry[FILE].doc_props.title = "The Three Impostors (Revised)"
+    shared.setFilenameTemplate("%T (%A)")
+    plugin.book_cache = nil
+    local rebuilt = plugin:buildBook(FILE)
+    T.check(rebuilt and rebuilt.base == BASE,
+        "27: stable identity keeps the recorded base after metadata/template change: "
+            .. tostring(rebuilt and rebuilt.base))
+
+    -- 2. New book uses the active template, and case-insensitive collisions
+    --    get a numeric suffix (_2).
+    BookList.registry[FILE].doc_props.title = "The Three Impostors"
+    store.tomedown.exports = {}
+    shared.setFilenameTemplate("%T (%A)")
+    plugin.book_cache = nil
+    local b_tpl = plugin:buildBook(FILE)
+    T.check(b_tpl and b_tpl.base == "The Three Impostors (Arthur Machen)",
+        "27: new book uses %T (%A) template: " .. tostring(b_tpl and b_tpl.base))
+    store.tomedown.exports["/other/book.epub"] = {
+        base = "the three impostors (arthur machen)",
+    }
+    plugin.book_cache = nil
+    local b_coll = plugin:buildBook(FILE)
+    T.check(b_coll and b_coll.base == "The Three Impostors (Arthur Machen)_2",
+        "27: case-insensitive collision gets _2 suffix: "
+            .. tostring(b_coll and b_coll.base))
+
+    -- 3. Subfolder organization (offline + cloud) + Standard Markdown links
+    --    + Footnotes
+    cleanDir()
+    uploadSetup()
+    shared.setFilenameTemplate("%A - %T")
+    shared.setFolderLayout("author")
+    shared.setIndexLinks("markdown")
+    shared.setNoteStyle("footnote")
+    NetworkMgr.connected = true
+    plugin:runExport({ FILE }, {})
+    UIManager:runPending()
+
+    local sub_rel = "Arthur Machen/" .. BASE .. ".md"
+    local sub_md = T.readFile(DIR .. "/" .. sub_rel)
+    T.check(sub_md ~= nil, "27: book exported inside author subfolder")
+    T.check(T.contains(sub_md or "", "[^1]: nota utente"),
+        "27: footnote rendered in exported book note")
+    local idx_md = T.readFile(INDEX_PATH) or ""
+    T.check(T.contains(idx_md,
+            "[The Three Impostors](Arthur%20Machen/Arthur%20Machen%20-%20The%20Three%20Impostors.md)"),
+        "27: index uses standard markdown link pointing to subfolder")
+    local made_author_folder = false
+    for __, cf in ipairs(created_folders) do
+        if cf.name == "Arthur Machen" then
+            made_author_folder = true
+        end
+    end
+    T.check(made_author_folder,
+        "27: cloud upload created remote author subfolder via createFolder")
+
+    shared.setFolderLayout("flat")
+    shared.setIndexLinks("wikilink")
+    shared.setNoteStyle("inline")
+
+    -- 4. Reading Digest (00 - Reading Digest.md): manual menu action and
+    --    automatic with_digest setting, both offline and with cloud upload.
+    cleanDir()
+    uploadSetup()
+    NetworkMgr.connected = true
+    plugin:exportDigest(nil)
+    UIManager:runPending()
+    local digest_path = DIR .. "/00 - Reading Digest.md"
+    local digest_md = T.readFile(digest_path)
+    T.check(digest_md ~= nil, "27: manual exportDigest creates 00 - Reading Digest.md")
+    T.check(T.contains(digest_md or "", 'title: "Reading digest"'),
+        "27: digest frontmatter title")
+    T.check(T.contains(digest_md or "", "> Prima frase."),
+        "27: digest includes book highlights")
+    T.check(#uploads == 1 and uploads[1].path == digest_path,
+        "27: manual exportDigest uploads 00 - Reading Digest.md when cloud is enabled")
+
+    cleanDir()
+    resetUpload()
+    store.tomedown.upload = false
+    store.tomedown.with_digest = true
+    plugin:runExport({ FILE }, {})
+    UIManager:runPending()
+    T.check(T.fileExists(digest_path),
+        "27: with_digest=true generates 00 - Reading Digest.md automatically during runExport")
+    store.tomedown.with_digest = nil
 end
 
 T.finish("test_main")
