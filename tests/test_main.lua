@@ -1501,12 +1501,12 @@ T.check(T.contains(highlights[2].text_func(), "Callout"),
 T.check(highlights[2].enabled_func() == true,
     "special marker enabled while every highlight is not a callout yet")
 T.check(highlights[2].sub_item_table
-        and #highlights[2].sub_item_table == 2,
-    "special marker submenu has 2 items: callout and bold")
+        and #highlights[2].sub_item_table == 6,
+    "special marker submenu has 6 items")
 local marker_items = highlights[2].sub_item_table
-T.check(marker_items[1].text == "Callout" and marker_items[1].checked_func(),
+T.check(marker_items[1].text == "Callout ([!highlight])" and marker_items[1].checked_func(),
     "the callout choice is the one on")
-T.check(marker_items[2].text == "Bold" and marker_items[2].checked_func() == false,
+T.check(marker_items[6].text == "Bold (**text**)" and marker_items[6].checked_func() == false,
     "the bold choice starts off")
 T.check(highlights[4].text == "Add link IDs to highlights", "block ids entry")
 T.check(highlights[4].checked_func() == false, "block ids off by default")
@@ -2599,7 +2599,7 @@ T.check(store.tomedown.exports[FILE].hash == nil,
 highlights[4].callback()
 plugin:runExport({ FILE }, {})
 T.check(store.tomedown.exports[FILE].hash ~= nil, "hash back once again")
-marker_items[2].callback()
+marker_items[6].callback()
 T.check(store.tomedown.special_marker == "bold",
     "the bold marker sticks")
 T.check(store.tomedown.exports[FILE].hash == nil,
@@ -2607,7 +2607,7 @@ T.check(store.tomedown.exports[FILE].hash == nil,
 marker_items[1].callback()
 T.check(store.tomedown.special_marker == "callout",
     "back to the default callout marker")
-T.check(highlights[2].text_func() == "How special highlights look: Callout",
+T.check(highlights[2].text_func() == "How special highlights look: Callout ([!highlight])",
     "the row label follows the choice: " .. highlights[2].text_func())
 
 -- extraction: capped to the 800x1200 box, quality 50, colours kept

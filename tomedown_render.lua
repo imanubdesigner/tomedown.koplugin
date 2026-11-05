@@ -327,15 +327,16 @@ end
 local function ltrim(s) return (s:gsub("^%s+", "")) end
 local function rtrim(s) return (s:gsub("%s+$", "")) end
 
--- Wrap the quote in bold, paragraph by paragraph: emphasis spans a soft
--- line break but never an empty line, so a quote holding one is wrapped
+-- Wrap the quote in styled delimiters (e.g. bold "**", highlight "==",
+-- or with a prefix like "⭐ "), paragraph by paragraph: emphasis spans a
+-- soft line break but never an empty line, so a quote holding one is wrapped
 -- once per paragraph. The edges are trimmed first (CommonMark does not
 -- open "** text" nor close "text **"). A paragraph that already carries
--- asterisks at its edges or a "**" inside is left plain: wrapping it
--- would break the emphasis, and the star in the heading and the index
--- still marks it. Works on `lines` in place.
-local function wrapBold(lines)
+-- delimiters at its edges or check_delim inside is left plain: wrapping it
+-- would break the syntax. Works on `lines` in place.
+local function wrapStyled(lines, open_delim, close_delim, check_delim, prefix_first)
     local i = 1
+    local first_paragraph = true
     while i <= #lines do
         if lines[i]:match("^%s*$") then
             i = i + 1
@@ -346,15 +347,25 @@ local function wrapBold(lines)
             end
             local first, last = ltrim(lines[i]), rtrim(lines[j])
             local joined = table.concat(lines, "\n", i, j)
-            if not joined:find("**", 1, true)
-                and first:sub(1, 1) ~= "*" and last:sub(-1) ~= "*" then
-                if i == j then
-                    lines[i] = "**" .. rtrim(first) .. "**"
-                else
-                    lines[i] = "**" .. first
-                    lines[j] = last .. "**"
-                end
+            local can_wrap = true
+            if check_delim and joined:find(check_delim, 1, true) then
+                can_wrap = false
             end
+            if first:sub(1, 1) == open_delim:sub(1, 1) or last:sub(-1) == close_delim:sub(-1) then
+                can_wrap = false
+            end
+            local pfx = (first_paragraph and prefix_first) or ""
+            if can_wrap then
+                if i == j then
+                    lines[i] = pfx .. open_delim .. rtrim(first) .. close_delim
+                else
+                    lines[i] = pfx .. open_delim .. first
+                    lines[j] = last .. close_delim
+                end
+            elseif pfx ~= "" then
+                lines[i] = pfx .. lines[i]
+            end
+            first_paragraph = false
             i = j + 1
         end
     end
@@ -424,8 +435,16 @@ function render.buildBookMd(book, opts)
         end
     end
     local out = {}
+    local valid_markers = {
+        callout = true,
+        alert = true,
+        highlight = true,
+        highlight_bold = true,
+        star_bold = true,
+        bold = true,
+    }
     local marker_global = opts.special_marker
-    if marker_global ~= "bold" then
+    if not valid_markers[marker_global] then
         marker_global = "callout"
     end
     local function add(s)
@@ -616,22 +635,33 @@ function render.buildBookMd(book, opts)
         end
 
         add("")
-        -- A Special Highlight is a callout unless the reader chose the
-        -- other marker (bold); the global setting turns every highlight
-        -- into a callout and wins over that choice
+        -- A Special Highlight is marked according to special_marker
+        -- (callout, alert, highlight, highlight_bold, star_bold, bold);
+        -- the global setting turns every highlight into a callout.
         local marker = marker_global
-        local as_callout = opts.callout or (a.special and marker == "callout")
-        local as_bold = a.special and not opts.callout and marker == "bold"
+        local is_special = a.special and not opts.callout
+        local as_callout = opts.callout or (is_special and marker == "callout")
+        local as_alert = is_special and marker == "alert"
         if as_callout then
             add("> [!highlight]")
+        elseif as_alert then
+            add("> [!IMPORTANT]")
         end
         local text = tostring(a.text or ""):gsub("\r\n", "\n"):gsub("\r", "\n")
         local quote_lines = {}
         for line in (text .. "\n"):gmatch("(.-)\n") do
             quote_lines[#quote_lines + 1] = line
         end
-        if as_bold then
-            wrapBold(quote_lines)
+        if is_special then
+            if marker == "bold" then
+                wrapStyled(quote_lines, "**", "**", "**", nil)
+            elseif marker == "highlight" then
+                wrapStyled(quote_lines, "==", "==", "==", nil)
+            elseif marker == "highlight_bold" then
+                wrapStyled(quote_lines, "==**", "**==", "**", nil)
+            elseif marker == "star_bold" then
+                wrapStyled(quote_lines, "**", "**", "**", "⭐ ")
+            end
         end
         for __, line in ipairs(quote_lines) do
             add("> " .. line)
@@ -1327,8 +1357,16 @@ function render.buildDigestMd(books, opts)
     end
     add(stats)
 
+    local valid_markers = {
+        callout = true,
+        alert = true,
+        highlight = true,
+        highlight_bold = true,
+        star_bold = true,
+        bold = true,
+    }
     local marker_global = opts.special_marker
-    if marker_global ~= "bold" then
+    if not valid_markers[marker_global] then
         marker_global = "callout"
     end
     local use_footnotes = opts.note_style == "footnote"
@@ -1362,18 +1400,30 @@ function render.buildDigestMd(books, opts)
         end
 
         add("")
-        local as_callout = opts.callout or (item.special and marker_global == "callout")
-        local as_bold = item.special and not opts.callout and marker_global == "bold"
+        local marker = marker_global
+        local is_special = item.special and not opts.callout
+        local as_callout = opts.callout or (is_special and marker == "callout")
+        local as_alert = is_special and marker == "alert"
         if as_callout then
             add("> [!highlight]")
+        elseif as_alert then
+            add("> [!IMPORTANT]")
         end
         local text = tostring(item.text or ""):gsub("\r\n", "\n"):gsub("\r", "\n")
         local quote_lines = {}
         for line in (text .. "\n"):gmatch("(.-)\n") do
             quote_lines[#quote_lines + 1] = line
         end
-        if as_bold then
-            wrapBold(quote_lines)
+        if is_special then
+            if marker == "bold" then
+                wrapStyled(quote_lines, "**", "**", "**", nil)
+            elseif marker == "highlight" then
+                wrapStyled(quote_lines, "==", "==", "==", nil)
+            elseif marker == "highlight_bold" then
+                wrapStyled(quote_lines, "==**", "**==", "**", nil)
+            elseif marker == "star_bold" then
+                wrapStyled(quote_lines, "**", "**", "**", "⭐ ")
+            end
         end
         for __, line in ipairs(quote_lines) do
             add("> " .. line)

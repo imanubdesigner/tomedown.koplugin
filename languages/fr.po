@@ -246,11 +246,23 @@ msgstr "Ajouter des ID de lien aux surlignages"
 msgid "How special highlights look: %1"
 msgstr "Apparence des surlignages spéciaux : %1"
 
-msgid "Callout"
-msgstr "Callout"
+msgid "Callout ([!highlight])"
+msgstr "Callout ([!highlight])"
 
-msgid "Bold"
-msgstr "Gras"
+msgid "Alert ([!IMPORTANT])"
+msgstr "Alerte ([!IMPORTANT])"
+
+msgid "Highlight (==text==)"
+msgstr "Surligné (==texte==)"
+
+msgid "Highlight & Bold (==**text**==)"
+msgstr "Surligné et gras (==**texte**==)"
+
+msgid "Star & Bold (⭐ **text**)"
+msgstr "Étoile et gras (⭐ **texte**)"
+
+msgid "Bold (**text**)"
+msgstr "Gras (**texte**)"
 
 # Special Highlight (v0.8.0)
 msgid "Special Highlight"

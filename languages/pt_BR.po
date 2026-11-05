@@ -246,11 +246,23 @@ msgstr "Adicionar IDs de link aos destaques"
 msgid "How special highlights look: %1"
 msgstr "Aparência dos destaques especiais: %1"
 
-msgid "Callout"
-msgstr "Callout"
+msgid "Callout ([!highlight])"
+msgstr "Callout ([!highlight])"
 
-msgid "Bold"
-msgstr "Negrito"
+msgid "Alert ([!IMPORTANT])"
+msgstr "Alerta ([!IMPORTANT])"
+
+msgid "Highlight (==text==)"
+msgstr "Destacado (==texto==)"
+
+msgid "Highlight & Bold (==**text**==)"
+msgstr "Destacado e negrito (==**texto**==)"
+
+msgid "Star & Bold (⭐ **text**)"
+msgstr "Estrela e negrito (⭐ **texto**)"
+
+msgid "Bold (**text**)"
+msgstr "Negrito (**texto**)"
 
 # Special Highlight (v0.8.0)
 msgid "Special Highlight"

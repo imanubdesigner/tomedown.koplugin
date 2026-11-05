@@ -246,11 +246,23 @@ msgstr "Añadir ID de enlace a los subrayados"
 msgid "How special highlights look: %1"
 msgstr "Aspecto de los subrayados especiales: %1"
 
-msgid "Callout"
-msgstr "Callout"
+msgid "Callout ([!highlight])"
+msgstr "Callout ([!highlight])"
 
-msgid "Bold"
-msgstr "Negrita"
+msgid "Alert ([!IMPORTANT])"
+msgstr "Alerta ([!IMPORTANT])"
+
+msgid "Highlight (==text==)"
+msgstr "Resaltado (==texto==)"
+
+msgid "Highlight & Bold (==**text**==)"
+msgstr "Resaltado y negrita (==**texto**==)"
+
+msgid "Star & Bold (⭐ **text**)"
+msgstr "Estrella y negrita (⭐ **texto**)"
+
+msgid "Bold (**text**)"
+msgstr "Negrita (**texto**)"
 
 # Special Highlight (v0.8.0)
 msgid "Special Highlight"

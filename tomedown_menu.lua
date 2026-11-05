@@ -1641,8 +1641,12 @@ function M:genSettingsMenu()
         {
             text_func = function()
                 local labels = {
-                    callout = _("Callout"),
-                    bold = _("Bold"),
+                    callout = _("Callout ([!highlight])"),
+                    alert = _("Alert ([!IMPORTANT])"),
+                    highlight = _("Highlight (==text==)"),
+                    highlight_bold = _("Highlight & Bold (==**text**==)"),
+                    star_bold = _("Star & Bold (⭐ **text**)"),
+                    bold = _("Bold (**text**)"),
                 }
                 return T(_("How special highlights look: %1"),
                     labels[getSetting("special_marker", "callout")]
@@ -1654,7 +1658,7 @@ function M:genSettingsMenu()
             keep_menu_open = true,
             sub_item_table = {
                 {
-                    text = _("Callout"),
+                    text = _("Callout ([!highlight])"),
                     radio = true,
                     checked_func = function()
                         return getSetting("special_marker", "callout") == "callout"
@@ -1666,7 +1670,55 @@ function M:genSettingsMenu()
                     end,
                 },
                 {
-                    text = _("Bold"),
+                    text = _("Alert ([!IMPORTANT])"),
+                    radio = true,
+                    checked_func = function()
+                        return getSetting("special_marker", "callout") == "alert"
+                    end,
+                    keep_menu_open = true,
+                    callback = function()
+                        setSetting("special_marker", "alert")
+                        self:invalidateExportHashes()
+                    end,
+                },
+                {
+                    text = _("Highlight (==text==)"),
+                    radio = true,
+                    checked_func = function()
+                        return getSetting("special_marker", "callout") == "highlight"
+                    end,
+                    keep_menu_open = true,
+                    callback = function()
+                        setSetting("special_marker", "highlight")
+                        self:invalidateExportHashes()
+                    end,
+                },
+                {
+                    text = _("Highlight & Bold (==**text**==)"),
+                    radio = true,
+                    checked_func = function()
+                        return getSetting("special_marker", "callout") == "highlight_bold"
+                    end,
+                    keep_menu_open = true,
+                    callback = function()
+                        setSetting("special_marker", "highlight_bold")
+                        self:invalidateExportHashes()
+                    end,
+                },
+                {
+                    text = _("Star & Bold (⭐ **text**)"),
+                    radio = true,
+                    checked_func = function()
+                        return getSetting("special_marker", "callout") == "star_bold"
+                    end,
+                    keep_menu_open = true,
+                    callback = function()
+                        setSetting("special_marker", "star_bold")
+                        self:invalidateExportHashes()
+                    end,
+                },
+                {
+                    text = _("Bold (**text**)"),
                     radio = true,
                     checked_func = function()
                         return getSetting("special_marker", "callout") == "bold"

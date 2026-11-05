@@ -246,11 +246,23 @@ msgstr "Link-IDs zu Markierungen hinzufügen"
 msgid "How special highlights look: %1"
 msgstr "Aussehen besonderer Markierungen: %1"
 
-msgid "Callout"
-msgstr "Callout"
+msgid "Callout ([!highlight])"
+msgstr "Callout ([!highlight])"
 
-msgid "Bold"
-msgstr "Fett"
+msgid "Alert ([!IMPORTANT])"
+msgstr "Alert ([!IMPORTANT])"
+
+msgid "Highlight (==text==)"
+msgstr "Hervorgehoben (==Text==)"
+
+msgid "Highlight & Bold (==**text**==)"
+msgstr "Hervorgehoben & fett (==**Text**==)"
+
+msgid "Star & Bold (⭐ **text**)"
+msgstr "Stern & fett (⭐ **Text**)"
+
+msgid "Bold (**text**)"
+msgstr "Fett (**Text**)"
 
 # Special Highlight (v0.8.0)
 msgid "Special Highlight"
