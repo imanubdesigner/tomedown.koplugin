@@ -8,9 +8,9 @@ and its tag left out.
 
 ```markdown
 ---
-title: "Blackwater"
-author: "Michael McDowell"
-series: "Blackwater"
+title: "The Three Impostors"
+author: "Arthur Machen"
+series: "The Three Impostors"
 series_index: 1
 language: "it"
 pages: 1140
@@ -153,20 +153,20 @@ off. A notification confirms every change.
 Marking it costs a single tap. **Selecting text** puts the row right under
 *Highlight*: one tap creates the highlight and flags it.
 
-![The highlight menu on a fresh selection: Special Highlight sits right under Highlight](../assets/menu/highlights/special_highlights_big_menu.png)
+![The highlight menu on a fresh selection: Special Highlight sits right under Highlight](../)
 
 **Tapping an existing highlight** opens the compact edit menu (trash, Style,
 Color, …), with the same row at the bottom. The label says what the tap will
 do: *Special Highlight* flags it, *Remove Special Highlight* takes the flag
 off, and a notification confirms either way.
 
-![The compact edit menu with Special Highlight as the bottom row](../assets/menu/highlights/special_highlights_small_menu.png)
-![The compact edit menu with Remove Special Highlight as the bottom row](../assets/menu/highlights/remove_special_highlights_small_menu.png)
+![The compact edit menu with Special Highlight as the bottom row](../)
+![The compact edit menu with Remove Special Highlight as the bottom row](../)
 
 The full menu behind the "…" button carries the same row, so a flagged
 highlight always offers its own undo and a missed one can still be flagged.
 
-![The full menu on a flagged highlight: Remove Special Highlight](../assets/menu/highlights/remove_special_highlights_big_menu.png)
+![The full menu on a flagged highlight: Remove Special Highlight](../)
 
 Callouts are an Obsidian convention. In **Notion** (and in GitHub, which only
 knows its own few alerts) the marker imports as the literal text
@@ -174,7 +174,7 @@ knows its own few alerts) the marker imports as the literal text
 coloured box is missing. The word in brackets is the flag itself, there to be
 deleted or ignored.
 
-![In Obsidian the flagged highlight renders as a callout while the plain quotes stay quotes](../assets/obsidian/markdown_special_highlights.png)
+![In Obsidian the flagged highlight renders as a callout while the plain quotes stay quotes](../)
 
 ### Links to a single highlight
 
@@ -213,7 +213,7 @@ is the embedded one (or the custom cover KOReader knows), resized into an
 in the vault is the master one. Obsidian renders such images starting with
 **version 1.8.1**.
 
-![The exported note in Obsidian: the properties, the rule, the centered cover and your notes as bullets under each highlight](../assets/obsidian/markdown_tags_cover.png)
+![The exported note in Obsidian: the properties, the rule, the centered cover and your notes as bullets under each highlight](../)
 
 ## The index
 
@@ -223,7 +223,7 @@ starred specials) above the table, and with covers enabled the first column
 shows the cover image (120×160 box):
 
 ```markdown
-| <img src="covers/Michael McDowell - Blackwater.jpg" alt="" style="object-fit:contain;width:120px;height:160px"> | [[Michael McDowell - Blackwater\|Blackwater]] | Michael McDowell | Blackwater #1 | #Horror #Southern-Gothic | Complete<br>▰▰▰▰▰▰▰▰▰▰&nbsp;96% | 26/09/2026 | 150 · ★42 |
+| <img src="covers/Arthur Machen - The Three Impostors.jpg" alt="" style="object-fit:contain;width:120px;height:160px"> | [[Arthur Machen - The Three Impostors\|The Three Impostors]] | Arthur Machen | The Three Impostors #1 | #Horror #Southern-Gothic | Complete<br>▰▰▰▰▰▰▰▰▰▰&nbsp;96% | 26/09/2026 | 150 · ★42 |
 ```
 
 Without the option the cover column disappears. The Tags column holds the tags
@@ -244,4 +244,4 @@ highlights run newest and most first, with author and title as tie-breakers,
 and a book never read goes last. Series books keep their own order by series
 and position whatever the setting says.
 
-![Hovering a title in the index opens a preview of the book's note: the bold highlight recap heading, the chapter heading and the highlight](../assets/obsidian/00_index_preview.png)
+![Hovering a title in the index opens a preview of the book's note: the bold highlight recap heading, the chapter heading and the highlight](../)

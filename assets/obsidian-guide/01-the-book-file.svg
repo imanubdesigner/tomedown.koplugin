@@ -40,7 +40,7 @@
   <rect x="64" y="260" width="770" height="671" rx="10" fill="#FFFFFF" stroke="#E3E1DD" stroke-width="1.5"/>
   <path d="M64 270 Q64 260 74 260 H824 Q834 260 834 270 V298 H64 Z" fill="#F5F5F4"/>
   <line class="hair" x1="64" y1="298" x2="834" y2="298"/>
-  <text class="code" x="88" y="284" font-size="12.5">Blackwater.md</text>
+  <text class="code" x="88" y="284" font-size="12.5">The Three Impostors.md</text>
   <text class="comment" x="812" y="284" font-size="13" text-anchor="middle">×</text>
   <path d="M104 298 H64 V921 Q64 931 74 931 H104 Z" fill="#FAFAF9"/>
   <line class="hair" x1="104" y1="298" x2="104" y2="931"/>
@@ -54,8 +54,8 @@
   <!-- frontmatter -->
   <text class="code" x="134" y="326" font-size="12.5">---</text>
   <text class="code" x="134" y="347" font-size="12.5">tomedown: "1.0"</text>
-  <text class="code" x="134" y="368" font-size="12.5">title: "Blackwater"</text>
-  <text class="code" x="134" y="389" font-size="12.5">author: "Michael McDowell"</text>
+  <text class="code" x="134" y="368" font-size="12.5">title: "The Three Impostors"</text>
+  <text class="code" x="134" y="389" font-size="12.5">author: "Arthur Machen"</text>
   <text class="code" x="134" y="410" font-size="12.5">exported: 2026-10-07</text>
   <text class="code" x="134" y="431" font-size="12.5">highlights: 150</text>
   <text class="code" x="134" y="452" font-size="12.5">special: 42</text>
