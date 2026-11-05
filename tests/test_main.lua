@@ -3487,7 +3487,7 @@ do
     ui.doc_props = {
         title = "The Three Impostors",
         authors = "Arthur Machen",
-        series = "Wayward Pines",
+        series = "The Four Just Men",
         series_index = 1,
     }
     -- and two highlights that never reached the disk
@@ -3509,7 +3509,7 @@ do
     -- come from the live props (it is missing on disk)
     plugin.book_cache = nil
     local stale_book16 = plugin:buildBook(FILE)
-    T.check(stale_book16 ~= nil and stale_book16.series == "Wayward Pines",
+    T.check(stale_book16 ~= nil and stale_book16.series == "The Four Just Men",
         "buildBook: series from the live props of the open book: "
             .. tostring(stale_book16 and stale_book16.series))
     local disk_count16 = stale_book16 and stale_book16.count or 0
@@ -3530,7 +3530,7 @@ do
         end
     end
     T.check(entry16 ~= nil, "the open book is in the index entries")
-    T.check(entry16 ~= nil and entry16.series == "Wayward Pines",
+    T.check(entry16 ~= nil and entry16.series == "The Four Just Men",
         "index entry: series from the live props: "
             .. tostring(entry16 and entry16.series))
     T.check(entry16 ~= nil and entry16.count == disk_count16 + 2,
@@ -3542,10 +3542,10 @@ do
     plugin:runExport({ FILE }, {})
     UIManager:runPending()
     local md16 = T.readFile(MD_PATH) or ""
-    T.check(T.contains(md16, 'series: "Wayward Pines"'),
+    T.check(T.contains(md16, 'series: "The Four Just Men"'),
         "book file: series from the live props")
     local index16 = T.readFile(INDEX_PATH) or ""
-    T.check(T.contains(index16, "Wayward Pines #1"),
+    T.check(T.contains(index16, "The Four Just Men #1"),
         "index: the row lands in the series table")
 
     -- a failed index write is reported instead of passing silently (a file

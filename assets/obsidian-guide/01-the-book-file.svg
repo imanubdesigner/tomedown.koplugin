@@ -56,9 +56,9 @@
   <text class="code" x="134" y="347" font-size="12.5">tomedown: "1.0"</text>
   <text class="code" x="134" y="368" font-size="12.5">title: "The Three Impostors"</text>
   <text class="code" x="134" y="389" font-size="12.5">author: "Arthur Machen"</text>
-  <text class="code" x="134" y="410" font-size="12.5">exported: 2026-10-07</text>
-  <text class="code" x="134" y="431" font-size="12.5">highlights: 150</text>
-  <text class="code" x="134" y="452" font-size="12.5">special: 42</text>
+  <text class="code" x="134" y="410" font-size="12.5">exported: 2026-11-05</text>
+  <text class="code" x="134" y="431" font-size="12.5">highlights: 5</text>
+  <text class="code" x="134" y="452" font-size="12.5">special: 1</text>
   <text class="code" x="134" y="473" font-size="12.5">tags:</text>
   <text class="code" x="134" y="494" font-size="12.5">  - ebook</text>
   <text class="code" x="134" y="515" font-size="12.5">  - highlights</text>
@@ -68,13 +68,13 @@
   <text class="code" x="134" y="562" font-size="12.5">Those last chapters wrecked me.</text>
   <!-- the generated block -->
   <text class="code" x="134" y="604" font-size="12.5">---</text>
-  <text class="code" x="134" y="646" font-size="12.5"># **150 highlights · ★ 42 special**</text>
+  <text class="code" x="134" y="646" font-size="12.5"># **5 highlights · ★ 1 special**</text>
   <text class="code" x="134" y="688" font-size="12.5">---</text>
-  <text class="code" x="134" y="730" font-size="12.5"># L&apos;arrivo da Nonna.</text>
-  <text class="code" x="134" y="772" font-size="12.5">&gt; Camminiamo a lungo. La casa di Nonna è lontana dalla stazione…</text>
-  <text class="code" x="134" y="814" font-size="12.5">- **p. 5** · 30/09/2026 11:16</text>
-  <text class="code" x="134" y="856" font-size="12.5">&gt; Sapete bene perché. A mio padre volevo bene, io.</text>
-  <text class="code" x="134" y="898" font-size="12.5">- **p. 5** · 30/09/2026 11:16</text>
+  <text class="code" x="134" y="730" font-size="12.5"># Adventure of the Gold Tiberius</text>
+  <text class="code" x="134" y="772" font-size="12.5">&gt; The acquaintance between Mr. Dyson and Mr. Charles Phillipps arose…</text>
+  <text class="code" x="134" y="814" font-size="12.5">- **p. 7** · 05/11/2026 11:51</text>
+  <text class="code" x="134" y="856" font-size="12.5">&gt; “Well, I think not. I don’t think the first man saw anything at all…”</text>
+  <text class="code" x="134" y="898" font-size="12.5">- **p. 13** · 05/11/2026 11:51</text>
 
   <!-- ============ notes column ============ -->
   <rect class="note" x="866" y="301" width="270" height="122" rx="10"/>
