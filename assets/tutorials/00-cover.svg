@@ -87,7 +87,7 @@
   <path d="M803 368 L829 368" fill="none" stroke="#A1A1AA" stroke-width="2" stroke-dasharray="5 5"/>
   <path d="M823 363 L831 368 L823 373" fill="none" stroke="#A1A1AA" stroke-width="2"/>
   <rect class="card" x="837" y="330" width="64" height="76" rx="5"/>
-  <text class="label" x="843" y="344" font-size="6.5">THE THREE IMPOSTORS</text>
+  <text class="label" x="843" y="344" font-size="6.5" style="letter-spacing: 0.5px">SHORT FICTION</text>
   <line class="hair" x1="837" y1="348" x2="901" y2="348"/>
   <rect class="accent" x="843" y="356" width="44" height="7" rx="1.5"/>
   <rect class="skel" x="843" y="372" width="48" height="4" rx="2"/>
