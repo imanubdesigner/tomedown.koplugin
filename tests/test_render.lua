@@ -714,6 +714,17 @@ local wrappedTags = render.buildIndexMd({
 T.check(T.contains(wrappedTags,
         "#Strega #Paranormale<br>#Vecchie #football<br>#1500s"),
     "a long tag list wraps inside the cell instead of widening it")
+T.check(T.contains(wrappedTags, '<span style="line-height:1.9;display:inline-block">'),
+    "multi-line tags are wrapped in a line-height span for vertical breathing room in Obsidian")
+
+local multiColTags = render.buildIndexMd({
+    {
+        link = "B", title = "B", author = "A", count = 1,
+        tags = { "Strega", "Paranormale", "Vecchie", "football" },
+    },
+}, { index_layout = "tags_column" })
+T.check(T.contains(multiColTags, '<span style="line-height:1.9;display:inline-block">'),
+    "multi-line tags column is wrapped in a line-height span")
 
 local dirtyIndexTags = render.buildIndexMd({
     {

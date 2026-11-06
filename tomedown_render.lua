@@ -1095,8 +1095,12 @@ function render.buildIndexMd(books, opts)
             local tag_lines = tagsLines(b.tags)
             local book_cell = link
             if tags_below and #tag_lines > 0 then
-                book_cell = link .. tag_separator
-                    .. table.concat(tag_lines, "<br>")
+                local joined = table.concat(tag_lines, "<br>")
+                if #tag_lines > 1 then
+                    joined = '<span style="line-height:1.9;display:inline-block">'
+                        .. joined .. '</span>'
+                end
+                book_cell = link .. tag_separator .. joined
             end
             -- word over the bar, the percentage glued to the bar with a
             -- no-break space so Obsidian can never drop it on its own line;
@@ -1166,7 +1170,14 @@ function render.buildIndexMd(books, opts)
                 cells[#cells + 1] = series
             end
             if has_tags then
-                local tag_text = table.concat(tag_lines, "<br>")
+                local tag_text = ""
+                if #tag_lines > 0 then
+                    tag_text = table.concat(tag_lines, "<br>")
+                    if #tag_lines > 1 then
+                        tag_text = '<span style="line-height:1.9;display:inline-block">'
+                            .. tag_text .. '</span>'
+                    end
+                end
                 cells[#cells + 1] = tag_text ~= "" and tag_text or "—"
             end
             if one_date_column then
