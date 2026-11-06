@@ -1228,6 +1228,9 @@ do
     T.check(T.contains(empty_digest, 'title: "Reading digest"'),
         "digest default title in frontmatter")
     T.check(T.contains(empty_digest, "  - digest"), "digest tag in frontmatter")
+    T.check(T.contains(empty_digest, "# Reading digest"), "digest H1 heading")
+    T.check(T.contains(empty_digest, "Welcome to the quiet space"),
+        "digest inspirational epigraph")
     T.check(T.contains(empty_digest, "_No exported books with highlights._"),
         "empty digest message")
 

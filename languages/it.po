@@ -831,3 +831,6 @@ msgstr "Indice"
 
 msgid "Style"
 msgstr "Stile"
+
+msgid "Welcome to the quiet space where authors' thoughts linger, and your own reflections take shape."
+msgstr "Benvenuto nello spazio silenzioso dove i pensieri degli autori indugiano e le tue riflessioni prendono forma."
