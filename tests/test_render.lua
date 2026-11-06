@@ -615,7 +615,7 @@ T.check(T.contains(covered,
     "| Cover | Book | Author | Series | Status | Highlights |"),
     "header with the cover column, no export date")
 T.check(T.contains(covered,
-    '<img src="covers/Autore - Titolo.jpg" alt="" style="object-fit:contain;width:120px;height:160px">'),
+    '<img src="covers/Autore - Titolo.jpg" alt="" style="object-fit:contain;width:90px;height:120px">'),
     "cover cell in the index row")
 T.check(T.contains(covered, "| Saga #2 |"), "series cell with the series index")
 T.check(T.contains(covered, "| Reading | 3 |"), "status cell translated to English")
@@ -651,7 +651,7 @@ local secondReading = readingSection and readingSection:find("\\|Secondo]]", 1, 
 T.check(firstReading and secondReading and secondReading < firstReading,
     "Reading now sorts by the latest opening")
 T.check(readingSection and T.contains(readingSection, "Reading<br>")
-        and T.contains(readingSection, "▰▰▱▱▱▱▱▱▱▱&nbsp;20%"),
+        and T.contains(readingSection, "▰▱▱▱▱&nbsp;20%"),
     "Reading now keeps the status and the progress bar")
 T.check(readingIndex:find("### Reading now", 1, true)
         < readingIndex:find("### Series books", 1, true),
@@ -749,7 +749,7 @@ local compactIndex = render.buildIndexMd({
 T.check(T.contains(compactIndex, "| Status · Last read | Highlights |"),
     "the compact layout has one status and date column")
 T.check(T.contains(compactIndex,
-        "| Reading · 01/10/2026<br>▰▱▱▱▱▱▱▱▱▱&nbsp;6% | 2 |"),
+        "| Reading · 01/10/2026<br>▰▱▱▱▱&nbsp;6% | 2 |"),
     "the date joins the status word, the bar keeps its own line")
 T.check(T.contains(compactIndex, "| Complete | 1 |"),
     "a book with no date shows the status alone in the merged column")
@@ -781,7 +781,7 @@ local ratedIndex = render.buildIndexMd({
         status = "complete", progress = "100%", rating = 4, count = 3,
     },
 }, {})
-T.check(T.contains(ratedIndex, "Complete<br>▰▰▰▰▰▰▰▰▰▰&nbsp;100%<br>★★★★☆"),
+T.check(T.contains(ratedIndex, "Complete<br>▰▰▰▰▰&nbsp;100%<br>★★★★☆"),
     "an imported rating appears under the status and progress bar")
 
 -- index v3: two groups, each with its own columns and a heading
@@ -885,7 +885,7 @@ T.check(T.contains(rich,
 T.check(T.contains(rich, "| Book | Author | Status | Last read | Highlights |"),
     "the percent rides with the bar, the date gets a column of its own")
 T.check(T.contains(rich,
-    "| Reading<br>▰▱▱▱▱▱▱▱▱▱&nbsp;6% | 01/10/2026 |"),
+    "| Reading<br>▰▱▱▱▱&nbsp;6% | 01/10/2026 |"),
     "the status word over the bar, the percent stuck to it with a nbsp")
 T.check(T.contains(rich, "| 5 · ★2 |"),
     "special count in the highlights cell")
@@ -975,6 +975,10 @@ T.check(#parsed == 3 and parsed[1] == "Horror" and parsed[2] == "psicologico"
 T.check(#render.parseTagList("  ,  , ") == 0, "empty field: no tags")
 T.check(#render.parseTagList(nil) == 0, "nil field: no tags")
 T.check(render.parseTagList("A\nB")[2] == "B", "newlines split tags too")
+local facetTags = render.parseTagList("Young men--Travel--England--Thames River--Fiction")
+T.check(#facetTags == 5 and facetTags[1] == "Young-men" and facetTags[2] == "Travel"
+        and facetTags[3] == "England" and facetTags[4] == "Thames-River" and facetTags[5] == "Fiction",
+    "Calibre hierarchical subject facets with -- are split into clean individual tags")
 local numericTags, numericRejected = render.parseTagList(
     "Horror, 1500, 1984, Psicologico, 1500")
 T.check(#numericTags == 2 and numericTags[1] == "Horror"
@@ -1002,14 +1006,14 @@ T.check(not T.contains(tagged, "Occult &"), "no raw keyword reaches the frontmat
 T.check(not T.contains(tagged, "- !!!"), "the dead keyword is not exported")
 
 -- ------------------------------------------------------- reading bar
-T.check(render.progressBar("0%") == "▱▱▱▱▱▱▱▱▱▱",
+T.check(render.progressBar("0%") == "▱▱▱▱▱",
     "a book never opened gets an empty bar")
-T.check(render.progressBar("4%") == "▰▱▱▱▱▱▱▱▱▱",
-    "progress below 5% still lights one cell")
-T.check(render.progressBar("25%") == "▰▰▰▱▱▱▱▱▱▱",
-    "25% rounds to three cells")
-T.check(render.progressBar("150%") == "▰▰▰▰▰▰▰▰▰▰",
-    "the bar never runs past ten cells")
+T.check(render.progressBar("4%") == "▰▱▱▱▱",
+    "progress below 10% still lights one cell")
+T.check(render.progressBar("25%") == "▰▱▱▱▱",
+    "25% rounds to one cell")
+T.check(render.progressBar("150%") == "▰▰▰▰▰",
+    "the bar never runs past five cells")
 T.check(render.progressBar("") == nil and render.progressBar(nil) == nil,
     "no bar without a percentage")
 T.check(render.progressPct("0%") == "0%" and render.progressPct("4%") == "4%"

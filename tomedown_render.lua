@@ -56,10 +56,10 @@ function render.notesInvite()
         .. "_"
 end
 
--- Reading bar for the index cell: ten cells, the filled ones rounded
--- from the percentage, and a single filled cell for any progress below
--- 5% so a book just started never shows an empty bar. The percentage
--- rides right after it, joined by a no-break space: render.progressPct.
+-- Reading bar for the index cell: five cells, the filled ones rounded
+-- from the percentage (each cell represents 20%), and a single filled cell
+-- for any progress below 10% so a book just started never shows an empty bar.
+-- The percentage rides right after it, joined by a no-break space: render.progressPct.
 function render.progressBar(progress)
     if progress == nil then
         return nil
@@ -68,13 +68,13 @@ function render.progressBar(progress)
     if not pct then
         return nil
     end
-    local on = math.floor(pct / 10 + 0.5)
+    local on = math.floor(pct / 20 + 0.5)
     if on < 1 and pct > 0 then
         on = 1
-    elseif on > 10 then
-        on = 10
+    elseif on > 5 then
+        on = 5
     end
-    return string.rep("▰", on) .. string.rep("▱", 10 - on)
+    return string.rep("▰", on) .. string.rep("▱", 5 - on)
 end
 
 -- The percentage as it rides beside the bar: "96%".
@@ -186,7 +186,9 @@ function render.parseTagList(text)
     if type(text) ~= "string" then
         return out, rejected
     end
-    for part in text:gmatch("[^,\n]+") do
+    -- Split on commas, newlines, and Calibre subject facet delimiters (--)
+    local normalized = text:gsub("%-%-", ", ")
+    for part in normalized:gmatch("[^,\n]+") do
         local tag = render.sanitizeTag(part)
         if tag ~= "" then
             local key = tag:lower()
@@ -985,20 +987,23 @@ function render.buildIndexMd(books, opts)
             return {}
         end
         local seen, lines, current = {}, {}, nil
-        for __, tag in ipairs(tags) do
-            tag = render.sanitizeTag(tag)
-            if tag ~= "" then
-                local key = tag:lower()
-                if not seen[key] then
-                    seen[key] = true
-                    local piece = "#" .. tag
-                    if current == nil then
-                        current = piece
-                    elseif #current + 1 + #piece <= tag_line_width then
-                        current = current .. " " .. piece
-                    else
-                        lines[#lines + 1] = current
-                        current = piece
+        for __, raw_tag in ipairs(tags) do
+            local norm_tag = tostring(raw_tag or ""):gsub("%-%-", ", ")
+            for part in norm_tag:gmatch("[^,\n]+") do
+                local tag = render.sanitizeTag(part)
+                if tag ~= "" then
+                    local key = tag:lower()
+                    if not seen[key] then
+                        seen[key] = true
+                        local piece = "#" .. tag
+                        if current == nil then
+                            current = piece
+                        elseif #current + 1 + #piece <= tag_line_width then
+                            current = current .. " " .. piece
+                        else
+                            lines[#lines + 1] = current
+                            current = piece
+                        end
                     end
                 end
             end
@@ -1159,7 +1164,7 @@ function render.buildIndexMd(books, opts)
             end
             local cells = {}
             if with_covers then
-                cells[#cells + 1] = b.cover and render.coverImg(b.cover, 120, 160)
+                cells[#cells + 1] = b.cover and render.coverImg(b.cover, 90, 120)
                     or ""
             end
             cells[#cells + 1] = book_cell
