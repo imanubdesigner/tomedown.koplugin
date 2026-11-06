@@ -253,9 +253,10 @@ function render.encodeLinkTarget(s)
     return s
 end
 
--- Format a book link for the index table: either an Obsidian wikilink
--- (`[[link\|title]]`) or a standard Markdown link (`[title](link.md)`).
-function render.bookLink(link, title, format)
+-- Format a book link: in an index table uses an escaped pipe (`[[link\|title]]`)
+-- so table columns don't break; in headings or outside tables uses an unescaped
+-- pipe (`[[link|title]]`); or a standard Markdown link (`[title](link.md)`).
+function render.bookLink(link, title, format, in_table)
     local raw_link = tostring(link or "")
     local alias = render.alias(title)
     if format == "markdown" then
@@ -266,7 +267,8 @@ function render.bookLink(link, title, format)
         end
         return "[" .. label .. "](" .. render.encodeLinkTarget(target) .. ")"
     end
-    return alias ~= "" and ("[[" .. raw_link .. "\\|" .. alias .. "]]")
+    local pipe = in_table == false and "|" or "\\|"
+    return alias ~= "" and ("[[" .. raw_link .. pipe .. alias .. "]]")
         or ("[[" .. raw_link .. "]]")
 end
 
@@ -1394,7 +1396,7 @@ function render.buildDigestMd(books, opts)
         local book_id = tostring(item.book_link) .. "\31" .. tostring(item.book_title)
         if book_id ~= current_book then
             add("")
-            local link = render.bookLink(item.book_link, item.book_title, opts.index_links)
+            local link = render.bookLink(item.book_link, item.book_title, opts.index_links, false)
             if item.book_author and tostring(item.book_author) ~= "" then
                 add("### " .. link .. " — *" .. tostring(item.book_author) .. "*")
             else

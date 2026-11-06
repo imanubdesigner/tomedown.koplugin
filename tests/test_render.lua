@@ -1169,7 +1169,10 @@ end
 do
     T.check(render.bookLink("Arthur Machen - The Three Impostors", "The Three Impostors", "wikilink")
         == "[[Arthur Machen - The Three Impostors\\|The Three Impostors]]",
-        "bookLink: wikilink default")
+        "bookLink: wikilink in table uses escaped pipe")
+    T.check(render.bookLink("Arthur Machen - The Three Impostors", "The Three Impostors", "wikilink", false)
+        == "[[Arthur Machen - The Three Impostors|The Three Impostors]]",
+        "bookLink: wikilink outside table uses unescaped pipe")
     T.check(render.bookLink("Arthur Machen - The Three Impostors", "The Three Impostors", "markdown")
         == "[The Three Impostors](Arthur%20Machen%20-%20The%20Three%20Impostors.md)",
         "bookLink: standard markdown link encodes spaces")
@@ -1288,6 +1291,20 @@ do
     T.check(T.contains(digest,
             "### [The Three Impostors](Arthur%20Machen%20-%20The%20Three%20Impostors.md) — *Arthur Machen*"),
         "digest book heading uses configured link format and author")
+    local wiki_digest = render.buildDigestMd({
+        {
+            link = "Arthur Machen - The Three Impostors",
+            title = "The Three Impostors",
+            author = "Arthur Machen",
+            annotations = {
+                { text = "Quote", page = "1", date = "05/11/2026" },
+            },
+        },
+    }, { index_links = "wikilink" })
+    T.check(T.contains(wiki_digest, "### [[Arthur Machen - The Three Impostors|The Three Impostors]] — *Arthur Machen*"),
+        "digest wikilink heading uses unescaped pipe so Obsidian renders clean link")
+    T.check(not wiki_digest:find("\\[\\[[^\n]+\\\\|", 1, false),
+        "digest has no escaped pipes in wikilinks")
     T.check(T.contains(digest, "[^1]: Key passage"),
         "digest supports footnote style for personal notes")
 end
