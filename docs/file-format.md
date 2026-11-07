@@ -10,20 +10,18 @@ and its tag left out.
 ---
 title: "The Three Impostors"
 author: "Arthur Machen"
-series: "The Three Impostors"
-series_index: 1
-language: "it"
-pages: 1140
-exported: 2026-09-26
-highlights: 150
-special: 42
-status: "complete"
-progress: "96%"
+language: "en"
+pages: 210
+exported: 2026-11-05
+highlights: 14
+special: 2
+status: "reading"
+progress: "38%"
 tags:
   - ebook
   - highlights
   - horror
-  - gothic-fiction
+  - weird-fiction
 ---
 ## My notes... <!-- tomedown:notes -->
 
@@ -31,21 +29,20 @@ tags:
 
 ---
 
-# **150 highlights · ★ 42 special**
+# **14 highlights · ★ 2 special**
 
 ---
 
 # Chapter I
 
-> First highlighted sentence.
-> Second line of the same highlight.
+> It is an old story; but it is ever new to those who have the eyes to see and the heart to feel.
 
-- **p. 10** · 02/09/2026 10:00
+- **p. 15** · 05/11/2026 10:20
   - **NOTE:** *to reread*
 
 > Another highlight.
 
-- **p. 12** · 03/09/2026 11:30
+- **p. 18** · 05/11/2026 11:30
 
 ---
 
@@ -73,6 +70,7 @@ the same text comes out translated (see [Languages](developing.md#languages)).
 | `highlights`, `special` | how many highlights, and how many are starred |
 | `status` | `reading`, `abandoned` or `complete` |
 | `progress` | the reading position, for example `"96%"` |
+| `published`, `rating`, `review`, `date_started`, `date_finished`, `collections` | imported from KOReader, only after *Import book info* (see below) |
 | `tags` | `ebook`, `highlights`, the book's own keywords and the tags chosen from its menu |
 | `tomedown_book_tags` | the book's own tags that this plugin manages, only with *Keep my notes* (see below) |
 | `cover` | `"covers/Author - Title.jpg"`, only with *Include book covers* |
@@ -110,6 +108,66 @@ rewritten whole, so a clear needs no ledger: the old tags leave with the old
 file. With it on, a clear writes `tomedown_book_tags: []`, the signal the
 merge uses to drop the old managed tags, and the empty ledger is not written
 back.
+
+*Current book → Book info → Tags: %1 → Delete tags…* (also reachable from *Tags…* on a
+long-press) lists every tag offered in the tag menu: the suggestion cache, the
+per-book choices and, for imported books, the shared keywords. Each deletion
+asks first, then removes the tag from every managed list, from the imported
+keyword lists and from the suggestion cache, and remembers the deletion so
+future exports do not re-add it from book metadata; the notes drop it at the
+next export. An empty `book_tags` list is kept on purpose, because it is the
+signal that clears the old tags from the note; a missing entry would mean the
+book never chose. Tags written by hand stay, and if an imported book cannot be
+updated the manager names it and leaves its keywords untouched.
+
+## Imported book information
+
+Tomedown can also write the information KOReader already holds about a book:
+the rating, the review, the publication date, the reading dates and the
+collections. It is **opt-in for every single book**: a normal export carries
+none of these fields, so installing a new version of the plugin never rewrites
+the notes you already have.
+
+Open *Current book → Book info* and tap *Import book info* (or long-press the book in the
+file browser, History or Bookshelf and use the same row). Tomedown asks once,
+then writes the fields and from that moment keeps them up to date. The import
+works only for a book KOReader has opened.
+
+```yaml
+published: "1999-05"
+rating: 4
+review: "Bello e davvero intenso."
+date_started: "2026-09-10"
+date_finished: "2026-10-01"
+collections:
+  - Fantascienza
+  - Preferiti
+```
+
+| Field | Where it comes from |
+|---|---|
+| `published` | the date written inside the book file: EPUB/KEPUB, PDF, MOBI/AZW/AZW3/PRC, FB2/FB2.ZIP and CBZ/CBR/CB7/CBT. Years (`1999`) and months (`1999-05`) are kept as they are |
+| `rating` | KOReader's rating, 1 to 5 stars |
+| `review` | KOReader's review note, folded to a single line in 1.3.0 |
+| `date_started` | the first reading session in KOReader's statistics |
+| `date_finished` | the date KOReader marked the book complete |
+| `collections` | the KOReader collections the book belongs to, sorted |
+
+Every field stays editable from the book's menu: rating, review and status use
+KOReader's own panel, tags open the usual editor, and each date has a row of
+its own with a reset to the automatic value. Collections are read from
+KOReader: Tomedown does not edit them.
+
+With *Settings → Book info → Update book info automatically* on (the default)
+a change to the rating, review, status, tags, collections or dates rewrites
+that one book about two seconds later. With it off, the fields are written at
+the next normal export. *Import book info for all books* does the first import
+for the whole library after a confirmation and skips the books set to *Do not
+export*.
+
+*Remove imported book info* deletes those fields from the note and stops
+Tomedown from managing the book. The note, the highlights and the tags stay;
+the current tags become the book's own chosen list.
 
 ## Highlights
 
@@ -153,28 +211,19 @@ off. A notification confirms every change.
 Marking it costs a single tap. **Selecting text** puts the row right under
 *Highlight*: one tap creates the highlight and flags it.
 
-![The highlight menu on a fresh selection: Special Highlight sits right under Highlight](../)
-
 **Tapping an existing highlight** opens the compact edit menu (trash, Style,
 Color, …), with the same row at the bottom. The label says what the tap will
 do: *Special Highlight* flags it, *Remove Special Highlight* takes the flag
 off, and a notification confirms either way.
 
-![The compact edit menu with Special Highlight as the bottom row](../)
-![The compact edit menu with Remove Special Highlight as the bottom row](../)
-
 The full menu behind the "…" button carries the same row, so a flagged
 highlight always offers its own undo and a missed one can still be flagged.
-
-![The full menu on a flagged highlight: Remove Special Highlight](../)
 
 Callouts are an Obsidian convention. In **Notion** (and in GitHub, which only
 knows its own few alerts) the marker imports as the literal text
 `[!highlight]` inside the quote: quote, page and note all arrive, only the
 coloured box is missing. The word in brackets is the flag itself, there to be
 deleted or ignored.
-
-![In Obsidian the flagged highlight renders as a callout while the plain quotes stay quotes](../)
 
 ### Links to a single highlight
 
@@ -213,35 +262,55 @@ is the embedded one (or the custom cover KOReader knows), resized into an
 in the vault is the master one. Obsidian renders such images starting with
 **version 1.8.1**.
 
-![The exported note in Obsidian: the properties, the rule, the centered cover and your notes as bullets under each highlight](../)
-
 ## The index
 
 The index uses wiki links (`[[…]]`), opened natively by Obsidian and by most
 Markdown apps; the body opens with a rule and a stats line (books, highlights,
 starred specials) above the table, and with covers enabled the first column
-shows the cover image (120×160 box):
+shows the cover image (120×160 box). By default the tags chosen from
+*Current book → Tags: %1* sit under the book title, after a thin rule, so a
+long list never widens the table:
 
 ```markdown
-| <img src="covers/Arthur Machen - The Three Impostors.jpg" alt="" style="object-fit:contain;width:120px;height:160px"> | [[Arthur Machen - The Three Impostors\|The Three Impostors]] | Arthur Machen | The Three Impostors #1 | #Horror #Southern-Gothic | Complete<br>▰▰▰▰▰▰▰▰▰▰&nbsp;96% | 26/09/2026 | 150 · ★42 |
+| <img src="covers/Edgar Wallace - The Three Just Men.jpg" alt="" style="object-fit:contain;width:120px;height:160px"> | [[Edgar Wallace - The Three Just Men\|The Three Just Men]]<hr style="margin:12px 0 10px 0;border:0;border-top:1px solid rgba(128,128,128,0.45)">#mystery #crime | Edgar Wallace | The Four Just Men #4 | Complete<br>▰▰▰▰▰▰▰▰▰▰&nbsp;100%<br>★★★★★ | 05/11/2026 | 22 · ★5 |
 ```
 
-Without the option the cover column disappears. The Tags column holds the tags
-chosen from *Current book → Tags: %1*, written as clickable `#tag` values
-separated by a space. It appears only when at least one book in that table has
-tags and sits between Series and Status, so a library that never used them
-keeps exactly the table it had before. The Status cell holds whatever
-the book has: the status word on the first line, the progress bar under it
-with the percentage glued to the bar by a no-break space, so Obsidian can
-never drop a two-digit `96%` onto a line of its own, and a dash when it has
-none. The last read date has a column of its own, the same goes for a missing
-series, and a book with starred highlights shows them as `· ★42` next to the
-count.
+Without the option the cover column disappears. Tags are written as clickable
+`#tag` values separated by a space or a line break. A table cell does not wrap,
+so a long list is split into lines of at most 24 characters: the table keeps
+its width and never needs horizontal scrolling. A library that never used tags
+keeps exactly the table it had before. The Status cell holds whatever the book has: the
+status word on the first line, the progress bar under it with the percentage
+glued to the bar by a no-break space, so Obsidian can never drop a two-digit
+`96%` onto a line of its own, and a dash when it has none. The last read date
+has a column of its own, the same goes for a missing series, and a book with
+starred highlights shows them as `· ★42` next to the count.
 
-*My books* is ordered by author and then title by default. *Settings → Files →
-Index order* switches it to title, last read or highlights: last read and
-highlights run newest and most first, with author and title as tie-breakers,
-and a book never read goes last. Series books keep their own order by series
-and position whatever the setting says.
+*Settings → Files → Index layout* offers three shapes:
 
-![Hovering a title in the index opens a preview of the book's note: the bold highlight recap heading, the chapter heading and the highlight](../)
+| Layout | What changes |
+|---|---|
+| *Tags under the title* (the default) | the tags sit in the Book cell under the title, after a thin rule; Status and Last read keep separate columns |
+| *Tags column* | the tags move to their own column between Series and Status; Status and Last read keep separate columns |
+| *Tags column, compact* | the tags keep their column and Status and Last read merge into one, headed *Status · Last read* when both are present |
+
+Changing the layout marks the index as stale: the next export rebuilds
+`00 - Index.md` alone, without rewriting a book note. An unknown value falls
+back to *Tags under the title*. Upgrading from 1.2.0 applies the default
+layout to an existing install and rebuilds the index once.
+
+Each group keeps its heading even when it is alone: *Series books* and
+*My books* are always named, in that order, and a lone table is no longer
+mistaken for a duplicate of the one above. *My books* is ordered by author and
+then title by default. *Settings → Files → Index order* switches it to title,
+last read or highlights: last read and highlights run newest and most first,
+with author and title as tie-breakers, and a book never read goes last. Series
+books keep their own order by series and position whatever the setting says.
+
+While at least one book is being read, a *Reading now* section repeats those
+books above the series and *My books* tables, latest opening first. It is on
+by default and *Settings → Files → Show Reading now in the index* takes it
+away. A book set to *Book visibility: hidden from the index* or *not
+exported*, from its own menu or from the file dialog, is left out of every
+table; when every exported book is hidden the index says so instead of
+claiming the library is empty.

@@ -56,10 +56,10 @@ function render.notesInvite()
         .. "_"
 end
 
--- Reading bar for the index cell: ten cells, the filled ones rounded
--- from the percentage, and a single filled cell for any progress below
--- 5% so a book just started never shows an empty bar. The percentage
--- rides right after it, joined by a no-break space: render.progressPct.
+-- Reading bar for the index cell: five cells, the filled ones rounded
+-- from the percentage (each cell represents 20%), and a single filled cell
+-- for any progress below 10% so a book just started never shows an empty bar.
+-- The percentage rides right after it, joined by a no-break space: render.progressPct.
 function render.progressBar(progress)
     if progress == nil then
         return nil
@@ -68,13 +68,13 @@ function render.progressBar(progress)
     if not pct then
         return nil
     end
-    local on = math.floor(pct / 10 + 0.5)
+    local on = math.floor(pct / 20 + 0.5)
     if on < 1 and pct > 0 then
         on = 1
-    elseif on > 10 then
-        on = 10
+    elseif on > 5 then
+        on = 5
     end
-    return string.rep("▰", on) .. string.rep("▱", 10 - on)
+    return string.rep("▰", on) .. string.rep("▱", 5 - on)
 end
 
 -- The percentage as it rides beside the bar: "96%".
@@ -87,6 +87,19 @@ function render.progressPct(progress)
         return nil
     end
     return tostring(pct) .. "%"
+end
+
+-- Five-star rating for the index cell: "★★★★☆", or nil when unset.
+function render.stars(rating)
+    local r = tonumber(rating)
+    if not r then
+        return nil
+    end
+    r = math.floor(r + 0.5)
+    if r < 1 or r > 5 then
+        return nil
+    end
+    return string.rep("★", r) .. string.rep("☆", 5 - r)
 end
 
 -- Short digest of a generated block: the hash written inside its begin
@@ -173,7 +186,9 @@ function render.parseTagList(text)
     if type(text) ~= "string" then
         return out, rejected
     end
-    for part in text:gmatch("[^,\n]+") do
+    -- Split on commas, newlines, and Calibre subject facet delimiters (--)
+    local normalized = text:gsub("%-%-", ", ")
+    for part in normalized:gmatch("[^,\n]+") do
         local tag = render.sanitizeTag(part)
         if tag ~= "" then
             local key = tag:lower()
@@ -224,6 +239,39 @@ function render.alias(s)
     s = s:gsub("%s+", " ")
     s = s:gsub("^%s+", ""):gsub("%s+$", "")
     return s
+end
+
+-- URL-encode spaces and characters that break a standard Markdown link
+-- target `[label](target.md)`, while keeping UTF-8 and path slashes.
+function render.encodeLinkTarget(s)
+    s = tostring(s or "")
+    s = s:gsub("%%", "%%25")
+    s = s:gsub(" ", "%%20")
+    s = s:gsub("%(", "%%28")
+    s = s:gsub("%)", "%%29")
+    s = s:gsub("%[", "%%5B")
+    s = s:gsub("%]", "%%5D")
+    s = s:gsub("#", "%%23")
+    return s
+end
+
+-- Format a book link: in an index table uses an escaped pipe (`[[link\|title]]`)
+-- so table columns don't break; in headings or outside tables uses an unescaped
+-- pipe (`[[link|title]]`); or a standard Markdown link (`[title](link.md)`).
+function render.bookLink(link, title, format, in_table)
+    local raw_link = tostring(link or "")
+    local alias = render.alias(title)
+    if format == "markdown" then
+        local label = alias ~= "" and alias or render.alias(raw_link)
+        local target = raw_link
+        if target:sub(-3):lower() ~= ".md" then
+            target = target .. ".md"
+        end
+        return "[" .. label .. "](" .. render.encodeLinkTarget(target) .. ")"
+    end
+    local pipe = in_table == false and "|" or "\\|"
+    return alias ~= "" and ("[[" .. raw_link .. pipe .. alias .. "]]")
+        or ("[[" .. raw_link .. "]]")
 end
 
 -- the cover inside a .md file: a plain <img> tag with a fixed CSS box
@@ -283,15 +331,16 @@ end
 local function ltrim(s) return (s:gsub("^%s+", "")) end
 local function rtrim(s) return (s:gsub("%s+$", "")) end
 
--- Wrap the quote in bold, paragraph by paragraph: emphasis spans a soft
--- line break but never an empty line, so a quote holding one is wrapped
+-- Wrap the quote in styled delimiters (e.g. bold "**", highlight "==",
+-- or with a prefix like "⭐ "), paragraph by paragraph: emphasis spans a
+-- soft line break but never an empty line, so a quote holding one is wrapped
 -- once per paragraph. The edges are trimmed first (CommonMark does not
 -- open "** text" nor close "text **"). A paragraph that already carries
--- asterisks at its edges or a "**" inside is left plain: wrapping it
--- would break the emphasis, and the star in the heading and the index
--- still marks it. Works on `lines` in place.
-local function wrapBold(lines)
+-- delimiters at its edges or check_delim inside is left plain: wrapping it
+-- would break the syntax. Works on `lines` in place.
+local function wrapStyled(lines, open_delim, close_delim, check_delim, prefix_first)
     local i = 1
+    local first_paragraph = true
     while i <= #lines do
         if lines[i]:match("^%s*$") then
             i = i + 1
@@ -302,15 +351,25 @@ local function wrapBold(lines)
             end
             local first, last = ltrim(lines[i]), rtrim(lines[j])
             local joined = table.concat(lines, "\n", i, j)
-            if not joined:find("**", 1, true)
-                and first:sub(1, 1) ~= "*" and last:sub(-1) ~= "*" then
-                if i == j then
-                    lines[i] = "**" .. rtrim(first) .. "**"
-                else
-                    lines[i] = "**" .. first
-                    lines[j] = last .. "**"
-                end
+            local can_wrap = true
+            if check_delim and joined:find(check_delim, 1, true) then
+                can_wrap = false
             end
+            if first:sub(1, 1) == open_delim:sub(1, 1) or last:sub(-1) == close_delim:sub(-1) then
+                can_wrap = false
+            end
+            local pfx = (first_paragraph and prefix_first) or ""
+            if can_wrap then
+                if i == j then
+                    lines[i] = pfx .. open_delim .. rtrim(first) .. close_delim
+                else
+                    lines[i] = pfx .. open_delim .. first
+                    lines[j] = last .. close_delim
+                end
+            elseif pfx ~= "" then
+                lines[i] = pfx .. lines[i]
+            end
+            first_paragraph = false
             i = j + 1
         end
     end
@@ -346,6 +405,9 @@ book = {
     title, author, exported, count,
     series, series_index, language, pages,     -- optional frontmatter
     status, progress,                          -- optional frontmatter
+    published, rating, review,                 -- optional, imported book info
+    date_started, date_finished,               -- optional, imported book info
+    collections = { ... },                     -- optional, imported book info
     keywords = { ... },                        -- optional, appended to tags
     tags = { ... },                            -- optional, chosen per book
     tags_managed = true,                       -- write the managed-tags ledger
@@ -377,8 +439,16 @@ function render.buildBookMd(book, opts)
         end
     end
     local out = {}
+    local valid_markers = {
+        callout = true,
+        alert = true,
+        highlight = true,
+        highlight_bold = true,
+        star_bold = true,
+        bold = true,
+    }
     local marker_global = opts.special_marker
-    if marker_global ~= "bold" then
+    if not valid_markers[marker_global] then
         marker_global = "callout"
     end
     local function add(s)
@@ -419,6 +489,29 @@ function render.buildBookMd(book, opts)
     end
     if book.progress then
         add("progress: " .. yamlQuote(book.progress))
+    end
+    -- imported book information: only present when the reader imported
+    -- this one book from its menu, so a normal export is unchanged
+    if book.published then
+        add("published: " .. yamlQuote(book.published))
+    end
+    if book.rating then
+        add("rating: " .. tostring(book.rating))
+    end
+    if book.review then
+        add("review: " .. yamlQuote(book.review))
+    end
+    if book.date_started then
+        add("date_started: " .. yamlQuote(book.date_started))
+    end
+    if book.date_finished then
+        add("date_finished: " .. yamlQuote(book.date_finished))
+    end
+    if book.collections and #book.collections > 0 then
+        add("collections:")
+        for __, collection in ipairs(book.collections) do
+            add("  - " .. yamlListItem(collection))
+        end
     end
     add("tags:")
     local seen_tags = {}
@@ -533,6 +626,8 @@ function render.buildBookMd(book, opts)
 
     local with_chapters = hasAnyChapter(annotations)
     local current_chapter = nil
+    local use_footnotes = opts.note_style == "footnote"
+    local footnotes = {}
 
     for __, a in ipairs(annotations) do
         if with_chapters then
@@ -544,22 +639,33 @@ function render.buildBookMd(book, opts)
         end
 
         add("")
-        -- A Special Highlight is a callout unless the reader chose the
-        -- other marker (bold); the global setting turns every highlight
-        -- into a callout and wins over that choice
+        -- A Special Highlight is marked according to special_marker
+        -- (callout, alert, highlight, highlight_bold, star_bold, bold);
+        -- the global setting turns every highlight into a callout.
         local marker = marker_global
-        local as_callout = opts.callout or (a.special and marker == "callout")
-        local as_bold = a.special and not opts.callout and marker == "bold"
+        local is_special = a.special and not opts.callout
+        local as_callout = opts.callout or (is_special and marker == "callout")
+        local as_alert = is_special and marker == "alert"
         if as_callout then
             add("> [!highlight]")
+        elseif as_alert then
+            add("> [!IMPORTANT]")
         end
         local text = tostring(a.text or ""):gsub("\r\n", "\n"):gsub("\r", "\n")
         local quote_lines = {}
         for line in (text .. "\n"):gmatch("(.-)\n") do
             quote_lines[#quote_lines + 1] = line
         end
-        if as_bold then
-            wrapBold(quote_lines)
+        if is_special then
+            if marker == "bold" then
+                wrapStyled(quote_lines, "**", "**", "**", nil)
+            elseif marker == "highlight" then
+                wrapStyled(quote_lines, "==", "==", "==", nil)
+            elseif marker == "highlight_bold" then
+                wrapStyled(quote_lines, "==**", "**==", "**", nil)
+            elseif marker == "star_bold" then
+                wrapStyled(quote_lines, "**", "**", "**", "⭐ ")
+            end
         end
         for __, line in ipairs(quote_lines) do
             add("> " .. line)
@@ -597,25 +703,35 @@ function render.buildBookMd(book, opts)
                 note_lines = nil
             end
         end
-        if #meta > 0 then
-            add("- " .. table.concat(meta, " · "))
-        end
-        if note_lines then
-            local head = #meta > 0 and "  - " or "- "
-            local pad = #meta > 0 and "    " or "  "
-            local first = true
-            for __, line in ipairs(note_lines) do
-                if line:match("^%s*$") then
-                    add("")
-                elseif first then
-                    add(head .. "**NOTE:** *" .. line .. "*")
-                    first = false
-                else
-                    add(pad .. "*" .. line .. "*")
-                end
+        if use_footnotes and note_lines then
+            local fn_idx = #footnotes + 1
+            footnotes[fn_idx] = note_lines
+            if #meta > 0 then
+                add("- " .. table.concat(meta, " · ") .. " [^" .. fn_idx .. "]")
+            else
+                add("- [^" .. fn_idx .. "]")
             end
-        elseif #meta == 0 then
-            add("- …")
+        else
+            if #meta > 0 then
+                add("- " .. table.concat(meta, " · "))
+            end
+            if note_lines then
+                local head = #meta > 0 and "  - " or "- "
+                local pad = #meta > 0 and "    " or "  "
+                local first = true
+                for __, line in ipairs(note_lines) do
+                    if line:match("^%s*$") then
+                        add("")
+                    elseif first then
+                        add(head .. "**NOTE:** *" .. line .. "*")
+                        first = false
+                    else
+                        add(pad .. "*" .. line .. "*")
+                    end
+                end
+            elseif #meta == 0 then
+                add("- …")
+            end
         end
         open = true
     end
@@ -645,6 +761,27 @@ function render.buildBookMd(book, opts)
             add("- " .. table.concat(bmeta, " · "))
         end
     end
+
+    if #footnotes > 0 then
+        if open then
+            add("")
+            add("---")
+        end
+        for fn_idx, lines in ipairs(footnotes) do
+            add("")
+            local first = true
+            for __, line in ipairs(lines) do
+                if line:match("^%s*$") then
+                    add("")
+                elseif first then
+                    add("[^" .. fn_idx .. "]: " .. line)
+                    first = false
+                else
+                    add("    " .. line)
+                end
+            end
+        end
+    end
     -- the region always closes on a blank line: the end marker never
     -- glues to the last generated line
     if out[#out] ~= "" then
@@ -661,14 +798,15 @@ end
 --[[
 books = { { link, title, author, series, series_index, status, count,
             special, progress, last_read, cover } }
-opts = { title, exported, show_covers }
+opts = { title, exported, show_covers, index_layout }
 The books land in two tables: those that belong to a series, and the
-rest — a heading each only when both groups exist. The columns adapt
-to what each group holds: Series only on the series books, Author,
-Status, Progress and Last read only when at least one book of the
-group has them; Book and Highlights are always there (with the
-special count in the cell), the cover column only with
-opts.show_covers.
+rest, each under its own heading. The columns adapt to what each group
+holds: Series only on the series books, Author, Status and Last read
+only when at least one book of the group has them; Book and Highlights
+are always there (with the special count in the cell), the cover column
+only with opts.show_covers. Tags either sit under the book title, with
+a rule between the two (the default), or in a column of their own; the
+date can be folded into the status cell for the narrow column layout.
 ]]
 function render.buildIndexMd(books, opts)
     opts = opts or {}
@@ -704,7 +842,11 @@ function render.buildIndexMd(books, opts)
     add("")
 
     if #books == 0 then
-        add("_" .. _("No exported books with highlights.") .. "_")
+        local empty = _("No exported books with highlights.")
+        if (tonumber(opts.hidden_books) or 0) > 0 then
+            empty = _("Every exported book is hidden from the index.")
+        end
+        add("_" .. empty .. "_")
         add("")
         if markers then
             table.insert(out, region_from, render.beginMarker("index",
@@ -738,6 +880,17 @@ function render.buildIndexMd(books, opts)
         complete = _("Complete"),
         abandoned = _("Abandoned"),
     }
+
+    -- How the table carries the tags and the last read date. The
+    -- default keeps the tags under the book title, where they cannot
+    -- widen the table; the two "tags_column" layouts are the older
+    -- shape, with the compact one folding the date into the status.
+    local layout = opts.index_layout
+    if layout ~= "tags_column" and layout ~= "tags_column_compact" then
+        layout = "tags_below"
+    end
+    local tags_below = layout == "tags_below"
+    local merged_dates = layout == "tags_column_compact"
 
     -- the books split into the ones that belong to a series and the
     -- rest: one table each, a heading only when both exist
@@ -825,24 +978,45 @@ function render.buildIndexMd(books, opts)
     end
     -- the index shows the tags chosen from the book menu, as the
     -- clickable #tag Obsidian understands; the entries are sanitized
-    -- again because an older file or a test may hand in raw values
-    local function tagsText(tags)
+    -- again because an older file or a test may hand in raw values.
+    -- A table cell does not wrap, so a long list is broken into short
+    -- lines here: one long line is what makes the table scroll.
+    local tag_line_width = 24
+    local function tagsLines(tags)
         if type(tags) ~= "table" then
-            return ""
+            return {}
         end
-        local seen, out = {}, {}
-        for __, tag in ipairs(tags) do
-            tag = render.sanitizeTag(tag)
-            if tag ~= "" then
-                local key = tag:lower()
-                if not seen[key] then
-                    seen[key] = true
-                    out[#out + 1] = "#" .. tag
+        local seen, lines, current = {}, {}, nil
+        for __, raw_tag in ipairs(tags) do
+            local norm_tag = tostring(raw_tag or ""):gsub("%-%-", ", ")
+            for part in norm_tag:gmatch("[^,\n]+") do
+                local tag = render.sanitizeTag(part)
+                if tag ~= "" then
+                    local key = tag:lower()
+                    if not seen[key] then
+                        seen[key] = true
+                        local piece = "#" .. tag
+                        if current == nil then
+                            current = piece
+                        elseif #current + 1 + #piece <= tag_line_width then
+                            current = current .. " " .. piece
+                        else
+                            lines[#lines + 1] = current
+                            current = piece
+                        end
+                    end
                 end
             end
         end
-        return table.concat(out, " ")
+        if current ~= nil then
+            lines[#lines + 1] = current
+        end
+        return lines
     end
+    -- A thin rule with room above and below, used when the tags sit
+    -- under the title instead of in a column of their own.
+    local tag_separator = '<hr style="margin:12px 0 10px 0;border:0;'
+        .. 'border-top:1px solid rgba(128,128,128,0.45)">'
 
     local function addTable(list, with_series)
         local has_author = any_filled(list, "author")
@@ -851,14 +1025,20 @@ function render.buildIndexMd(books, opts)
         -- three lines deep inside one cell
         local has_status = any_filled(list, "status")
             or any_filled(list, "progress")
+            or any_filled(list, "rating")
         local has_last_read = any_filled(list, "last_read")
         local has_tags = false
-        for __, b in ipairs(list) do
-            if tagsText(b.tags) ~= "" then
-                has_tags = true
-                break
+        if not tags_below then
+            for __, b in ipairs(list) do
+                if #tagsLines(b.tags) > 0 then
+                    has_tags = true
+                    break
+                end
             end
         end
+        -- the compact layout has one column for both facts; when only
+        -- one of them is present, the title drops the missing half
+        local one_date_column = merged_dates and (has_status or has_last_read)
         local header, align = {}, {}
         local function column(title, separator)
             header[#header + 1] = title
@@ -877,20 +1057,30 @@ function render.buildIndexMd(books, opts)
         if has_tags then
             column(_("Tags"))
         end
-        if has_status then
-            column(_("Status"))
-        end
-        if has_last_read then
-            column(_("Last read"))
+        if one_date_column then
+            local title
+            if has_status and has_last_read then
+                title = _("Status") .. " · " .. _("Last read")
+            elseif has_status then
+                title = _("Status")
+            else
+                title = _("Last read")
+            end
+            column(title)
+        else
+            if has_status then
+                column(_("Status"))
+            end
+            if has_last_read then
+                column(_("Last read"))
+            end
         end
         column(_("Highlights"), "---:")
         add("| " .. table.concat(header, " | ") .. " |")
         add("|" .. table.concat(align, "|") .. "|")
 
         for __, b in ipairs(list) do
-            local alias = render.alias(b.title)
-            local link = alias ~= "" and ("[[" .. tostring(b.link) .. "\\|" .. alias .. "]]")
-                or ("[[" .. tostring(b.link) .. "]]")
+            local link = render.bookLink(b.link, b.title, opts.index_links)
             local author = tostring(b.author or ""):gsub("|", "\\|")
                 :gsub("[\r\n]+", " ")
             local series = "—"
@@ -907,11 +1097,51 @@ function render.buildIndexMd(books, opts)
                 -- the star speaks every language: 12 · ★3
                 count_txt = count_txt .. " · ★" .. tostring(special)
             end
+            local tag_lines = tagsLines(b.tags)
+            local book_cell = link
+            if tags_below and #tag_lines > 0 then
+                local joined = table.concat(tag_lines, "<br>")
+                if #tag_lines > 1 then
+                    joined = '<span style="line-height:1.9;display:inline-block">'
+                        .. joined .. '</span>'
+                end
+                book_cell = link .. tag_separator .. joined
+            end
             -- word over the bar, the percentage glued to the bar with a
             -- no-break space so Obsidian can never drop it on its own line;
             -- nothing to show is a dash, as it always was
+            local date_text = filled(b.last_read)
+                and render.fmtDate(tostring(b.last_read)) or nil
+            local rating_stars = render.stars(b.rating)
             local status_cell = "—"
-            if has_status then
+            if one_date_column then
+                local parts = {}
+                if b.status and status_labels[b.status] then
+                    parts[#parts + 1] = status_labels[b.status]
+                end
+                if date_text then
+                    if #parts > 0 then
+                        parts[1] = parts[1] .. " · " .. date_text
+                    else
+                        parts[1] = date_text
+                    end
+                end
+                local bar = render.progressBar(b.progress)
+                local pct = render.progressPct(b.progress)
+                if bar and pct then
+                    parts[#parts + 1] = bar .. "&nbsp;" .. pct
+                elseif bar then
+                    parts[#parts + 1] = bar
+                elseif pct then
+                    parts[#parts + 1] = pct
+                end
+                if rating_stars then
+                    parts[#parts + 1] = rating_stars
+                end
+                if #parts > 0 then
+                    status_cell = table.concat(parts, "<br>")
+                end
+            elseif has_status then
                 local parts = {}
                 if b.status and status_labels[b.status] then
                     parts[#parts + 1] = status_labels[b.status]
@@ -925,16 +1155,19 @@ function render.buildIndexMd(books, opts)
                 elseif pct then
                     parts[#parts + 1] = pct
                 end
+                if rating_stars then
+                    parts[#parts + 1] = rating_stars
+                end
                 if #parts > 0 then
                     status_cell = table.concat(parts, "<br>")
                 end
             end
             local cells = {}
             if with_covers then
-                cells[#cells + 1] = b.cover and render.coverImg(b.cover, 120, 160)
+                cells[#cells + 1] = b.cover and render.coverImg(b.cover, 90, 120)
                     or ""
             end
-            cells[#cells + 1] = link
+            cells[#cells + 1] = book_cell
             if has_author then
                 cells[#cells + 1] = author
             end
@@ -942,32 +1175,69 @@ function render.buildIndexMd(books, opts)
                 cells[#cells + 1] = series
             end
             if has_tags then
-                local tag_text = tagsText(b.tags)
+                local tag_text = ""
+                if #tag_lines > 0 then
+                    tag_text = table.concat(tag_lines, "<br>")
+                    if #tag_lines > 1 then
+                        tag_text = '<span style="line-height:1.9;display:inline-block">'
+                            .. tag_text .. '</span>'
+                    end
+                end
                 cells[#cells + 1] = tag_text ~= "" and tag_text or "—"
             end
-            if has_status then
+            if one_date_column then
                 cells[#cells + 1] = status_cell
-            end
-            if has_last_read then
-                cells[#cells + 1] = filled(b.last_read)
-                    and render.fmtDate(tostring(b.last_read)) or "—"
+            else
+                if has_status then
+                    cells[#cells + 1] = status_cell
+                end
+                if has_last_read then
+                    cells[#cells + 1] = date_text or "—"
+                end
             end
             cells[#cells + 1] = count_txt
             add("| " .. table.concat(cells, " | ") .. " |")
         end
     end
 
-    if #series_books > 0 and #plain_books > 0 then
+    -- A shortcut for the books being read: same table, repeated on
+    -- purpose, sorted by the last time they were opened. It sits above
+    -- the full index and disappears when nothing is being read.
+    if opts.reading_now ~= false then
+        local reading = {}
+        for __, b in ipairs(books) do
+            if b.status == "reading" then
+                reading[#reading + 1] = b
+            end
+        end
+        table.sort(reading, function(a, b)
+            local aa = tonumber(a.last_read_sort) or 0
+            local bb = tonumber(b.last_read_sort) or 0
+            if aa ~= bb then
+                return aa > bb
+            end
+            return byAuthor(a, b)
+        end)
+        if #reading > 0 then
+            add("### " .. _("Reading now"))
+            add("")
+            addTable(reading, any_filled(reading, "series"))
+            add("")
+        end
+    end
+
+    -- Each group keeps a heading even when it is alone: the second
+    -- table used to arrive with no title at all, which looked like a
+    -- duplicate of the one above.
+    if #series_books > 0 then
         add("### " .. _("Series books"))
         add("")
         addTable(series_books, true)
         add("")
+    end
+    if #plain_books > 0 then
         add("### " .. _("My books"))
         add("")
-        addTable(plain_books, false)
-    elseif #series_books > 0 then
-        addTable(series_books, true)
-    else
         addTable(plain_books, false)
     end
 
@@ -979,6 +1249,291 @@ function render.buildIndexMd(books, opts)
         table.insert(out, region_from, render.beginMarker("index",
             render.digest(sliceText(out, region_from, #out))))
         add(render.endMarker("index"))
+    end
+    return table.concat(out, "\n") .. "\n"
+end
+
+--[[
+books = {
+    {
+        link, title, author,
+        annotations = {
+            { text, note, chapter, page, date, sort_time, sort_page, special },
+            ...
+        },
+    },
+    ...
+}
+opts = {
+    title, exported, index_links, callout, special_marker, note_style,
+}
+Builds a consolidated chronological reading digest (`00 - Reading Digest.md`),
+grouping highlights across all books by day (newest day first, and newest
+highlight first within each day).
+]]
+function render.buildDigestMd(books, opts)
+    opts = opts or {}
+    local title = opts.title or _("Reading digest")
+    local out = {}
+    local function add(s)
+        out[#out + 1] = s
+    end
+
+    local items = {}
+    local book_seen = {}
+    local total_books = 0
+    local total_special = 0
+    for __, b in ipairs(books or {}) do
+        local anns = b.annotations or {}
+        if #anns > 0 then
+            local bkey = tostring(b.link or b.title or "")
+            if not book_seen[bkey] then
+                book_seen[bkey] = true
+                total_books = total_books + 1
+            end
+        end
+        for ___, a in ipairs(anns) do
+            if a.special then
+                total_special = total_special + 1
+            end
+            local raw_dt = tostring(a.sort_time or "")
+            local day_iso = raw_dt:match("^(%d%d%d%d%-%d%d%-%d%d)")
+            local day_label
+            if day_iso then
+                day_label = render.fmtDate(day_iso)
+            elseif type(a.date) == "string" and a.date ~= "" then
+                day_label = a.date:match("^(%d%d/%d%d/%d%d%d%d)") or a.date
+                local d, m, y = day_label:match("^(%d%d)/(%d%d)/(%d%d%d%d)$")
+                if d and m and y then
+                    day_iso = y .. "-" .. m .. "-" .. d
+                end
+            end
+            items[#items + 1] = {
+                book_link = b.link or b.base or b.title or "",
+                book_title = b.title or b.link or "",
+                book_author = b.author,
+                text = a.text,
+                note = a.note,
+                chapter = a.chapter,
+                page = a.page,
+                date = a.date,
+                special = a.special,
+                sort_time = raw_dt,
+                sort_page = tonumber(a.sort_page) or 0,
+                day_key = day_iso or "0000-00-00",
+                day_label = day_label or _("Undated"),
+            }
+        end
+    end
+
+    table.sort(items, function(a, b)
+        if a.day_key ~= b.day_key then
+            return a.day_key > b.day_key
+        end
+        if a.sort_time ~= b.sort_time then
+            return a.sort_time > b.sort_time
+        end
+        local bt_a = tostring(a.book_title or ""):lower()
+        local bt_b = tostring(b.book_title or ""):lower()
+        if bt_a ~= bt_b then
+            return bt_a < bt_b
+        end
+        if a.sort_page ~= b.sort_page then
+            return a.sort_page < b.sort_page
+        end
+        return tostring(a.text or "") < tostring(b.text or "")
+    end)
+
+    add("---")
+    add('tomedown: "' .. render.FORMAT_VERSION .. '"')
+    add("title: " .. yamlQuote(title))
+    add("exported: " .. yamlQuote(opts.exported or os.date("%Y-%m-%d")))
+    add("highlights: " .. tostring(#items))
+    add("tags:")
+    add("  - ebook")
+    add("  - " .. _("digest"))
+    add("---")
+    add("")
+    add("# " .. title)
+    add("")
+    add('> *"' .. _("Welcome to the quiet space where authors' thoughts linger, and your own reflections take shape.") .. '"*')
+    add("")
+    add("---")
+    add("")
+
+    if #items == 0 then
+        add("_" .. _("No exported books with highlights.") .. "_")
+        add("")
+        return table.concat(out, "\n") .. "\n"
+    end
+
+    local books_txt = total_books == 1 and _("%1 book") or _("%1 books")
+    local highlights_txt = #items == 1 and _("%1 highlight")
+        or _("%1 highlights")
+    local stats = "**" .. (books_txt:gsub("%%1", tostring(total_books)))
+        .. "** · **" .. (highlights_txt:gsub("%%1", tostring(#items)))
+        .. "**"
+    if total_special > 0 then
+        stats = stats .. " · **★ "
+            .. (_("%1 special"):gsub("%%1", tostring(total_special))) .. "**"
+    end
+    add(stats)
+
+    local valid_markers = {
+        callout = true,
+        alert = true,
+        highlight = true,
+        highlight_bold = true,
+        star_bold = true,
+        bold = true,
+    }
+    local marker_global = opts.special_marker
+    if not valid_markers[marker_global] then
+        marker_global = "callout"
+    end
+    local use_footnotes = opts.note_style == "footnote"
+    local footnotes = {}
+
+    local current_day = nil
+    local current_book = nil
+
+    for __, item in ipairs(items) do
+        if item.day_key ~= current_day then
+            if current_day ~= nil then
+                add("")
+                add("---")
+            end
+            add("")
+            add("## " .. item.day_label)
+            current_day = item.day_key
+            current_book = nil
+        end
+
+        local book_id = tostring(item.book_link) .. "\31" .. tostring(item.book_title)
+        if book_id ~= current_book then
+            add("")
+            local link = render.bookLink(item.book_link, item.book_title, opts.index_links, false)
+            if item.book_author and tostring(item.book_author) ~= "" then
+                add("### " .. link .. " — *" .. tostring(item.book_author) .. "*")
+            else
+                add("### " .. link)
+            end
+            current_book = book_id
+        end
+
+        add("")
+        local marker = marker_global
+        local is_special = item.special and not opts.callout
+        local as_callout = opts.callout or (is_special and marker == "callout")
+        local as_alert = is_special and marker == "alert"
+        if as_callout then
+            add("> [!highlight]")
+        elseif as_alert then
+            add("> [!IMPORTANT]")
+        end
+        local text = tostring(item.text or ""):gsub("\r\n", "\n"):gsub("\r", "\n")
+        local quote_lines = {}
+        for line in (text .. "\n"):gmatch("(.-)\n") do
+            quote_lines[#quote_lines + 1] = line
+        end
+        if is_special then
+            if marker == "bold" then
+                wrapStyled(quote_lines, "**", "**", "**", nil)
+            elseif marker == "highlight" then
+                wrapStyled(quote_lines, "==", "==", "==", nil)
+            elseif marker == "highlight_bold" then
+                wrapStyled(quote_lines, "==**", "**==", "**", nil)
+            elseif marker == "star_bold" then
+                wrapStyled(quote_lines, "**", "**", "**", "⭐ ")
+            end
+        end
+        for __, line in ipairs(quote_lines) do
+            add("> " .. line)
+        end
+        add("")
+
+        local meta = {}
+        if item.chapter and tostring(item.chapter) ~= "" then
+            meta[#meta + 1] = "*" .. tostring(item.chapter) .. "*"
+        end
+        if item.page and tostring(item.page) ~= "" then
+            meta[#meta + 1] = "**p. " .. tostring(item.page) .. "**"
+        end
+        if item.date and tostring(item.date) ~= "" then
+            meta[#meta + 1] = tostring(item.date)
+        end
+
+        local note_lines
+        if item.note then
+            local body = tostring(item.note):gsub("\r\n", "\n"):gsub("\r", "\n")
+            note_lines = {}
+            for line in (body .. "\n"):gmatch("(.-)\n") do
+                note_lines[#note_lines + 1] = line
+            end
+            while #note_lines > 0 and note_lines[1]:match("^%s*$") do
+                table.remove(note_lines, 1)
+            end
+            while #note_lines > 0 and note_lines[#note_lines]:match("^%s*$") do
+                table.remove(note_lines)
+            end
+            if #note_lines == 0 then
+                note_lines = nil
+            end
+        end
+
+        if use_footnotes and note_lines then
+            local fn_idx = #footnotes + 1
+            footnotes[fn_idx] = note_lines
+            if #meta > 0 then
+                add("- " .. table.concat(meta, " · ") .. " [^" .. fn_idx .. "]")
+            else
+                add("- [^" .. fn_idx .. "]")
+            end
+        else
+            if #meta > 0 then
+                add("- " .. table.concat(meta, " · "))
+            end
+            if note_lines then
+                local head = #meta > 0 and "  - " or "- "
+                local pad = #meta > 0 and "    " or "  "
+                local first = true
+                for __, line in ipairs(note_lines) do
+                    if line:match("^%s*$") then
+                        add("")
+                    elseif first then
+                        add(head .. "**NOTE:** *" .. line .. "*")
+                        first = false
+                    else
+                        add(pad .. "*" .. line .. "*")
+                    end
+                end
+            elseif #meta == 0 then
+                add("- …")
+            end
+        end
+    end
+
+    if #footnotes > 0 then
+        add("")
+        add("---")
+        for fn_idx, lines in ipairs(footnotes) do
+            add("")
+            local first = true
+            for __, line in ipairs(lines) do
+                if line:match("^%s*$") then
+                    add("")
+                elseif first then
+                    add("[^" .. fn_idx .. "]: " .. line)
+                    first = false
+                else
+                    add("    " .. line)
+                end
+            end
+        end
+    end
+
+    if out[#out] ~= "" then
+        add("")
     end
     return table.concat(out, "\n") .. "\n"
 end

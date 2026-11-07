@@ -29,6 +29,7 @@ local _ = require("tomedown_i18n")
 local Update = require("tomedown_update")
 
 local shared = require("tomedown_shared")
+local metadata = require("tomedown_metadata")
 local SETTINGS_KEY = shared.SETTINGS_KEY
 local DEFAULT_LOCAL_SUBDIR = shared.DEFAULT_LOCAL_SUBDIR
 local getSetting = shared.getSetting
@@ -116,15 +117,63 @@ end
 
 function Tomedown:migrateDefaults()
     local settings = G_reader_settings:readSetting(SETTINGS_KEY)
-    if type(settings) == "table" and settings.upload == nil
-            and settings.exports ~= nil then
+    if type(settings) ~= "table" then
+        return
+    end
+    local changed = false
+    if settings.upload == nil and settings.exports ~= nil then
         settings.upload = true
+        changed = true
+    end
+    -- 1.3.0 moved the tags under the book title. An install that
+    -- already has an index must rebuild it once, because no book hash
+    -- changes when only the table shape does.
+    if settings.exports ~= nil and settings.index_layout == nil then
+        settings.index_layout = "tags_below"
+        settings.index_dirty = true
+        changed = true
+    end
+    if changed then
         G_reader_settings:saveSetting(SETTINGS_KEY, settings)
     end
 end
 
+local active_instance
+
+local function registerFileDialogButtons(target)
+    if type(target) ~= "table"
+            or type(target.addFileDialogButtons) ~= "function" then
+        return
+    end
+    local callback = function(file, is_file)
+        if not active_instance then
+            return nil
+        end
+        return active_instance:genFileDialogButtons(file, is_file)
+    end
+    target:addFileDialogButtons("tomedown", callback)
+    local added = target.file_dialog_added_buttons
+    local idx = type(added) == "table"
+        and type(added.index) == "table"
+        and added.index.tomedown
+    if idx then
+        added[idx] = callback
+    end
+end
+
 function Tomedown:init()
+    active_instance = self
     self.ui.menu:registerToMainMenu(self)
+    -- Register on both the current host (when it exposes the file dialog
+    -- hook) and the FileManager class: Bookshelf falls back to the class
+    -- table while a book is open or hot-parked (FileManager.instance is
+    -- nil then), and delegating through active_instance keeps the buttons
+    -- bound to the live plugin instance across host switches.
+    registerFileDialogButtons(self.ui)
+    local ok_fm, FileManager = pcall(require, "apps/filemanager/filemanager")
+    if ok_fm and FileManager and FileManager ~= self.ui then
+        registerFileDialogButtons(FileManager)
+    end
     -- Do NOT insert this instance into self.ui here: KOReader runs init()
     -- inside createPluginInstance and inserts the instance itself right
     -- after, via registerModule (ReaderUI and FileManager both do). An
@@ -134,6 +183,9 @@ function Tomedown:init()
     -- outcome shown by the Status panel.
     -- before anything reads the upload default (the pending flush below)
     self:migrateDefaults()
+    -- watch the places where KOReader writes book information: imported
+    -- books only, and only while the automatic update is on
+    metadata.attach(self)
     if getSetting("update_check", false) then
         -- quiet check shortly after KOReader starts; the same check also
         -- runs when the menu is opened (both throttled to once an hour)

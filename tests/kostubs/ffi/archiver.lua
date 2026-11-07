@@ -34,7 +34,8 @@ function Archiver.reset()
 end
 
 function Archiver.Reader:new()
-    return setmetatable({ err = nil }, { __index = Archiver.Reader })
+    return setmetatable({ err = nil, entries = {}, size = 0 },
+        { __index = Archiver.Reader })
 end
 
 function Archiver.Reader:open(path)
@@ -43,6 +44,8 @@ function Archiver.Reader:open(path)
         return false
     end
     self.path = path
+    self.entries = {}
+    self.size = 0
     return true
 end
 
@@ -52,9 +55,19 @@ function Archiver.Reader:iterate()
         i = i + 1
         local p = Archiver.entries[i]
         if p then
-            return { path = p }
+            local entry = self.entries[p] or { path = p, index = i }
+            self.entries[i] = entry
+            self.entries[p] = entry
+            self.size = math.max(self.size or 0, i)
+            return entry
         end
     end
+end
+
+-- the in-memory half of the real Reader: tomedown_pubdate reads the
+-- small archive entries this way
+function Archiver.Reader:extractToMemory(key)
+    return Archiver.contents[key]
 end
 
 function Archiver.Reader:extractToPath(src, dest)

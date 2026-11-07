@@ -246,11 +246,23 @@ msgstr "Link-IDs zu Markierungen hinzufügen"
 msgid "How special highlights look: %1"
 msgstr "Aussehen besonderer Markierungen: %1"
 
-msgid "Callout"
-msgstr "Callout"
+msgid "Callout ([!highlight])"
+msgstr "Callout ([!highlight])"
 
-msgid "Bold"
-msgstr "Fett"
+msgid "Alert ([!IMPORTANT])"
+msgstr "Alert ([!IMPORTANT])"
+
+msgid "Highlight (==text==)"
+msgstr "Hervorgehoben (==Text==)"
+
+msgid "Highlight & Bold (==**text**==)"
+msgstr "Hervorgehoben & fett (==**Text**==)"
+
+msgid "Star & Bold (⭐ **text**)"
+msgstr "Stern & fett (⭐ **Text**)"
+
+msgid "Bold (**text**)"
+msgstr "Fett (**Text**)"
 
 # Special Highlight (v0.8.0)
 msgid "Special Highlight"
@@ -511,14 +523,14 @@ msgstr "leer lassen, um keine Überschrift zu exportieren"
 msgid "Write your thoughts, your emotions, your questions."
 msgstr "Schreib deine Gedanken, deine Gefühle, deine Fragen."
 
-msgid "Backup copies…"
-msgstr "Sicherungskopien…"
+msgid "Backup copies"
+msgstr "Sicherungskopien"
 
 msgid "Safety copy"
 msgstr "Sicherheitskopie"
 
-msgid "Notes set aside"
-msgstr "Beiseitegelegte Notizen"
+msgid "Saved notes"
+msgstr "Gespeicherte Notizen"
 
 msgid "Older copy"
 msgstr "Ältere Kopie"
@@ -565,8 +577,260 @@ msgstr "Letzter Export"
 msgid "My notes"
 msgstr "Meine Notizen"
 
-msgid "Highlights for Obsidian"
-msgstr "Markierungen für Obsidian"
-
 msgid "On for all books"
 msgstr "Für alle Bücher an"
+
+# exclusion and Reading now (v1.3.0)
+msgid "Book visibility"
+msgstr "Sichtbarkeit des Buchs"
+
+msgid "Book visibility…"
+msgstr "Sichtbarkeit des Buchs…"
+
+msgid "Book visibility: normal"
+msgstr "Sichtbarkeit des Buchs: normal"
+
+msgid "Book visibility: hidden from the index"
+msgstr "Sichtbarkeit des Buchs: im Index ausgeblendet"
+
+msgid "Book visibility: not exported"
+msgstr "Sichtbarkeit des Buchs: nicht exportiert"
+
+msgid "Export and show in the index"
+msgstr "Exportieren und im Index anzeigen"
+
+msgid "Export, but hide from the index"
+msgstr "Exportieren, aber im Index ausblenden"
+
+msgid "Do not export"
+msgstr "Nicht exportieren"
+
+msgid "%1 files excluded from the export"
+msgstr "%1 Dateien vom Export ausgeschlossen"
+
+msgid "Reading now"
+msgstr "Aktuelle Lektüre"
+
+msgid "Show Reading now in the index"
+msgstr "„Aktuelle Lektüre“ im Index anzeigen"
+
+msgid "Every exported book is hidden from the index."
+msgstr "Alle exportierten Bücher sind im Index ausgeblendet."
+
+# tag suggestions (v1.3.0)
+msgid "Tags…"
+msgstr "Tags…"
+
+msgid "Other tags…"
+msgstr "Andere Tags…"
+
+msgid "Clear all tags"
+msgstr "Alle Tags löschen"
+
+# imported book info (v1.3.0)
+msgid "Could not write the tags. Book information was left as it was."
+msgstr "Die Tags konnten nicht geschrieben werden. Die Buchinformationen wurden nicht geändert."
+
+msgid "Published"
+msgstr "Veröffentlicht"
+
+msgid "Started reading"
+msgstr "Lesebeginn"
+
+msgid "Finished reading"
+msgstr "Leseende"
+
+msgid "Use the book's publication date"
+msgstr "Veröffentlichungsdatum des Buchs verwenden"
+
+msgid "Use the automatic start date"
+msgstr "Automatisches Startdatum verwenden"
+
+msgid "Use the automatic finish date"
+msgstr "Automatisches Enddatum verwenden"
+
+msgid "Saved. It will be written at the next export."
+msgstr "Gespeichert. Wird beim nächsten Export geschrieben."
+
+msgid "KOReader has not opened this book yet."
+msgstr "KOReader hat dieses Buch noch nicht geöffnet."
+
+msgid "Import the rating, review, publication date, reading dates and collections of %1 into its note? Your notes are kept."
+msgstr "Bewertung, Rezension, Veröffentlichungsdatum, Lesedaten und Sammlungen von %1 in die Notiz importieren? Deine Notizen bleiben erhalten."
+
+msgid "Import"
+msgstr "Importieren"
+
+msgid "Remove rating, review, dates and collections from the note of %1? The note and its tags stay. Tomedown stops updating this book."
+msgstr "Bewertung, Rezension, Daten und Sammlungen aus der Notiz von %1 entfernen? Die Notiz und ihre Tags bleiben. Tomedown aktualisiert dieses Buch nicht mehr."
+
+msgid "Remove"
+msgstr "Entfernen"
+
+msgid "%1: not available"
+msgstr "%1: nicht verfügbar"
+
+msgid "%1: %2 (fixed)"
+msgstr "%1: %2 (fest)"
+
+msgid "%1: %2"
+msgstr "%1: %2"
+
+msgid "%1: date"
+msgstr "%1: Datum"
+
+msgid "YYYY-MM-DD (or YYYY); leave empty for the automatic date"
+msgstr "JJJJ-MM-TT (oder JJJJ); leer lassen für das automatische Datum"
+
+msgid "That is not a date: use YYYY, YYYY-MM or YYYY-MM-DD."
+msgstr "Das ist kein Datum: JJJJ, JJJJ-MM oder JJJJ-MM-TT verwenden."
+
+msgid "Open the book to edit rating, review and status with KOReader's own panel."
+msgstr "Öffne das Buch, um Bewertung, Rezension und Status im KOReader-Fenster zu bearbeiten."
+
+msgid "Rating: %1/5"
+msgstr "Bewertung: %1/5"
+
+msgid "Rating: not set"
+msgstr "Bewertung: nicht gesetzt"
+
+msgid "Review: %1"
+msgstr "Rezension: %1"
+
+msgid "Review: not set"
+msgstr "Rezension: nicht gesetzt"
+
+msgid "Status: %1"
+msgstr "Status: %1"
+
+msgid "Update book info automatically"
+msgstr "Buchinformationen automatisch aktualisieren"
+
+msgid "Import book info for all books"
+msgstr "Buchinformationen aller Bücher importieren"
+
+msgid "Import rating, review, dates and collections for all %1 books? Their notes are rewritten, your own notes stay."
+msgstr "Bewertung, Rezension, Daten und Sammlungen für alle %1 Bücher importieren? Ihre Notizen werden neu geschrieben, deine Notizen bleiben."
+
+msgid "Import all"
+msgstr "Alle importieren"
+
+msgid "Book info"
+msgstr "Buchinformationen"
+
+msgid "Import book info"
+msgstr "Buchinformationen importieren"
+
+msgid "Dates"
+msgstr "Daten"
+
+msgid "Remove imported book info…"
+msgstr "Importierte Buchinformationen entfernen…"
+
+msgid "Index layout: %1"
+msgstr "Layout des Index: %1"
+
+msgid "Tags under the title"
+msgstr "Tags unter dem Titel"
+
+msgid "Tags column"
+msgstr "Tag-Spalte"
+
+msgid "Tags column, compact"
+msgstr "Tag-Spalte, kompakt"
+
+msgid "Delete tags…"
+msgstr "Tags löschen…"
+
+msgid "No tags to delete."
+msgstr "Keine Tags zum Löschen."
+
+msgid "Delete a tag from every book"
+msgstr "Einen Tag aus allen Büchern löschen"
+
+msgid "Delete #%1 from every book? It leaves the notes at the next export; tags written by hand stay."
+msgstr "#%1 aus allen Büchern löschen? Er verschwindet beim nächsten Export aus den Notizen; von Hand geschriebene Tags bleiben erhalten."
+
+msgid "Some books could not be updated: the tag is still in their keywords."
+msgstr "Einige Bücher konnten nicht aktualisiert werden: Der Tag ist noch in ihren Schlagwörtern enthalten."
+
+msgid "Unknown author"
+msgstr "Unbekannter Autor"
+
+msgid "File name template"
+msgstr "Dateinamenvorlage"
+
+msgid "%A author, %T title, %S series, %i series index"
+msgstr "%A Autor, %T Titel, %S Reihe, %i Bandnummer"
+
+msgid "Author - Title"
+msgstr "Autor - Titel"
+
+msgid "Title (Author)"
+msgstr "Titel (Autor)"
+
+msgid "Title only"
+msgstr "Nur Titel"
+
+msgid "File name template: %1"
+msgstr "Dateinamenvorlage: %1"
+
+msgid "Custom template…"
+msgstr "Eigene Vorlage…"
+
+msgid "Single folder"
+msgstr "Einzelner Ordner"
+
+msgid "By author"
+msgstr "Nach Autor"
+
+msgid "By series"
+msgstr "Nach Reihe"
+
+msgid "By reading status"
+msgstr "Nach Lesestatus"
+
+msgid "Folder organization: %1"
+msgstr "Ordnerstruktur: %1"
+
+msgid "Obsidian wikilink"
+msgstr "Obsidian-Wikilink"
+
+msgid "Standard Markdown"
+msgstr "Standard-Markdown"
+
+msgid "Index links: %1"
+msgstr "Links im Index: %1"
+
+msgid "Inline"
+msgstr "Inline"
+
+msgid "Footnotes"
+msgstr "Fußnoten"
+
+msgid "Personal notes format: %1"
+msgstr "Format persönlicher Notizen: %1"
+
+msgid "Reading digest"
+msgstr "Lese-Digest"
+
+msgid "digest"
+msgstr "digest"
+
+msgid "Undated"
+msgstr "Ohne Datum"
+
+msgid "Create a reading digest (%1)"
+msgstr "Lese-Digest erstellen (%1)"
+
+msgid "Export reading digest"
+msgstr "Lese-Digest exportieren"
+
+msgid "Index"
+msgstr "Index"
+
+msgid "Style"
+msgstr "Stil"
+
+msgid "Welcome to the quiet space where authors' thoughts linger, and your own reflections take shape."
+msgstr "Willkommen an dem stillen Ort, an dem die Gedanken der Autoren verweilen und eigene Betrachtungen Gestalt annehmen."

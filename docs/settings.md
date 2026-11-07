@@ -2,13 +2,14 @@
 
 [Back to the README](../README.md).
 
-☰ menu → **Tomedown** → **Settings**, in five groups:
+☰ menu → **Tomedown** → **Settings**, in six groups:
 
-![The five Tomedown settings groups](../assets/menu/settings/settings_menu.png)
+![The Tomedown settings groups](../assets/menu/settings/settings_menu.png)
 
 Everything here is stored in KOReader's settings and applies to every book.
-The per-book choice, heading and tags live in the book's own menu: see
-[Keep my notes](keep-my-notes.md).
+The per-book choice, heading, tags and imported book information live in the
+book's own menu: see [Keep my notes](keep-my-notes.md) and
+[File format](file-format.md#imported-book-information).
 
 ## Files
 
@@ -17,8 +18,10 @@ The per-book choice, heading and tags live in the book's own menu: see
 | Entry | What to do |
 |---|---|
 | *Local folder* | defaults to `clipboard/tomedown` inside KOReader's data folder; tap it to browse with KOReader's folder picker (long-press a folder to choose it) |
-| *Create an index note (00 - Index.md)* | builds the Obsidian tables: a stats line on top, then series books and the rest, each with the columns it actually has (links, author, series, highlights with stars, status over the progress bar, last read) |
+| *Create an index note (00 - Index.md)* | builds the Obsidian tables: a stats line on top, then series books and the rest, each with the columns it actually has (links, author, series, highlights with stars, tags, status over the progress bar, last read) |
 | *Index order: %1* | the order of the *My books* table: **Author** (the default), **Title**, **Last read** or **Highlights**. Last read and highlights run newest and most first, with author and title as tie-breakers; series books keep their own order by series and position. Changing it rebuilds only the index at the next export, without rewriting a single book |
+| *Index layout: %1* | how the table carries the tags and the date: **Tags under the title** (the default: each book's tags sit under its title, after a thin rule, so a long list can never widen the table), **Tags column** (tags in their own column between Series and Status) or **Tags column, compact** (the same column, with Status and Last read merged into one). Changing it rebuilds only the index at the next export |
+| *Show Reading now in the index* | on by default: repeats the books being read in a *Reading now* section above the full table, latest opening first. Turning it off rebuilds only the index |
 | *Include page bookmarks* | off by default: adds a `# Page bookmarks` section (bookmarked page + note) after the highlights |
 | *Include book covers* | off by default: exports every cover into `covers/` and embeds it in the book file and in the index; the cover leaves the device after a successful upload, the vault copy is the master one. Requires **Obsidian 1.8.1 or newer** |
 | *Export when I close a book* | off by default: exports the book when you close it, and again (silently, no network) before the device suspends |
@@ -27,15 +30,31 @@ Ticking or unticking *Include book covers* rewrites every already exported
 file on the next export: the stored hash is invalidated, so *Export new and
 changed books* re-sends everything once.
 
-*Index order* is different: the setting marks the index as stale, and the
-next export rebuilds `00 - Index.md` alone even when every book is unchanged.
-With the index switched off the choice is remembered for the next time it is
-created.
+*Index order* and *Index layout* are different: the setting marks the index as
+stale, and the next export rebuilds `00 - Index.md` alone even when every book
+is unchanged. With the index switched off the choice is remembered for the
+next time it is created. Upgrading from 1.2.0 moves an existing install to the
+default layout and rebuilds the index once, without touching a book note.
 
 ![The index order menu: Author, Title, Last read or Highlights](../assets/menu/settings/index_order_menu.png)
 
 Covers are always exported in full colour, whatever the device: the
 extraction forces colour rendering even on greyscale e-ink screens.
+
+## Book info
+
+| Entry | What to do |
+|---|---|
+| *Update book info automatically* | on by default: once a book has been imported, a change to its rating, review, status, tags, collections or dates rewrites that one note about two seconds later. Off, the fields wait for the next normal export |
+| *Import book info for all books* | asks first, then imports every book KOReader has opened except the ones set to *Do not export*, and writes only the imported books. Books whose information never changed keep their file |
+
+The import itself is always explicit: *Current book → Import book info* for
+the open book, or the same row on a long-press in the file browser, History
+or Bookshelf. A book that was never imported carries none of these fields, so
+a normal export stays exactly as it was. *Remove imported book info* takes the
+fields out again and leaves the note, the highlights and the tags in place.
+[File format](file-format.md#imported-book-information) lists the fields and
+where each one comes from.
 
 ## Cloud
 

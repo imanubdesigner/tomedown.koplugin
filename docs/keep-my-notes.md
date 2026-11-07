@@ -8,8 +8,6 @@ new render into the file already in your vault instead of overwriting it.
 always did), so upgrading changes nothing: turn it on in
 *Settings → My notes* and the file becomes a shared document.
 
-![The Current book rows: the book's own switch, its tags and heading](../)
-
 ## The switches
 
 ### All books
@@ -52,13 +50,13 @@ the global switch on, both of its rows are hidden.
 ### Tags for one book
 
 *Tags: %1*, in the open book's menu, holds the tags of that book alone. The
-field starts on the tags already stored; separate them with commas and save,
-and they join `ebook`, `highlights` and the book's own keywords at the next
-export (right away when the book is exported on close). Clearing the field
-drops them. A tag made only of digits (`1500`) is ignored, because Obsidian
-does not accept it: use `1500s` or `anno-1500`.
-
-![The tags dialog, one book's tags in a comma separated field](../)
+dialog lists the tags already used in your library, most used first: tap one
+to add it, tap it again to remove it. *Other tags…* opens the comma separated
+field for a tag nobody has used yet, and *Clear all tags* empties the list.
+The chosen tags join `ebook`, `highlights` and the book's own keywords at the
+next export (right away when the book is exported on close). A tag made only
+of digits (`1500`) is ignored, because Obsidian does not accept it: use
+`1500s` or `anno-1500`.
 
 With Keep my notes on, the file carries `tomedown_book_tags`, the receipt of
 the tags the menu owns. A tag you remove there leaves `tags` at the next
@@ -67,6 +65,16 @@ Obsidian is not in the receipt and survives. Clearing the field removes both
 the managed tags and the receipt; with Keep my notes on, the clear is
 recorded as an empty ledger (`tomedown_book_tags: []`) so the next merge
 knows to drop the old ones.
+
+### Where a book goes
+
+*Book visibility: %1*, in the same menu, chooses what the next exports do with
+that book: keep it in the index, export it but leave it out of the index, or
+stop exporting it. The note already written is never deleted, and the choice
+belongs to the book, so it survives later exports of the rest of the library.
+*Export this book*, tapped on purpose, still works for a book set to *not
+exported*. The same row sits in KOReader's file dialog when you long-press a
+book in the file browser, in History or in Bookshelf, together with *Tags…*.
 
 ## The zone and the block
 
@@ -129,8 +137,11 @@ On every export:
   and unioned with the new ones (a tag removed from the book's menu leaves
   through its `tomedown_book_tags` receipt, see
   [Tags for one book](#tags-for-one-book)), and a property only you added
-  (`rating: 5`, an alias…) survives, even a line the parser cannot place is
-  kept verbatim at the end.
+  (`mood: "cupo"`, an alias…) survives, even a line the parser cannot place is
+  kept verbatim at the end. Once a book's information is imported, Tomedown
+  also owns `published`, `rating`, `review`, `date_started`, `date_finished`
+  and `collections` for that book: it writes them and removes them again when
+  you stop managing it (see [File format](file-format.md#imported-book-information)).
 
 With Keep my notes off the file is regenerated at every export. Text typed
 into it can only be kept when Keep my notes comes back on, and lands in
@@ -223,12 +234,12 @@ A few things worth knowing:
   receives the local copy as it is; with *Bring in edits made in Obsidian*
   off, the copy on the device always wins.
 
-## Backup copies…
+## Backup copies
 
-Inside a book, *Backup copies…* in the Tomedown menu lists the copies that
-sit beside that book's file (the notes set aside and the safety copy, each
+Inside a book, *Backup copies* in the Tomedown menu lists the copies that
+sit beside that book's file (the saved notes and the safety copy, each
 with the day it was saved) and deletes one when you tap it and confirm. The
-box says what the copy holds, and warns when the notes set aside are the only
+box says what the copy holds, and warns when the saved notes copy is the only
 place those notes are right now. The row appears only while the book has a
 copy, and leaves with the last one.
 

@@ -246,11 +246,23 @@ msgstr "Adicionar IDs de link aos destaques"
 msgid "How special highlights look: %1"
 msgstr "Aparência dos destaques especiais: %1"
 
-msgid "Callout"
-msgstr "Callout"
+msgid "Callout ([!highlight])"
+msgstr "Callout ([!highlight])"
 
-msgid "Bold"
-msgstr "Negrito"
+msgid "Alert ([!IMPORTANT])"
+msgstr "Alerta ([!IMPORTANT])"
+
+msgid "Highlight (==text==)"
+msgstr "Destacado (==texto==)"
+
+msgid "Highlight & Bold (==**text**==)"
+msgstr "Destacado e negrito (==**texto**==)"
+
+msgid "Star & Bold (⭐ **text**)"
+msgstr "Estrela e negrito (⭐ **texto**)"
+
+msgid "Bold (**text**)"
+msgstr "Negrito (**texto**)"
 
 # Special Highlight (v0.8.0)
 msgid "Special Highlight"
@@ -511,14 +523,14 @@ msgstr "deixe vazio para não exportar título"
 msgid "Write your thoughts, your emotions, your questions."
 msgstr "Escreva seus pensamentos, suas emoções, suas perguntas."
 
-msgid "Backup copies…"
-msgstr "Cópias de backup…"
+msgid "Backup copies"
+msgstr "Cópias de backup"
 
 msgid "Safety copy"
 msgstr "Cópia de segurança"
 
-msgid "Notes set aside"
-msgstr "Notas guardadas à parte"
+msgid "Saved notes"
+msgstr "Notas salvas"
 
 msgid "Older copy"
 msgstr "Cópia anterior"
@@ -565,8 +577,260 @@ msgstr "Última exportação"
 msgid "My notes"
 msgstr "Minhas notas"
 
-msgid "Highlights for Obsidian"
-msgstr "Destaques para Obsidian"
-
 msgid "On for all books"
 msgstr "Ativado para todos os livros"
+
+# exclusion and Reading now (v1.3.0)
+msgid "Book visibility"
+msgstr "Visibilidade do livro"
+
+msgid "Book visibility…"
+msgstr "Visibilidade do livro…"
+
+msgid "Book visibility: normal"
+msgstr "Visibilidade do livro: normal"
+
+msgid "Book visibility: hidden from the index"
+msgstr "Visibilidade do livro: oculto do índice"
+
+msgid "Book visibility: not exported"
+msgstr "Visibilidade do livro: não exportado"
+
+msgid "Export and show in the index"
+msgstr "Exportar e mostrar no índice"
+
+msgid "Export, but hide from the index"
+msgstr "Exportar, mas ocultar do índice"
+
+msgid "Do not export"
+msgstr "Não exportar"
+
+msgid "%1 files excluded from the export"
+msgstr "%1 arquivos excluídos da exportação"
+
+msgid "Reading now"
+msgstr "Lendo agora"
+
+msgid "Show Reading now in the index"
+msgstr "Mostrar «Lendo agora» no índice"
+
+msgid "Every exported book is hidden from the index."
+msgstr "Todos os livros exportados estão ocultos do índice."
+
+# tag suggestions (v1.3.0)
+msgid "Tags…"
+msgstr "Tags…"
+
+msgid "Other tags…"
+msgstr "Outras tags…"
+
+msgid "Clear all tags"
+msgstr "Limpar todas as tags"
+
+# imported book info (v1.3.0)
+msgid "Could not write the tags. Book information was left as it was."
+msgstr "Não foi possível gravar as tags. As informações do livro não foram alteradas."
+
+msgid "Published"
+msgstr "Publicado"
+
+msgid "Started reading"
+msgstr "Início da leitura"
+
+msgid "Finished reading"
+msgstr "Fim da leitura"
+
+msgid "Use the book's publication date"
+msgstr "Usar a data de publicação do livro"
+
+msgid "Use the automatic start date"
+msgstr "Usar a data de início automática"
+
+msgid "Use the automatic finish date"
+msgstr "Usar a data de término automática"
+
+msgid "Saved. It will be written at the next export."
+msgstr "Salvo. Será gravado na próxima exportação."
+
+msgid "KOReader has not opened this book yet."
+msgstr "O KOReader ainda não abriu este livro."
+
+msgid "Import the rating, review, publication date, reading dates and collections of %1 into its note? Your notes are kept."
+msgstr "Importar a avaliação, a resenha, a data de publicação, as datas de leitura e as coleções de %1 para a nota? Suas notas são preservadas."
+
+msgid "Import"
+msgstr "Importar"
+
+msgid "Remove rating, review, dates and collections from the note of %1? The note and its tags stay. Tomedown stops updating this book."
+msgstr "Remover a avaliação, a resenha, as datas e as coleções da nota de %1? A nota e suas tags permanecem. O Tomedown deixará de atualizar este livro."
+
+msgid "Remove"
+msgstr "Remover"
+
+msgid "%1: not available"
+msgstr "%1: não disponível"
+
+msgid "%1: %2 (fixed)"
+msgstr "%1: %2 (fixa)"
+
+msgid "%1: %2"
+msgstr "%1: %2"
+
+msgid "%1: date"
+msgstr "%1: data"
+
+msgid "YYYY-MM-DD (or YYYY); leave empty for the automatic date"
+msgstr "AAAA-MM-DD (ou AAAA); deixe vazio para a data automática"
+
+msgid "That is not a date: use YYYY, YYYY-MM or YYYY-MM-DD."
+msgstr "Isso não é uma data: use AAAA, AAAA-MM ou AAAA-MM-DD."
+
+msgid "Open the book to edit rating, review and status with KOReader's own panel."
+msgstr "Abra o livro para editar a avaliação, a resenha e o status com o painel do KOReader."
+
+msgid "Rating: %1/5"
+msgstr "Avaliação: %1/5"
+
+msgid "Rating: not set"
+msgstr "Avaliação: não definida"
+
+msgid "Review: %1"
+msgstr "Resenha: %1"
+
+msgid "Review: not set"
+msgstr "Resenha: não definida"
+
+msgid "Status: %1"
+msgstr "Status: %1"
+
+msgid "Update book info automatically"
+msgstr "Atualizar as informações do livro automaticamente"
+
+msgid "Import book info for all books"
+msgstr "Importar as informações de todos os livros"
+
+msgid "Import rating, review, dates and collections for all %1 books? Their notes are rewritten, your own notes stay."
+msgstr "Importar avaliação, resenha, datas e coleções de todos os %1 livros? As notas deles serão reescritas, suas notas permanecem."
+
+msgid "Import all"
+msgstr "Importar todos"
+
+msgid "Book info"
+msgstr "Informações do livro"
+
+msgid "Import book info"
+msgstr "Importar informações do livro"
+
+msgid "Dates"
+msgstr "Datas"
+
+msgid "Remove imported book info…"
+msgstr "Remover informações importadas…"
+
+msgid "Index layout: %1"
+msgstr "Layout do índice: %1"
+
+msgid "Tags under the title"
+msgstr "Tags abaixo do título"
+
+msgid "Tags column"
+msgstr "Coluna de tags"
+
+msgid "Tags column, compact"
+msgstr "Coluna de tags, compacto"
+
+msgid "Delete tags…"
+msgstr "Excluir tags…"
+
+msgid "No tags to delete."
+msgstr "Nenhuma tag para excluir."
+
+msgid "Delete a tag from every book"
+msgstr "Excluir uma tag de todos os livros"
+
+msgid "Delete #%1 from every book? It leaves the notes at the next export; tags written by hand stay."
+msgstr "Excluir #%1 de todos os livros? Ela sairá das notas na próxima exportação; as tags escritas à mão permanecem."
+
+msgid "Some books could not be updated: the tag is still in their keywords."
+msgstr "Alguns livros não puderam ser atualizados: a tag ainda está nas palavras-chave deles."
+
+msgid "Unknown author"
+msgstr "Autor desconhecido"
+
+msgid "File name template"
+msgstr "Modelo de nome de arquivo"
+
+msgid "%A author, %T title, %S series, %i series index"
+msgstr "%A autor, %T título, %S série, %i número da série"
+
+msgid "Author - Title"
+msgstr "Autor - Título"
+
+msgid "Title (Author)"
+msgstr "Título (Autor)"
+
+msgid "Title only"
+msgstr "Apenas título"
+
+msgid "File name template: %1"
+msgstr "Modelo de nome de arquivo: %1"
+
+msgid "Custom template…"
+msgstr "Modelo personalizado…"
+
+msgid "Single folder"
+msgstr "Pasta única"
+
+msgid "By author"
+msgstr "Por autor"
+
+msgid "By series"
+msgstr "Por série"
+
+msgid "By reading status"
+msgstr "Por status de leitura"
+
+msgid "Folder organization: %1"
+msgstr "Organização de pastas: %1"
+
+msgid "Obsidian wikilink"
+msgstr "Wikilink do Obsidian"
+
+msgid "Standard Markdown"
+msgstr "Markdown padrão"
+
+msgid "Index links: %1"
+msgstr "Links do índice: %1"
+
+msgid "Inline"
+msgstr "Em linha"
+
+msgid "Footnotes"
+msgstr "Notas de rodapé"
+
+msgid "Personal notes format: %1"
+msgstr "Formato das notas pessoais: %1"
+
+msgid "Reading digest"
+msgstr "Resumo de leitura"
+
+msgid "digest"
+msgstr "resumo"
+
+msgid "Undated"
+msgstr "Sem data"
+
+msgid "Create a reading digest (%1)"
+msgstr "Criar um resumo de leitura (%1)"
+
+msgid "Export reading digest"
+msgstr "Exportar resumo de leitura"
+
+msgid "Index"
+msgstr "Índice"
+
+msgid "Style"
+msgstr "Estilo"
+
+msgid "Welcome to the quiet space where authors' thoughts linger, and your own reflections take shape."
+msgstr "Bem-vindo ao espaço sereno onde os pensamentos dos autores permanecem e suas próprias reflexões ganham forma."

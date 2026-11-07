@@ -15,6 +15,8 @@ local SOURCES = {
     "tomedown_upload.lua",
     "tomedown_render.lua",
     "tomedown_update.lua",
+    "tomedown_metadata.lua",
+    "tomedown_pubdate.lua",
     "_meta.lua",
 }
 local LANGUAGES = { "it", "de", "fr", "es", "pt_BR" }

@@ -27,14 +27,22 @@ local render = require("tomedown_render")
 local merge = require("tomedown_merge")
 local Cover = require("tomedown_cover")
 local shared = require("tomedown_shared")
+local metadata = require("tomedown_metadata")
 
 local INDEX_FILENAME = shared.INDEX_FILENAME
+local DIGEST_FILENAME = shared.DIGEST_FILENAME
 local FILENAME_TEMPLATE = shared.FILENAME_TEMPLATE
 local getSetting = shared.getSetting
 local setSetting = shared.setSetting
 local getNotesTitle = shared.getNotesTitle
 local getBookPreserve = shared.getBookPreserve
+local getBookExclusion = shared.getBookExclusion
+local mergeKnownTags = shared.mergeKnownTags
 local getIndexPreserve = shared.getIndexPreserve
+local getFilenameTemplate = shared.getFilenameTemplate
+local getFolderLayout = shared.getFolderLayout
+local getIndexLinks = shared.getIndexLinks
+local getNoteStyle = shared.getNoteStyle
 local readIfExists = shared.readIfExists
 local ownCopy = shared.ownCopy
 local isZoned = shared.isZoned
@@ -315,6 +323,24 @@ local function parseKeywords(keywords)
     return deduped
 end
 
+local function bookinfoMeta(fields, tags)
+    if not fields then
+        return nil
+    end
+    local parts = {
+        tostring(fields.rating or ""),
+        tostring(fields.review or ""),
+        tostring(fields.published or ""),
+        tostring(fields.date_started or ""),
+        tostring(fields.date_finished or ""),
+        table.concat(fields.collections or {}, "\30"),
+        -- the shared keyword list belongs here too: clearing every tag
+        -- has to change the hash even when the managed ledger was empty
+        table.concat(tags or {}, "\30"),
+    }
+    return table.concat(parts, "\31")
+end
+
 local function hashBook(title, author, annotations, meta, bookmarks)
     local parts = {
         -- render format version: bumping it makes every stored hash stale,
@@ -353,22 +379,116 @@ local function hashBook(title, author, annotations, meta, bookmarks)
     return md5(table.concat(parts, "\n"))
 end
 
--- file name identical to the standard exporter's ("%A - %T")
-function M:fileBase(file, props)
+local function expandTemplateFallback(tpl, file, props)
+    local title = tostring(props and props.display_title or file or "")
+    local author = tostring(props and props.authors or "N/A")
+    local series = tostring(props and props.series or "")
+    local series_index = tostring(props and props.series_index or "")
+    local expanded = tostring(tpl or FILENAME_TEMPLATE):gsub("%%([%a])", function(code)
+        if code == "A" or code == "a" then
+            return author
+        elseif code == "T" or code == "t" then
+            return title
+        elseif code == "S" or code == "s" then
+            return series
+        elseif code == "i" then
+            return series_index
+        end
+        return "%" .. code
+    end)
+    return expanded
+end
+
+function M:computeFileBase(file, props, template)
+    local tpl = template or getFilenameTemplate()
     local name
     local bookinfo = self.ui and self.ui.bookinfo
     if bookinfo and bookinfo.expandString then
-        local ok, result = pcall(bookinfo.expandString, bookinfo, FILENAME_TEMPLATE, file, os.time())
+        local ok, result = pcall(bookinfo.expandString, bookinfo, tpl, file, os.time())
         if ok and type(result) == "string" and result ~= "" then
             name = result
         end
     end
     if not name then
-        local title = props and props.display_title or file
-        name = (props and props.authors or "N/A") .. " - " .. tostring(title)
+        name = expandTemplateFallback(tpl, file, props)
     end
     name = name:gsub("\r?\n", "; ")
-    return util.getSafeFilename(name, nil, nil, -1)
+    local safe = util.getSafeFilename(name, nil, nil, -1)
+    if safe == "" then
+        local fallback = expandTemplateFallback(FILENAME_TEMPLATE, file, props):gsub("\r?\n", "; ")
+        safe = util.getSafeFilename(fallback, nil, nil, -1)
+    end
+    local taken = {}
+    for other_file, rec in pairs(getSetting("exports", {})) do
+        if other_file ~= file and type(rec) == "table"
+                and type(rec.base) == "string" and rec.base ~= "" then
+            local leaf = rec.base:match("([^/]+)$") or rec.base
+            taken[leaf:lower()] = true
+        end
+    end
+    local candidate = safe
+    if taken[candidate:lower()] then
+        local n = 2
+        while taken[(safe .. "_" .. n):lower()] do
+            n = n + 1
+        end
+        candidate = safe .. "_" .. n
+    end
+    return candidate
+end
+
+function M:bookSubdir(props, status)
+    local layout = getFolderLayout()
+    if layout == "flat" then
+        return nil
+    end
+    local raw
+    if layout == "author" then
+        raw = props and props.authors
+        if type(raw) ~= "string" or raw:match("^%s*$") then
+            raw = _("Unknown author")
+        end
+    elseif layout == "series" then
+        raw = props and props.series
+        if type(raw) ~= "string" or raw:match("^%s*$") then
+            return nil
+        end
+    elseif layout == "status" then
+        local labels = {
+            reading = _("Reading"),
+            complete = _("Complete"),
+            abandoned = _("Abandoned"),
+        }
+        raw = status and labels[status] or _("Reading")
+    end
+    if not raw or raw == "" then
+        return nil
+    end
+    raw = tostring(raw):gsub("\r?\n", "; ")
+    local safe = util.getSafeFilename(raw, nil, nil, -1)
+    if safe == "" or safe:lower() == "covers" then
+        return nil
+    end
+    return safe
+end
+
+-- file name identical to the standard exporter's ("%A - %T") by default,
+-- or the active filename_template; once exported, a book keeps its base
+-- across metadata or template changes so existing notes are never orphaned
+function M:fileBase(file, props, status)
+    local record = file and getSetting("exports", {})[file]
+    local leaf
+    if type(record) == "table" and type(record.base) == "string"
+            and record.base ~= "" then
+        leaf = record.base:match("([^/]+)$") or record.base
+    else
+        leaf = self:computeFileBase(file, props)
+    end
+    local subdir = self:bookSubdir(props, status)
+    if subdir then
+        return subdir .. "/" .. leaf
+    end
+    return leaf
 end
 
 --- The vault-relative path of a book's cover, extracting the image the
@@ -378,7 +498,8 @@ function M:ensureCover(file, base, dir)
     if not getSetting("covers", false) then
         return nil
     end
-    local rel = Cover.relPath(base)
+    local leaf = tostring(base or ""):match("([^/]+)$") or tostring(base or "")
+    local rel = Cover.relPath(leaf)
     local document
     if self.ui and self.ui.document and self.ui.document.file == file then
         document = self.ui.document
@@ -428,12 +549,12 @@ function M:buildBook(file, live_annotations)
                 local props = BookInfo.extendProps(doc_props, file)
                 local title = props.display_title or file
                 local author = props.authors
-                local base = self:fileBase(file, props)
                 local info = BookList.getBookInfo(file)
                 local status = info and info.status
                 if status ~= "reading" and status ~= "abandoned" and status ~= "complete" then
                     status = nil
                 end
+                local base = self:fileBase(file, props, status)
                 local progress = ds:readSetting("percent_finished")
                 if type(progress) == "number" then
                     if progress > 1 then
@@ -469,11 +590,31 @@ function M:buildBook(file, live_annotations)
                 -- The stored list is sanitized again: an older build let
                 -- a number alone through, and filtering it here keeps it
                 -- out of the hash too, so the next export rewrites the
-                -- old file instead of taking it for unchanged
-                local stored_tags = shared.getBookTags(file)
-                local tags = stored_tags and render.parseTagList(
-                    table.concat(stored_tags, ", ")) or nil
-                local tags_managed = tags ~= nil
+                -- old file instead of taking it for unchanged.
+                --
+                -- An imported book uses the shared keyword list instead:
+                -- KOReader, Bookshelf and Tomedown all read and write
+                -- the same custom_props.keywords, so a tag removed in
+                -- either place stays removed. The ledger is always on
+                -- for these books, an empty list included, because the
+                -- empty ledger is what tells the merge to drop them.
+                local imported = shared.getBookImported(file)
+                local removing = imported and shared.getBookInfoRemoval(file)
+                local tags, tags_managed
+                if imported then
+                    tags = metadata.tags(file, props)
+                    tags_managed = true
+                else
+                    local stored_tags = shared.getBookTags(file)
+                    tags = stored_tags and render.parseTagList(
+                        table.concat(stored_tags, ", ")) or nil
+                    tags_managed = tags ~= nil
+                end
+                local bookinfo
+                if imported and not removing then
+                    bookinfo = metadata.collect(file, status,
+                        ds:readSetting("summary"), props)
+                end
                 local meta_parts = {
                     tostring(series or ""),
                     tostring(series_index or ""),
@@ -490,6 +631,14 @@ function M:buildBook(file, live_annotations)
                 if tags_managed and #tags > 0 then
                     meta_parts[#meta_parts + 1] = "booktags:"
                         .. table.concat(tags, "\31")
+                end
+                -- the imported fields join the hash only for imported
+                -- books: a normal book keeps the 1.2.0 fingerprint, so
+                -- installing 1.3.0 rewrites nothing
+                local bookinfo_meta = imported
+                    and (bookinfoMeta(bookinfo, tags) or "removed") or nil
+                if bookinfo_meta then
+                    meta_parts[#meta_parts + 1] = "bookinfo:" .. bookinfo_meta
                 end
                 local meta = table.concat(meta_parts, "\31")
                 book = {
@@ -508,6 +657,13 @@ function M:buildBook(file, live_annotations)
                     keywords = keywords,
                     tags = tags or {},
                     tags_managed = tags_managed,
+                    imported = imported,
+                    published = bookinfo and bookinfo.published,
+                    rating = bookinfo and bookinfo.rating,
+                    review = bookinfo and bookinfo.review,
+                    date_started = bookinfo and bookinfo.date_started,
+                    date_finished = bookinfo and bookinfo.date_finished,
+                    collections = bookinfo and bookinfo.collections,
                     count = #annotations,
                     annotations = annotations,
                     bookmarks = bookmarks,
@@ -546,6 +702,7 @@ end
 function M:buildIndexEntries(dir, export_records)
     local entries = {}
     local new_covers = {}
+    local hidden = 0
     local with_covers = getSetting("covers", false)
     for __, file in ipairs(self:listBookFiles()) do
         -- same live data the export above writes into the book file:
@@ -554,37 +711,44 @@ function M:buildIndexEntries(dir, export_records)
         local live = open and open.annotation and open.annotation.annotations
         local book = self:buildBook(file, live)
         if book and lfs.attributes(dir .. "/" .. book.base .. ".md") then
-            local cover_rel = Cover.relPath(book.base)
-            local has_cover = lfs.attributes(dir .. "/" .. cover_rel, "mode") == "file"
-            if not has_cover and with_covers then
-                -- backfill: books exported before the option was turned on
-                has_cover = self:ensureCover(file, book.base, dir)
-                if has_cover then
-                    new_covers[#new_covers + 1] = dir .. "/" .. cover_rel
+            if getBookExclusion(file) then
+                -- the file stays where it is: only the index forgets it
+                hidden = hidden + 1
+            else
+                local cover_leaf = book.base:match("([^/]+)$") or book.base
+                local cover_rel = Cover.relPath(cover_leaf)
+                local has_cover = lfs.attributes(dir .. "/" .. cover_rel, "mode") == "file"
+                if not has_cover and with_covers then
+                    -- backfill: books exported before the option was turned on
+                    has_cover = self:ensureCover(file, book.base, dir)
+                    if has_cover then
+                        new_covers[#new_covers + 1] = dir .. "/" .. cover_rel
+                    end
                 end
-            end
-            local special = 0
-            for __, a in ipairs(book.annotations or {}) do
-                if a.special then
-                    special = special + 1
+                local special = 0
+                for __, a in ipairs(book.annotations or {}) do
+                    if a.special then
+                        special = special + 1
+                    end
                 end
+                entries[#entries + 1] = {
+                    link = book.base,
+                    title = book.title,
+                    author = book.author,
+                    series = book.series,
+                    series_index = book.series_index,
+                    tags = book.tags or {},
+                    status = book.status,
+                    rating = book.rating,
+                    count = book.count,
+                    special = special,
+                    progress = book.progress,
+                    last_read = book.last_read and render.fmtDate(book.last_read)
+                        or "",
+                    last_read_sort = book.last_read_sort,
+                    cover = has_cover and cover_rel or nil,
+                }
             end
-            entries[#entries + 1] = {
-                link = book.base,
-                title = book.title,
-                author = book.author,
-                series = book.series,
-                series_index = book.series_index,
-                tags = book.tags or {},
-                status = book.status,
-                count = book.count,
-                special = special,
-                progress = book.progress,
-                last_read = book.last_read and render.fmtDate(book.last_read)
-                    or "",
-                last_read_sort = book.last_read_sort,
-                cover = has_cover and cover_rel or nil,
-            }
         end
     end
     table.sort(entries, function(a, b)
@@ -595,7 +759,86 @@ function M:buildIndexEntries(dir, export_records)
         end
         return tostring(a.title or ""):lower() < tostring(b.title or ""):lower()
     end)
-    return entries, new_covers
+    return entries, new_covers, hidden
+end
+
+function M:buildDigestBooks()
+    local list = {}
+    for __, file in ipairs(self:listBookFiles()) do
+        if getBookExclusion(file) == nil then
+            local open = self:openReader(file)
+            local live = open and open.annotation and open.annotation.annotations
+            local book = self:buildBook(file, live)
+            if book and book.annotations and #book.annotations > 0 then
+                list[#list + 1] = {
+                    link = book.base,
+                    title = book.title,
+                    author = book.author,
+                    annotations = book.annotations,
+                }
+            end
+        end
+    end
+    return list
+end
+
+function M:exportDigest(touchmenu)
+    if touchmenu and touchmenu.closeMenu then
+        touchmenu:closeMenu()
+    end
+    self.book_cache = {}
+    local dir = self:getLocalDir()
+    util.makePath(dir)
+    local digest_path = dir .. "/" .. DIGEST_FILENAME
+    local digest_books = self:buildDigestBooks()
+    local digest_md = render.buildDigestMd(digest_books, {
+        title = _("Reading digest"),
+        exported = os.date("%Y-%m-%d"),
+        index_links = getIndexLinks(),
+        callout = getSetting("callout", false),
+        special_marker = getSetting("special_marker", "callout"),
+        note_style = getNoteStyle(),
+    })
+    local ok, err = util.writeToFile(digest_md, digest_path, true, false, true)
+    if not ok then
+        UIManager:show(InfoMessage:new{
+            text = _("Errors:") .. "\n" .. DIGEST_FILENAME .. ": " .. tostring(err),
+        })
+        return false
+    end
+    local server = self:getServer()
+    local has_upload = getSetting("upload", false) and server ~= nil
+    if has_upload and not NetworkMgr:isConnected() then
+        self:markPendingUploads({ digest_path })
+        UIManager:show(Notification:new{
+            text = T(_("%1 files exported — upload when online"), 1),
+            timeout = 3,
+        })
+        return true
+    end
+    UIManager:show(Notification:new{
+        text = T(_("%1 files exported locally"), 1),
+        timeout = 3,
+    })
+    if has_upload then
+        local upload_info = self:showProgress(T(_("Uploading %1 files to the cloud…"), 1))
+        self:uploadPaths(server, { digest_path }, function(ok_count, fail_count, failed)
+            UIManager:close(upload_info)
+            if #failed > 0 then
+                self:markPendingUploads(failed)
+                UIManager:show(InfoMessage:new{
+                    text = T(_("Cloud: %1 uploaded, %2 errors"), ok_count, fail_count),
+                })
+            else
+                self:clearPendingUploads({ digest_path })
+                UIManager:show(Notification:new{
+                    text = T(_("Cloud: %1 files uploaded"), ok_count),
+                    timeout = 3,
+                })
+            end
+        end)
+    end
+    return true
 end
 
 
@@ -616,7 +859,7 @@ function M:runExport(files, opts)
     local with_index = getSetting("with_index", true)
 
     local info
-    if not silent and opts.auto ~= "close" then
+    if not silent and opts.auto ~= "close" and opts.auto ~= "bookinfo" then
         -- auto close: one book straight from the .sdr, the export is
         -- milliseconds - the widget would only flash one more e-ink
         -- refresh between the close and the result notification
@@ -625,7 +868,36 @@ function M:runExport(files, opts)
 
     local export_records = getSetting("exports", {})
     local written, errors = {}, {}
-    local skipped, exported = 0, 0
+    local skipped, exported, excluded = 0, 0, 0
+    -- tags met in this run, one count per book: the suggestion cache is
+    -- merged once at the end, so a full export writes the setting once
+    local known_counts = {}
+    local function rememberTags(book)
+        local seen = {}
+        local function add(tag)
+            tag = render.sanitizeTag(tag)
+            if tag == "" then
+                return
+            end
+            local key = tag:lower()
+            if seen[key] then
+                return
+            end
+            seen[key] = true
+            local entry = known_counts[key]
+            if entry then
+                entry.count = entry.count + 1
+            else
+                known_counts[key] = { name = tag, count = 1 }
+            end
+        end
+        for __, tag in ipairs(book.keywords or {}) do
+            add(tag)
+        end
+        for __, tag in ipairs(book.tags or {}) do
+            add(tag)
+        end
+    end
     -- manual edits: "preserve" merges the render into the file on disk
     -- (the reader's zones and front matter stay, the generated block is
     -- rebuilt), "overwrite" writes what was generated; a file whose
@@ -693,148 +965,181 @@ function M:runExport(files, opts)
             logger.err("tomedown: cannot read annotations of", file, book)
             errors[#errors + 1] = ffiUtil.basename(tostring(file))
         elseif book then
-            local md_path = dir .. "/" .. book.base .. ".md"
-            local record = export_records[file]
-            -- what this book chose (or the global default): its file is
-            -- folded or rewritten on its own, never on its neighbours'
-            local preserve = getBookPreserve(file)
-            local mode = preserve and "preserve" or "overwrite"
-            if opts.only_updated and record and record.hash == book.hash
-                and lfs.attributes(md_path) then
-                skipped = skipped + 1
+            local exclusion = getBookExclusion(file)
+            if exclusion == "none" and not opts.force then
+                -- "Do not export" wins over every automatic run; the
+                -- manual "Export this book" asks for this one on purpose
+                excluded = excluded + 1
             else
-                local cover_rel = self:ensureCover(file, book.base, dir)
-                local md = render.buildBookMd(book, {
-                    no_chapter_label = _("No chapter"),
-                    cover = cover_rel,
-                    callout = getSetting("callout", false),
-                    block_ids = getSetting("block_ids", false),
-                    special_marker = getSetting("special_marker", "callout"),
-                    notes_title = getNotesTitle(file),
-                    markers = preserve,
-                })
-                -- fold the file on disk into the render: the reader's
-                -- zones and front matter come across, the block is rebuilt
-                local content = md
-                local old, from_cloud = mergeBase(book.base .. ".md", md_path,
-                    readIfExists(md_path), preserve)
-                -- Preserve coming back on brings the parked file back:
-                -- the file on disk is plain (no zone) while the .bak
-                -- holds the zoned file from the moment preserve went
-                -- off, so that file is the base of this export and the
-                -- reader's notes are in the file again. If the plain
-                -- file is not the one this plugin wrote (the reader
-                -- typed into it while preserve was off) its text cannot
-                -- come across by itself: it is kept as the safety copy.
-                local restored = false
-                local hold
-                normalizeBackups(md_path)
-                if old and preserve and not isZoned(old) then
-                    local snapshot = readIfExists(md_path .. ".bak")
-                    if isZoned(snapshot) then
-                        if not ownCopy(record and record.disk, old) then
-                            if keepSafety(md_path, old) then
+                rememberTags(book)
+                local md_path = dir .. "/" .. book.base .. ".md"
+                local record = export_records[file]
+                -- what this book chose (or the global default): its file is
+                -- folded or rewritten on its own, never on its neighbours'
+                local preserve = getBookPreserve(file)
+                local mode = preserve and "preserve" or "overwrite"
+                if opts.only_updated and record and record.hash == book.hash
+                    and lfs.attributes(md_path) then
+                    skipped = skipped + 1
+                else
+                    local md_dir = md_path:match("^(.*)/[^/]+$")
+                    if md_dir and md_dir ~= dir then
+                        util.makePath(md_dir)
+                    end
+                    local cover_rel = self:ensureCover(file, book.base, dir)
+                    local book_cover = cover_rel
+                    if book_cover and book.base:find("/", 1, true) then
+                        book_cover = "../" .. book_cover
+                    end
+                    local md = render.buildBookMd(book, {
+                        no_chapter_label = _("No chapter"),
+                        cover = book_cover,
+                        callout = getSetting("callout", false),
+                        block_ids = getSetting("block_ids", false),
+                        special_marker = getSetting("special_marker", "callout"),
+                        note_style = getNoteStyle(),
+                        notes_title = getNotesTitle(file),
+                        markers = preserve,
+                    })
+                    -- fold the file on disk into the render: the reader's
+                    -- zones and front matter come across, the block is rebuilt
+                    local content = md
+                    local local_existing = readIfExists(md_path)
+                    if not local_existing and record and record.base
+                            and record.base ~= book.base then
+                        local_existing = readIfExists(dir .. "/" .. record.base .. ".md")
+                    end
+                    local old, from_cloud = mergeBase(book.base .. ".md", md_path,
+                        local_existing, preserve)
+                    -- Preserve coming back on brings the parked file back:
+                    -- the file on disk is plain (no zone) while the .bak
+                    -- holds the zoned file from the moment preserve went
+                    -- off, so that file is the base of this export and the
+                    -- reader's notes are in the file again. If the plain
+                    -- file is not the one this plugin wrote (the reader
+                    -- typed into it while preserve was off) its text cannot
+                    -- come across by itself: it is kept as the safety copy.
+                    local restored = false
+                    local hold
+                    normalizeBackups(md_path)
+                    if old and preserve and not isZoned(old) then
+                        local snapshot = readIfExists(md_path .. ".bak")
+                        if isZoned(snapshot) then
+                            if not ownCopy(record and record.disk, old) then
+                                if keepSafety(md_path, old) then
+                                    backups = backups + 1
+                                else
+                                    hold = hold_msg
+                                end
+                            end
+                            old = snapshot
+                            restored = true
+                        end
+                    end
+                    -- The cloud copy moved on and has a zone while this
+                    -- device holds a parked .bak with notes it never got (a
+                    -- second Tomedown with cloud merge off, a sync conflict):
+                    -- taking one of the two would lose the other. The copy
+                    -- the rewrite replaces is kept as the safety copy, and
+                    -- the cloud text becomes the base with the parked notes
+                    -- folded in.
+                    local recovered = false
+                    if old and preserve and from_cloud and isZoned(old) then
+                        local disk_now = readIfExists(md_path)
+                        local snapshot = readIfExists(md_path .. ".bak")
+                        if (not disk_now or not isZoned(disk_now))
+                                and isZoned(snapshot) then
+                            -- keep what the rewrite replaces: the plain file
+                            -- when it holds the reader's own text, the cloud
+                            -- copy otherwise
+                            local safety = old
+                            if disk_now
+                                    and not ownCopy(record and record.disk, disk_now) then
+                                safety = disk_now
+                            end
+                            local union = merge.uniteZones(old, snapshot)
+                            if union and keepSafety(md_path, safety) then
+                                old = union
+                                recovered = true
                                 backups = backups + 1
                             else
                                 hold = hold_msg
                             end
                         end
-                        old = snapshot
-                        restored = true
                     end
-                end
-                -- The cloud copy moved on and has a zone while this
-                -- device holds a parked .bak with notes it never got (a
-                -- second Tomedown with cloud merge off, a sync conflict):
-                -- taking one of the two would lose the other. The copy
-                -- the rewrite replaces is kept as the safety copy, and
-                -- the cloud text becomes the base with the parked notes
-                -- folded in.
-                local recovered = false
-                if old and preserve and from_cloud and isZoned(old) then
-                    local disk_now = readIfExists(md_path)
-                    local snapshot = readIfExists(md_path .. ".bak")
-                    if (not disk_now or not isZoned(disk_now))
-                            and isZoned(snapshot) then
-                        -- keep what the rewrite replaces: the plain file
-                        -- when it holds the reader's own text, the cloud
-                        -- copy otherwise
-                        local safety = old
-                        if disk_now
-                                and not ownCopy(record and record.disk, disk_now) then
-                            safety = disk_now
-                        end
-                        local union = merge.uniteZones(old, snapshot)
-                        if union and keepSafety(md_path, safety) then
-                            old = union
-                            recovered = true
-                            backups = backups + 1
-                        else
-                            hold = hold_msg
-                        end
-                    end
-                end
-                if old then
-                    local merged, info = merge.apply(old, md,
-                        record and record.regions,
-                        { mode = mode, notes_title = getNotesTitle(file) })
-                    content = merged
-                    if restored or recovered then
-                        -- the parked file stays in .bak as it is: it is
-                        -- replaced only when preserve goes off again
-                        -- with whatever the file holds by then
-                    elseif info.backup
-                            and not ownCopy(record and record.disk, old) then
-                        -- the reader had written inside the block (or
-                        -- the file has to be rebuilt from scratch): the
-                        -- previous file is kept whole, as the safety
-                        -- copy, before the rebuilt one replaces it
-                        if keepSafety(md_path, old) then
-                            backups = backups + 1
-                        else
-                            hold = hold_msg
-                        end
-                    elseif not preserve and isZoned(old) then
-                        -- the book goes from zoned to plain, which is
-                        -- what turning preserve off does: the file is
-                        -- parked in .bak until preserve comes back
-                        if parkZone(md_path, old) then
-                            backups = backups + 1
-                        else
-                            hold = hold_msg
+                    if old then
+                        local merged, info = merge.apply(old, md,
+                            record and record.regions,
+                            { mode = mode, notes_title = getNotesTitle(file),
+                              bookinfo = book.imported })
+                        content = merged
+                        if restored or recovered then
+                            -- the parked file stays in .bak as it is: it is
+                            -- replaced only when preserve goes off again
+                            -- with whatever the file holds by then
+                        elseif info.backup
+                                and not ownCopy(record and record.disk, old) then
+                            -- the reader had written inside the block (or
+                            -- the file has to be rebuilt from scratch): the
+                            -- previous file is kept whole, as the safety
+                            -- copy, before the rebuilt one replaces it
+                            if keepSafety(md_path, old) then
+                                backups = backups + 1
+                            else
+                                hold = hold_msg
+                            end
+                        elseif not preserve and isZoned(old) then
+                            -- the book goes from zoned to plain, which is
+                            -- what turning preserve off does: the file is
+                            -- parked in .bak until preserve comes back
+                            if parkZone(md_path, old) then
+                                backups = backups + 1
+                            else
+                                hold = hold_msg
+                            end
                         end
                     end
-                end
-                local written_ok, err
-                if hold then
-                    written_ok, err = false, hold
-                else
-                    written_ok, err =
-                        util.writeToFile(content, md_path, true, false, true)
-                end
-                if written_ok then
-                    exported = exported + 1
-                    written[#written + 1] = md_path
-                    if cover_rel then
-                        written[#written + 1] = dir .. "/" .. cover_rel
+                    local written_ok, err
+                    if hold then
+                        written_ok, err = false, hold
+                    else
+                        written_ok, err =
+                            util.writeToFile(content, md_path, true, false, true)
                     end
-                    export_records[file] = {
-                        hash = book.hash,
-                        base = book.base,
-                        date = os.date("%Y-%m-%d"),
-                        -- what we would have generated: the proof the
-                        -- next export compares the regions against
-                        regions = merge.fingerprints(merge.split(md)),
-                        -- the file as it left our hands: proof that the
-                        -- next run needs no copy of it (ownCopy above)
-                        disk = md5(content),
-                    }
-                else
-                    errors[#errors + 1] = book.base .. ": " .. tostring(err)
+                    if written_ok then
+                        exported = exported + 1
+                        written[#written + 1] = md_path
+                        if cover_rel then
+                            written[#written + 1] = dir .. "/" .. cover_rel
+                        end
+                        export_records[file] = {
+                            hash = book.hash,
+                            base = book.base,
+                            date = os.date("%Y-%m-%d"),
+                            -- what we would have generated: the proof the
+                            -- next export compares the regions against
+                            regions = merge.fingerprints(merge.split(md)),
+                            -- the file as it left our hands: proof that the
+                            -- next run needs no copy of it (ownCopy above)
+                            disk = md5(content),
+                        }
+                        if shared.getBookInfoRemoval(file) then
+                            -- the fields are gone from the note: the book
+                            -- stops being managed, tags stay editable in
+                            -- the shared keyword list
+                            metadata.forget(file)
+                        elseif book.imported then
+                            -- what the next automatic update compares to
+                            metadata.saveSnapshot(file)
+                        end
+                    else
+                        errors[#errors + 1] = book.base .. ": " .. tostring(err)
+                    end
                 end
-            end
+            end -- exclusion
         end
     end
+    mergeKnownTags(known_counts)
     local ms_books = time.to_ms(time.since(t0))
     local t1 = time.now()
 
@@ -851,7 +1156,7 @@ function M:runExport(files, opts)
             -- what the last export left in the file, to tell our own
             -- output from anything the reader wrote in it
             local index_disk = getSetting("index_disk")
-            local entries, new_covers = self:buildIndexEntries(dir, export_records)
+            local entries, new_covers, hidden = self:buildIndexEntries(dir, export_records)
             local index_md = render.buildIndexMd(entries, {
                 title = _("Book index"),
                 exported = os.date("%Y-%m-%d"),
@@ -859,6 +1164,10 @@ function M:runExport(files, opts)
                 notes_title = index_title,
                 markers = index_preserve,
                 index_order = getSetting("index_order", "author"),
+                index_layout = getSetting("index_layout", "tags_below"),
+                index_links = getIndexLinks(),
+                hidden_books = hidden,
+                reading_now = getSetting("reading_now", true),
             })
             -- the index is a region too: the reader may have annotated it
             local content = index_md
@@ -958,6 +1267,28 @@ function M:runExport(files, opts)
             end
         end
     end
+    if getSetting("with_digest", false) then
+        local digest_path = dir .. "/" .. DIGEST_FILENAME
+        if exported > 0 or not lfs.attributes(digest_path) then
+            local digest_books = self:buildDigestBooks()
+            local digest_md = render.buildDigestMd(digest_books, {
+                title = _("Reading digest"),
+                exported = os.date("%Y-%m-%d"),
+                index_links = getIndexLinks(),
+                callout = getSetting("callout", false),
+                special_marker = getSetting("special_marker", "callout"),
+                note_style = getNoteStyle(),
+            })
+            local digest_ok, digest_err =
+                util.writeToFile(digest_md, digest_path, true, false, true)
+            if digest_ok then
+                written[#written + 1] = digest_path
+            else
+                errors[#errors + 1] = DIGEST_FILENAME .. ": "
+                    .. tostring(digest_err)
+            end
+        end
+    end
     local ms_index = time.to_ms(time.since(t1))
 
     setSetting("exports", export_records)
@@ -990,14 +1321,22 @@ function M:runExport(files, opts)
         if opts.auto == "close" and exported == 0 and #errors == 0 then
             return
         end
+        -- book info update: silent when it worked, the error window
+        -- below is the only thing the reader ever sees from it
+        if opts.auto == "bookinfo" and #errors == 0 then
+            return
+        end
         self:showResult(exported, skipped, errors, offline_pending,
-            opts.auto, backups)
+            opts.auto, backups, excluded)
     end
     local function reportUpload(uploaded, upload_failed)
         if upload_failed > 0 then
             UIManager:show(InfoMessage:new{
                 text = T(_("Cloud: %1 uploaded, %2 errors"), uploaded, upload_failed),
             })
+            return
+        end
+        if opts.auto == "bookinfo" then
             return
         end
         UIManager:show(Notification:new{
@@ -1076,6 +1415,9 @@ local function autoTriggerLabel(auto)
     if auto == "close" then
         return _("Closing")
     end
+    if auto == "bookinfo" then
+        return _("Book info")
+    end
     return nil
 end
 
@@ -1087,7 +1429,7 @@ end
 -- the files kept as .bak because the reader had written inside their
 -- generated block.
 function M:showResult(exported, skipped, errors, offline_pending,
-        auto, backups)
+        auto, backups, excluded)
     local lines = {}
     if exported > 0 then
         if offline_pending then
@@ -1100,6 +1442,9 @@ function M:showResult(exported, skipped, errors, offline_pending,
     end
     if skipped > 0 then
         lines[#lines + 1] = T(_("%1 files unchanged, skipped"), skipped)
+    end
+    if excluded and excluded > 0 then
+        lines[#lines + 1] = T(_("%1 files excluded from the export"), excluded)
     end
     if backups and backups > 0 then
         lines[#lines + 1] = T(_("%1 files backed up (.bak)"), backups)

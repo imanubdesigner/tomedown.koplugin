@@ -5,8 +5,8 @@ local T = require("common")
 local render = require("tomedown_render")
 
 local book = {
-    title = "Blackwater",
-    author = "Michael McDowell",
+    title = "The Three Impostors",
+    author = "Arthur Machen",
     exported = "2026-09-26",
     count = 2,
     annotations = {
@@ -28,8 +28,8 @@ local book = {
 
 local md = render.buildBookMd(book)
 T.check(md:sub(1, 4) == "---\n", "frontmatter opens with ---")
-T.check(T.contains(md, 'title: "Blackwater"'), "frontmatter title")
-T.check(T.contains(md, 'author: "Michael McDowell"'), "frontmatter author")
+T.check(T.contains(md, 'title: "The Three Impostors"'), "frontmatter title")
+T.check(T.contains(md, 'author: "Arthur Machen"'), "frontmatter author")
 T.check(T.contains(md, "exported: 2026-09-26"), "frontmatter exported")
 T.check(T.contains(md, "highlights: 2"), "frontmatter highlights")
 T.check(T.contains(md, "special: 0"), "frontmatter special count")
@@ -41,8 +41,8 @@ T.check(not T.contains(md, "language:"), "no language line when absent")
 T.check(not T.contains(md, "pages:"), "no pages line when absent")
 T.check(not T.contains(md, "status:"), "no status line when absent")
 T.check(not T.contains(md, "progress:"), "no progress line when absent")
-T.check(not T.contains(md, "# Blackwater"), "no h1 in the body")
-T.check(not T.contains(md, "*Michael McDowell*"), "author stays in the frontmatter only")
+T.check(not T.contains(md, "# The Three Impostors"), "no h1 in the body")
+T.check(not T.contains(md, "*Arthur Machen*"), "author stays in the frontmatter only")
 T.check(T.contains(md, "# **2 highlights**"), "highlight count as a heading")
 T.check(T.contains(md, "\n# Capitolo I"), "first chapter")
 T.check(T.contains(md, "\n# Capitolo II"), "second chapter")
@@ -250,9 +250,9 @@ T.check(T.contains(escaped, 'author: "A\\\\B"'), "backslash in the author")
 
 -- ---------------------------------------------------------- rich frontmatter
 local rich = render.buildBookMd({
-    title = "Blackwater",
-    author = "Michael McDowell",
-    series = "Blackwater",
+    title = "The Three Impostors",
+    author = "Arthur Machen",
+    series = "The Three Impostors",
     series_index = 3,
     language = "it",
     pages = 1140,
@@ -263,7 +263,7 @@ local rich = render.buildBookMd({
     keywords = { "horror", "gothic-fiction" },
     annotations = { { text = "Riga.", page = "1" } },
 })
-T.check(T.contains(rich, 'series: "Blackwater"'), "frontmatter series")
+T.check(T.contains(rich, 'series: "The Three Impostors"'), "frontmatter series")
 T.check(T.contains(rich, "series_index: 3"), "series_index as a number, unquoted")
 T.check(T.contains(rich, 'language: "it"'), "frontmatter language")
 T.check(T.contains(rich, "pages: 1140"), "frontmatter pages")
@@ -289,11 +289,61 @@ local t3 = rich:find("  - horror", 1, true)
 local t4 = rich:find("  - gothic-fiction", 1, true)
 T.check(t1 and t2 and t3 and t4 and t1 < t2 and t2 < t3 and t3 < t4,
     "tags: ebook, highlights, then the book keywords")
+for __, key in ipairs({ "published:", "rating:", "review:", "date_started:",
+        "date_finished:", "collections:" }) do
+    T.check(not rich:find(key, 1, true),
+        "a normal book carries no imported field: " .. key)
+end
+
+-- imported book information: present only when the reader imported this
+-- one book, in a fixed order before the tags
+local importedBook = render.buildBookMd({
+    title = "The Three Impostors",
+    author = "Arthur Machen",
+    exported = "2026-09-26",
+    count = 1,
+    status = "complete",
+    published = "1999-05",
+    rating = 4,
+    review = "Bello e davvero intenso.",
+    date_started = "2026-09-10",
+    date_finished = "2026-10-01",
+    collections = { "Fantascienza", "Da leggere" },
+    keywords = { "horror" },
+    annotations = { { text = "Riga.", page = "1" } },
+})
+T.check(T.contains(importedBook, 'published: "1999-05"'),
+    "the publication date is quoted")
+T.check(T.contains(importedBook, "rating: 4"), "the rating is a number")
+T.check(T.contains(importedBook, 'review: "Bello e davvero intenso."'),
+    "the review is a quoted one-liner")
+T.check(T.contains(importedBook, 'date_started: "2026-09-10"'),
+    "the reading start date")
+T.check(T.contains(importedBook, 'date_finished: "2026-10-01"'),
+    "the reading finish date")
+T.check(T.contains(importedBook, "collections:\n  - Fantascienza\n  - Da leggere"),
+    "the collections are a list")
+local importedFm = importedBook:match("^%-%-%-\n(.-)\n%-%-%-\n")
+local importedOrder = { "status:", "published:", "rating:", "review:",
+    "date_started:", "date_finished:", "collections:", "tags:" }
+local lastImported = 0
+for __, key in ipairs(importedOrder) do
+    local pos = importedFm and importedFm:find(key, 1, true)
+    if not pos or pos < lastImported then
+        lastImported = -1
+        break
+    end
+    lastImported = pos
+end
+T.check(lastImported ~= -1,
+    "the imported fields sit between progress and tags")
+T.check(T.contains(importedBook, '  - "rating"') == false,
+    "the rating field itself is never mistaken for a tag")
 
 -- per book tags: chosen at the book menu, washed in with ebook,
 -- highlights and the keywords, and receipted in the internal ledger
 local bookTagged = render.buildBookMd({
-    title = "Blackwater",
+    title = "The Three Impostors",
     keywords = { "horror" },
     tags = { "Horror", "Psicologico", "ebook" },
     tags_managed = true,
@@ -417,10 +467,10 @@ T.check(select(2, onlyBookmarks:gsub("\n%-%-%-\n", "")) == 2,
 T.check(not T.contains(md, "Page bookmarks"), "no section without bookmarks")
 
 -- ---------------------------------------------------------------- cover
-local withCover = render.buildBookMd(book, { cover = "covers/Blackwater.jpg" })
-T.check(T.contains(withCover, 'cover: "covers/Blackwater.jpg"'), "cover in the frontmatter")
+local withCover = render.buildBookMd(book, { cover = "covers/The Three Impostors.jpg" })
+T.check(T.contains(withCover, 'cover: "covers/The Three Impostors.jpg"'), "cover in the frontmatter")
 T.check(T.contains(withCover,
-    '<p align="center"><img src="covers/Blackwater.jpg" alt="" style="object-fit:contain;width:400px;height:533px"></p>'),
+    '<p align="center"><img src="covers/The Three Impostors.jpg" alt="" style="object-fit:contain;width:400px;height:533px"></p>'),
     "cover embedded in the body, centered")
 T.check(T.contains(withCover, "</p>\n\n---\n\n# **2 highlights**"),
     "the rule between the cover and the highlights heading")
@@ -482,9 +532,9 @@ T.check(not T.contains(index, "click a title"), "no stats line without books")
 
 local rows = render.buildIndexMd({
     {
-        link = "Michael McDowell - Blackwater",
-        title = "Blackwater",
-        author = "Michael McDowell",
+        link = "Arthur Machen - The Three Impostors",
+        title = "The Three Impostors",
+        author = "Arthur Machen",
         count = 2,
     },
     {
@@ -503,18 +553,21 @@ T.check(not T.contains(rows, "| Cover |"), "no cover column when the option is o
 T.check(not T.contains(rows, "Last export"),
     "the export date column is gone")
 T.check(T.contains(rows, "|:---|:---|---:|"), "table separators")
-T.check(T.contains(rows, "[[Michael McDowell - Blackwater\\|Blackwater]]"), "wikilink with alias")
-T.check(T.contains(rows, "| Michael McDowell | 2 |"), "author and count in the row")
+T.check(T.contains(rows, "[[Arthur Machen - The Three Impostors\\|The Three Impostors]]"), "wikilink with alias")
+T.check(T.contains(rows, "| Arthur Machen | 2 |"), "author and count in the row")
 T.check(T.contains(rows, "| A \\| B | 0 |"), "pipes escaped, count zero")
-local order = rows:find("[[Michael McDowell - Blackwater\\|Blackwater]]", 1, true)
+local order = rows:find("[[Arthur Machen - The Three Impostors\\|The Three Impostors]]", 1, true)
 local order2 = rows:find("[[Altro Autore - Altro\\|Altro]]", 1, true)
 T.check(order2 < order, "author order is the default for My books")
-T.check(not T.contains(rows, "### "), "no group headings when every book is plain")
+T.check(T.contains(rows, "### My books"),
+    "the plain group keeps its heading even when it is alone")
+T.check(not T.contains(rows, "### Series books"),
+    "no series heading without series books")
 local plain_rows = (rows:gsub(" hash=%w+", ""))
 T.check(T.contains(plain_rows,
     "---\n\n\n" .. render.beginMarker("index")
-    .. "\n\n---\n\n**2 books** · **2 highlights**\n\n| Book |"),
-    "the stats line sits between the frontmatter rule and the table")
+    .. "\n\n---\n\n**2 books** · **2 highlights**\n\n### My books\n\n| Book |"),
+    "the stats line, the heading and then the table")
 
 local single = render.buildIndexMd({
     {
@@ -562,11 +615,16 @@ T.check(T.contains(covered,
     "| Cover | Book | Author | Series | Status | Highlights |"),
     "header with the cover column, no export date")
 T.check(T.contains(covered,
-    '<img src="covers/Autore - Titolo.jpg" alt="" style="object-fit:contain;width:120px;height:160px">'),
+    '<img src="covers/Autore - Titolo.jpg" alt="" style="object-fit:contain;width:90px;height:120px">'),
     "cover cell in the index row")
 T.check(T.contains(covered, "| Saga #2 |"), "series cell with the series index")
 T.check(T.contains(covered, "| Reading | 3 |"), "status cell translated to English")
-T.check(not T.contains(covered, "### "), "a lone group gets no heading")
+T.check(T.contains(covered, "### Reading now"),
+    "a book being read gets the short section above the index")
+T.check(T.contains(covered, "### Series books"),
+    "a lone series group keeps its heading")
+T.check(not T.contains(covered, "### My books"),
+    "no plain heading without plain books")
 -- a book without a series/status/cover drops those columns, no dash
 local sparse = render.buildIndexMd({
     { link = "B", title = "B", author = "Au", count = 1 },
@@ -574,7 +632,46 @@ local sparse = render.buildIndexMd({
 T.check(T.contains(sparse, "| [[B\\|B]] | Au | 1 |"),
     "missing series/status drop their columns, no cover cell")
 
--- index v4: per-book tags, in a column of their own only when used
+-- Reading now: repeats the books being read above the full index, latest
+-- opening first, and disappears when empty or when the setting is off.
+local readingIndex = render.buildIndexMd({
+    { link = "Autore - Primo", title = "Primo", author = "Autore",
+        status = "reading", count = 1, last_read_sort = 10,
+        progress = "20%" },
+    { link = "Autore - Secondo", title = "Secondo", author = "Autore",
+        status = "reading", count = 2, last_read_sort = 20,
+        progress = "70%" },
+    { link = "Altro - Finito", title = "Finito", author = "Altro",
+        status = "complete", count = 3, series = "Saga" },
+})
+local readingSection = readingIndex:match("### Reading now(.-)###")
+T.check(readingSection ~= nil, "the Reading now section is there")
+local firstReading = readingSection and readingSection:find("\\|Primo]]", 1, true)
+local secondReading = readingSection and readingSection:find("\\|Secondo]]", 1, true)
+T.check(firstReading and secondReading and secondReading < firstReading,
+    "Reading now sorts by the latest opening")
+T.check(readingSection and T.contains(readingSection, "Reading<br>")
+        and T.contains(readingSection, "▰▱▱▱▱&nbsp;20%"),
+    "Reading now keeps the status and the progress bar")
+T.check(readingIndex:find("### Reading now", 1, true)
+        < readingIndex:find("### Series books", 1, true),
+    "Reading now sits above the series and My books tables")
+T.check(not T.contains(render.buildIndexMd({
+    { link = "B", title = "B", author = "Au", status = "complete", count = 1 },
+}, {}), "### Reading now"), "no section when nothing is being read")
+T.check(not T.contains(render.buildIndexMd({
+    { link = "B", title = "B", author = "Au", status = "reading", count = 1 },
+}, { reading_now = false }), "### Reading now"),
+    "the setting removes the section")
+local hiddenEmpty = render.buildIndexMd({}, { hidden_books = 2 })
+T.check(T.contains(hiddenEmpty, "_Every exported book is hidden from the index._"),
+    "the empty state names the hidden books")
+T.check(not T.contains(hiddenEmpty, "No exported books"),
+    "the old empty message is not used when every book is hidden")
+
+-- index v4: per-book tags. The default keeps them under the title,
+-- after a thin rule with room around it; the old column is the second
+-- layout, and the third folds the date into the status cell.
 local indexTags = render.buildIndexMd({
     {
         link = "Au - Tagged", title = "Tagged", author = "Au", series = "Saga",
@@ -582,10 +679,10 @@ local indexTags = render.buildIndexMd({
         status = "reading", count = 1,
     },
     { link = "Au - Plain", title = "Plain", author = "Au", count = 1 },
-}, {})
+}, { index_layout = "tags_column" })
 T.check(T.contains(indexTags,
         "| Book | Author | Series | Tags | Status | Highlights |"),
-    "Tags sits between Series and Status")
+    "the tags column sits between Series and Status")
 T.check(T.contains(indexTags,
         "| [[Au - Tagged\\|Tagged]] | Au | Saga #1 | #Horror #Psicologico |"),
     "the tags are clickable, separated by a space")
@@ -593,16 +690,99 @@ T.check(T.contains(indexTags, "| Book | Author | Highlights |"),
     "a table with no tags of its own keeps no Tags column")
 T.check(not T.contains(indexTags, "| [[Au - Plain\\|Plain]] | Au | — | 1 |"),
     "the untagged table gets no empty Tags cell")
-T.check(not T.contains(rows, "| Tags |"),
-    "no Tags column when every book is untagged")
+
+local tagsBelow = render.buildIndexMd({
+    {
+        link = "Au - Tagged", title = "Tagged", author = "Au",
+        tags = { "Horror", "Psicologico" }, count = 1,
+    },
+}, {})
+T.check(not T.contains(tagsBelow, "| Tags |"),
+    "the default layout has no Tags column to widen the table")
+T.check(T.contains(tagsBelow,
+        "[[Au - Tagged\\|Tagged]]<hr style=\"margin:12px 0 10px 0;"
+        .. "border:0;border-top:1px solid rgba(128,128,128,0.45)\">"
+        .. "#Horror #Psicologico |"),
+    "the tags sit under the title after a spaced thin rule in the same cell")
+
+local wrappedTags = render.buildIndexMd({
+    {
+        link = "Jerome K. Jerome - Three Men in a Boat", title = "Three Men in a Boat", author = "A", count = 1,
+        tags = { "Strega", "Paranormale", "Vecchie", "football", "1500s" },
+    },
+}, {})
+T.check(T.contains(wrappedTags,
+        "#Strega #Paranormale<br>#Vecchie #football<br>#1500s"),
+    "a long tag list wraps inside the cell instead of widening it")
+T.check(T.contains(wrappedTags, '<span style="line-height:1.9;display:inline-block">'),
+    "multi-line tags are wrapped in a line-height span for vertical breathing room in Obsidian")
+
+local multiColTags = render.buildIndexMd({
+    {
+        link = "B", title = "B", author = "A", count = 1,
+        tags = { "Strega", "Paranormale", "Vecchie", "football" },
+    },
+}, { index_layout = "tags_column" })
+T.check(T.contains(multiColTags, '<span style="line-height:1.9;display:inline-block">'),
+    "multi-line tags column is wrapped in a line-height span")
+
 local dirtyIndexTags = render.buildIndexMd({
     {
         link = "B", title = "B", author = "A", count = 1,
         tags = { "Horror tales", "1500", "horror-tales", "" },
     },
-}, {})
+}, { index_layout = "tags_column" })
 T.check(T.contains(dirtyIndexTags, "| #Horror-tales |"),
     "raw index tags are sanitized, deduplicated and numbers dropped")
+
+-- the compact layout folds Status and Last read into a single column
+local compactIndex = render.buildIndexMd({
+    {
+        link = "Au - One", title = "One", author = "Au", status = "reading",
+        count = 2, progress = "6%", last_read = "2026-10-01",
+    },
+    {
+        link = "Au - Two", title = "Two", author = "Au", count = 1,
+        status = "complete",
+    },
+}, { index_layout = "tags_column_compact" })
+T.check(T.contains(compactIndex, "| Status · Last read | Highlights |"),
+    "the compact layout has one status and date column")
+T.check(T.contains(compactIndex,
+        "| Reading · 01/10/2026<br>▰▱▱▱▱&nbsp;6% | 2 |"),
+    "the date joins the status word, the bar keeps its own line")
+T.check(T.contains(compactIndex, "| Complete | 1 |"),
+    "a book with no date shows the status alone in the merged column")
+local compactSingle = render.buildIndexMd({
+    { link = "B", title = "B", author = "A", count = 1,
+        last_read = "2026-10-02" },
+}, { index_layout = "tags_column_compact" })
+T.check(T.contains(compactSingle, "| Last read | Highlights |"),
+    "the merged column drops the missing half from its title")
+T.check(T.contains(compactSingle, "| 02/10/2026 | 1 |"),
+    "a date alone still fills the merged column")
+local bogusLayout = render.buildIndexMd({
+    { link = "B", title = "B", author = "A", count = 1,
+        tags = { "Horror" } },
+}, { index_layout = "bogus" })
+T.check(T.contains(bogusLayout, "### My books")
+        and not T.contains(bogusLayout, "| Tags |"),
+    "an unknown layout falls back to tags under the title")
+
+-- imported book rating stars in the index
+T.check(render.stars(nil) == nil and render.stars(0) == nil
+        and render.stars(6) == nil,
+    "stars returns nil outside 1..5")
+T.check(render.stars(4) == "★★★★☆" and render.stars(5) == "★★★★★",
+    "stars formats 1..5 as five-star glyphs")
+local ratedIndex = render.buildIndexMd({
+    {
+        link = "Au - Rated", title = "Rated", author = "Au",
+        status = "complete", progress = "100%", rating = 4, count = 3,
+    },
+}, {})
+T.check(T.contains(ratedIndex, "Complete<br>▰▰▰▰▰&nbsp;100%<br>★★★★☆"),
+    "an imported rating appears under the status and progress bar")
 
 -- index v3: two groups, each with its own columns and a heading
 local split = render.buildIndexMd({
@@ -705,7 +885,7 @@ T.check(T.contains(rich,
 T.check(T.contains(rich, "| Book | Author | Status | Last read | Highlights |"),
     "the percent rides with the bar, the date gets a column of its own")
 T.check(T.contains(rich,
-    "| Reading<br>▰▱▱▱▱▱▱▱▱▱&nbsp;6% | 01/10/2026 |"),
+    "| Reading<br>▰▱▱▱▱&nbsp;6% | 01/10/2026 |"),
     "the status word over the bar, the percent stuck to it with a nbsp")
 T.check(T.contains(rich, "| 5 · ★2 |"),
     "special count in the highlights cell")
@@ -795,6 +975,10 @@ T.check(#parsed == 3 and parsed[1] == "Horror" and parsed[2] == "psicologico"
 T.check(#render.parseTagList("  ,  , ") == 0, "empty field: no tags")
 T.check(#render.parseTagList(nil) == 0, "nil field: no tags")
 T.check(render.parseTagList("A\nB")[2] == "B", "newlines split tags too")
+local facetTags = render.parseTagList("Young men--Travel--England--Thames River--Fiction")
+T.check(#facetTags == 5 and facetTags[1] == "Young-men" and facetTags[2] == "Travel"
+        and facetTags[3] == "England" and facetTags[4] == "Thames-River" and facetTags[5] == "Fiction",
+    "Calibre hierarchical subject facets with -- are split into clean individual tags")
 local numericTags, numericRejected = render.parseTagList(
     "Horror, 1500, 1984, Psicologico, 1500")
 T.check(#numericTags == 2 and numericTags[1] == "Horror"
@@ -810,7 +994,7 @@ T.check(#digitLed == 1 and digitLed[1] == "1500s"
 
 -- through the exporter: dirty keywords render sanitized, dead ones vanish
 local tagged = render.buildBookMd({
-    title = "Blackwater",
+    title = "The Three Impostors",
     keywords = { "Occult & Supernatural", "!!!", "American Horror tales" },
     count = 1,
     annotations = { { text = "X" } },
@@ -822,14 +1006,14 @@ T.check(not T.contains(tagged, "Occult &"), "no raw keyword reaches the frontmat
 T.check(not T.contains(tagged, "- !!!"), "the dead keyword is not exported")
 
 -- ------------------------------------------------------- reading bar
-T.check(render.progressBar("0%") == "▱▱▱▱▱▱▱▱▱▱",
+T.check(render.progressBar("0%") == "▱▱▱▱▱",
     "a book never opened gets an empty bar")
-T.check(render.progressBar("4%") == "▰▱▱▱▱▱▱▱▱▱",
-    "progress below 5% still lights one cell")
-T.check(render.progressBar("25%") == "▰▰▰▱▱▱▱▱▱▱",
-    "25% rounds to three cells")
-T.check(render.progressBar("150%") == "▰▰▰▰▰▰▰▰▰▰",
-    "the bar never runs past ten cells")
+T.check(render.progressBar("4%") == "▰▱▱▱▱",
+    "progress below 10% still lights one cell")
+T.check(render.progressBar("25%") == "▰▱▱▱▱",
+    "25% rounds to one cell")
+T.check(render.progressBar("150%") == "▰▰▰▰▰",
+    "the bar never runs past five cells")
 T.check(render.progressBar("") == nil and render.progressBar(nil) == nil,
     "no bar without a percentage")
 T.check(render.progressPct("0%") == "0%" and render.progressPct("4%") == "4%"
@@ -970,7 +1154,19 @@ do
     -- to the callout, never render as a plain quote the reader never chose
     T.check(quote(render.buildBookMd(sbook("one\ntwo", true), { special_marker = "none" }))
         == "> [!highlight]\n> one\n> two",
-        "special marker: any value but bold falls back to the callout")
+        "special marker: any unknown value falls back to the callout")
+    T.check(quote(render.buildBookMd(sbook("one", true), { special_marker = "alert" }))
+        == "> [!IMPORTANT]\n> one", "special marker: alert adds [!IMPORTANT]")
+    T.check(quote(render.buildBookMd(sbook("one", true), { special_marker = "highlight" }))
+        == "> ==one==", "special marker: highlight wraps with ==")
+    T.check(quote(render.buildBookMd(sbook("one\ntwo", true), { special_marker = "highlight" }))
+        == "> ==one\n> two==", "special marker: highlight wraps multi-line")
+    T.check(quote(render.buildBookMd(sbook("one", true), { special_marker = "highlight_bold" }))
+        == "> ==**one**==", "special marker: highlight_bold wraps with ==**")
+    T.check(quote(render.buildBookMd(sbook("one", true), { special_marker = "star_bold" }))
+        == "> ⭐ **one**", "special marker: star_bold wraps with star and bold")
+    T.check(quote(render.buildBookMd(sbook("one\n\ntwo", true), { special_marker = "star_bold" }))
+        == "> ⭐ **one**\n> \n> **two**", "special marker: star_bold puts star on first paragraph only")
     T.check(quote(render.buildBookMd(sbook("one", true), { callout = true, special_marker = "bold" }))
         == "> [!highlight]\n> one", "special marker: the global callout wins")
     T.check(quote(render.buildBookMd(sbook("one", false), { special_marker = "bold" }))
@@ -982,6 +1178,150 @@ do
     local counted = render.buildBookMd(sbook("one", true), { special_marker = "bold" })
     T.check(T.contains(counted, "special: 1") and T.contains(counted, "★ 1 special"),
         "special marker: counts stay whatever the marker")
+end
+
+-- standard Markdown links in the index and footnotes in book notes (v1.4.0)
+do
+    T.check(render.bookLink("Arthur Machen - The Three Impostors", "The Three Impostors", "wikilink")
+        == "[[Arthur Machen - The Three Impostors\\|The Three Impostors]]",
+        "bookLink: wikilink in table uses escaped pipe")
+    T.check(render.bookLink("Arthur Machen - The Three Impostors", "The Three Impostors", "wikilink", false)
+        == "[[Arthur Machen - The Three Impostors|The Three Impostors]]",
+        "bookLink: wikilink outside table uses unescaped pipe")
+    T.check(render.bookLink("Arthur Machen - The Three Impostors", "The Three Impostors", "markdown")
+        == "[The Three Impostors](Arthur%20Machen%20-%20The%20Three%20Impostors.md)",
+        "bookLink: standard markdown link encodes spaces")
+    T.check(render.bookLink("Arthur Machen/The Three Impostors (1895)", "The Three Impostors", "markdown")
+        == "[The Three Impostors](Arthur%20Machen/The%20Three%20Impostors%20%281895%29.md)",
+        "bookLink: subfolder slash kept, parentheses encoded")
+
+    local md_idx = render.buildIndexMd({
+        {
+            link = "Arthur Machen/Arthur Machen - The Three Impostors",
+            title = "The Three Impostors",
+            author = "Arthur Machen",
+            count = 2,
+        },
+    }, { index_links = "markdown" })
+    T.check(T.contains(md_idx,
+            "[The Three Impostors](Arthur%20Machen/Arthur%20Machen%20-%20The%20Three%20Impostors.md)"),
+        "index with markdown links")
+    T.check(not T.contains(md_idx, "[["), "no wikilink when markdown format is chosen")
+
+    local fn_book = render.buildBookMd({
+        title = "The Three Impostors",
+        author = "Arthur Machen",
+        count = 2,
+        annotations = {
+            {
+                text = "First passage.",
+                note = "First personal note\nSecond line",
+                chapter = "Chapter I",
+                page = "7",
+                date = "05/11/2026",
+            },
+            {
+                text = "Second passage.",
+                note = "Another note",
+                chapter = "Chapter II",
+                page = "14",
+            },
+        },
+    }, { note_style = "footnote" })
+    T.check(T.contains(fn_book, "- **p. 7** · 05/11/2026 [^1]"),
+        "footnote marker 1 on first highlight meta")
+    T.check(T.contains(fn_book, "- **p. 14** [^2]"),
+        "footnote marker 2 on second highlight meta")
+    T.check(not T.contains(fn_book, "**NOTE:**"),
+        "inline NOTE label omitted in footnote mode")
+    T.check(T.contains(fn_book, "[^1]: First personal note\n    Second line"),
+        "multiline footnote definition indented")
+    T.check(T.contains(fn_book, "[^2]: Another note"),
+        "second footnote definition")
+    T.check(fn_book:find("[^1]:", 1, true) < fn_book:find("tomedown:end body", 1, true),
+        "footnotes stay inside the generated body region")
+
+    -- Reading Digest (00 - Reading Digest.md)
+    local empty_digest = render.buildDigestMd({}, {})
+    T.check(T.contains(empty_digest, 'title: "Reading digest"'),
+        "digest default title in frontmatter")
+    T.check(T.contains(empty_digest, "  - digest"), "digest tag in frontmatter")
+    T.check(T.contains(empty_digest, "# Reading digest"), "digest H1 heading")
+    T.check(T.contains(empty_digest, "Welcome to the quiet space"),
+        "digest inspirational epigraph")
+    T.check(T.contains(empty_digest, "_No exported books with highlights._"),
+        "empty digest message")
+
+    local digest = render.buildDigestMd({
+        {
+            link = "Arthur Machen - The Three Impostors",
+            title = "The Three Impostors",
+            author = "Arthur Machen",
+            annotations = {
+                {
+                    text = "Older quote.",
+                    chapter = "Prologue",
+                    page = "5",
+                    date = "04/11/2026 10:00",
+                    sort_time = "2026-11-04 10:00:00",
+                    sort_page = 5,
+                },
+                {
+                    text = "Newer quote.",
+                    note = "Key passage",
+                    chapter = "Adventure of the Gold Tiberius",
+                    page = "18",
+                    date = "05/11/2026 21:15",
+                    sort_time = "2026-11-05 21:15:00",
+                    sort_page = 18,
+                    special = true,
+                },
+            },
+        },
+        {
+            link = "Edgar Wallace - The Three Just Men",
+            title = "The Three Just Men",
+            author = "Edgar Wallace",
+            annotations = {
+                {
+                    text = "Same day earlier.",
+                    page = "12",
+                    date = "05/11/2026 09:30",
+                    sort_time = "2026-11-05 09:30:00",
+                    sort_page = 12,
+                },
+            },
+        },
+    }, { index_links = "markdown", note_style = "footnote" })
+    T.check(T.contains(digest, "**2 books** · **3 highlights** · **★ 1 special**"),
+        "digest stats summary line")
+    local d_nov5 = digest:find("## 05/11/2026", 1, true)
+    local d_nov4 = digest:find("## 04/11/2026", 1, true)
+    T.check(d_nov5 and d_nov4 and d_nov5 < d_nov4,
+        "digest groups newest day first")
+    local q_newer = digest:find("> Newer quote.", 1, true)
+    local q_earlier = digest:find("> Same day earlier.", 1, true)
+    T.check(q_newer and q_earlier and q_newer < q_earlier,
+        "digest orders newest highlight first within the same day")
+    T.check(T.contains(digest,
+            "### [The Three Impostors](Arthur%20Machen%20-%20The%20Three%20Impostors.md) — *Arthur Machen*"),
+        "digest book heading uses configured link format and author")
+    local wiki_digest = render.buildDigestMd({
+        {
+            link = "Arthur Machen - The Three Impostors",
+            title = "The Three Impostors",
+            author = "Arthur Machen",
+            annotations = {
+                { text = "Quote", page = "1", date = "05/11/2026" },
+            },
+        },
+    }, { index_links = "wikilink" })
+    T.check(T.contains(wiki_digest, "### [[Arthur Machen - The Three Impostors|The Three Impostors]] — *Arthur Machen*"),
+        "digest wikilink heading uses unescaped pipe so Obsidian renders clean link")
+    T.check(not wiki_digest:find("\\[\\[[^\n]+\\\\|", 1, false),
+        "digest has no escaped pipes in wikilinks")
+    T.check(T.contains(digest, "[^1]: Key passage"),
+        "digest supports footnote style for personal notes")
 end
 
 T.finish("test_render")
