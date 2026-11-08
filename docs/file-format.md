@@ -73,7 +73,7 @@ the same text comes out translated (see [Languages](developing.md#languages)).
 | `published`, `rating`, `review`, `date_started`, `date_finished`, `collections` | imported from KOReader, only after *Import book info* (see below) |
 | `tags` | `ebook`, `highlights`, the book's own keywords and the tags chosen from its menu |
 | `tomedown_book_tags` | the book's own tags that this plugin manages, only with *Keep my notes* (see below) |
-| `cover` | `"covers/Author - Title.jpg"`, only with *Include book covers* |
+| `cover` | `"covers/Author - Title.jpg"` (or your custom covers folder, e.g. `_covers/`), only with *Include book covers* |
 
 Every keyword is normalised into a valid Obsidian tag: spaces become `-`, and
 only letters, numbers, `-`, `_`, `/` and non-ASCII characters (accents, emoji)

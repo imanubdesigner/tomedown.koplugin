@@ -41,6 +41,7 @@ local mergeKnownTags = shared.mergeKnownTags
 local getIndexPreserve = shared.getIndexPreserve
 local getFilenameTemplate = shared.getFilenameTemplate
 local getFolderLayout = shared.getFolderLayout
+local getCoversFolder = shared.getCoversFolder
 local getIndexLinks = shared.getIndexLinks
 local getNoteStyle = shared.getNoteStyle
 local readIfExists = shared.readIfExists
@@ -466,7 +467,8 @@ function M:bookSubdir(props, status)
     end
     raw = tostring(raw):gsub("\r?\n", "; ")
     local safe = util.getSafeFilename(raw, nil, nil, -1)
-    if safe == "" or safe:lower() == "covers" then
+    local covers_folder = getCoversFolder()
+    if safe == "" or safe:lower() == "covers" or safe:lower() == covers_folder:lower() then
         return nil
     end
     return safe
@@ -499,7 +501,7 @@ function M:ensureCover(file, base, dir)
         return nil
     end
     local leaf = tostring(base or ""):match("([^/]+)$") or tostring(base or "")
-    local rel = Cover.relPath(leaf)
+    local rel = Cover.relPath(leaf, getCoversFolder())
     local document
     if self.ui and self.ui.document and self.ui.document.file == file then
         document = self.ui.document
@@ -716,7 +718,7 @@ function M:buildIndexEntries(dir, export_records)
                 hidden = hidden + 1
             else
                 local cover_leaf = book.base:match("([^/]+)$") or book.base
-                local cover_rel = Cover.relPath(cover_leaf)
+                local cover_rel = Cover.relPath(cover_leaf, getCoversFolder())
                 local has_cover = lfs.attributes(dir .. "/" .. cover_rel, "mode") == "file"
                 if not has_cover and with_covers then
                     -- backfill: books exported before the option was turned on
@@ -856,6 +858,10 @@ function M:runExport(files, opts)
 
     local dir = self:getLocalDir()
     util.makePath(dir)
+    local current_covers = getCoversFolder()
+    if current_covers ~= "covers" and lfs.attributes(dir .. "/covers", "mode") == "directory" then
+        Cover.migrateFolder(dir, "covers", current_covers)
+    end
     local with_index = getSetting("with_index", true)
 
     local info
@@ -1400,7 +1406,10 @@ function M:runExport(files, opts)
             -- covers from the device (the .md files stay local, they are
             -- the library this plugin reads its history from)
             if getSetting("covers", false) then
-                Cover.deleteUploaded(ok_paths, dir)
+                Cover.deleteUploaded(ok_paths, dir, getCoversFolder())
+                if getCoversFolder() ~= "covers" then
+                    Cover.deleteUploaded(ok_paths, dir, "covers")
+                end
             end
             reportUpload(ok_count, fail_count)
         end)

@@ -48,6 +48,8 @@ local setBookExclusion = shared.setBookExclusion
 local getIndexPreserve = shared.getIndexPreserve
 local getFilenameTemplate = shared.getFilenameTemplate
 local setFilenameTemplate = shared.setFilenameTemplate
+local getCoversFolder = shared.getCoversFolder
+local setCoversFolder = shared.setCoversFolder
 local getFolderLayout = shared.getFolderLayout
 local setFolderLayout = shared.setFolderLayout
 local getIndexLinks = shared.getIndexLinks
@@ -883,6 +885,49 @@ function M:editCustomFilenameTemplate(touchmenu)
                     callback = function()
                         local value = dialog:getInputText() or ""
                         setFilenameTemplate(value)
+                        UIManager:close(dialog)
+                        if touchmenu and touchmenu.updateItems then
+                            touchmenu:updateItems()
+                        end
+                    end,
+                },
+            },
+        },
+    }
+    UIManager:show(dialog)
+    return dialog
+end
+
+function M:editCoversFolder(touchmenu)
+    local dialog
+    dialog = InputDialog:new{
+        title = _("Covers folder name"),
+        input = getCoversFolder(),
+        hint = _("e.g. covers, _covers, assets"),
+        buttons = {
+            {
+                {
+                    text = _("Cancel"),
+                    id = "close",
+                    callback = function()
+                        UIManager:close(dialog)
+                    end,
+                },
+            },
+            {
+                {
+                    text = _("Save"),
+                    callback = function()
+                        local value = dialog:getInputText() or ""
+                        local old = getCoversFolder()
+                        setCoversFolder(value)
+                        local new_folder = getCoversFolder()
+                        if new_folder ~= old then
+                            local Cover = require("tomedown_cover")
+                            Cover.migrateFolder(self:getLocalDir(), old, new_folder)
+                            self:invalidateExportHashes()
+                            setSetting("index_dirty", true)
+                        end
                         UIManager:close(dialog)
                         if touchmenu and touchmenu.updateItems then
                             touchmenu:updateItems()
@@ -1762,6 +1807,17 @@ function M:genSettingsMenu()
             callback = function()
                 setSetting("covers", not getSetting("covers", false))
                 self:invalidateExportHashes()
+            end,
+        },
+        {
+            text_func = function()
+                return T(_("Covers folder: %1"), getCoversFolder())
+            end,
+            enabled_func = function()
+                return getSetting("covers", false)
+            end,
+            callback = function(touchmenu)
+                self:editCoversFolder(touchmenu)
             end,
         },
         {

@@ -11,9 +11,11 @@ unchanged.
 local _ = require("tomedown_i18n")
 local logger = require("logger")
 local md5 = require("ffi/sha2").md5
+local util = require("util")
 
 local SETTINGS_KEY = "tomedown"
 local DEFAULT_LOCAL_SUBDIR = "clipboard/tomedown"
+local DEFAULT_COVERS_FOLDER = "covers"
 local INDEX_FILENAME = "00 - Index.md"
 local DIGEST_FILENAME = "00 - Reading Digest.md"
 local FILENAME_TEMPLATE = "%A - %T"
@@ -434,6 +436,36 @@ local function setNoteStyle(style)
     end
 end
 
+local function sanitizeCoversFolder(name)
+    if type(name) ~= "string" then
+        return DEFAULT_COVERS_FOLDER
+    end
+    local trimmed = name:gsub("^%s+", ""):gsub("%s+$", ""):gsub("^[/\\]+", ""):gsub("[/\\]+$", "")
+    if trimmed == "" then
+        return DEFAULT_COVERS_FOLDER
+    end
+    local safe = util.getSafeFilename(trimmed, nil, nil, -1) or ""
+    safe = safe:gsub("^%s+", ""):gsub("%s+$", "")
+    if safe == "" or safe == "." or safe == ".." then
+        return DEFAULT_COVERS_FOLDER
+    end
+    return safe
+end
+
+local function getCoversFolder()
+    local folder = getSetting("covers_folder", DEFAULT_COVERS_FOLDER)
+    return sanitizeCoversFolder(folder)
+end
+
+local function setCoversFolder(folder)
+    local clean = sanitizeCoversFolder(folder)
+    if clean == DEFAULT_COVERS_FOLDER then
+        setSetting("covers_folder", nil)
+    else
+        setSetting("covers_folder", clean)
+    end
+end
+
 local function readIfExists(path)
     local f = io.open(path, "rb")
     if not f then
@@ -591,6 +623,10 @@ end
 return {
     SETTINGS_KEY = SETTINGS_KEY,
     DEFAULT_LOCAL_SUBDIR = DEFAULT_LOCAL_SUBDIR,
+    DEFAULT_COVERS_FOLDER = DEFAULT_COVERS_FOLDER,
+    sanitizeCoversFolder = sanitizeCoversFolder,
+    getCoversFolder = getCoversFolder,
+    setCoversFolder = setCoversFolder,
     INDEX_FILENAME = INDEX_FILENAME,
     DIGEST_FILENAME = DIGEST_FILENAME,
     FILENAME_TEMPLATE = FILENAME_TEMPLATE,

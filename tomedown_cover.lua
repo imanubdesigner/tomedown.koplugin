@@ -27,13 +27,15 @@ local JPEG_QUALITY = 50
 
 --- The relative path a cover occupies inside the vault (POSIX, the
 -- markdown always uses "/" even on Windows KOReader builds).
-function cover.relPath(base)
-    return "covers/" .. base .. ".jpg"
+function cover.relPath(base, folder)
+    local sub = (type(folder) == "string" and folder ~= "") and folder or "covers"
+    return sub .. "/" .. base .. ".jpg"
 end
 
 --- Is this absolute path an exported cover of `dir`?
-function cover.isCoverPath(path, dir)
-    local prefix = dir .. "/covers/"
+function cover.isCoverPath(path, dir, folder)
+    local sub = (type(folder) == "string" and folder ~= "") and folder or "covers"
+    local prefix = dir .. "/" .. sub .. "/"
     return type(path) == "string" and path:sub(1, #prefix) == prefix
 end
 
@@ -106,15 +108,56 @@ end
 -- Only called while "Include book covers" is still ticked: switching
 -- it off means the reader wants to keep the files locally.
 -- @treturn number how many files were removed
-function cover.deleteUploaded(paths, dir)
+function cover.deleteUploaded(paths, dir, folder)
     local removed = 0
     for __, path in ipairs(paths) do
-        if cover.isCoverPath(path, dir) and os.remove(path) then
+        if cover.isCoverPath(path, dir, folder) and os.remove(path) then
             removed = removed + 1
             logger.info("tomedown: uploaded cover removed:", path)
         end
     end
     return removed
+end
+
+--- Move an old covers folder to the new folder name and remove the old directory.
+-- Reuses existing extracted covers so they don't have to be re-extracted,
+-- and leaves no orphaned folder behind on the device.
+function cover.migrateFolder(dir, old_folder, new_folder)
+    if not dir or not old_folder or not new_folder or old_folder == new_folder then
+        return false
+    end
+    local old_path = dir .. "/" .. old_folder
+    local new_path = dir .. "/" .. new_folder
+    if lfs.attributes(old_path, "mode") ~= "directory" then
+        return false
+    end
+    if lfs.attributes(new_path, "mode") ~= "directory" then
+        local ok = os.rename(old_path, new_path)
+        if ok then
+            logger.info("tomedown: renamed covers folder from", old_folder, "to", new_folder)
+            return true
+        end
+    end
+    util.makePath(new_path)
+    local ok_iter, iter, obj = pcall(lfs.dir, old_path)
+    if ok_iter and iter then
+        for entry in iter, obj do
+            if entry ~= "." and entry ~= ".." then
+                local src = old_path .. "/" .. entry
+                local dst = new_path .. "/" .. entry
+                if lfs.attributes(src, "mode") == "file" then
+                    if not os.rename(src, dst) then
+                        local ffiUtil = require("ffi/util")
+                        if ffiUtil.copyFile(src, dst) then
+                            os.remove(src)
+                        end
+                    end
+                end
+            end
+        end
+    end
+    pcall(lfs.rmdir, old_path)
+    return lfs.attributes(old_path, "mode") ~= "directory"
 end
 
 return cover

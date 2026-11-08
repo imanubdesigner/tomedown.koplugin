@@ -480,6 +480,14 @@ T.check(img_pos and hl_pos and img_pos < hl_pos, "the cover sits before the high
 local doubledCover = select(2, withCover:gsub("%-%-%-\n\n%-%-%-", ""))
 T.check(doubledCover == 0,
     "with a cover no two rules touch: " .. doubledCover)
+local withUnderscoreCover = render.buildBookMd(book, { cover = "_covers/The Three Impostors.jpg" })
+T.check(T.contains(withUnderscoreCover, 'cover: "_covers/The Three Impostors.jpg"'),
+    "custom _covers in frontmatter")
+T.check(T.contains(withUnderscoreCover, '<img src="_covers/The Three Impostors.jpg"'),
+    "custom _covers in image tag")
+local withTopolinoCover = render.buildBookMd(book, { cover = "Topolino/The Three Impostors.jpg" })
+T.check(T.contains(withTopolinoCover, 'cover: "Topolino/The Three Impostors.jpg"'),
+    "arbitrary custom cover folder in frontmatter")
 T.check(render.coverImg('a"b.jpg', 90, 120):find("a&quot;b.jpg", 1, true) ~= nil,
     "a quote in the path is escaped for the attribute")
 

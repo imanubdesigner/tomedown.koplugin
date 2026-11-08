@@ -834,3 +834,13 @@ msgstr "Stil"
 
 msgid "Welcome to the quiet space where authors' thoughts linger, and your own reflections take shape."
 msgstr "Willkommen an dem stillen Ort, an dem die Gedanken der Autoren verweilen und eigene Betrachtungen Gestalt annehmen."
+
+msgid "Covers folder: %1"
+msgstr "Cover-Ordner: %1"
+
+msgid "Covers folder name"
+msgstr "Name des Cover-Ordners"
+
+msgid "e.g. covers, _covers, assets"
+msgstr "z. B. covers, _covers, assets"
+
