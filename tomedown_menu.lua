@@ -923,6 +923,8 @@ function M:editCoversFolder(touchmenu)
                         setCoversFolder(value)
                         local new_folder = getCoversFolder()
                         if new_folder ~= old then
+                            local Cover = require("tomedown_cover")
+                            Cover.migrateFolder(self:getLocalDir(), old, new_folder)
                             self:invalidateExportHashes()
                             setSetting("index_dirty", true)
                         end

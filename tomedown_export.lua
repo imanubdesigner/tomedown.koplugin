@@ -858,6 +858,10 @@ function M:runExport(files, opts)
 
     local dir = self:getLocalDir()
     util.makePath(dir)
+    local current_covers = getCoversFolder()
+    if current_covers ~= "covers" and lfs.attributes(dir .. "/covers", "mode") == "directory" then
+        Cover.migrateFolder(dir, "covers", current_covers)
+    end
     local with_index = getSetting("with_index", true)
 
     local info

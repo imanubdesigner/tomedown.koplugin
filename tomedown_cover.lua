@@ -119,4 +119,45 @@ function cover.deleteUploaded(paths, dir, folder)
     return removed
 end
 
+--- Move an old covers folder to the new folder name and remove the old directory.
+-- Reuses existing extracted covers so they don't have to be re-extracted,
+-- and leaves no orphaned folder behind on the device.
+function cover.migrateFolder(dir, old_folder, new_folder)
+    if not dir or not old_folder or not new_folder or old_folder == new_folder then
+        return false
+    end
+    local old_path = dir .. "/" .. old_folder
+    local new_path = dir .. "/" .. new_folder
+    if lfs.attributes(old_path, "mode") ~= "directory" then
+        return false
+    end
+    if lfs.attributes(new_path, "mode") ~= "directory" then
+        local ok = os.rename(old_path, new_path)
+        if ok then
+            logger.info("tomedown: renamed covers folder from", old_folder, "to", new_folder)
+            return true
+        end
+    end
+    util.makePath(new_path)
+    local ok_iter, iter, obj = pcall(lfs.dir, old_path)
+    if ok_iter and iter then
+        for entry in iter, obj do
+            if entry ~= "." and entry ~= ".." then
+                local src = old_path .. "/" .. entry
+                local dst = new_path .. "/" .. entry
+                if lfs.attributes(src, "mode") == "file" then
+                    if not os.rename(src, dst) then
+                        local ffiUtil = require("ffi/util")
+                        if ffiUtil.copyFile(src, dst) then
+                            os.remove(src)
+                        end
+                    end
+                end
+            end
+        end
+    end
+    pcall(lfs.rmdir, old_path)
+    return lfs.attributes(old_path, "mode") ~= "directory"
+end
+
 return cover

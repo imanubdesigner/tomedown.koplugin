@@ -2770,6 +2770,15 @@ do
     T.check(not T.fileExists(custom_cover_path),
         "custom uploaded cover deleted from device")
 
+    -- folder migration test
+    local Cover = require("tomedown_cover")
+    os.execute('mkdir -p "' .. DIR .. '/covers" && printf test > "' .. DIR .. '/covers/old.jpg"')
+    T.check(T.fileExists(DIR .. "/covers/old.jpg"), "old cover created in covers/")
+    shared.setCoversFolder("_covers")
+    Cover.migrateFolder(DIR, "covers", "_covers")
+    T.check(not T.fileExists(DIR .. "/covers"), "old covers/ folder removed")
+    T.check(T.fileExists(DIR .. "/_covers/old.jpg"), "cover migrated to _covers/old.jpg")
+
     -- reset to default
     shared.setCoversFolder("covers")
     T.check(shared.getCoversFolder() == "covers", "getCoversFolder back to default")
