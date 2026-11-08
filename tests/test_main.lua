@@ -1276,10 +1276,10 @@ do
     T.check(index_group[5].checked_func() == true, "Reading now on by default")
 end
 
--- Style: six static rows
+-- Style: seven static rows
 do
     local style_group = settings[3].sub_item_table
-    T.check(#style_group == 6, "style rows: " .. #style_group)
+    T.check(#style_group == 7, "style rows: " .. #style_group)
     T.check(style_group[1].text_func() == "Personal notes format: Inline", "note style entry")
     T.check(type(style_group[2].text_func) == "function", "special marker row present")
     T.check(T.contains(style_group[2].text_func(), "Callout"),
@@ -1290,8 +1290,13 @@ do
     T.check(style_group[4].checked_func() == false, "block ids off by default")
     T.check(style_group[5].text == "Include book covers", "covers entry")
     T.check(style_group[5].checked_func() == false, "covers off by default")
-    T.check(style_group[6].text == "Include page bookmarks", "page bookmarks entry")
-    T.check(style_group[6].checked_func() == false, "page bookmarks off by default")
+    T.check(style_group[6].text_func() == "Covers folder: covers", "covers folder entry")
+    T.check(style_group[6].enabled_func() == false, "covers folder disabled when covers off")
+    store.tomedown.covers = true
+    T.check(style_group[6].enabled_func() == true, "covers folder enabled when covers on")
+    store.tomedown.covers = nil
+    T.check(style_group[7].text == "Include page bookmarks", "page bookmarks entry")
+    T.check(style_group[7].checked_func() == false, "page bookmarks off by default")
 end
 
 -- ------------------------------- 5a3. deleting tags from every book
@@ -1491,7 +1496,7 @@ T.check(notes[3] == nil,
 
 -- Style: note formatting and highlights
 local highlights = settings[3].sub_item_table
-T.check(#highlights == 6, "style rows: " .. #highlights)
+T.check(#highlights == 7, "style rows: " .. #highlights)
 T.check(highlights[3].text == "Treat every highlight as special",
     "callout entry")
 T.check(highlights[3].checked_func() == false, "callout off by default")
@@ -1761,9 +1766,9 @@ settings[2].sub_item_table[1].callback()
 T.check(store.tomedown.with_index == false, "index disabled")
 settings[2].sub_item_table[1].callback()
 T.check(store.tomedown.with_index == true, "index re-enabled")
-settings[3].sub_item_table[6].callback()
+settings[3].sub_item_table[7].callback()
 T.check(store.tomedown.include_bookmarks == true, "page bookmarks enabled")
-settings[3].sub_item_table[6].callback()
+settings[3].sub_item_table[7].callback()
 T.check(store.tomedown.include_bookmarks == false, "page bookmarks disabled")
 developer[1].callback()
 T.check(store.tomedown.beta_releases == true, "beta releases enabled")
@@ -1996,7 +2001,7 @@ store.tomedown = { import_prompt_done = true }
 
 -- ----------------------------------------------- 5b. page bookmarks
 
-settings[3].sub_item_table[6].callback() -- enable "Include page bookmarks"
+settings[3].sub_item_table[7].callback() -- enable "Include page bookmarks"
 T.check(store.tomedown.include_bookmarks == true, "page bookmarks enabled for the export")
 plugin:runExport({ FILE }, {})
 UIManager:runPending()
@@ -2032,7 +2037,7 @@ if onlyBmMd then
 end
 
 -- disabled again: the section disappears
-settings[3].sub_item_table[6].callback()
+settings[3].sub_item_table[7].callback()
 T.check(store.tomedown.include_bookmarks == false, "page bookmarks disabled again")
 plugin:runExport({ FILE }, {})
 UIManager:runPending()
@@ -2714,6 +2719,62 @@ T.check(entries[1] and entries[1].cover == COVER_REL,
     "the entry got the backfilled cover")
 T.check(#new_covers == 1 and new_covers[1] == COVER_PATH,
     "the backfilled cover is listed for the upload")
+
+-- --------------------------------- custom covers folder (v1.4.1)
+do
+    local shared = require("tomedown_shared")
+    -- sanitization
+    T.check(shared.sanitizeCoversFolder("covers") == "covers", "sanitize default covers")
+    T.check(shared.sanitizeCoversFolder("_covers") == "_covers", "sanitize _covers")
+    T.check(shared.sanitizeCoversFolder("Topolino") == "Topolino", "sanitize Topolino")
+    T.check(shared.sanitizeCoversFolder("Topo-Lino") == "Topo-Lino", "sanitize Topo-Lino")
+    T.check(shared.sanitizeCoversFolder("  _assets/  ") == "_assets", "sanitize whitespace and trailing slash")
+    T.check(shared.sanitizeCoversFolder("///") == "covers", "sanitize slashes only falls back to covers")
+    T.check(shared.sanitizeCoversFolder("") == "covers", "sanitize empty falls back to covers")
+    T.check(shared.sanitizeCoversFolder("..") == "covers", "sanitize .. falls back to covers")
+    T.check(shared.sanitizeCoversFolder(nil) == "covers", "sanitize nil falls back to covers")
+
+    -- export with custom covers folder
+    uploadSetup()
+    cleanDir()
+    shared.setCoversFolder("_covers")
+    plugin:invalidateExportHashes()
+    T.check(shared.getCoversFolder() == "_covers", "getCoversFolder returns custom folder")
+    T.check(store.tomedown.covers_folder == "_covers", "store holds custom covers_folder")
+
+    BookInfo.cover_bb = fakeBB(1600, 2400)
+    store.tomedown.covers = true
+    plugin:runExport({ FILE }, {})
+    local custom_cover_path = DIR .. "/_covers/" .. BASE .. ".jpg"
+    local custom_cover_rel = "_covers/" .. BASE .. ".jpg"
+    T.check(T.fileExists(custom_cover_path), "cover extracted into custom _covers/ directory")
+    UIManager:runPending()
+    local custom_md = T.readFile(MD_PATH)
+    T.check(T.contains(custom_md or "", 'cover: "' .. custom_cover_rel .. '"'),
+        "frontmatter carries custom _covers path")
+    T.check(T.contains(custom_md or "", '<img src="' .. custom_cover_rel .. '"'),
+        "body carries custom _covers path")
+    local custom_idx = T.readFile(INDEX_PATH)
+    T.check(T.contains(custom_idx or "", custom_cover_rel),
+        "index carries custom _covers path")
+
+    -- remote upload targets custom covers folder
+    local custom_cover_up = nil
+    for __, u in ipairs(uploads) do
+        if u.path == custom_cover_path then
+            custom_cover_up = u
+        end
+    end
+    T.check(custom_cover_up and custom_cover_up.url == "/Bookshelf/Kindle/_covers",
+        "remote upload targets /Bookshelf/Kindle/_covers")
+    T.check(not T.fileExists(custom_cover_path),
+        "custom uploaded cover deleted from device")
+
+    -- reset to default
+    shared.setCoversFolder("covers")
+    T.check(shared.getCoversFolder() == "covers", "getCoversFolder back to default")
+    T.check(store.tomedown.covers_folder == nil, "store clears default setting key")
+end
 
 -- the callout option rewrites every highlight of the book
 resetUpload()

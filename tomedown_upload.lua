@@ -31,6 +31,7 @@ local setSetting = shared.setSetting
 local getNotesTitle = shared.getNotesTitle
 local getBookPreserve = shared.getBookPreserve
 local getIndexPreserve = shared.getIndexPreserve
+local getCoversFolder = shared.getCoversFolder
 local readIfExists = shared.readIfExists
 local ownCopy = shared.ownCopy
 local isZoned = shared.isZoned
@@ -694,7 +695,10 @@ function M:flushPendingUploads()
         end
         self:clearPendingUploads(ok_paths)
         if getSetting("covers", false) then
-            Cover.deleteUploaded(ok_paths, self:getLocalDir())
+            Cover.deleteUploaded(ok_paths, self:getLocalDir(), getCoversFolder())
+            if getCoversFolder() ~= "covers" then
+                Cover.deleteUploaded(ok_paths, self:getLocalDir(), "covers")
+            end
         end
         if fail_count > 0 then
             UIManager:show(InfoMessage:new{
@@ -740,10 +744,11 @@ function M:reuploadAll(touchmenu)
     listDir(dir, function(entry)
         return entry:sub(-3) == ".md"
     end)
+    local covers_folder = getCoversFolder()
     local ok_sub, iter_sub, obj_sub = pcall(lfs.dir, dir)
     if ok_sub and iter_sub then
         for entry in iter_sub, obj_sub do
-            if entry ~= "." and entry ~= ".." and entry ~= "covers"
+            if entry ~= "." and entry ~= ".." and entry ~= "covers" and entry ~= covers_folder
                     and lfs.attributes(dir .. "/" .. entry, "mode") == "directory" then
                 listDir(dir .. "/" .. entry, function(sub_entry)
                     return sub_entry:sub(-3) == ".md"
@@ -753,9 +758,14 @@ function M:reuploadAll(touchmenu)
     end
     -- covers still sitting on the device (upload was off, or the upload
     -- failed earlier) ride along with "Upload all files again"
-    listDir(dir .. "/covers", function(entry)
+    listDir(dir .. "/" .. covers_folder, function(entry)
         return entry:sub(-4) == ".jpg"
     end)
+    if covers_folder ~= "covers" then
+        listDir(dir .. "/covers", function(entry)
+            return entry:sub(-4) == ".jpg"
+        end)
+    end
     if #paths == 0 then
         UIManager:show(Notification:new{
             text = _("Nothing to upload, export something first."),
@@ -807,7 +817,10 @@ function M:reuploadAll(touchmenu)
             self:markPendingUploads(failed)
         end
         if getSetting("covers", false) then
-            Cover.deleteUploaded(ok_paths, dir)
+            Cover.deleteUploaded(ok_paths, dir, getCoversFolder())
+            if getCoversFolder() ~= "covers" then
+                Cover.deleteUploaded(ok_paths, dir, "covers")
+            end
         end
         if fail_count > 0 then
             UIManager:show(InfoMessage:new{

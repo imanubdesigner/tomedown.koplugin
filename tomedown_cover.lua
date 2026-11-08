@@ -27,13 +27,15 @@ local JPEG_QUALITY = 50
 
 --- The relative path a cover occupies inside the vault (POSIX, the
 -- markdown always uses "/" even on Windows KOReader builds).
-function cover.relPath(base)
-    return "covers/" .. base .. ".jpg"
+function cover.relPath(base, folder)
+    local sub = (type(folder) == "string" and folder ~= "") and folder or "covers"
+    return sub .. "/" .. base .. ".jpg"
 end
 
 --- Is this absolute path an exported cover of `dir`?
-function cover.isCoverPath(path, dir)
-    local prefix = dir .. "/covers/"
+function cover.isCoverPath(path, dir, folder)
+    local sub = (type(folder) == "string" and folder ~= "") and folder or "covers"
+    local prefix = dir .. "/" .. sub .. "/"
     return type(path) == "string" and path:sub(1, #prefix) == prefix
 end
 
@@ -106,10 +108,10 @@ end
 -- Only called while "Include book covers" is still ticked: switching
 -- it off means the reader wants to keep the files locally.
 -- @treturn number how many files were removed
-function cover.deleteUploaded(paths, dir)
+function cover.deleteUploaded(paths, dir, folder)
     local removed = 0
     for __, path in ipairs(paths) do
-        if cover.isCoverPath(path, dir) and os.remove(path) then
+        if cover.isCoverPath(path, dir, folder) and os.remove(path) then
             removed = removed + 1
             logger.info("tomedown: uploaded cover removed:", path)
         end
