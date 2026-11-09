@@ -858,4 +858,94 @@ T.check(merge.uniteZones("no markers at all", parked_zone) == nil,
 T.check(merge.uniteZones(cloud_zone, "no markers at all") == nil,
     "a parked copy without markers cannot be united")
 
+-- --------------------- CRLF, UTF-8 BOM, format/shape safety, special owned
+do
+    local base_doc = merge.apply(fresh, rendered_i, fps_zone,
+        { mode = "preserve", notes_title = "Le mie note" })
+    local with_notes = base_doc
+        :gsub("^%-%-%-\n", "---\ncssclasses: [book]\n", 1)
+        :gsub("(<!%-%- tomedown:begin body)", "Nota sopra.\n\n%1", 1)
+        .. "\nNota sotto.\n"
+
+    -- CRLF on disk merges cleanly without falling back to legacy
+    local crlf_disk = with_notes:gsub("\n", "\r\n")
+    local crlf_out, crlf_info = merge.apply(crlf_disk, rendered_i, fps_zone,
+        { mode = "preserve", notes_title = "Le mie note" })
+    T.check(crlf_info.reason == "merged" and crlf_info.backup == false,
+        "CRLF file merges cleanly without safety backup")
+    T.check(T.contains(crlf_out, "cssclasses: [book]")
+            and T.contains(crlf_out, "Nota sopra.")
+            and T.contains(crlf_out, "Nota sotto.")
+            and not crlf_out:find("\r", 1, true),
+        "CRLF merge preserves frontmatter, head zone and tail zone with LF output")
+
+    -- UTF-8 BOM + CRLF on disk merges cleanly
+    local bom_disk = "\239\187\191" .. crlf_disk
+    local bom_out, bom_info = merge.apply(bom_disk, rendered_i, fps_zone,
+        { mode = "preserve", notes_title = "Le mie note" })
+    T.check(bom_info.reason == "merged" and bom_info.backup == false,
+        "UTF-8 BOM file merges cleanly without safety backup")
+    T.check(bom_out == crlf_out,
+        "UTF-8 BOM is stripped and produces identical merged output")
+
+    -- Format version change: unedited block needs no backup, edited block sets backup=true
+    local fmt_clean_disk = with_notes:gsub('tomedown: "1%.0"', 'tomedown: "0.9"', 1)
+    local fmt_clean_out, fmt_clean_info = merge.apply(fmt_clean_disk, rendered_i, fps_zone,
+        { mode = "preserve", notes_title = "Le mie note" })
+    T.check(fmt_clean_info.reason == "format" and fmt_clean_info.backup == false,
+        "format version bump with untouched region does not trigger backup")
+    T.check(T.contains(fmt_clean_out, "Nota sopra.") and T.contains(fmt_clean_out, "Nota sotto."),
+        "format version bump keeps user notes")
+
+    local fmt_edited_disk = fmt_clean_disk:gsub("> Nuova frase%.", "> Frase modificata a mano.", 1)
+    local fmt_edited_out, fmt_edited_info = merge.apply(fmt_edited_disk, rendered_i, fps_zone,
+        { mode = "preserve", notes_title = "Le mie note" })
+    T.check(fmt_edited_info.reason == "format"
+            and fmt_edited_info.backup == true
+            and #fmt_edited_info.edited == 1,
+        "format version bump with hand-edited region triggers safety backup")
+    T.check(T.contains(fmt_edited_out, "Nota sopra.")
+            and T.contains(fmt_edited_out, "> Nuova frase."),
+        "format version bump refreshes region while keeping user zone")
+
+    -- Shape mismatch: preserves frontmatter, head zone and tail zone, and sets backup=true
+    local shape_disk = with_notes
+        :gsub("tomedown:begin body", "tomedown:begin highlights")
+        :gsub("tomedown:end body", "tomedown:end highlights")
+    local shape_out, shape_info = merge.apply(shape_disk, rendered_i, fps_zone,
+        { mode = "preserve", notes_title = "Le mie note" })
+    T.check(shape_info.reason == "shape" and shape_info.backup == true,
+        "shape mismatch triggers safety backup")
+    T.check(T.contains(shape_out, "cssclasses: [book]")
+            and T.contains(shape_out, "Nota sopra.")
+            and T.contains(shape_out, "Nota sotto."),
+        "shape mismatch preserves frontmatter, head zone and tail zone")
+
+    -- Hiding 'special' removes stale special: line because special is in OWNED
+    local no_special_render = rendered_i:gsub("special: %d+\n", "")
+    local drop_special_out = merge.apply(with_notes, no_special_render, fps_zone,
+        { mode = "preserve", notes_title = "Le mie note" })
+    T.check(not T.contains(drop_special_out, "\nspecial:")
+            and T.contains(drop_special_out, "cssclasses: [book]"),
+        "owned 'special' key is dropped when omitted from render while custom keys stay")
+
+    -- Personal comment written in Obsidian under a specific quote is preserved across exports
+    local annTwo = {
+        { text = "Nuova frase.", chapter = "Capitolo I", page = "12", date = "03/09/2026" },
+        { text = "Seconda frase.", chapter = "Capitolo I", page = "15", date = "04/09/2026" },
+    }
+    local rendered_two = renderBook(annTwo, { notes_title = "Le mie note" })
+    local disk_with_qcomment = with_notes:gsub(
+        "(%- %*%*p%. 12%*%* · 03/09/2026\n)",
+        "%1\nIl mio pensiero su questa citazione specifica.\n", 1)
+    local q_out, q_info = merge.apply(disk_with_qcomment, rendered_two,
+        merge.fingerprints(merge.split(base_doc)),
+        { mode = "preserve", notes_title = "Le mie note" })
+    T.check(q_info.reason == "merged" and q_info.backup == false,
+        "inline comment under a quote is preserved cleanly without requiring a safety backup")
+    T.check(T.contains(q_out, "Il mio pensiero su questa citazione specifica.")
+            and T.contains(q_out, "> Seconda frase."),
+        "inline comment stays attached under its quote when new highlights arrive")
+end
+
 T.finish("test_merge")

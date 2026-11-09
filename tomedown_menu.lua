@@ -56,6 +56,7 @@ local getIndexLinks = shared.getIndexLinks
 local setIndexLinks = shared.setIndexLinks
 local getNoteStyle = shared.getNoteStyle
 local setNoteStyle = shared.setNoteStyle
+local BACKUP_SLOTS = shared.BACKUP_SLOTS
 local readIfExists = shared.readIfExists
 local isZoned = shared.isZoned
 
@@ -969,7 +970,7 @@ function M:renameBookToTemplate(file, touchmenu)
         if lfs.attributes(old_md, "mode") == "file"
                 and not lfs.attributes(new_md, "mode") then
             os.rename(old_md, new_md)
-            for __, slot in ipairs({ ".bak", ".bak.1" }) do
+            for __, slot in ipairs(BACKUP_SLOTS) do
                 if lfs.attributes(old_md .. slot, "mode") == "file" then
                     os.rename(old_md .. slot, new_md .. slot)
                 end
@@ -2455,7 +2456,7 @@ function M:bookBackups(file)
     end
     local md_path = self:getLocalDir() .. "/" .. record.base .. ".md"
     local copies = {}
-    for __, slot in ipairs({ ".bak", ".bak.1" }) do
+    for __, slot in ipairs(BACKUP_SLOTS) do
         local path = md_path .. slot
         local attr = lfs.attributes(path)
         if attr and attr.mode == "file" then
@@ -2473,7 +2474,7 @@ function M:bookBackups(file)
 end
 
 local function backupLabel(copy)
-    if copy.slot == ".bak.1" then
+    if copy.slot ~= ".bak" then
         return _("Safety copy")
     elseif copy.zoned then
         return _("Saved notes")
@@ -2482,7 +2483,7 @@ local function backupLabel(copy)
 end
 
 local function backupWhat(copy)
-    if copy.slot == ".bak.1" then
+    if copy.slot ~= ".bak" then
         return _("Text of yours that a rewrite was about to replace and that does not come back by itself.")
     elseif copy.zoned then
         return _("The file as it was when you turned Keep my notes off. It comes back when you turn it on again.")

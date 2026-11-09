@@ -609,14 +609,36 @@ local function parkZone(path, content)
     return replaceFile(bak_path, content)
 end
 
+local BACKUP_SLOTS = { ".bak", ".bak.1", ".bak.2", ".bak.3" }
+
 -- Keeps `content` as the safety copy (.bak.1), unless the same bytes
--- are already kept in either slot. Returns whether the copy is there.
+-- are already kept in any slot. An existing .bak.1 is rotated back to
+-- .bak.2 (and .bak.2 to .bak.3) first so consecutive rewrites never
+-- bury an earlier safety copy. Returns whether the copy is there.
 local function keepSafety(path, content)
-    if readIfExists(path .. ".bak") == content
-            or readIfExists(path .. ".bak.1") == content then
+    for __, slot in ipairs(BACKUP_SLOTS) do
+        if readIfExists(path .. slot) == content then
+            return true
+        end
+    end
+    local had1 = readIfExists(path .. ".bak.1") ~= nil
+    local had2 = had1 and readIfExists(path .. ".bak.2") ~= nil
+    if had2 then
+        os.rename(path .. ".bak.2", path .. ".bak.3")
+    end
+    if had1 then
+        os.rename(path .. ".bak.1", path .. ".bak.2")
+    end
+    if replaceFile(path .. ".bak.1", content) then
         return true
     end
-    return replaceFile(path .. ".bak.1", content)
+    if had1 then
+        os.rename(path .. ".bak.2", path .. ".bak.1")
+    end
+    if had2 then
+        os.rename(path .. ".bak.3", path .. ".bak.2")
+    end
+    return false
 end
 
 
@@ -643,6 +665,7 @@ return {
     setBookImported = setBookImported,
     getAutoBookInfo = getAutoBookInfo,
     setAutoBookInfo = setAutoBookInfo,
+    BACKUP_SLOTS = BACKUP_SLOTS,
     getBookOverride = getBookOverride,
     setBookOverride = setBookOverride,
     clearBookOverrides = clearBookOverrides,

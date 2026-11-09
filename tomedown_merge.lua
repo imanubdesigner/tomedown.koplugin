@@ -25,8 +25,10 @@ local merge = {}
 local OWNED = {
     tomedown = true, title = true, author = true, cover = true,
     series = true, series_index = true, language = true, pages = true,
-    exported = true, highlights = true, status = true, progress = true,
+    exported = true, highlights = true, special = true, status = true,
+    progress = true,
 }
+merge.OWNED = OWNED
 
 -- Keys owned only while a book has been imported into Tomedown: they
 -- come from the reader's KOReader data, so the exporter must be able to
@@ -46,6 +48,19 @@ local BEGIN_PATTERN_HASH = "<!%-%- tomedown:begin ([%w_]+)%s+hash=(%w+)[^\n]*%-%
 local BEGIN_PATTERN = "<!%-%- tomedown:begin ([%w_]+)[^\n]*%-%->\n"
 local END_PATTERN = "<!%-%- tomedown:end[^\n]*%-%->"
 
+-- A file synced through Windows or an editor that writes a UTF-8 BOM or
+-- CRLF line endings must parse like any other note: normalize once on
+-- the way in so split, digest and frontmatter see plain LF lines.
+local function normalizeText(s)
+    if type(s) ~= "string" then
+        return s
+    end
+    if s:sub(1, 3) == "\239\187\191" then
+        s = s:sub(4)
+    end
+    return (s:gsub("\r\n", "\n"))
+end
+
 --- Split a note into its frontmatter and its alternating zone/region
 -- blocks. Zones are the text between markers (the reader's), regions
 -- the generated content inside them. Returns nil when the file has no
@@ -56,6 +71,7 @@ function merge.split(md)
     if type(md) ~= "string" then
         return nil
     end
+    md = normalizeText(md)
     if md:sub(-1) ~= "\n" then
         md = md .. "\n"
     end
@@ -268,6 +284,8 @@ local function tagSet(block)
 end
 
 function merge.mergeFrontmatter(disk_fm, rendered_fm, extra_owned)
+    disk_fm = normalizeText(disk_fm)
+    rendered_fm = normalizeText(rendered_fm)
     local disk = parseFm(disk_fm)
     local rendered = parseFm(rendered_fm)
     local function owned(key)
@@ -439,14 +457,221 @@ end
 -- block itself answers; markers from older builds fall back to the
 -- fingerprint stored at the last export, and with none we cannot prove
 -- an edit (the block counts as ours)
-local function regionEdited(db, stored_fp)
+local function regionEdited(db, stored_fp, alt_text)
     if db.hash then
-        return render.digest(db.text) ~= db.hash
+        if render.digest(db.text) == db.hash then
+            return false
+        end
+        if alt_text and render.digest(alt_text) == db.hash then
+            return false
+        end
+        return true
     end
     if stored_fp then
-        return md5(db.text) ~= stored_fp
+        if md5(db.text) == stored_fp then
+            return false
+        end
+        if alt_text and md5(alt_text) == stored_fp then
+            return false
+        end
+        return true
     end
     return false
+end
+
+local function canonicalQuoteKey(quote_lines)
+    local norm = {}
+    for idx, raw in ipairs(quote_lines) do
+        local s = raw:gsub("^>%s?", "")
+        if s ~= "[!highlight]" and s ~= "[!IMPORTANT]" then
+            if idx == #quote_lines then
+                s = s:gsub("%s+%^hl%-[%w]+$", "")
+            end
+            s = s:gsub("^⭐%s*", "")
+            s = s:gsub("^==%*%*(.*)%*%*==$", "%1")
+            s = s:gsub("^%*%*(.*)%*%*$", "%1")
+            s = s:gsub("^==(.*)==$", "%1")
+            norm[#norm + 1] = s:gsub("^%s+", ""):gsub("%s+$", "")
+        end
+    end
+    local key = table.concat(norm, "\n"):gsub("^%s+", ""):gsub("%s+$", "")
+    return key ~= "" and key or nil
+end
+
+local function isStructuralLine(line)
+    return line:find("^>") ~= nil
+        or line:find("^#") ~= nil
+        or line:find("^%-%-%-+%s*$") ~= nil
+        or line:find("^%[%^%d+%]:") ~= nil
+end
+
+local function isGeneratedBulletLine(lines, idx)
+    local line = lines[idx]
+    if not line then
+        return false
+    end
+    if line:find("^%- ") or line:find("^  %- ") or line:find("^    %*") then
+        return true
+    end
+    if line:match("^%s*$") and lines[idx + 1] and lines[idx + 1]:find("^    %*") then
+        return true
+    end
+    return false
+end
+
+-- Extract personal comments written below individual quotes inside a
+-- generated region on disk, and re-attach them under the matching quotes
+-- in the freshly rendered region. Returns:
+--   new_rendered_text, stripped_disk_text, all_attached
+local function preserveQuoteComments(disk_text, rendered_text)
+    if type(disk_text) ~= "string" or type(rendered_text) ~= "string" then
+        return rendered_text, nil, true
+    end
+    local dlines = {}
+    for line in (disk_text):gmatch("(.-)\n") do
+        dlines[#dlines + 1] = line
+    end
+    local comments = {}
+    local stripped = {}
+    local seen_counts = {}
+    local has_comments = false
+    local idx = 1
+    while idx <= #dlines do
+        if dlines[idx]:find("^>") then
+            local qlines = {}
+            while idx <= #dlines and dlines[idx]:find("^>") do
+                qlines[#qlines + 1] = dlines[idx]
+                stripped[#stripped + 1] = dlines[idx]
+                idx = idx + 1
+            end
+            local qkey = canonicalQuoteKey(qlines)
+            if qkey then
+                seen_counts[qkey] = (seen_counts[qkey] or 0) + 1
+                qkey = qkey .. "#" .. tostring(seen_counts[qkey])
+            end
+            -- copy optional blank line + generated metadata bullets
+            local probe = idx
+            while probe <= #dlines and dlines[probe]:match("^%s*$") do
+                probe = probe + 1
+            end
+            if probe <= #dlines and dlines[probe]:find("^%- ") then
+                while idx < probe do
+                    stripped[#stripped + 1] = dlines[idx]
+                    idx = idx + 1
+                end
+                while idx <= #dlines and isGeneratedBulletLine(dlines, idx) do
+                    stripped[#stripped + 1] = dlines[idx]
+                    idx = idx + 1
+                end
+            end
+            -- anything before the next structural boundary that has non-blank
+            -- text is a personal comment attached to this quote
+            local gap_start = idx
+            while idx <= #dlines and not isStructuralLine(dlines[idx]) do
+                idx = idx + 1
+            end
+            local gap = {}
+            for g = gap_start, idx - 1 do
+                gap[#gap + 1] = dlines[g]
+            end
+            local has_text = false
+            for __, gl in ipairs(gap) do
+                if gl:find("%S") then
+                    has_text = true
+                    break
+                end
+            end
+            if has_text and qkey then
+                while #gap > 0 and gap[1]:match("^%s*$") do
+                    table.remove(gap, 1)
+                end
+                while #gap > 0 and gap[#gap]:match("^%s*$") do
+                    table.remove(gap)
+                end
+                comments[#comments + 1] = {
+                    key = qkey,
+                    lines = gap,
+                    attached = false,
+                }
+                has_comments = true
+                stripped[#stripped + 1] = ""
+            else
+                for g = gap_start, idx - 1 do
+                    stripped[#stripped + 1] = dlines[g]
+                end
+            end
+        else
+            stripped[#stripped + 1] = dlines[idx]
+            idx = idx + 1
+        end
+    end
+    if not has_comments then
+        return rendered_text, nil, true
+    end
+
+    local by_key = {}
+    for __, c in ipairs(comments) do
+        by_key[c.key] = c
+    end
+
+    local rlines = {}
+    for line in (rendered_text):gmatch("(.-)\n") do
+        rlines[#rlines + 1] = line
+    end
+    local out = {}
+    local rseen = {}
+    local ridx = 1
+    while ridx <= #rlines do
+        if rlines[ridx]:find("^>") then
+            local qlines = {}
+            while ridx <= #rlines and rlines[ridx]:find("^>") do
+                qlines[#qlines + 1] = rlines[ridx]
+                out[#out + 1] = rlines[ridx]
+                ridx = ridx + 1
+            end
+            local qkey = canonicalQuoteKey(qlines)
+            if qkey then
+                rseen[qkey] = (rseen[qkey] or 0) + 1
+                qkey = qkey .. "#" .. tostring(rseen[qkey])
+            end
+            local probe = ridx
+            while probe <= #rlines and rlines[probe]:match("^%s*$") do
+                probe = probe + 1
+            end
+            if probe <= #rlines and rlines[probe]:find("^%- ") then
+                while ridx < probe do
+                    out[#out + 1] = rlines[ridx]
+                    ridx = ridx + 1
+                end
+                while ridx <= #rlines and isGeneratedBulletLine(rlines, ridx) do
+                    out[#out + 1] = rlines[ridx]
+                    ridx = ridx + 1
+                end
+            end
+            local entry = qkey and by_key[qkey]
+            if entry then
+                out[#out + 1] = ""
+                for __, cl in ipairs(entry.lines) do
+                    out[#out + 1] = cl
+                end
+                entry.attached = true
+            end
+        else
+            out[#out + 1] = rlines[ridx]
+            ridx = ridx + 1
+        end
+    end
+
+    local all_attached = true
+    for __, c in ipairs(comments) do
+        if not c.attached then
+            all_attached = false
+            break
+        end
+    end
+    local stripped_text = table.concat(stripped, "\n") .. "\n"
+    local merged_rendered = table.concat(out, "\n") .. "\n"
+    return merged_rendered, stripped_text, all_attached
 end
 
 -- a file we cannot merge but do generate ourselves: markers we cannot
@@ -489,13 +714,13 @@ end
 -- and the old generated content is dropped (the render has it again).
 -- Regions the reader had edited survive only in the .bak the caller
 -- writes: flagged through info.backup.
-local function migrate(disk, rendered, stored_fps, title, extra_owned)
+local function migrate(disk, rendered, stored_fps, title, extra_owned, reason_name)
     stored_fps = stored_fps or {}
+    reason_name = reason_name or "restructured"
     local edited, tail_chunks = {}, {}
     for i, b in ipairs(disk.blocks) do
         if b.kind == "region" then
-            local fp = stored_fps[b.name]
-            if fp and md5(b.text) ~= fp then
+            if regionEdited(b, stored_fps[b.name]) then
                 edited[#edited + 1] = b.name
             end
         elseif i > 1 and b.text:find("%S") then
@@ -513,9 +738,9 @@ local function migrate(disk, rendered, stored_fps, title, extra_owned)
     out.blocks[3] = { kind = "zone",
         text = frameTail(table.concat(tail_chunks, "\n\n")) }
     return merge.join(out), {
-        reason = "restructured",
+        reason = reason_name,
         edited = edited,
-        backup = #edited > 0,
+        backup = #edited > 0 or reason_name == "shape",
     }
 end
 
@@ -686,6 +911,9 @@ function merge.apply(disk_md, rendered_md, stored_fps, opts)
     if opts.mode ~= "preserve" then
         return rendered_md, { reason = "overwrite", edited = {} }
     end
+    if type(disk_md) == "string" then
+        disk_md = normalizeText(disk_md)
+    end
     local extra_owned = opts.bookinfo and BOOKINFO_OWNED or nil
     local rendered = merge.split(rendered_md)
     if not rendered then
@@ -718,33 +946,34 @@ function merge.apply(disk_md, rendered_md, stored_fps, opts)
     if disk_names ~= regionNames(rendered) then
         if disk_names == "preamble,highlights,bookmarks" then
             return migrate(disk, rendered, stored_fps, opts.notes_title,
-                extra_owned)
+                extra_owned, "restructured")
         end
-        return rendered_md, { reason = "shape", edited = {} }
-    end
-    local stamp = disk.fm:match('tomedown:%s*"([^"]*)"')
-    if stamp and stamp ~= render.FORMAT_VERSION then
-        -- the layout still matches: only the block is regenerated, the
-        -- zones and front matter (a key the user added) come across
-        return merge.join({
-            fm = merge.mergeFrontmatter(disk.fm, rendered.fm, extra_owned),
-            blocks = withZones(disk, rendered, opts.notes_title),
-        }), { reason = "format", edited = {} }
+        return migrate(disk, rendered, stored_fps, opts.notes_title,
+            extra_owned, "shape")
     end
     stored_fps = stored_fps or {}
 
     local edited = {}
     for i, rb in ipairs(rendered.blocks) do
-        if rb.kind == "region"
-            and regionEdited(disk.blocks[i], stored_fps[rb.name]) then
-            edited[#edited + 1] = rb.name
+        if rb.kind == "region" then
+            local db = disk.blocks[i]
+            local new_rtext, stripped_dtext, all_attached =
+                preserveQuoteComments(db and db.text, rb.text)
+            rb.text = new_rtext
+            if not all_attached
+                or regionEdited(db, stored_fps[rb.name], stripped_dtext) then
+                edited[#edited + 1] = rb.name
+            end
         end
     end
+    local stamp = disk.fm:match('tomedown:%s*"([^"]*)"')
+    local reason = (stamp and stamp ~= render.FORMAT_VERSION)
+        and "format" or "merged"
     return merge.join({
         fm = merge.mergeFrontmatter(disk.fm, rendered.fm, extra_owned),
         blocks = withZones(disk, rendered, opts.notes_title),
     }), {
-        reason = "merged",
+        reason = reason,
         edited = edited,
         backup = #edited > 0 or risky == true,
     }

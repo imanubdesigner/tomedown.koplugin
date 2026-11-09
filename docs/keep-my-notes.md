@@ -147,7 +147,20 @@ With Keep my notes off the file is regenerated at every export. Text typed
 into it can only be kept when Keep my notes comes back on, and lands in
 `.bak.1`; an export while Keep my notes is still off overwrites it.
 
-## The two copies
+### At a glance: where you write → what happens on the next export
+
+| Where you write or edit | Keep my notes **ON** | Keep my notes **OFF** |
+|---|---|---|
+| **Above** `<!-- tomedown:begin body ... -->` (under the notes heading) | Preserved in place | Overwritten (kept in `.bak` when turning the switch off; comes back when turned on again) |
+| **Below** `<!-- tomedown:end body -->` (at the bottom of the file) | Preserved in place | Overwritten |
+| **Custom frontmatter keys** (`aliases`, `cssclasses`, `mood`, …) | Preserved verbatim | Overwritten |
+| **Manual tags** added in `tags:` | Preserved and unioned with KOReader's tags | Overwritten |
+| **Personal comment directly below a quote** (after `- **p. X** …`) | Preserved and re-attached under that same quote on the next export | Overwritten |
+| **Other edits inside** the generated block (`begin` … `end`) | Rebuilt from KOReader; your previous file is saved in `.bak.1` (rotating up to `.bak.3`) | Overwritten |
+| **Damaged or missing markers** / plain note created in Obsidian | Adopted or recovered: your notes stay in the head zone and a safety copy is kept in `.bak.1` when needed | Overwritten |
+| **Windows CRLF (`\r\n`) or UTF-8 BOM** added by an external editor | Normalized and merged cleanly with no spurious backup | Overwritten |
+
+## The backup copies
 
 **The `.bak` is your file, set aside.** When Keep my notes goes off, the
 zoned file, notes included, is kept as `<name>.md.bak` while the plain export
@@ -158,11 +171,14 @@ one you deleted stays deleted. A `.bak` is never copied twice and never grows
 a twin beside it. A card that ran the 1.1.0-beta.1 finds its two copies back
 in the right slots on the first export.
 
-**`<name>.md.bak.1` is the safety copy**, only for text that cannot come back
-by itself: something typed into the plain file while Keep my notes was off
-(that file is regenerated, so the text cannot join the zone), a block edited
-inside its comments, a cloud copy that moved on. It has one slot and never
-takes the place of the `.bak`.
+**`<name>.md.bak.1` (up to `.bak.3`) are the safety copies**, only for text
+that cannot come back by itself: something typed into the plain file while
+Keep my notes was off (that file is regenerated, so the text cannot join the
+zone), a block edited inside its comments, a format or region-shape migration
+on an edited block, or a cloud copy that moved on. Up to three safety slots
+(`.bak.1`, `.bak.2`, `.bak.3`) are rotated automatically so two consecutive
+rewrites never overwrite an earlier safety copy, and they never take the
+place of the `.bak`.
 
 A file Tomedown itself wrote is never copied. When an export finds the very
 bytes the last run left there, nothing of yours sits in them, so no safety

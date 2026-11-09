@@ -4320,7 +4320,7 @@ do
     local function has(s, path)
         return T.contains(T.readFile(path or MD_PATH) or "", s)
     end
-    for __, p in ipairs({ MD_PATH, MD_PATH .. ".bak", MD_PATH .. ".bak.1" }) do
+    for __, p in ipairs({ MD_PATH, MD_PATH .. ".bak", MD_PATH .. ".bak.1", MD_PATH .. ".bak.2", MD_PATH .. ".bak.3" }) do
         os.remove(p)
     end
     store.tomedown.preserve_books = nil
@@ -4509,7 +4509,7 @@ do
     remote_files, download_fails, downloads = {}, {}, {}
     BookList.registry[FILE].annotations = modernAnnotations()
     store.tomedown.exports = nil
-    for __, p in ipairs({ MD_PATH, MD_PATH .. ".bak", MD_PATH .. ".bak.1" }) do
+    for __, p in ipairs({ MD_PATH, MD_PATH .. ".bak", MD_PATH .. ".bak.1", MD_PATH .. ".bak.2", MD_PATH .. ".bak.3" }) do
         os.remove(p)
     end
     exportNow()
@@ -4588,7 +4588,7 @@ do
         UIManager:runPending()
         return ConfirmBox.last
     end
-    for __, p in ipairs({ MD_PATH, MD_PATH .. ".bak", MD_PATH .. ".bak.1" }) do
+    for __, p in ipairs({ MD_PATH, MD_PATH .. ".bak", MD_PATH .. ".bak.1", MD_PATH .. ".bak.2", MD_PATH .. ".bak.3" }) do
         os.remove(p)
     end
     store.tomedown.preserve_books = nil
