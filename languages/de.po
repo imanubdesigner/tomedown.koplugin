@@ -967,5 +967,9 @@ msgstr "Seitenlesezeichen: %1"
 msgid "YAML frontmatter: %1"
 msgstr "YAML-Frontmatter: %1"
 
+msgid "Show Tomedown icon in the top bar"
+msgstr "Tomedown-Symbol in der oberen Leiste anzeigen"
+
+
 
 

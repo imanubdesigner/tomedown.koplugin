@@ -74,6 +74,8 @@ local getHighlightContext = shared.getHighlightContext
 local setHighlightContext = shared.setHighlightContext
 local getExportFormat = shared.getExportFormat
 local setExportFormat = shared.setExportFormat
+local getTopbarIcon = shared.getTopbarIcon
+local setTopbarIcon = shared.setTopbarIcon
 local getBookStyleOverride = shared.getBookStyleOverride
 local setBookStyleOverride = shared.setBookStyleOverride
 local hasBookStyleOverrides = shared.hasBookStyleOverrides
@@ -2152,9 +2154,21 @@ function M:genSettingsMenu()
                 return getHighlightContext()
             end,
             keep_menu_open = true,
+            separator = true,
             callback = function()
                 setHighlightContext(not getHighlightContext())
                 self:invalidateExportHashes()
+            end,
+        },
+        {
+            text = _("Show Tomedown icon in the top bar"),
+            checked_func = function()
+                return getTopbarIcon()
+            end,
+            keep_menu_open = true,
+            callback = function(touchmenu)
+                setTopbarIcon(not getTopbarIcon())
+                self:refreshMenuPlacement(touchmenu)
             end,
         },
     }
@@ -2750,19 +2764,132 @@ end
 -- it off (local-first), while anyone who has already exported keeps the
 -- old behaviour (on) unless they had explicitly chosen otherwise.
 
-local function pinToTop(order_module, group_id)
+local TOPBAR_ICON_NAME = "appbar.tomedown"
+
+local function ensureTopbarIconRegistered()
+    local src = debug.getinfo(1, "S").source
+    if not src or src:sub(1, 1) ~= "@" then
+        return
+    end
+    local plugin_dir = src:sub(2):match("^(.*)/[^/]+$")
+    if not plugin_dir then
+        return
+    end
+    local assets_dir = plugin_dir .. "/assets"
+    local svg_src = assets_dir .. "/" .. TOPBAR_ICON_NAME .. ".svg"
+    if not lfs.attributes(svg_src) then
+        return
+    end
+    -- Copy into DataStorage:getDataDir() .. "/icons" so KOReader's
+    -- standard user_icons_dir has it on future launches
+    local ok_ds, DataStorage = pcall(require, "datastorage")
+    if ok_ds and DataStorage and type(DataStorage.getDataDir) == "function" then
+        local icons_dir = DataStorage:getDataDir() .. "/icons"
+        if lfs.attributes(icons_dir, "mode") ~= "directory" then
+            pcall(lfs.mkdir, icons_dir)
+        end
+        local dst = icons_dir .. "/" .. TOPBAR_ICON_NAME .. ".svg"
+        local content = readIfExists(svg_src)
+        if content and readIfExists(dst) ~= content then
+            local f = io.open(dst, "wb")
+            if f then
+                f:write(content)
+                f:close()
+            end
+        end
+    end
+    -- Also register assets_dir in IconWidget's live lookup table so the
+    -- icon renders immediately on the very first run without a restart
+    local ok_iw, IconWidget = pcall(require, "ui/widget/iconwidget")
+    if ok_iw and type(IconWidget) == "table"
+            and type(IconWidget.init) == "function"
+            and debug and type(debug.getupvalue) == "function" then
+        for i = 1, 10 do
+            local name, val = debug.getupvalue(IconWidget.init, i)
+            if not name then
+                break
+            end
+            if name == "ICONS_DIRS" and type(val) == "table" then
+                local found = false
+                for _, dir in ipairs(val) do
+                    if dir == assets_dir then
+                        found = true
+                        break
+                    end
+                end
+                if not found then
+                    table.insert(val, 1, assets_dir)
+                end
+            elseif name == "ICONS_PATH" and type(val) == "table" then
+                val[TOPBAR_ICON_NAME] = nil
+            end
+        end
+    end
+    local ok_img, ImageWidget = pcall(require, "ui/widget/imagewidget")
+    if ok_img and type(ImageWidget) == "table"
+            and type(ImageWidget._loadfile) == "function"
+            and debug and type(debug.getupvalue) == "function" then
+        for i = 1, 10 do
+            local name, val = debug.getupvalue(ImageWidget._loadfile, i)
+            if not name then
+                break
+            end
+            if name == "ImageCache" and type(val) == "table" and type(val.clear) == "function" then
+                pcall(val.clear, val)
+                break
+            end
+        end
+    end
+end
+
+local function removeFromArray(arr, target)
+    if type(arr) ~= "table" then
+        return
+    end
+    for i = #arr, 1, -1 do
+        if arr[i] == target then
+            table.remove(arr, i)
+        end
+    end
+end
+
+local function applyMenuOrder(order_module, default_group_id, use_topbar)
     local ok, order = pcall(require, order_module)
-    if not ok or type(order) ~= "table" or type(order[group_id]) ~= "table" then
+    if not ok or type(order) ~= "table" then
         -- outside KOReader (tests): no order tables, no placement
         return
     end
-    local group = order[group_id]
-    for _, id in ipairs(group) do
-        if id == "tomedown" then
+    removeFromArray(order[default_group_id], "tomedown")
+    removeFromArray(order.tools, "tomedown")
+    removeFromArray(order["KOMenu:menu_buttons"], "tomedown")
+    if use_topbar then
+        local buttons = order["KOMenu:menu_buttons"]
+        if type(buttons) == "table" then
+            local pos
+            for i, id in ipairs(buttons) do
+                if id == "main" then
+                    pos = i
+                    break
+                end
+            end
+            if not pos then
+                pos = #buttons + 1
+            end
+            table.insert(buttons, pos, "tomedown")
+            order.tomedown = {}
             return
         end
     end
-    table.insert(group, 1, "tomedown")
+    order.tomedown = nil
+    local group = order[default_group_id]
+    if type(group) == "table" then
+        table.insert(group, 1, "tomedown")
+    end
+end
+
+local function applyMenuPlacement(use_topbar)
+    applyMenuOrder("ui/elements/reader_menu_order", "navi", use_topbar)
+    applyMenuOrder("ui/elements/filemanager_menu_order", "filemanager_settings", use_topbar)
 end
 
 -- ---------------------------------------------- copies kept beside a book
@@ -3457,6 +3584,107 @@ function M:refreshBookInfoMenu(touchmenu, file)
     end
 end
 
+function M:buildMenuItem()
+    local item = {
+        id = "tomedown",
+        text = "Tomedown",
+        icon = TOPBAR_ICON_NAME,
+        sub_item_table_func = function()
+            return self:genBookMenu()
+        end,
+    }
+    local function populateRows()
+        local fresh = self:genBookMenu()
+        for i = #item, 1, -1 do
+            item[i] = nil
+        end
+        for i, row in ipairs(fresh) do
+            item[i] = row
+        end
+    end
+    populateRows()
+    item.callback = populateRows
+    return item
+end
+
+function M:refreshMenuPlacement(touchmenu)
+    local use_topbar = getTopbarIcon()
+    ensureTopbarIconRegistered()
+    applyMenuPlacement(use_topbar)
+    local tabs = self.ui and self.ui.menu and self.ui.menu.tab_item_table
+    if type(tabs) ~= "table" then
+        return
+    end
+    -- Remove any existing tomedown entry from top-level tabs and first tab
+    for i = #tabs, 1, -1 do
+        if type(tabs[i]) == "table" and tabs[i].id == "tomedown" then
+            table.remove(tabs, i)
+        end
+    end
+    if type(tabs[1]) == "table" then
+        for i = #tabs[1], 1, -1 do
+            if type(tabs[1][i]) == "table" and tabs[1][i].id == "tomedown" then
+                table.remove(tabs[1], i)
+            end
+        end
+    end
+    local item = self:buildMenuItem()
+    local tomedown_tab_idx = 1
+    if use_topbar then
+        local pos
+        for i, tab in ipairs(tabs) do
+            if type(tab) == "table" and tab.id == "main" then
+                pos = i
+                break
+            end
+        end
+        if not pos then
+            pos = #tabs + 1
+        end
+        table.insert(tabs, pos, item)
+        tomedown_tab_idx = pos
+    elseif type(tabs[1]) == "table" then
+        table.insert(tabs[1], 1, item)
+        tomedown_tab_idx = 1
+    end
+    -- If TouchMenu is currently open, rebuild its top bar and navigation stack live
+    if touchmenu and touchmenu.bar and type(touchmenu.bar.new) == "function"
+            and touchmenu.tab_item_table == tabs then
+        local icons = {}
+        for _, v in ipairs(tabs) do
+            table.insert(icons, v.icon)
+        end
+        touchmenu.bar = touchmenu.bar:new{
+            width = touchmenu.width,
+            icons = icons,
+            show_parent = touchmenu.show_parent,
+            menu = touchmenu,
+        }
+        touchmenu.cur_tab = tomedown_tab_idx
+        if type(touchmenu.bar.switchToTab) == "function" then
+            touchmenu.bar:switchToTab(tomedown_tab_idx)
+        end
+        if type(touchmenu.item_table_stack) == "table" then
+            local settings_tbl = touchmenu.item_table_stack[#touchmenu.item_table_stack]
+            if use_topbar then
+                touchmenu.item_table_stack = { item }
+                if settings_tbl and settings_tbl ~= item then
+                    table.insert(touchmenu.item_table_stack, settings_tbl)
+                end
+            else
+                touchmenu.item_table_stack = {}
+                if type(tabs[1]) == "table" then
+                    table.insert(touchmenu.item_table_stack, tabs[1])
+                end
+                table.insert(touchmenu.item_table_stack, item)
+                if settings_tbl and settings_tbl ~= item then
+                    table.insert(touchmenu.item_table_stack, settings_tbl)
+                end
+            end
+        end
+    end
+end
+
 function M:addToMainMenu(menu_items)
     if getSetting("update_check", false) then
         UIManager:scheduleIn(0.1, function()
@@ -3464,20 +3692,15 @@ function M:addToMainMenu(menu_items)
         end)
     end
     self:maybePromptLibraryImport()
-    pinToTop("ui/elements/reader_menu_order", "navi")
-    pinToTop("ui/elements/filemanager_menu_order", "filemanager_settings")
+    ensureTopbarIconRegistered()
+    applyMenuPlacement(getTopbarIcon())
     -- Every row of the main menu carries a Nerd Font glyph (from
     -- nerdfonts/symbols.ttf, KOReader's own fallback font). Settings
     -- keeps its word plus the icon; inside, group labels and submenu
     -- rows are iconified - plain setting rows stay text-only.
     -- The main rows are fixed; the Current book submenu is built on
     -- open, so its per book rows read the book that is open right now.
-    menu_items.tomedown = {
-        text = "Tomedown",
-        sub_item_table_func = function()
-            return self:genBookMenu()
-        end,
-    }
+    menu_items.tomedown = self:buildMenuItem()
 end
 
 return M

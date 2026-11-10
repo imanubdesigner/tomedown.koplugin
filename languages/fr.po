@@ -967,5 +967,9 @@ msgstr "Signets de page : %1"
 msgid "YAML frontmatter: %1"
 msgstr "Frontmatter YAML : %1"
 
+msgid "Show Tomedown icon in the top bar"
+msgstr "Afficher l'icône Tomedown dans la barre supérieure"
+
+
 
 

@@ -1276,10 +1276,10 @@ do
     T.check(index_group[5].checked_func() == true, "Reading now on by default")
 end
 
--- Style: eleven static rows
+-- Style: twelve static rows
 do
     local style_group = settings[3].sub_item_table
-    T.check(#style_group == 11, "style rows: " .. #style_group)
+    T.check(#style_group == 12, "style rows: " .. #style_group)
     T.check(style_group[1].text_func() == "Personal notes format: Inline", "note style entry")
     T.check(type(style_group[2].text_func) == "function", "special marker row present")
     T.check(T.contains(style_group[2].text_func(), "Callout"),
@@ -1496,7 +1496,7 @@ T.check(notes[3] == nil,
 
 -- Style: note formatting and highlights
 local highlights = settings[3].sub_item_table
-T.check(#highlights == 11, "style rows: " .. #highlights)
+T.check(#highlights == 12, "style rows: " .. #highlights)
 T.check(highlights[3].text == "Treat every highlight as special",
     "callout entry")
 T.check(highlights[3].checked_func() == false, "callout off by default")
@@ -5236,6 +5236,90 @@ do
             and bstyle[7].mandatory_func() == "Global"
             and bstyle[9].enabled_func() == false,
         "28: Reset to global style settings clears all overrides for FILE")
+
+    -- Top bar icon toggle (Settings -> Style -> Show Tomedown icon in the top bar)
+    T.check(shared.getTopbarIcon() == false,
+        "28: topbar_icon is off by default")
+    local mock_reader_order = {
+        ["KOMenu:menu_buttons"] = { "navi", "typeset", "setting", "tools", "search", "filemanager", "main" },
+        navi = { "table_of_contents", "bookmarks" },
+        tools = { "statistics" },
+    }
+    local mock_fm_order = {
+        ["KOMenu:menu_buttons"] = { "filemanager_settings", "setting", "tools", "search", "plus_menu", "main" },
+        filemanager_settings = { "sort_by" },
+        tools = { "statistics" },
+    }
+    package.loaded["ui/elements/reader_menu_order"] = mock_reader_order
+    package.loaded["ui/elements/filemanager_menu_order"] = mock_fm_order
+
+    local mock_tabs = {
+        { id = "navi", icon = "appbar.navigation", { id = "table_of_contents" } },
+        { id = "tools", icon = "appbar.tools" },
+        { id = "main", icon = "appbar.menu" },
+    }
+    ui.menu.tab_item_table = mock_tabs
+
+    local s_menu = plugin:genSettingsMenu()
+    local topbar_row = s_menu[3].sub_item_table[12]
+    T.check(topbar_row and topbar_row.text == "Show Tomedown icon in the top bar",
+        "28: Show Tomedown icon in the top bar is row 12 of Style")
+    T.check(topbar_row.checked_func() == false,
+        "28: topbar row unchecked by default")
+
+    local switched_tab
+    local mock_touchmenu = {
+        width = 600,
+        tab_item_table = mock_tabs,
+        item_table_stack = { mock_tabs[1], { id = "tomedown" }, s_menu },
+        bar = {
+            new = function(_self, o)
+                o.switchToTab = function(_b, idx)
+                    switched_tab = idx
+                end
+                return o
+            end,
+        },
+    }
+
+    -- Turn topbar icon ON
+    topbar_row.callback(mock_touchmenu)
+    T.check(shared.getTopbarIcon() == true and topbar_row.checked_func() == true,
+        "28: topbar_icon enabled after callback")
+    T.check(mock_reader_order["KOMenu:menu_buttons"][7] == "tomedown"
+            and mock_reader_order["KOMenu:menu_buttons"][8] == "main"
+            and type(mock_reader_order.tomedown) == "table"
+            and mock_reader_order.navi[1] ~= "tomedown",
+        "28: reader_menu_order places tomedown at the end of the left group before main")
+    T.check(mock_fm_order["KOMenu:menu_buttons"][6] == "tomedown"
+            and mock_fm_order["KOMenu:menu_buttons"][7] == "main"
+            and type(mock_fm_order.tomedown) == "table"
+            and mock_fm_order.filemanager_settings[1] ~= "tomedown",
+        "28: filemanager_menu_order places tomedown at the end of the left group before main")
+    T.check(mock_tabs[3] and mock_tabs[3].id == "tomedown"
+            and mock_tabs[3].icon == "appbar.tomedown"
+            and type(mock_tabs[3].callback) == "function"
+            and #mock_tabs[3] > 0,
+        "28: live tab_item_table gains standalone tomedown tab with icon and rows")
+    T.check(switched_tab == 3 and mock_touchmenu.cur_tab == 3,
+        "28: live touchmenu bar switches highlight to new tomedown tab")
+
+    -- Turn topbar icon OFF
+    topbar_row.callback(mock_touchmenu)
+    T.check(shared.getTopbarIcon() == false and topbar_row.checked_func() == false,
+        "28: topbar_icon disabled after second callback")
+    T.check(mock_reader_order.navi[1] == "tomedown"
+            and mock_reader_order.tomedown == nil,
+        "28: reader_menu_order restores tomedown to top of navi")
+    T.check(mock_fm_order.filemanager_settings[1] == "tomedown"
+            and mock_fm_order.tomedown == nil,
+        "28: filemanager_menu_order restores tomedown to top of filemanager_settings")
+    T.check(#mock_tabs == 3 and mock_tabs[1][1] and mock_tabs[1][1].id == "tomedown",
+        "28: live tab_item_table restores tomedown to first row of tab 1")
+
+    package.loaded["ui/elements/reader_menu_order"] = nil
+    package.loaded["ui/elements/filemanager_menu_order"] = nil
+    ui.menu.tab_item_table = nil
 end
 
 T.finish("test_main")

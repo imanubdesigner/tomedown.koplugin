@@ -902,6 +902,14 @@ local function setExportFormat(fmt)
     end
 end
 
+local function getTopbarIcon()
+    return getSetting("topbar_icon", false) == true
+end
+
+local function setTopbarIcon(on)
+    setSetting("topbar_icon", on and true or nil)
+end
+
 
 return {
     SETTINGS_KEY = SETTINGS_KEY,
@@ -930,6 +938,8 @@ return {
     setHighlightContext = setHighlightContext,
     getExportFormat = getExportFormat,
     setExportFormat = setExportFormat,
+    getTopbarIcon = getTopbarIcon,
+    setTopbarIcon = setTopbarIcon,
     getBookStyleOverride = getBookStyleOverride,
     setBookStyleOverride = setBookStyleOverride,
     hasBookStyleOverrides = hasBookStyleOverrides,
