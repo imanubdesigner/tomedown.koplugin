@@ -420,8 +420,58 @@ local function setIndexLinks(fmt)
     end
 end
 
-local function getNoteStyle()
-    local style = getSetting("note_style", "inline")
+local function getBookStyleOverride(file, key)
+    if not file or not key then
+        return nil
+    end
+    local all = getSetting("book_style", nil)
+    if type(all) ~= "table" or type(all[file]) ~= "table" then
+        return nil
+    end
+    return all[file][key]
+end
+
+local function setBookStyleOverride(file, key, val)
+    if not file or not key then
+        return
+    end
+    local all = getSetting("book_style", {})
+    if type(all) ~= "table" then
+        all = {}
+    end
+    local entry = type(all[file]) == "table" and all[file] or {}
+    entry[key] = val
+    if next(entry) == nil then
+        all[file] = nil
+    else
+        all[file] = entry
+    end
+    setSetting("book_style", next(all) and all or nil)
+end
+
+local function hasBookStyleOverrides(file)
+    if not file then
+        return false
+    end
+    local all = getSetting("book_style", nil)
+    return type(all) == "table" and type(all[file]) == "table" and next(all[file]) ~= nil
+end
+
+local function clearBookStyleOverrides(file)
+    if not file then
+        return
+    end
+    local all = getSetting("book_style", nil)
+    if type(all) ~= "table" or all[file] == nil then
+        return
+    end
+    all[file] = nil
+    setSetting("book_style", next(all) and all or nil)
+end
+
+local function getNoteStyle(file)
+    local override = file and getBookStyleOverride(file, "note_style")
+    local style = override or getSetting("note_style", "inline")
     if style == "footnote" then
         return "footnote"
     end
@@ -641,6 +691,191 @@ local function keepSafety(path, content)
     return false
 end
 
+-- Frontmatter customization: optional keys that can be hidden, and key
+-- ordering. `tomedown` is the format stamp and can never be hidden or
+-- moved away from the top of the front matter.
+local FRONTMATTER_HIDEABLE_KEYS = {
+    "cover", "series", "language", "pages", "exported",
+    "highlights", "special", "status", "progress",
+}
+
+local DEFAULT_FRONTMATTER_ORDER = {
+    "title", "author", "cover", "series", "series_index",
+    "language", "pages", "exported", "highlights", "special",
+    "status", "progress",
+    "published", "rating", "review", "date_started", "date_finished",
+    "collections", "tags",
+}
+
+local VALID_HIDEABLE_KEY = {}
+for __, k in ipairs(FRONTMATTER_HIDEABLE_KEYS) do
+    VALID_HIDEABLE_KEY[k] = true
+end
+
+local VALID_ORDER_KEY = {}
+for __, k in ipairs(DEFAULT_FRONTMATTER_ORDER) do
+    VALID_ORDER_KEY[k] = true
+end
+
+local function getFrontmatterHidden()
+    local raw = getSetting("fm_hidden", nil)
+    if type(raw) ~= "table" then
+        return nil
+    end
+    local out = {}
+    local any = false
+    for k, v in pairs(raw) do
+        if v == true and k ~= "tomedown" and VALID_HIDEABLE_KEY[k] then
+            out[k] = true
+            any = true
+        end
+    end
+    return any and out or nil
+end
+
+local function isFrontmatterKeyEnabled(key)
+    if key == "tomedown" or not VALID_HIDEABLE_KEY[key] then
+        return true
+    end
+    local hidden = getSetting("fm_hidden", nil)
+    return not (type(hidden) == "table" and hidden[key] == true)
+end
+
+local function setFrontmatterKeyEnabled(key, enabled)
+    if key == "tomedown" or not VALID_HIDEABLE_KEY[key] then
+        return
+    end
+    local current = getSetting("fm_hidden", nil)
+    local next_map = {}
+    if type(current) == "table" then
+        for k, v in pairs(current) do
+            if v == true and k ~= "tomedown" and VALID_HIDEABLE_KEY[k] then
+                next_map[k] = true
+            end
+        end
+    end
+    if enabled then
+        next_map[key] = nil
+    else
+        next_map[key] = true
+    end
+    setSetting("fm_hidden", next(next_map) and next_map or nil)
+end
+
+local function sanitizeFrontmatterOrder(raw)
+    local tokens = {}
+    if type(raw) == "string" then
+        for tok in raw:gmatch("[%w_]+") do
+            tokens[#tokens + 1] = tok:lower()
+        end
+    elseif type(raw) == "table" then
+        for __, tok in ipairs(raw) do
+            if type(tok) == "string" then
+                tokens[#tokens + 1] = tok:lower():gsub("^%s+", ""):gsub("%s+$", "")
+            end
+        end
+    end
+    local out, seen = {}, {}
+    for __, k in ipairs(tokens) do
+        if k ~= "tomedown" and VALID_ORDER_KEY[k] and not seen[k] then
+            seen[k] = true
+            out[#out + 1] = k
+        end
+    end
+    return #out > 0 and out or nil
+end
+
+local function getFrontmatterOrder()
+    return sanitizeFrontmatterOrder(getSetting("fm_order", nil))
+end
+
+local function setFrontmatterOrder(raw)
+    local clean = sanitizeFrontmatterOrder(raw)
+    setSetting("fm_order", clean)
+    return clean
+end
+
+local function getFrontmatterEnabled()
+    return getSetting("fm_enabled", true) ~= false
+end
+
+local function setFrontmatterEnabled(enabled)
+    if enabled == false then
+        setSetting("fm_enabled", false)
+    else
+        setSetting("fm_enabled", nil)
+    end
+end
+
+local function getHighlightDetails(file)
+    local override = file and getBookStyleOverride(file, "highlight_details")
+    local mode = override or getSetting("highlight_details", "page_date")
+    if mode == "page_only" or mode == "date_only" or mode == "none" then
+        return mode
+    end
+    return "page_date"
+end
+
+local function setHighlightDetails(mode)
+    if mode == "page_only" or mode == "date_only" or mode == "none" then
+        setSetting("highlight_details", mode)
+    else
+        setSetting("highlight_details", nil)
+    end
+end
+
+local function getChapterHeadings(file)
+    local override = file and getBookStyleOverride(file, "chapter_headings")
+    local level = override or getSetting("chapter_headings", "h1")
+    if level == "h2" or level == "h3" or level == "none" then
+        return level
+    end
+    return "h1"
+end
+
+local function setChapterHeadings(level)
+    if level == "h2" or level == "h3" or level == "none" then
+        setSetting("chapter_headings", level)
+    else
+        setSetting("chapter_headings", nil)
+    end
+end
+
+local function getHighlightContext(file)
+    if file then
+        local override = getBookStyleOverride(file, "highlight_context")
+        if override ~= nil then
+            return override == true
+        end
+    end
+    return getSetting("highlight_context", false) == true
+end
+
+local function setHighlightContext(enabled)
+    if enabled then
+        setSetting("highlight_context", true)
+    else
+        setSetting("highlight_context", nil)
+    end
+end
+
+local function getExportFormat(file)
+    local override = file and getBookStyleOverride(file, "export_format")
+    local fmt = override or getSetting("export_format", "md")
+    if fmt == "txt" or fmt == "both" then
+        return fmt
+    end
+    return "md"
+end
+
+local function setExportFormat(fmt)
+    if fmt == "txt" or fmt == "both" then
+        setSetting("export_format", fmt)
+    else
+        setSetting("export_format", nil)
+    end
+end
+
 
 return {
     SETTINGS_KEY = SETTINGS_KEY,
@@ -649,6 +884,29 @@ return {
     sanitizeCoversFolder = sanitizeCoversFolder,
     getCoversFolder = getCoversFolder,
     setCoversFolder = setCoversFolder,
+    FRONTMATTER_HIDEABLE_KEYS = FRONTMATTER_HIDEABLE_KEYS,
+    DEFAULT_FRONTMATTER_ORDER = DEFAULT_FRONTMATTER_ORDER,
+    getFrontmatterHidden = getFrontmatterHidden,
+    isFrontmatterKeyEnabled = isFrontmatterKeyEnabled,
+    setFrontmatterKeyEnabled = setFrontmatterKeyEnabled,
+    sanitizeFrontmatterOrder = sanitizeFrontmatterOrder,
+    getFrontmatterOrder = getFrontmatterOrder,
+    setFrontmatterOrder = setFrontmatterOrder,
+    getFrontmatterEnabled = getFrontmatterEnabled,
+    setFrontmatterEnabled = setFrontmatterEnabled,
+    getHighlightDetails = getHighlightDetails,
+    setHighlightDetails = setHighlightDetails,
+    getChapterHeadings = getChapterHeadings,
+    setChapterHeadings = setChapterHeadings,
+    getHighlightContext = getHighlightContext,
+    setHighlightContext = setHighlightContext,
+    getExportFormat = getExportFormat,
+    setExportFormat = setExportFormat,
+    getBookStyleOverride = getBookStyleOverride,
+    setBookStyleOverride = setBookStyleOverride,
+    hasBookStyleOverrides = hasBookStyleOverrides,
+    clearBookStyleOverrides = clearBookStyleOverrides,
+    BACKUP_SLOTS = BACKUP_SLOTS,
     INDEX_FILENAME = INDEX_FILENAME,
     DIGEST_FILENAME = DIGEST_FILENAME,
     FILENAME_TEMPLATE = FILENAME_TEMPLATE,
@@ -665,7 +923,6 @@ return {
     setBookImported = setBookImported,
     getAutoBookInfo = getAutoBookInfo,
     setAutoBookInfo = setAutoBookInfo,
-    BACKUP_SLOTS = BACKUP_SLOTS,
     getBookOverride = getBookOverride,
     setBookOverride = setBookOverride,
     clearBookOverrides = clearBookOverrides,

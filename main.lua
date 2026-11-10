@@ -240,6 +240,25 @@ function Tomedown:onNetworkConnected()
     self:schedulePendingFlush()
 end
 
+function Tomedown:onAnnotationsModified(items)
+    local doc = self.ui and self.ui.document
+    if not doc or type(doc.getSelectedWordContext) ~= "function"
+            or type(items) ~= "table" then
+        return
+    end
+    for __, item in ipairs(items) do
+        if type(item) == "table" and not item.deleted and item.drawer
+                and type(item.pos0) == "string" and type(item.pos1) == "string" then
+            local ok_c, prev, nxt = pcall(doc.getSelectedWordContext, doc,
+                item.text or "", 12, item.pos0, item.pos1, false)
+            if ok_c then
+                item.tomedown_context_prev = tostring(prev or ""):gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", "")
+                item.tomedown_context_next = tostring(nxt or ""):gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", "")
+            end
+        end
+    end
+end
+
 -- Special Highlight: two entry points. (1) KOReader's full highlight menu
 -- (fresh text selection or the "…" of an existing highlight): keyed
 -- "03b_special", so the alphabetical menu order lands the button right

@@ -576,8 +576,8 @@ do
     store.tomedown.index_layout = "tags_column"
     ui.document = { file = FILE }
     local current_book = plugin:genCurrentBookMenu()
-    T.check(#current_book == 3,
-        "the open book has keep, book info and visibility rows: " .. #current_book)
+    T.check(#current_book == 4,
+        "the open book has keep, book info, visibility and style rows: " .. #current_book)
     T.check(current_book[2].text == "Book info",
         "the Book info submenu sits second in Current book")
     local book_info = current_book[2].sub_item_table_func()
@@ -1042,7 +1042,7 @@ T.check(sub[3].enabled_func() == true, "export all books enabled")
 do
     ui.document = { file = FILE }
     local current = sub[6].sub_item_table_func()
-    T.check(#current == 3, "Current book starts with keep, Book info and visibility: "
+    T.check(#current == 4, "Current book starts with keep, Book info, visibility and style: "
         .. #current)
     T.check(current[1].text == "Keep my notes in this book",
         "the per book keep row")
@@ -1185,9 +1185,9 @@ T.check(#updates == 4, "updates rows: " .. #updates)
 T.check(cloud[1].text == "Upload to cloud", "upload entry")
 T.check(cloud[2].text_func() == "Server and folder: not set", "server not set")
 T.check(T.contains(cloud[3].text_func(), "Remote folder: not set"), "remote folder not set")
--- Files: five static rows
+-- Files: six static rows
 local files = settings[1].sub_item_table
-T.check(#files == 5, "files rows: " .. #files)
+T.check(#files == 6, "files rows: " .. #files)
 T.check(T.contains(files[1].text_func(), "clipboard/tomedown"), "default local folder")
 T.check(files[2].text_func() == "File name template: Author - Title", "filename template entry")
 T.check(files[3].text_func() == "Folder organization: Single folder", "folder organization entry")
@@ -1276,10 +1276,10 @@ do
     T.check(index_group[5].checked_func() == true, "Reading now on by default")
 end
 
--- Style: seven static rows
+-- Style: eleven static rows
 do
     local style_group = settings[3].sub_item_table
-    T.check(#style_group == 7, "style rows: " .. #style_group)
+    T.check(#style_group == 11, "style rows: " .. #style_group)
     T.check(style_group[1].text_func() == "Personal notes format: Inline", "note style entry")
     T.check(type(style_group[2].text_func) == "function", "special marker row present")
     T.check(T.contains(style_group[2].text_func(), "Callout"),
@@ -1496,7 +1496,7 @@ T.check(notes[3] == nil,
 
 -- Style: note formatting and highlights
 local highlights = settings[3].sub_item_table
-T.check(#highlights == 7, "style rows: " .. #highlights)
+T.check(#highlights == 11, "style rows: " .. #highlights)
 T.check(highlights[3].text == "Treat every highlight as special",
     "callout entry")
 T.check(highlights[3].checked_func() == false, "callout off by default")
@@ -3056,7 +3056,7 @@ do
     -- zone gets its own heading row, right under the switch that keeps
     -- it, and the copies left by the sections above sit under that
     current_book = sub[6].sub_item_table_func()
-    T.check(#current_book == 5,
+    T.check(#current_book == 6,
         "15b: the heading and the copies join the submenu: "
             .. #current_book)
     T.check(current_book[4].text_func()
@@ -3110,7 +3110,7 @@ do
     behaviour[2].callback()
     T.check(store.tomedown.preserve == false, "15b: and off again")
     current_book = sub[6].sub_item_table_func()
-    T.check(#current_book == 5,
+    T.check(#current_book == 6,
         "15b: the heading is back with the switch off: " .. #current_book)
     plugin:runExport({ FILE }, {})
     UIManager:runPending()
@@ -4957,6 +4957,11 @@ end
 -- ------------------------------------------- 27. universal Markdown (v1.4.0)
 do
     local shared = require("tomedown_shared")
+    local function wr(p, s)
+        local f = io.open(p, "wb")
+        f:write(s)
+        f:close()
+    end
     cleanDir()
     resetUpload()
     store = {}
@@ -5062,6 +5067,171 @@ do
     T.check(T.fileExists(digest_path),
         "27: with_digest=true generates 00 - Reading Digest.md automatically during runExport")
     store.tomedown.with_digest = nil
+end
+
+-- ==========================================================================
+-- 28. Multi-slot safety backup rotation (.bak.1 -> .bak.2 -> .bak.3)
+--     and frontmatter field customization (hide & reorder)
+-- ==========================================================================
+do
+    local shared = require("tomedown_shared")
+    local function wr(p, s)
+        local f = io.open(p, "wb")
+        f:write(s)
+        f:close()
+    end
+    cleanDir()
+    resetUpload()
+    store.tomedown = {
+        local_dir = DIR,
+        with_index = false,
+        preserve = true,
+    }
+    plugin:runExport({ FILE }, {})
+    UIManager:runPending()
+
+    -- Edit 1 inside generated region -> saved to .bak.1
+    local md1 = T.readFile(MD_PATH):gsub("> Prima frase%.", "> Edit dentro blocco 1.", 1)
+    wr(MD_PATH, md1)
+    plugin:runExport({ FILE }, { force = true })
+    UIManager:runPending()
+    T.check(T.readFile(MD_PATH .. ".bak.1") == md1,
+        "28: first edited region is backed up in .bak.1")
+
+    -- Edit 2 inside generated region -> .bak.1 rotates to .bak.2, new copy in .bak.1
+    local md2 = T.readFile(MD_PATH):gsub("> Prima frase%.", "> Edit dentro blocco 2.", 1)
+    wr(MD_PATH, md2)
+    plugin:runExport({ FILE }, { force = true })
+    UIManager:runPending()
+    T.check(T.readFile(MD_PATH .. ".bak.1") == md2,
+        "28: second edited region is backed up in .bak.1")
+    T.check(T.readFile(MD_PATH .. ".bak.2") == md1,
+        "28: first safety copy was rotated to .bak.2 instead of being overwritten")
+
+    -- Edit 3 inside generated region -> rotates to .bak.3
+    local md3 = T.readFile(MD_PATH):gsub("> Prima frase%.", "> Edit dentro blocco 3.", 1)
+    wr(MD_PATH, md3)
+    plugin:runExport({ FILE }, { force = true })
+    UIManager:runPending()
+    T.check(T.readFile(MD_PATH .. ".bak.1") == md3
+            and T.readFile(MD_PATH .. ".bak.2") == md2
+            and T.readFile(MD_PATH .. ".bak.3") == md1,
+        "28: three consecutive edits are preserved across .bak.1, .bak.2 and .bak.3")
+
+    local copies = plugin:bookBackups(FILE)
+    T.check(#copies == 3, "28: bookBackups lists all three safety slots")
+
+    -- Frontmatter customization via Style -> Frontmatter fields menu
+    local settings_menu = plugin:genSettingsMenu()
+    local fm_menu = settings_menu[3].sub_item_table[8]
+    T.check(fm_menu and fm_menu.text == "Frontmatter fields",
+        "28: Frontmatter fields submenu in Settings -> Style")
+    local fm_rows = fm_menu.sub_item_table
+    T.check(#fm_rows == 11, "28: 1 YAML toggle + 9 hideable field checkboxes + 1 order entry")
+
+    -- Toggle off 'progress' and 'special' via menu callbacks
+    local prog_row = fm_rows[10]
+    local spec_row = fm_rows[8]
+    T.check(prog_row.key == "progress" and prog_row.checked_func() == true,
+        "28: progress enabled by default")
+    prog_row.callback()
+    spec_row.callback()
+    T.check(prog_row.checked_func() == false and spec_row.checked_func() == false,
+        "28: progress and special disabled after callback")
+
+    -- Guard-rail: attempting to disable 'tomedown' is ignored
+    shared.setFrontmatterKeyEnabled("tomedown", false)
+    T.check(shared.isFrontmatterKeyEnabled("tomedown") == true,
+        "28: tomedown key cannot be disabled")
+
+    -- Custom frontmatter order via dialog
+    local order_row = fm_rows[11]
+    local dlg = order_row.callback()
+    T.check(dlg ~= nil, "28: Frontmatter key order opens InputDialog")
+    dlg:setText("tags, status, title, author")
+    dlg:simulateSave()
+    local saved_order = shared.getFrontmatterOrder()
+    T.check(saved_order and saved_order[1] == "tags" and saved_order[2] == "status",
+        "28: frontmatter order saved from dialog")
+
+    -- Export with Preserve ON: stale 'progress:' and 'special:' are removed from disk note
+    plugin:runExport({ FILE }, {})
+    UIManager:runPending()
+    local exported_md = T.readFile(MD_PATH) or ""
+    T.check(T.contains(exported_md, 'tomedown: "1.0"')
+            and not T.contains(exported_md, "\nprogress:")
+            and not T.contains(exported_md, "\nspecial:"),
+        "28: hidden progress and special keys are removed from preserved note")
+    local pos_tags = exported_md:find("\ntags:\n", 1, true)
+    local pos_title = exported_md:find('\ntitle: "The Three Impostors"\n', 1, true)
+    T.check(pos_tags and pos_title and pos_tags < pos_title,
+        "28: custom frontmatter order applied in exported note")
+
+    -- Export format: Both (.md and .txt) + chapter_headings + highlight_details
+    shared.setExportFormat("both")
+    shared.setChapterHeadings("h2")
+    shared.setHighlightDetails("page_only")
+    plugin:invalidateExportHashes()
+    plugin:runExport({ FILE }, {})
+    UIManager:runPending()
+    local TXT_PATH = DIR .. "/" .. BASE .. ".txt"
+    T.check(T.fileExists(TXT_PATH), "28: export_format = both writes .txt alongside .md")
+    local exported_txt = T.readFile(TXT_PATH) or ""
+    T.check(T.contains(exported_txt, "The Three Impostors")
+            and T.contains(exported_txt, "Prima frase."),
+        "28: .txt file contains title and highlights")
+    local exported_h2_md = T.readFile(MD_PATH) or ""
+    T.check(T.contains(exported_h2_md, "\n## Capitolo I\n")
+            and T.contains(exported_h2_md, "- **p. 10**\n"),
+        "28: chapter_headings = h2 and highlight_details = page_only applied")
+
+    -- Reset settings
+    shared.setFrontmatterKeyEnabled("progress", true)
+    shared.setFrontmatterKeyEnabled("special", true)
+    shared.setFrontmatterOrder("")
+    shared.setExportFormat("md")
+    shared.setChapterHeadings("h1")
+    shared.setHighlightDetails("page_date")
+    T.check(shared.getFrontmatterHidden() == nil and shared.getFrontmatterOrder() == nil,
+        "28: frontmatter settings reset cleanly to nil")
+
+    -- Per-book style overrides via Current book -> Style & format
+    ui.document = { file = FILE }
+    local cur_menu = plugin:genCurrentBookMenu()
+    local style_row = cur_menu[#cur_menu]
+    T.check(style_row and style_row.text == "Style & format",
+        "28: Style & format is the last row in Current book menu")
+    local bstyle = style_row.sub_item_table_func()
+    T.check(#bstyle == 6, "28: 5 per-book style choices + 1 reset row")
+    T.check(bstyle[4].mandatory_func() == "Global",
+        "28: chapter_headings starts on Global")
+    T.check(bstyle[6].enabled_func() == false,
+        "28: Reset to global style settings disabled when no overrides exist")
+
+    -- Pin FILE to chapter_headings = "none" and highlight_details = "none" via submenu callbacks
+    bstyle[4].sub_item_table[5].callback() -- "none"
+    bstyle[3].sub_item_table[5].callback() -- "none"
+    T.check(bstyle[4].mandatory_func() == "Custom"
+            and bstyle[6].enabled_func() == true,
+        "28: mandatory shows Custom and Reset is enabled after setting per-book override")
+
+    plugin:runExport({ FILE, FILE2 }, { force = true })
+    UIManager:runPending()
+    local file1_md = T.readFile(MD_PATH) or ""
+    local file2_base = (store.tomedown.exports[FILE2] or {}).base
+    local file2_md = T.readFile(DIR .. "/" .. file2_base .. ".md") or ""
+    T.check(not T.contains(file1_md, "# Capitolo I")
+            and not T.contains(file1_md, "**p. 10**"),
+        "28: FILE uses per-book override (no chapter headings, no highlight details)")
+    T.check(T.contains(file2_md, "**p. 3**"),
+        "28: FILE2 still uses global settings (page and date details): base="
+            .. tostring(file2_base) .. " md=" .. tostring(file2_md))
+
+    -- Reset FILE back to global settings
+    bstyle[6].callback()
+    T.check(bstyle[4].mandatory_func() == "Global"
+            and bstyle[6].enabled_func() == false,
+        "28: Reset to global style settings clears all overrides for FILE")
 end
 
 T.finish("test_main")

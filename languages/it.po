@@ -843,3 +843,119 @@ msgstr "Nome cartella copertine"
 
 msgid "e.g. covers, _covers, assets"
 msgstr "es. covers, _covers, assets"
+
+msgid "Frontmatter fields"
+msgstr "Campi del frontmatter"
+
+msgid "Book cover (cover)"
+msgstr "Copertina del libro (cover)"
+
+msgid "Series (series, series_index)"
+msgstr "Serie (series, series_index)"
+
+msgid "Language (language)"
+msgstr "Lingua (language)"
+
+msgid "Page count (pages)"
+msgstr "Numero di pagine (pages)"
+
+msgid "Export date (exported)"
+msgstr "Data di esportazione (exported)"
+
+msgid "Highlight count (highlights)"
+msgstr "Numero di evidenziazioni (highlights)"
+
+msgid "Special highlight count (special)"
+msgstr "Evidenziazioni speciali (special)"
+
+msgid "Reading status (status)"
+msgstr "Stato di lettura (status)"
+
+msgid "Reading progress (progress)"
+msgstr "Avanzamento di lettura (progress)"
+
+msgid "Frontmatter key order…"
+msgstr "Ordine chiavi del frontmatter…"
+
+msgid "Frontmatter key order"
+msgstr "Ordine chiavi del frontmatter"
+
+msgid "comma-separated keys; leave empty for default order"
+msgstr "chiavi separate da virgola; lascia vuoto per l'ordine predefinito"
+
+msgid "Context:"
+msgstr "Contesto:"
+
+msgid "Markdown (.md)"
+msgstr "Markdown (.md)"
+
+msgid "Plain text (.txt)"
+msgstr "Testo semplice (.txt)"
+
+msgid "Both (.md and .txt)"
+msgstr "Entrambi (.md e .txt)"
+
+msgid "Export format: %1"
+msgstr "Formato esportazione: %1"
+
+msgid "Include YAML frontmatter"
+msgstr "Includi frontmatter YAML"
+
+msgid "Page and date"
+msgstr "Pagina e data"
+
+msgid "Page only"
+msgstr "Solo pagina"
+
+msgid "Date only"
+msgstr "Solo data"
+
+msgid "None"
+msgstr "Nessuno"
+
+msgid "Highlight details: %1"
+msgstr "Dettagli citazione: %1"
+
+msgid "Heading 1 (# Chapter)"
+msgstr "Titolo 1 (# Capitolo)"
+
+msgid "Heading 2 (## Chapter)"
+msgstr "Titolo 2 (## Capitolo)"
+
+msgid "Heading 3 (### Chapter)"
+msgstr "Titolo 3 (### Capitolo)"
+
+msgid "None (continuous list)"
+msgstr "Nessuna (lista continua)"
+
+msgid "Chapter headings: %1"
+msgstr "Intestazioni capitoli: %1"
+
+msgid "Include highlight context"
+msgstr "Includi contesto delle citazioni"
+
+msgid "Style & format"
+msgstr "Stile e formato"
+
+msgid "Follow global setting"
+msgstr "Usa impostazione globale"
+
+msgid "Global"
+msgstr "Globale"
+
+msgid "Custom"
+msgstr "Personalizzato"
+
+msgid "Highlight context: %1"
+msgstr "Contesto citazioni: %1"
+
+msgid "Enabled"
+msgstr "Attivo"
+
+msgid "Disabled"
+msgstr "Disattivato"
+
+msgid "Reset to global style settings"
+msgstr "Ripristina stile e formato globali"
+
+

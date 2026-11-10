@@ -75,6 +75,13 @@ the same text comes out translated (see [Languages](developing.md#languages)).
 | `tomedown_book_tags` | the book's own tags that this plugin manages, only with *Keep my notes* (see below) |
 | `cover` | `"covers/Author - Title.jpg"` (or your custom covers folder, e.g. `_covers/`), only with *Include book covers* |
 
+### Customizing frontmatter fields and order
+
+Under *Settings → Style → Frontmatter fields*, you can:
+
+- **Hide optional fields** you do not want in your vault (`cover`, `series`, `language`, `pages`, `exported`, `highlights`, `special`, `status`, `progress`). Hiding `progress`, for instance, keeps reading-session progress changes from dirtying `git diff` or triggering automatic syncs when no highlight was added. With *Keep my notes* on, hiding an exporter-owned field also removes the stale line from existing notes on the next export while leaving your own custom properties untouched. The format stamp `tomedown: "1.0"` is required for safe merges and can never be hidden.
+- **Change the key order** (*Frontmatter key order…*): enter a comma-separated list of keys (for example `tags, rating, status, title, author`). `tomedown` always stays first; the keys you list come next in that exact order (`series_index` automatically follows `series` unless placed explicitly), and any remaining keys follow in the default order. Leave the field empty to restore the default order.
+
 Every keyword is normalised into a valid Obsidian tag: spaces become `-`, and
 only letters, numbers, `-`, `_`, `/` and non-ASCII characters (accents, emoji)
 survive, everything else (`;`, `'`, `=`, `[`, `]`…) is dropped. Obsidian also

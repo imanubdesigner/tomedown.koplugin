@@ -1332,4 +1332,123 @@ do
         "digest supports footnote style for personal notes")
 end
 
+-- Frontmatter customization: fm_hidden and fm_order
+do
+    local fm_book = {
+        title = "The Three Impostors",
+        author = "Arthur Machen",
+        series = "Weird Tales",
+        series_index = 2,
+        language = "en",
+        pages = 240,
+        exported = "2026-11-09",
+        status = "reading",
+        progress = "72%",
+        published = "1895",
+        rating = 5,
+        annotations = {
+            { text = "First quote", page = "10", special = true },
+        },
+    }
+
+    local hidden_md = render.buildBookMd(fm_book, {
+        cover = "covers/impostors.jpg",
+        fm_hidden = {
+            tomedown = true, -- guard-rail: must never be hidden
+            progress = true,
+            special = true,
+            series = true,
+            pages = true,
+        },
+    })
+    T.check(T.contains(hidden_md, 'tomedown: "1.0"'),
+        "tomedown stamp can never be hidden even if fm_hidden.tomedown is true")
+    T.check(not T.contains(hidden_md, "\nprogress:")
+            and not T.contains(hidden_md, "\nspecial:")
+            and not T.contains(hidden_md, "\nseries:")
+            and not T.contains(hidden_md, "\nseries_index:")
+            and not T.contains(hidden_md, "\npages:"),
+        "hidden frontmatter keys (and series_index when series is hidden) are omitted")
+    T.check(T.contains(hidden_md, '\ncover: "covers/impostors.jpg"')
+            and T.contains(hidden_md, '\nstatus: "reading"')
+            and T.contains(hidden_md, "\nhighlights: 1"),
+        "non-hidden frontmatter keys are still emitted")
+
+    local ordered_md = render.buildBookMd(fm_book, {
+        cover = "covers/impostors.jpg",
+        fm_order = { "tags", "rating", "series", "title", "author" },
+    })
+    local p_stamp  = ordered_md:find('tomedown: "1.0"', 1, true)
+    local p_tags   = ordered_md:find("\ntags:\n", 1, true)
+    local p_rating = ordered_md:find("\nrating: 5\n", 1, true)
+    local p_series = ordered_md:find('\nseries: "Weird Tales"\n', 1, true)
+    local p_sidx   = ordered_md:find("\nseries_index: 2\n", 1, true)
+    local p_title  = ordered_md:find('\ntitle: "The Three Impostors"\n', 1, true)
+    local p_author = ordered_md:find('\nauthor: "Arthur Machen"\n', 1, true)
+    local p_cover  = ordered_md:find('\ncover: "covers/impostors.jpg"\n', 1, true)
+    T.check(p_stamp and p_tags and p_rating and p_series and p_sidx and p_title and p_author and p_cover,
+        "all ordered keys are present")
+    T.check(p_stamp < p_tags and p_tags < p_rating and p_rating < p_series
+            and p_series < p_sidx and p_sidx < p_title and p_title < p_author
+            and p_author < p_cover,
+        "tomedown stays first, fm_order keys follow in exact order (with series_index paired), remaining keys follow in canonical order")
+
+    -- fm_enabled = false omits YAML frontmatter when markers = false, keeps it when markers = true
+    local no_fm_plain = render.buildBookMd(fm_book, {
+        markers = false,
+        fm_enabled = false,
+    })
+    T.check(no_fm_plain:sub(1, 2) == "# "
+            and T.contains(no_fm_plain, "# The Three Impostors\n*Arthur Machen*")
+            and not T.contains(no_fm_plain, 'tomedown: "1.0"'),
+        "fm_enabled = false with markers = false omits YAML frontmatter and starts with title/author")
+    local no_fm_preserve = render.buildBookMd(fm_book, {
+        markers = true,
+        fm_enabled = false,
+    })
+    T.check(T.contains(no_fm_preserve, 'tomedown: "1.0"'),
+        "fm_enabled = false with markers = true keeps YAML frontmatter so Preserve works safely")
+
+    -- Chapter headings: h1, h2, h3, none
+    local ch_book = {
+        title = "T", author = "A", exported = "2026-11-09",
+        annotations = {
+            { text = "Q1", chapter = "Cap 1", page = "10", date = "09/11/2026 10:00",
+              context_prev = "parole prima", context_next = "parole dopo" },
+        },
+    }
+    T.check(T.contains(render.buildBookMd(ch_book, { chapter_headings = "h2" }), "\n## Cap 1\n"),
+        "chapter_headings = h2 renders ## Chapter")
+    T.check(T.contains(render.buildBookMd(ch_book, { chapter_headings = "h3" }), "\n### Cap 1\n"),
+        "chapter_headings = h3 renders ### Chapter")
+    T.check(not T.contains(render.buildBookMd(ch_book, { chapter_headings = "none" }), "Cap 1"),
+        "chapter_headings = none omits chapter headings")
+
+    -- Highlight details: page_only, date_only, none, and highlight_context
+    local p_only = render.buildBookMd(ch_book, { highlight_details = "page_only" })
+    T.check(T.contains(p_only, "- **p. 10**") and not T.contains(p_only, "09/11/2026"),
+        "highlight_details = page_only renders page without date")
+    local d_only = render.buildBookMd(ch_book, { highlight_details = "date_only" })
+    T.check(T.contains(d_only, "- 09/11/2026 10:00") and not T.contains(d_only, "**p. 10**"),
+        "highlight_details = date_only renders date without page")
+    local det_none = render.buildBookMd(ch_book, { highlight_details = "none" })
+    T.check(not T.contains(det_none, "**p. 10**") and not T.contains(det_none, "- …"),
+        "highlight_details = none with no note emits no metadata bullet")
+    local with_ctx = render.buildBookMd(ch_book, { highlight_context = true })
+    T.check(T.contains(with_ctx, "**Context:** *…parole prima … parole dopo…*"),
+        "highlight_context = true renders surrounding context")
+
+    -- Plain text export: buildBookTxt
+    local txt_out = render.buildBookTxt(ch_book, {
+        highlight_context = true,
+        user_notes_head = "Appunto personale in testa.",
+        notes_title = "Le mie note",
+    })
+    T.check(T.contains(txt_out, "Cap 1\n-----")
+            and T.contains(txt_out, "Q1\n[p. 10 · 09/11/2026 10:00]")
+            and T.contains(txt_out, "Context: …parole prima … parole dopo…")
+            and T.contains(txt_out, "Appunto personale in testa."),
+        "buildBookTxt formats plain text export with chapters, details, context and user notes")
+end
+
 T.finish("test_render")

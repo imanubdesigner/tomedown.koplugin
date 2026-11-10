@@ -57,6 +57,25 @@ local setIndexLinks = shared.setIndexLinks
 local getNoteStyle = shared.getNoteStyle
 local setNoteStyle = shared.setNoteStyle
 local BACKUP_SLOTS = shared.BACKUP_SLOTS
+local DEFAULT_FRONTMATTER_ORDER = shared.DEFAULT_FRONTMATTER_ORDER
+local isFrontmatterKeyEnabled = shared.isFrontmatterKeyEnabled
+local setFrontmatterKeyEnabled = shared.setFrontmatterKeyEnabled
+local getFrontmatterOrder = shared.getFrontmatterOrder
+local setFrontmatterOrder = shared.setFrontmatterOrder
+local getFrontmatterEnabled = shared.getFrontmatterEnabled
+local setFrontmatterEnabled = shared.setFrontmatterEnabled
+local getHighlightDetails = shared.getHighlightDetails
+local setHighlightDetails = shared.setHighlightDetails
+local getChapterHeadings = shared.getChapterHeadings
+local setChapterHeadings = shared.setChapterHeadings
+local getHighlightContext = shared.getHighlightContext
+local setHighlightContext = shared.setHighlightContext
+local getExportFormat = shared.getExportFormat
+local setExportFormat = shared.setExportFormat
+local getBookStyleOverride = shared.getBookStyleOverride
+local setBookStyleOverride = shared.setBookStyleOverride
+local hasBookStyleOverrides = shared.hasBookStyleOverrides
+local clearBookStyleOverrides = shared.clearBookStyleOverrides
 local readIfExists = shared.readIfExists
 local isZoned = shared.isZoned
 
@@ -942,6 +961,43 @@ function M:editCoversFolder(touchmenu)
     return dialog
 end
 
+function M:editFrontmatterOrder(touchmenu)
+    local current_order = getFrontmatterOrder() or DEFAULT_FRONTMATTER_ORDER
+    local dialog
+    dialog = InputDialog:new{
+        title = _("Frontmatter key order"),
+        input = table.concat(current_order, ", "),
+        hint = _("comma-separated keys; leave empty for default order"),
+        buttons = {
+            {
+                {
+                    text = _("Cancel"),
+                    id = "close",
+                    callback = function()
+                        UIManager:close(dialog)
+                    end,
+                },
+            },
+            {
+                {
+                    text = _("Save"),
+                    callback = function()
+                        local value = dialog:getInputText() or ""
+                        setFrontmatterOrder(value)
+                        self:invalidateExportHashes()
+                        UIManager:close(dialog)
+                        if touchmenu and touchmenu.updateItems then
+                            touchmenu:updateItems()
+                        end
+                    end,
+                },
+            },
+        },
+    }
+    UIManager:show(dialog)
+    return dialog
+end
+
 function M:renameBookToTemplate(file, touchmenu)
     if not file then
         return false
@@ -1473,6 +1529,61 @@ function M:genSettingsMenu()
                     not getSetting("auto_export", false))
             end,
         },
+        {
+            text_func = function()
+                local labels = {
+                    md = _("Markdown (.md)"),
+                    txt = _("Plain text (.txt)"),
+                    both = _("Both (.md and .txt)"),
+                }
+                local current = getExportFormat()
+                return T(_("Export format: %1"), labels[current] or labels.md)
+            end,
+            sub_item_table = {
+                {
+                    text = _("Markdown (.md)"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return getExportFormat() == "md"
+                    end,
+                    callback = function()
+                        if getExportFormat() ~= "md" then
+                            setExportFormat("md")
+                            self:invalidateExportHashes()
+                        end
+                    end,
+                },
+                {
+                    text = _("Plain text (.txt)"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return getExportFormat() == "txt"
+                    end,
+                    callback = function()
+                        if getExportFormat() ~= "txt" then
+                            setExportFormat("txt")
+                            self:invalidateExportHashes()
+                        end
+                    end,
+                },
+                {
+                    text = _("Both (.md and .txt)"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return getExportFormat() == "both"
+                    end,
+                    callback = function()
+                        if getExportFormat() ~= "both" then
+                            setExportFormat("both")
+                            self:invalidateExportHashes()
+                        end
+                    end,
+                },
+            },
+        },
     }
 
     -- Index: all settings for 00 - Index.md.
@@ -1829,6 +1940,219 @@ function M:genSettingsMenu()
             keep_menu_open = true,
             callback = function()
                 setSetting("include_bookmarks", not getSetting("include_bookmarks", false))
+            end,
+        },
+        {
+            text = _("Frontmatter fields"),
+            sub_item_table = (function()
+                local fm_defs = {
+                    { key = "cover",      text = _("Book cover (cover)") },
+                    { key = "series",     text = _("Series (series, series_index)") },
+                    { key = "language",   text = _("Language (language)") },
+                    { key = "pages",      text = _("Page count (pages)") },
+                    { key = "exported",   text = _("Export date (exported)") },
+                    { key = "highlights", text = _("Highlight count (highlights)") },
+                    { key = "special",    text = _("Special highlight count (special)") },
+                    { key = "status",     text = _("Reading status (status)") },
+                    { key = "progress",   text = _("Reading progress (progress)"), separator = true },
+                }
+                local rows = {
+                    {
+                        key = "fm_enabled",
+                        text = _("Include YAML frontmatter"),
+                        separator = true,
+                        checked_func = function()
+                            return getFrontmatterEnabled()
+                        end,
+                        keep_menu_open = true,
+                        callback = function()
+                            setFrontmatterEnabled(not getFrontmatterEnabled())
+                            self:invalidateExportHashes()
+                        end,
+                    },
+                }
+                for __, def in ipairs(fm_defs) do
+                    local k = def.key
+                    rows[#rows + 1] = {
+                        key = k,
+                        text = def.text,
+                        separator = def.separator,
+                        enabled_func = function()
+                            return getFrontmatterEnabled()
+                        end,
+                        checked_func = function()
+                            return isFrontmatterKeyEnabled(k)
+                        end,
+                        keep_menu_open = true,
+                        callback = function()
+                            setFrontmatterKeyEnabled(k, not isFrontmatterKeyEnabled(k))
+                            self:invalidateExportHashes()
+                        end,
+                    }
+                end
+                rows[#rows + 1] = {
+                    text = _("Frontmatter key order…"),
+                    enabled_func = function()
+                        return getFrontmatterEnabled()
+                    end,
+                    callback = function(touchmenu)
+                        return self:editFrontmatterOrder(touchmenu)
+                    end,
+                }
+                return rows
+            end)(),
+        },
+        {
+            text_func = function()
+                local labels = {
+                    page_date = _("Page and date"),
+                    page_only = _("Page only"),
+                    date_only = _("Date only"),
+                    none = _("None"),
+                }
+                local current = getHighlightDetails()
+                return T(_("Highlight details: %1"),
+                    labels[current] or labels.page_date)
+            end,
+            sub_item_table = {
+                {
+                    text = _("Page and date"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return getHighlightDetails() == "page_date"
+                    end,
+                    callback = function()
+                        if getHighlightDetails() ~= "page_date" then
+                            setHighlightDetails("page_date")
+                            self:invalidateExportHashes()
+                        end
+                    end,
+                },
+                {
+                    text = _("Page only"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return getHighlightDetails() == "page_only"
+                    end,
+                    callback = function()
+                        if getHighlightDetails() ~= "page_only" then
+                            setHighlightDetails("page_only")
+                            self:invalidateExportHashes()
+                        end
+                    end,
+                },
+                {
+                    text = _("Date only"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return getHighlightDetails() == "date_only"
+                    end,
+                    callback = function()
+                        if getHighlightDetails() ~= "date_only" then
+                            setHighlightDetails("date_only")
+                            self:invalidateExportHashes()
+                        end
+                    end,
+                },
+                {
+                    text = _("None"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return getHighlightDetails() == "none"
+                    end,
+                    callback = function()
+                        if getHighlightDetails() ~= "none" then
+                            setHighlightDetails("none")
+                            self:invalidateExportHashes()
+                        end
+                    end,
+                },
+            },
+        },
+        {
+            text_func = function()
+                local labels = {
+                    h1 = _("Heading 1 (# Chapter)"),
+                    h2 = _("Heading 2 (## Chapter)"),
+                    h3 = _("Heading 3 (### Chapter)"),
+                    none = _("None (continuous list)"),
+                }
+                local current = getChapterHeadings()
+                return T(_("Chapter headings: %1"),
+                    labels[current] or labels.h1)
+            end,
+            sub_item_table = {
+                {
+                    text = _("Heading 1 (# Chapter)"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return getChapterHeadings() == "h1"
+                    end,
+                    callback = function()
+                        if getChapterHeadings() ~= "h1" then
+                            setChapterHeadings("h1")
+                            self:invalidateExportHashes()
+                        end
+                    end,
+                },
+                {
+                    text = _("Heading 2 (## Chapter)"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return getChapterHeadings() == "h2"
+                    end,
+                    callback = function()
+                        if getChapterHeadings() ~= "h2" then
+                            setChapterHeadings("h2")
+                            self:invalidateExportHashes()
+                        end
+                    end,
+                },
+                {
+                    text = _("Heading 3 (### Chapter)"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return getChapterHeadings() == "h3"
+                    end,
+                    callback = function()
+                        if getChapterHeadings() ~= "h3" then
+                            setChapterHeadings("h3")
+                            self:invalidateExportHashes()
+                        end
+                    end,
+                },
+                {
+                    text = _("None (continuous list)"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return getChapterHeadings() == "none"
+                    end,
+                    callback = function()
+                        if getChapterHeadings() ~= "none" then
+                            setChapterHeadings("none")
+                            self:invalidateExportHashes()
+                        end
+                    end,
+                },
+            },
+        },
+        {
+            text = _("Include highlight context"),
+            checked_func = function()
+                return getHighlightContext()
+            end,
+            keep_menu_open = true,
+            callback = function()
+                setHighlightContext(not getHighlightContext())
+                self:invalidateExportHashes()
             end,
         },
     }
@@ -2770,6 +3094,167 @@ function M:genCurrentBookMenu()
             end,
         }
     end
+    rows[#rows + 1] = {
+        text = _("Style & format"),
+        sub_item_table_func = function()
+            return self:genBookStyleMenu(file)
+        end,
+    }
+    return rows
+end
+
+-- Per-book style and format overrides for the open book. Each option can
+-- either follow the global setting or be pinned for this book alone.
+function M:genBookStyleMenu(file)
+    local rows = {}
+    if not file then
+        return rows
+    end
+
+    local function choiceRow(title_tmpl, key, effective_fn, labels, options, sep)
+        local sub = {
+            {
+                text = _("Follow global setting"),
+                radio = true,
+                keep_menu_open = true,
+                separator = true,
+                checked_func = function()
+                    return getBookStyleOverride(file, key) == nil
+                end,
+                callback = function()
+                    if getBookStyleOverride(file, key) ~= nil then
+                        setBookStyleOverride(file, key, nil)
+                        self:invalidateExportHash(file)
+                    end
+                end,
+            },
+        }
+        for __, opt in ipairs(options) do
+            local val = opt.val
+            sub[#sub + 1] = {
+                text = opt.text,
+                radio = true,
+                keep_menu_open = true,
+                checked_func = function()
+                    return getBookStyleOverride(file, key) == val
+                end,
+                callback = function()
+                    if getBookStyleOverride(file, key) ~= val then
+                        setBookStyleOverride(file, key, val)
+                        self:invalidateExportHash(file)
+                    end
+                end,
+            }
+        end
+        return {
+            key = key,
+            separator = sep,
+            text_func = function()
+                local cur = effective_fn(file)
+                return T(title_tmpl, labels[cur] or tostring(cur))
+            end,
+            mandatory_func = function()
+                return getBookStyleOverride(file, key) == nil
+                    and _("Global") or _("Custom")
+            end,
+            sub_item_table = sub,
+        }
+    end
+
+    rows[#rows + 1] = choiceRow(
+        _("Export format: %1"),
+        "export_format",
+        getExportFormat,
+        {
+            md = _("Markdown (.md)"),
+            txt = _("Plain text (.txt)"),
+            both = _("Both (.md and .txt)"),
+        },
+        {
+            { val = "md",   text = _("Markdown (.md)") },
+            { val = "txt",  text = _("Plain text (.txt)") },
+            { val = "both", text = _("Both (.md and .txt)") },
+        }
+    )
+
+    rows[#rows + 1] = choiceRow(
+        _("Personal notes format: %1"),
+        "note_style",
+        getNoteStyle,
+        {
+            inline = _("Inline"),
+            footnote = _("Footnotes"),
+        },
+        {
+            { val = "inline",   text = _("Inline") },
+            { val = "footnote", text = _("Footnotes") },
+        }
+    )
+
+    rows[#rows + 1] = choiceRow(
+        _("Highlight details: %1"),
+        "highlight_details",
+        getHighlightDetails,
+        {
+            page_date = _("Page and date"),
+            page_only = _("Page only"),
+            date_only = _("Date only"),
+            none = _("None"),
+        },
+        {
+            { val = "page_date", text = _("Page and date") },
+            { val = "page_only", text = _("Page only") },
+            { val = "date_only", text = _("Date only") },
+            { val = "none",      text = _("None") },
+        }
+    )
+
+    rows[#rows + 1] = choiceRow(
+        _("Chapter headings: %1"),
+        "chapter_headings",
+        getChapterHeadings,
+        {
+            h1 = _("Heading 1 (# Chapter)"),
+            h2 = _("Heading 2 (## Chapter)"),
+            h3 = _("Heading 3 (### Chapter)"),
+            none = _("None (continuous list)"),
+        },
+        {
+            { val = "h1",   text = _("Heading 1 (# Chapter)") },
+            { val = "h2",   text = _("Heading 2 (## Chapter)") },
+            { val = "h3",   text = _("Heading 3 (### Chapter)") },
+            { val = "none", text = _("None (continuous list)") },
+        }
+    )
+
+    rows[#rows + 1] = choiceRow(
+        _("Highlight context: %1"),
+        "highlight_context",
+        getHighlightContext,
+        {
+            [true] = _("Enabled"),
+            [false] = _("Disabled"),
+        },
+        {
+            { val = true,  text = _("Enabled") },
+            { val = false, text = _("Disabled") },
+        },
+        true
+    )
+
+    rows[#rows + 1] = {
+        key = "reset_book_style",
+        text = _("Reset to global style settings"),
+        keep_menu_open = true,
+        enabled_func = function()
+            return hasBookStyleOverrides(file)
+        end,
+        callback = function()
+            clearBookStyleOverrides(file)
+            self:invalidateExportHash(file)
+        end,
+    }
+
     return rows
 end
 

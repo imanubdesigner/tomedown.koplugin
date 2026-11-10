@@ -844,3 +844,119 @@ msgstr "Name des Cover-Ordners"
 msgid "e.g. covers, _covers, assets"
 msgstr "z. B. covers, _covers, assets"
 
+msgid "Frontmatter fields"
+msgstr "Frontmatter-Felder"
+
+msgid "Book cover (cover)"
+msgstr "Buchcover (cover)"
+
+msgid "Series (series, series_index)"
+msgstr "Reihe (series, series_index)"
+
+msgid "Language (language)"
+msgstr "Sprache (language)"
+
+msgid "Page count (pages)"
+msgstr "Seitenzahl (pages)"
+
+msgid "Export date (exported)"
+msgstr "Exportdatum (exported)"
+
+msgid "Highlight count (highlights)"
+msgstr "Anzahl der Markierungen (highlights)"
+
+msgid "Special highlight count (special)"
+msgstr "Besondere Markierungen (special)"
+
+msgid "Reading status (status)"
+msgstr "Lesestatus (status)"
+
+msgid "Reading progress (progress)"
+msgstr "Lesefortschritt (progress)"
+
+msgid "Frontmatter key order…"
+msgstr "Reihenfolge der Frontmatter-Schlüssel…"
+
+msgid "Frontmatter key order"
+msgstr "Reihenfolge der Frontmatter-Schlüssel"
+
+msgid "comma-separated keys; leave empty for default order"
+msgstr "kommagetrennte Schlüssel; leer lassen für Standardreihenfolge"
+
+msgid "Context:"
+msgstr "Kontext:"
+
+msgid "Markdown (.md)"
+msgstr "Markdown (.md)"
+
+msgid "Plain text (.txt)"
+msgstr "Reiner Text (.txt)"
+
+msgid "Both (.md and .txt)"
+msgstr "Beides (.md und .txt)"
+
+msgid "Export format: %1"
+msgstr "Exportformat: %1"
+
+msgid "Include YAML frontmatter"
+msgstr "YAML-Frontmatter einschließen"
+
+msgid "Page and date"
+msgstr "Seite und Datum"
+
+msgid "Page only"
+msgstr "Nur Seite"
+
+msgid "Date only"
+msgstr "Nur Datum"
+
+msgid "None"
+msgstr "Keine"
+
+msgid "Highlight details: %1"
+msgstr "Markierungsdetails: %1"
+
+msgid "Heading 1 (# Chapter)"
+msgstr "Überschrift 1 (# Kapitel)"
+
+msgid "Heading 2 (## Chapter)"
+msgstr "Überschrift 2 (## Kapitel)"
+
+msgid "Heading 3 (### Chapter)"
+msgstr "Überschrift 3 (### Kapitel)"
+
+msgid "None (continuous list)"
+msgstr "Keine (fortlaufende Liste)"
+
+msgid "Chapter headings: %1"
+msgstr "Kapitelüberschriften: %1"
+
+msgid "Include highlight context"
+msgstr "Kontext der Markierungen einschließen"
+
+msgid "Style & format"
+msgstr "Stil und Format"
+
+msgid "Follow global setting"
+msgstr "Globaler Einstellung folgen"
+
+msgid "Global"
+msgstr "Global"
+
+msgid "Custom"
+msgstr "Eigen"
+
+msgid "Highlight context: %1"
+msgstr "Kontext der Markierungen: %1"
+
+msgid "Enabled"
+msgstr "Aktiviert"
+
+msgid "Disabled"
+msgstr "Deaktiviert"
+
+msgid "Reset to global style settings"
+msgstr "Auf globale Stileinstellungen zurücksetzen"
+
+
+

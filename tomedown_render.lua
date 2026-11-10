@@ -24,6 +24,24 @@ local render = {}
 -- closes the block: everything below it is the reader's again.
 render.FORMAT_VERSION = "1.0"
 
+render.FRONTMATTER_KEYS = {
+    "title", "author", "cover", "series", "series_index",
+    "language", "pages", "exported", "highlights", "special",
+    "status", "progress",
+    "published", "rating", "review", "date_started", "date_finished",
+    "collections", "tags",
+}
+
+render.HIDEABLE_FRONTMATTER_KEYS = {
+    "cover", "series", "language", "pages", "exported",
+    "highlights", "special", "status", "progress",
+}
+
+local HIDEABLE_FRONTMATTER_SET = {}
+for __, k in ipairs(render.HIDEABLE_FRONTMATTER_KEYS) do
+    HIDEABLE_FRONTMATTER_SET[k] = true
+end
+
 function render.beginMarker(name, hash)
     local marker = "<!-- tomedown:begin " .. name
     if hash then
@@ -458,62 +476,80 @@ function render.buildBookMd(book, opts)
         render.assignBlockIds(annotations)
     end
 
-    add("---")
-    add('tomedown: "' .. render.FORMAT_VERSION .. '"')
-    add("title: " .. yamlQuote(book.title))
-    add("author: " .. yamlQuote(book.author))
-    if opts.cover then
-        add("cover: " .. yamlQuote(opts.cover))
+    local fm_hidden = type(opts.fm_hidden) == "table" and opts.fm_hidden or nil
+    local function isHidden(key)
+        if not fm_hidden or key == "tomedown" then
+            return false
+        end
+        if key == "series_index" then
+            return fm_hidden.series == true or fm_hidden.series_index == true
+        end
+        return HIDEABLE_FRONTMATTER_SET[key] == true and fm_hidden[key] == true
     end
-    if book.series then
-        add("series: " .. yamlQuote(book.series))
+
+    local fm_blocks = {}
+    fm_blocks.title = { "title: " .. yamlQuote(book.title) }
+    fm_blocks.author = { "author: " .. yamlQuote(book.author) }
+    if opts.cover and not isHidden("cover") then
+        fm_blocks.cover = { "cover: " .. yamlQuote(opts.cover) }
     end
-    if book.series and book.series_index ~= nil and tostring(book.series_index) ~= "" then
+    if book.series and not isHidden("series") then
+        fm_blocks.series = { "series: " .. yamlQuote(book.series) }
+    end
+    if book.series and not isHidden("series_index")
+            and book.series_index ~= nil and tostring(book.series_index) ~= "" then
         if type(book.series_index) == "number" then
-            add("series_index: " .. tostring(book.series_index))
+            fm_blocks.series_index = { "series_index: " .. tostring(book.series_index) }
         else
-            add("series_index: " .. yamlQuote(book.series_index))
+            fm_blocks.series_index = { "series_index: " .. yamlQuote(book.series_index) }
         end
     end
-    if book.language then
-        add("language: " .. yamlQuote(book.language))
+    if book.language and not isHidden("language") then
+        fm_blocks.language = { "language: " .. yamlQuote(book.language) }
     end
-    if book.pages ~= nil then
-        add("pages: " .. tostring(book.pages))
+    if book.pages ~= nil and not isHidden("pages") then
+        fm_blocks.pages = { "pages: " .. tostring(book.pages) }
     end
-    add("exported: " .. (book.exported or os.date("%Y-%m-%d")))
-    add("highlights: " .. tostring(count))
-    add("special: " .. tostring(special_count))
-    if book.status then
-        add("status: " .. yamlQuote(book.status))
+    if not isHidden("exported") then
+        fm_blocks.exported = { "exported: " .. (book.exported or os.date("%Y-%m-%d")) }
     end
-    if book.progress then
-        add("progress: " .. yamlQuote(book.progress))
+    if not isHidden("highlights") then
+        fm_blocks.highlights = { "highlights: " .. tostring(count) }
+    end
+    if not isHidden("special") then
+        fm_blocks.special = { "special: " .. tostring(special_count) }
+    end
+    if book.status and not isHidden("status") then
+        fm_blocks.status = { "status: " .. yamlQuote(book.status) }
+    end
+    if book.progress and not isHidden("progress") then
+        fm_blocks.progress = { "progress: " .. yamlQuote(book.progress) }
     end
     -- imported book information: only present when the reader imported
     -- this one book from its menu, so a normal export is unchanged
     if book.published then
-        add("published: " .. yamlQuote(book.published))
+        fm_blocks.published = { "published: " .. yamlQuote(book.published) }
     end
     if book.rating then
-        add("rating: " .. tostring(book.rating))
+        fm_blocks.rating = { "rating: " .. tostring(book.rating) }
     end
     if book.review then
-        add("review: " .. yamlQuote(book.review))
+        fm_blocks.review = { "review: " .. yamlQuote(book.review) }
     end
     if book.date_started then
-        add("date_started: " .. yamlQuote(book.date_started))
+        fm_blocks.date_started = { "date_started: " .. yamlQuote(book.date_started) }
     end
     if book.date_finished then
-        add("date_finished: " .. yamlQuote(book.date_finished))
+        fm_blocks.date_finished = { "date_finished: " .. yamlQuote(book.date_finished) }
     end
     if book.collections and #book.collections > 0 then
-        add("collections:")
+        local col_lines = { "collections:" }
         for __, collection in ipairs(book.collections) do
-            add("  - " .. yamlListItem(collection))
+            col_lines[#col_lines + 1] = "  - " .. yamlListItem(collection)
         end
+        fm_blocks.collections = col_lines
     end
-    add("tags:")
+    local tag_lines = { "tags:" }
     local seen_tags = {}
     local function addTag(tag)
         tag = render.sanitizeTag(tag)
@@ -521,7 +557,7 @@ function render.buildBookMd(book, opts)
             local key = tag:lower()
             if not seen_tags[key] then
                 seen_tags[key] = true
-                add("  - " .. yamlListItem(tag))
+                tag_lines[#tag_lines + 1] = "  - " .. yamlListItem(tag)
             end
         end
     end
@@ -554,17 +590,64 @@ function render.buildBookMd(book, opts)
     for __, tag in ipairs(managed) do
         addTag(tag)
     end
-    if book.tags_managed and (#managed > 0 or markers) then
-        if #managed > 0 then
-            add("tomedown_book_tags:")
-            for __, tag in ipairs(managed) do
-                add("  - " .. yamlListItem(tag))
+    fm_blocks.tags = tag_lines
+
+    local key_order = {}
+    local seen_order = {}
+    local explicit_series_index = false
+    if type(opts.fm_order) == "table" then
+        for __, k in ipairs(opts.fm_order) do
+            if k == "series_index" then
+                explicit_series_index = true
             end
-        else
-            add("tomedown_book_tags: []")
+        end
+        for __, k in ipairs(opts.fm_order) do
+            if type(k) == "string" and k ~= "tomedown" and not seen_order[k] then
+                seen_order[k] = true
+                key_order[#key_order + 1] = k
+                if k == "series" and not explicit_series_index and not seen_order.series_index then
+                    seen_order.series_index = true
+                    key_order[#key_order + 1] = "series_index"
+                end
+            end
         end
     end
-    add("---")
+    for __, k in ipairs(render.FRONTMATTER_KEYS) do
+        if not seen_order[k] then
+            seen_order[k] = true
+            key_order[#key_order + 1] = k
+        end
+    end
+
+    local fm_enabled = opts.fm_enabled ~= false or markers
+    if fm_enabled then
+        add("---")
+        add('tomedown: "' .. render.FORMAT_VERSION .. '"')
+        for __, k in ipairs(key_order) do
+            local block = fm_blocks[k]
+            if block then
+                for __, line in ipairs(block) do
+                    add(line)
+                end
+            end
+        end
+        if book.tags_managed and (#managed > 0 or markers) then
+            if #managed > 0 then
+                add("tomedown_book_tags:")
+                for __, tag in ipairs(managed) do
+                    add("  - " .. yamlListItem(tag))
+                end
+            else
+                add("tomedown_book_tags: []")
+            end
+        end
+        add("---")
+    else
+        add("# " .. tostring(book.title or ""))
+        if book.author and tostring(book.author) ~= "" and tostring(book.author) ~= "N/A" then
+            add("*" .. tostring(book.author) .. "*")
+        end
+    end
     -- one generated block per book file: from the rule down to the last
     -- bookmark is the plugin's territory; the reader writes above it
     -- (right under the front matter), and the next export refreshes this
@@ -624,16 +707,48 @@ function render.buildBookMd(book, opts)
         open = true
     end
 
-    local with_chapters = hasAnyChapter(annotations)
+    local chapter_mode = opts.chapter_headings or "h1"
+    local chapter_prefix = "# "
+    if chapter_mode == "h2" then
+        chapter_prefix = "## "
+    elseif chapter_mode == "h3" then
+        chapter_prefix = "### "
+    end
+    local with_chapters = chapter_mode ~= "none" and hasAnyChapter(annotations)
     local current_chapter = nil
     local use_footnotes = opts.note_style == "footnote"
+    local details_mode = opts.highlight_details or "page_date"
+    local show_page = details_mode == "page_date" or details_mode == "page_only"
+    local show_date = details_mode == "page_date" or details_mode == "date_only"
+    local show_context = opts.highlight_context == true
     local footnotes = {}
+
+    local function formatContext(a)
+        if type(a.context) == "string" then
+            local c = a.context:gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", "")
+            if c ~= "" then
+                return c
+            end
+        end
+        local prev = type(a.context_prev) == "string"
+            and a.context_prev:gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", "") or ""
+        local nxt = type(a.context_next) == "string"
+            and a.context_next:gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", "") or ""
+        if prev ~= "" and nxt ~= "" then
+            return "…" .. prev .. " … " .. nxt .. "…"
+        elseif prev ~= "" then
+            return "…" .. prev .. " …"
+        elseif nxt ~= "" then
+            return "… " .. nxt .. "…"
+        end
+        return nil
+    end
 
     for __, a in ipairs(annotations) do
         if with_chapters then
             local chapter = annotationChapter(a, opts.no_chapter_label)
             if chapter ~= current_chapter then
-                heading("# " .. chapter)
+                heading(chapter_prefix .. chapter)
                 current_chapter = chapter
             end
         end
@@ -677,15 +792,15 @@ function render.buildBookMd(book, opts)
         if opts.block_ids and a.id then
             out[#out] = out[#out] .. " ^" .. a.id
         end
-        add("")
 
         local meta = {}
-        if a.page and tostring(a.page) ~= "" then
+        if show_page and a.page and tostring(a.page) ~= "" then
             meta[#meta + 1] = "**p. " .. tostring(a.page) .. "**"
         end
-        if a.date and tostring(a.date) ~= "" then
+        if show_date and a.date and tostring(a.date) ~= "" then
             meta[#meta + 1] = tostring(a.date)
         end
+        local ctx_line = show_context and formatContext(a) or nil
         local note_lines
         if a.note then
             local body = tostring(a.note):gsub("\r\n", "\n"):gsub("\r", "\n")
@@ -703,34 +818,47 @@ function render.buildBookMd(book, opts)
                 note_lines = nil
             end
         end
-        if use_footnotes and note_lines then
-            local fn_idx = #footnotes + 1
-            footnotes[fn_idx] = note_lines
-            if #meta > 0 then
-                add("- " .. table.concat(meta, " · ") .. " [^" .. fn_idx .. "]")
-            else
-                add("- [^" .. fn_idx .. "]")
-            end
-        else
-            if #meta > 0 then
-                add("- " .. table.concat(meta, " · "))
-            end
-            if note_lines then
-                local head = #meta > 0 and "  - " or "- "
-                local pad = #meta > 0 and "    " or "  "
-                local first = true
-                for __, line in ipairs(note_lines) do
-                    if line:match("^%s*$") then
-                        add("")
-                    elseif first then
-                        add(head .. "**NOTE:** *" .. line .. "*")
-                        first = false
-                    else
-                        add(pad .. "*" .. line .. "*")
-                    end
+        if #meta > 0 or ctx_line or note_lines or details_mode ~= "none" then
+            add("")
+            local has_top_bullet = #meta > 0
+            if use_footnotes and note_lines then
+                local fn_idx = #footnotes + 1
+                footnotes[fn_idx] = note_lines
+                if #meta > 0 then
+                    add("- " .. table.concat(meta, " · ") .. " [^" .. fn_idx .. "]")
+                else
+                    add("- [^" .. fn_idx .. "]")
                 end
-            elseif #meta == 0 then
-                add("- …")
+                has_top_bullet = true
+                if ctx_line then
+                    add("  - **" .. _("Context:") .. "** *" .. ctx_line .. "*")
+                end
+            else
+                if #meta > 0 then
+                    add("- " .. table.concat(meta, " · "))
+                end
+                if ctx_line then
+                    local chead = has_top_bullet and "  - " or "- "
+                    add(chead .. "**" .. _("Context:") .. "** *" .. ctx_line .. "*")
+                    has_top_bullet = true
+                end
+                if note_lines then
+                    local head = has_top_bullet and "  - " or "- "
+                    local pad = has_top_bullet and "    " or "  "
+                    local first = true
+                    for __, line in ipairs(note_lines) do
+                        if line:match("^%s*$") then
+                            add("")
+                        elseif first then
+                            add(head .. "**NOTE:** *" .. line .. "*")
+                            first = false
+                        else
+                            add(pad .. "*" .. line .. "*")
+                        end
+                    end
+                elseif not has_top_bullet then
+                    add("- …")
+                end
             end
         end
         open = true
@@ -1530,6 +1658,156 @@ function render.buildDigestMd(books, opts)
                 end
             end
         end
+    end
+
+    if out[#out] ~= "" then
+        add("")
+    end
+    return table.concat(out, "\n") .. "\n"
+end
+
+function render.buildBookTxt(book, opts)
+    opts = opts or {}
+    local annotations = book.annotations or {}
+    local count = book.count or #annotations
+    local special_count = 0
+    for __, a in ipairs(annotations) do
+        if a.special then
+            special_count = special_count + 1
+        end
+    end
+    local out = {}
+    local function add(s)
+        out[#out + 1] = s
+    end
+
+    add(tostring(book.title or ""))
+    if book.author and tostring(book.author) ~= "" and tostring(book.author) ~= "N/A" then
+        add(tostring(book.author))
+    end
+    local summary = {}
+    if book.series and tostring(book.series) ~= "" then
+        local s = tostring(book.series)
+        if book.series_index and tostring(book.series_index) ~= "" then
+            s = s .. " #" .. tostring(book.series_index)
+        end
+        summary[#summary + 1] = s
+    end
+    if count > 0 then
+        local hl = count == 1 and _("%1 highlight") or _("%1 highlights")
+        hl = hl:gsub("%%1", tostring(count))
+        if special_count > 0 then
+            hl = hl .. " · ★ " .. (_("%1 special"):gsub("%%1", tostring(special_count)))
+        end
+        summary[#summary + 1] = hl
+    end
+    summary[#summary + 1] = tostring(book.exported or os.date("%Y-%m-%d"))
+    add(table.concat(summary, " · "))
+    add(string.rep("=", 72))
+
+    if type(opts.user_notes_head) == "string" and opts.user_notes_head:find("%S") then
+        add("")
+        if opts.notes_title and opts.notes_title ~= "" then
+            add(opts.notes_title)
+            add(string.rep("-", math.min(72, #opts.notes_title)))
+        end
+        add((opts.user_notes_head:gsub("^%s+", ""):gsub("%s+$", "")))
+        add("")
+        add(string.rep("-", 72))
+    end
+
+    local chapter_mode = opts.chapter_headings or "h1"
+    local with_chapters = chapter_mode ~= "none" and hasAnyChapter(annotations)
+    local current_chapter = nil
+    local details_mode = opts.highlight_details or "page_date"
+    local show_page = details_mode == "page_date" or details_mode == "page_only"
+    local show_date = details_mode == "page_date" or details_mode == "date_only"
+    local show_context = opts.highlight_context == true
+
+    local function formatContext(a)
+        if type(a.context) == "string" then
+            local c = a.context:gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", "")
+            if c ~= "" then
+                return c
+            end
+        end
+        local prev = type(a.context_prev) == "string"
+            and a.context_prev:gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", "") or ""
+        local nxt = type(a.context_next) == "string"
+            and a.context_next:gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", "") or ""
+        if prev ~= "" and nxt ~= "" then
+            return "…" .. prev .. " … " .. nxt .. "…"
+        elseif prev ~= "" then
+            return "…" .. prev .. " …"
+        elseif nxt ~= "" then
+            return "… " .. nxt .. "…"
+        end
+        return nil
+    end
+
+    for __, a in ipairs(annotations) do
+        if with_chapters then
+            local chapter = annotationChapter(a, opts.no_chapter_label)
+            if chapter ~= current_chapter then
+                add("")
+                add(chapter)
+                add(string.rep("-", math.min(72, math.max(3, #chapter))))
+                current_chapter = chapter
+            end
+        end
+        add("")
+        local text = tostring(a.text or ""):gsub("\r\n", "\n"):gsub("\r", "\n")
+        local prefix = a.special and "★ " or ""
+        add(prefix .. text)
+
+        local meta = {}
+        if show_page and a.page and tostring(a.page) ~= "" then
+            meta[#meta + 1] = "p. " .. tostring(a.page)
+        end
+        if show_date and a.date and tostring(a.date) ~= "" then
+            meta[#meta + 1] = tostring(a.date)
+        end
+        if #meta > 0 then
+            add("[" .. table.concat(meta, " · ") .. "]")
+        end
+        local ctx_line = show_context and formatContext(a) or nil
+        if ctx_line then
+            add(_("Context:") .. " " .. ctx_line)
+        end
+        if a.note and tostring(a.note):find("%S") then
+            local note = tostring(a.note):gsub("\r\n", "\n"):gsub("\r", "\n"):gsub("^%s+", ""):gsub("%s+$", "")
+            add("NOTE: " .. note)
+        end
+    end
+
+    local bookmarks = book.bookmarks or {}
+    if #bookmarks > 0 then
+        add("")
+        local bm_title = _("Page bookmarks")
+        add(bm_title)
+        add(string.rep("-", math.min(72, math.max(3, #bm_title))))
+        for __, b in ipairs(bookmarks) do
+            add("")
+            if b.text and tostring(b.text) ~= "" then
+                add(tostring(b.text):gsub("\r\n", "\n"):gsub("\r", "\n"))
+            end
+            local bmeta = {}
+            if b.page and tostring(b.page) ~= "" then
+                bmeta[#bmeta + 1] = "p. " .. tostring(b.page)
+            end
+            if b.date and tostring(b.date) ~= "" then
+                bmeta[#bmeta + 1] = tostring(b.date)
+            end
+            if #bmeta > 0 then
+                add("[" .. table.concat(bmeta, " · ") .. "]")
+            end
+        end
+    end
+
+    if type(opts.user_notes_tail) == "string" and opts.user_notes_tail:find("%S") then
+        add("")
+        add(string.rep("-", 72))
+        add((opts.user_notes_tail:gsub("^%s+", ""):gsub("%s+$", "")))
     end
 
     if out[#out] ~= "" then

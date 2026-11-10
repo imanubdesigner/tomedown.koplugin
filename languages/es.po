@@ -844,3 +844,119 @@ msgstr "Nombre de la carpeta de portadas"
 msgid "e.g. covers, _covers, assets"
 msgstr "ej. covers, _covers, assets"
 
+msgid "Frontmatter fields"
+msgstr "Campos del frontmatter"
+
+msgid "Book cover (cover)"
+msgstr "Portada del libro (cover)"
+
+msgid "Series (series, series_index)"
+msgstr "Serie (series, series_index)"
+
+msgid "Language (language)"
+msgstr "Idioma (language)"
+
+msgid "Page count (pages)"
+msgstr "Número de páginas (pages)"
+
+msgid "Export date (exported)"
+msgstr "Fecha de exportación (exported)"
+
+msgid "Highlight count (highlights)"
+msgstr "Número de resaltados (highlights)"
+
+msgid "Special highlight count (special)"
+msgstr "Resaltados especiales (special)"
+
+msgid "Reading status (status)"
+msgstr "Estado de lectura (status)"
+
+msgid "Reading progress (progress)"
+msgstr "Progreso de lectura (progress)"
+
+msgid "Frontmatter key order…"
+msgstr "Orden de claves del frontmatter…"
+
+msgid "Frontmatter key order"
+msgstr "Orden de claves del frontmatter"
+
+msgid "comma-separated keys; leave empty for default order"
+msgstr "claves separadas por comas; dejar vacío para el orden predeterminado"
+
+msgid "Context:"
+msgstr "Contexto:"
+
+msgid "Markdown (.md)"
+msgstr "Markdown (.md)"
+
+msgid "Plain text (.txt)"
+msgstr "Texto sin formato (.txt)"
+
+msgid "Both (.md and .txt)"
+msgstr "Ambos (.md y .txt)"
+
+msgid "Export format: %1"
+msgstr "Formato de exportación: %1"
+
+msgid "Include YAML frontmatter"
+msgstr "Incluir frontmatter YAML"
+
+msgid "Page and date"
+msgstr "Página y fecha"
+
+msgid "Page only"
+msgstr "Solo página"
+
+msgid "Date only"
+msgstr "Solo fecha"
+
+msgid "None"
+msgstr "Ninguno"
+
+msgid "Highlight details: %1"
+msgstr "Detalles del resaltado: %1"
+
+msgid "Heading 1 (# Chapter)"
+msgstr "Encabezado 1 (# Capítulo)"
+
+msgid "Heading 2 (## Chapter)"
+msgstr "Encabezado 2 (## Capítulo)"
+
+msgid "Heading 3 (### Chapter)"
+msgstr "Encabezado 3 (### Capítulo)"
+
+msgid "None (continuous list)"
+msgstr "Ninguno (lista continua)"
+
+msgid "Chapter headings: %1"
+msgstr "Encabezados de capítulo: %1"
+
+msgid "Include highlight context"
+msgstr "Incluir contexto de los resaltados"
+
+msgid "Style & format"
+msgstr "Estilo y formato"
+
+msgid "Follow global setting"
+msgstr "Seguir ajuste global"
+
+msgid "Global"
+msgstr "Global"
+
+msgid "Custom"
+msgstr "Personalizado"
+
+msgid "Highlight context: %1"
+msgstr "Contexto de los resaltados: %1"
+
+msgid "Enabled"
+msgstr "Activado"
+
+msgid "Disabled"
+msgstr "Desactivado"
+
+msgid "Reset to global style settings"
+msgstr "Restablecer ajustes de estilo globales"
+
+
+

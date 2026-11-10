@@ -26,6 +26,7 @@ book's own menu: see [Keep my notes](keep-my-notes.md) and
 | *Include book covers* | off by default: exports every cover into `covers/` (or your custom folder) and embeds it in the book file and in the index; the cover leaves the device after a successful upload, the vault copy is the master one. Requires **Obsidian 1.8.1 or newer** |
 | *Covers folder: %1* | defaults to `covers`: custom folder name for extracted cover images (e.g. `_covers` to easily collapse or hide assets in Obsidian, `assets`, etc.). Changing it updates links and rebuilds the index |
 | *Export when I close a book* | off by default: exports the book when you close it, and again (silently, no network) before the device suspends |
+| *Export format: %1* | defaults to **Markdown (.md)**; can be switched to **Plain text (.txt)** or **Both (.md and .txt)** to generate a clean, human-readable `.txt` file per book without YAML or HTML |
 
 Ticking or unticking *Include book covers* rewrites every already exported
 file on the next export: the stored hash is invalidated, so *Export new and
@@ -92,10 +93,16 @@ menu.
 | *Treat every highlight as special* | off by default: every highlight becomes an `> [!highlight]` callout instead of a plain quote; when off, only *Special Highlight* marks turn into callouts |
 | *How special highlights look: %1* | only while the row above is off, since with every highlight a callout there is nothing left to choose (the row is grayed out): **Callout** is the default and keeps the box on the marked highlights alone, **Bold** writes them as `> **quote**` instead, for the readers that do not know callouts |
 | *Add link IDs to highlights* | off by default: writes a stable `^hl-xxxxxxxx` id at the end of every quote, so Obsidian can link to one single highlight and embed it. See [File format](file-format.md#links-to-a-single-highlight) |
+| *Frontmatter fields* | toggle YAML frontmatter on or off (*Include YAML frontmatter*, on by default), toggle optional keys (`cover`, `series`, `language`, `pages`, `exported`, `highlights`, `special`, `status`, `progress`), or set a custom comma-separated key order (*Frontmatter key order…*). `tomedown` stays first and enabled at all times. See [Customizing frontmatter fields and order](file-format.md#customizing-frontmatter-fields-and-order) |
+| *Highlight details: %1* | defaults to **Page and date** (`- **p. 15** · 05/11/2026 10:20`); can be set to **Page only**, **Date only**, or **None** |
+| *Chapter headings: %1* | defaults to **Heading 1 (`# Chapter`)**; can be set to **Heading 2 (`## Chapter`)**, **Heading 3 (`### Chapter`)**, or **None (continuous list)** |
+| *Include highlight context* | off by default: when enabled on reflowable books (EPUB, FB2, MOBI…), extracts the words immediately preceding and following each highlight and renders a `- **Context:** *…*` line below the quote |
 
-All three rows rewrite every already exported file on the next export:
+All style rows rewrite every already exported file on the next export:
 none of them is part of the book's hash, so flipping one invalidates the
 stored hashes, the way *Include book covers* does above.
+
+You can also override **Export format**, **Personal notes format**, **Highlight details**, **Chapter headings**, and **Highlight context** for a single book without changing the global settings via **Tomedown → Current book → Style & format** (*Reset to global style settings* restores the global defaults for that book).
 
 ## Updates
 
