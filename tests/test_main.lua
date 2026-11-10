@@ -5202,17 +5202,19 @@ do
     T.check(style_row and style_row.text == "Style & format",
         "28: Style & format is the last row in Current book menu")
     local bstyle = style_row.sub_item_table_func()
-    T.check(#bstyle == 6, "28: 5 per-book style choices + 1 reset row")
+    T.check(#bstyle == 9, "28: 8 per-book style choices + 1 reset row")
     T.check(bstyle[4].mandatory_func() == "Global",
         "28: chapter_headings starts on Global")
-    T.check(bstyle[6].enabled_func() == false,
+    T.check(bstyle[9].enabled_func() == false,
         "28: Reset to global style settings disabled when no overrides exist")
 
-    -- Pin FILE to chapter_headings = "none" and highlight_details = "none" via submenu callbacks
+    -- Pin FILE to chapter_headings = "none", highlight_details = "none", include_bookmarks = true via submenu callbacks
     bstyle[4].sub_item_table[5].callback() -- "none"
     bstyle[3].sub_item_table[5].callback() -- "none"
+    bstyle[7].sub_item_table[2].callback() -- include_bookmarks = true
     T.check(bstyle[4].mandatory_func() == "Custom"
-            and bstyle[6].enabled_func() == true,
+            and bstyle[7].mandatory_func() == "Custom"
+            and bstyle[9].enabled_func() == true,
         "28: mandatory shows Custom and Reset is enabled after setting per-book override")
 
     plugin:runExport({ FILE, FILE2 }, { force = true })
@@ -5221,16 +5223,18 @@ do
     local file2_base = (store.tomedown.exports[FILE2] or {}).base
     local file2_md = T.readFile(DIR .. "/" .. file2_base .. ".md") or ""
     T.check(not T.contains(file1_md, "# Capitolo I")
-            and not T.contains(file1_md, "**p. 10**"),
-        "28: FILE uses per-book override (no chapter headings, no highlight details)")
+            and not T.contains(file1_md, "**p. 10**")
+            and T.contains(file1_md, "Segnalibro di pagina"),
+        "28: FILE uses per-book override (no chapter headings, no highlight details, page bookmarks enabled)")
     T.check(T.contains(file2_md, "**p. 3**"),
         "28: FILE2 still uses global settings (page and date details): base="
             .. tostring(file2_base) .. " md=" .. tostring(file2_md))
 
     -- Reset FILE back to global settings
-    bstyle[6].callback()
+    bstyle[9].callback()
     T.check(bstyle[4].mandatory_func() == "Global"
-            and bstyle[6].enabled_func() == false,
+            and bstyle[7].mandatory_func() == "Global"
+            and bstyle[9].enabled_func() == false,
         "28: Reset to global style settings clears all overrides for FILE")
 end
 

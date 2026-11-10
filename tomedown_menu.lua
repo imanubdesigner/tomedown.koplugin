@@ -64,6 +64,8 @@ local getFrontmatterOrder = shared.getFrontmatterOrder
 local setFrontmatterOrder = shared.setFrontmatterOrder
 local getFrontmatterEnabled = shared.getFrontmatterEnabled
 local setFrontmatterEnabled = shared.setFrontmatterEnabled
+local getBookCovers = shared.getBookCovers
+local getIncludeBookmarks = shared.getIncludeBookmarks
 local getHighlightDetails = shared.getHighlightDetails
 local setHighlightDetails = shared.setHighlightDetails
 local getChapterHeadings = shared.getChapterHeadings
@@ -3231,6 +3233,48 @@ function M:genBookStyleMenu(file)
         _("Highlight context: %1"),
         "highlight_context",
         getHighlightContext,
+        {
+            [true] = _("Enabled"),
+            [false] = _("Disabled"),
+        },
+        {
+            { val = true,  text = _("Enabled") },
+            { val = false, text = _("Disabled") },
+        }
+    )
+
+    rows[#rows + 1] = choiceRow(
+        _("Book cover: %1"),
+        "covers",
+        getBookCovers,
+        {
+            [true] = _("Enabled"),
+            [false] = _("Disabled"),
+        },
+        {
+            { val = true,  text = _("Enabled") },
+            { val = false, text = _("Disabled") },
+        }
+    )
+
+    rows[#rows + 1] = choiceRow(
+        _("Page bookmarks: %1"),
+        "include_bookmarks",
+        getIncludeBookmarks,
+        {
+            [true] = _("Enabled"),
+            [false] = _("Disabled"),
+        },
+        {
+            { val = true,  text = _("Enabled") },
+            { val = false, text = _("Disabled") },
+        }
+    )
+
+    rows[#rows + 1] = choiceRow(
+        _("YAML frontmatter: %1"),
+        "fm_enabled",
+        getFrontmatterEnabled,
         {
             [true] = _("Enabled"),
             [false] = _("Disabled"),

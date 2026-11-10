@@ -795,7 +795,13 @@ local function setFrontmatterOrder(raw)
     return clean
 end
 
-local function getFrontmatterEnabled()
+local function getFrontmatterEnabled(file)
+    if file then
+        local override = getBookStyleOverride(file, "fm_enabled")
+        if override ~= nil then
+            return override == true
+        end
+    end
     return getSetting("fm_enabled", true) ~= false
 end
 
@@ -805,6 +811,26 @@ local function setFrontmatterEnabled(enabled)
     else
         setSetting("fm_enabled", nil)
     end
+end
+
+local function getBookCovers(file)
+    if file then
+        local override = getBookStyleOverride(file, "covers")
+        if override ~= nil then
+            return override == true
+        end
+    end
+    return getSetting("covers", false) == true
+end
+
+local function getIncludeBookmarks(file)
+    if file then
+        local override = getBookStyleOverride(file, "include_bookmarks")
+        if override ~= nil then
+            return override == true
+        end
+    end
+    return getSetting("include_bookmarks", false) == true
 end
 
 local function getHighlightDetails(file)
@@ -894,6 +920,8 @@ return {
     setFrontmatterOrder = setFrontmatterOrder,
     getFrontmatterEnabled = getFrontmatterEnabled,
     setFrontmatterEnabled = setFrontmatterEnabled,
+    getBookCovers = getBookCovers,
+    getIncludeBookmarks = getIncludeBookmarks,
     getHighlightDetails = getHighlightDetails,
     setHighlightDetails = setHighlightDetails,
     getChapterHeadings = getChapterHeadings,

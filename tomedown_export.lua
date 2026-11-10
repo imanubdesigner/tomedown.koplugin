@@ -47,6 +47,8 @@ local getNoteStyle = shared.getNoteStyle
 local getFrontmatterHidden = shared.getFrontmatterHidden
 local getFrontmatterOrder = shared.getFrontmatterOrder
 local getFrontmatterEnabled = shared.getFrontmatterEnabled
+local getBookCovers = shared.getBookCovers
+local getIncludeBookmarks = shared.getIncludeBookmarks
 local getHighlightDetails = shared.getHighlightDetails
 local getChapterHeadings = shared.getChapterHeadings
 local getHighlightContext = shared.getHighlightContext
@@ -507,7 +509,7 @@ end
 -- first time it is needed. nil when "Include book covers" is off or the
 -- book has no cover at all; the markdown then simply omits it.
 function M:ensureCover(file, base, dir)
-    if not getSetting("covers", false) then
+    if not getBookCovers(file) then
         return nil
     end
     local leaf = tostring(base or ""):match("([^/]+)$") or tostring(base or "")
@@ -574,7 +576,7 @@ function M:buildBook(file, live_annotations)
                 end
             end
             local annotations = self:cleanAnnotations(raw)
-            local bookmarks = getSetting("include_bookmarks", false)
+            local bookmarks = getIncludeBookmarks(file)
                 and self:cleanBookmarks(raw) or {}
             if #annotations > 0 or #bookmarks > 0 then
                 -- the open book's props are the ones KOReader read from
@@ -1046,7 +1048,7 @@ function M:runExport(files, opts)
                         note_style = getNoteStyle(file),
                         notes_title = getNotesTitle(file),
                         markers = preserve,
-                        fm_enabled = getFrontmatterEnabled(),
+                        fm_enabled = getFrontmatterEnabled(file),
                         fm_hidden = getFrontmatterHidden(),
                         fm_order = getFrontmatterOrder(),
                         highlight_details = getHighlightDetails(file),

@@ -102,7 +102,7 @@ All style rows rewrite every already exported file on the next export:
 none of them is part of the book's hash, so flipping one invalidates the
 stored hashes, the way *Include book covers* does above.
 
-You can also override **Export format**, **Personal notes format**, **Highlight details**, **Chapter headings**, and **Highlight context** for a single book without changing the global settings via **Tomedown → Current book → Style & format** (*Reset to global style settings* restores the global defaults for that book).
+You can also override **Export format**, **Personal notes format**, **Highlight details**, **Chapter headings**, **Highlight context**, **Book cover**, **Page bookmarks**, and **YAML frontmatter** for a single book without changing the global settings via **Tomedown → Current book → Style & format** (*Reset to global style settings* restores the global defaults for that book).
 
 ## Updates
 

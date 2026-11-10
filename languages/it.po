@@ -958,4 +958,13 @@ msgstr "Disattivato"
 msgid "Reset to global style settings"
 msgstr "Ripristina stile e formato globali"
 
+msgid "Book cover: %1"
+msgstr "Copertina del libro: %1"
+
+msgid "Page bookmarks: %1"
+msgstr "Segnalibri di pagina: %1"
+
+msgid "YAML frontmatter: %1"
+msgstr "Frontmatter YAML: %1"
+
 
