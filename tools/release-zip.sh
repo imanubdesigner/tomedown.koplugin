@@ -48,13 +48,14 @@ fi
 mapfile -t files < <(
     git ls-tree -r --name-only "$ref" | awk '
         $0 == "LICENSE" || $0 == "_meta.lua" || $0 == "assets/logo.png" \
+            || $0 == "assets/appbar.tomedown.svg" \
             || $0 == "main.lua" { print; next }
         /^languages\/[^\/]+\.po$/ { print; next }
         /^tomedown_[^\/]+\.lua$/ { print; next }
     ' | LC_ALL=C sort
 )
 
-for required in LICENSE _meta.lua assets/logo.png main.lua; do
+for required in LICENSE _meta.lua assets/logo.png assets/appbar.tomedown.svg main.lua; do
     found=0
     for file in "${files[@]}"; do
         if [ "$file" = "$required" ]; then
