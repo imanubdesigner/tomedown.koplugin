@@ -970,6 +970,25 @@ msgstr "YAML-Frontmatter: %1"
 msgid "Show Tomedown icon in the top bar"
 msgstr "Tomedown-Symbol in der oberen Leiste anzeigen"
 
+msgid "Custom fields"
+msgstr "Benutzerdefinierte Felder"
+
+msgid "Custom frontmatter fields"
+msgstr "Benutzerdefinierte Frontmatter-Felder"
+
+msgid "Custom frontmatter fields…"
+msgstr "Benutzerdefinierte Frontmatter-Felder…"
+
+msgid "comma-separated keys; leave empty to follow global order"
+msgstr "kommagetrennte Schlüssel; leer lassen für globale Reihenfolge"
+
+msgid "key: value (one per line); leave empty for none"
+msgstr "Schlüssel: Wert (einer pro Zeile); leer lassen für keine"
+
+msgid "key: value (one per line) for this book"
+msgstr "Schlüssel: Wert (einer pro Zeile) für dieses Buch"
+
+
 
 
 

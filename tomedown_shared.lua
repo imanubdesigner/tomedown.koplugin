@@ -702,7 +702,7 @@ local FRONTMATTER_HIDEABLE_KEYS = {
 local DEFAULT_FRONTMATTER_ORDER = {
     "title", "author", "cover", "series", "series_index",
     "language", "pages", "exported", "highlights", "special",
-    "status", "progress",
+    "status", "progress", "custom",
     "published", "rating", "review", "date_started", "date_finished",
     "collections", "tags",
 }
@@ -712,12 +712,40 @@ for __, k in ipairs(FRONTMATTER_HIDEABLE_KEYS) do
     VALID_HIDEABLE_KEY[k] = true
 end
 
-local VALID_ORDER_KEY = {}
-for __, k in ipairs(DEFAULT_FRONTMATTER_ORDER) do
-    VALID_ORDER_KEY[k] = true
+local NON_HIDEABLE_CORE_KEY = {
+    tomedown = true,
+    title = true,
+    author = true,
+    tags = true,
+    tomedown_book_tags = true,
+}
+
+local function isValidHideableKey(k)
+    if type(k) ~= "string" then
+        return false
+    end
+    local lk = k:lower()
+    if NON_HIDEABLE_CORE_KEY[lk] then
+        return false
+    end
+    return VALID_HIDEABLE_KEY[lk] == true or lk:match("^[%w_%-]+$") ~= nil
 end
 
-local function getFrontmatterHidden()
+local function getFrontmatterHidden(file)
+    if file then
+        local override = getBookStyleOverride(file, "fm_hidden")
+        if type(override) == "table" then
+            local out = {}
+            local any = false
+            for k, v in pairs(override) do
+                if v == true and isValidHideableKey(k) then
+                    out[k:lower()] = true
+                    any = true
+                end
+            end
+            return any and out or nil
+        end
+    end
     local raw = getSetting("fm_hidden", nil)
     if type(raw) ~= "table" then
         return nil
@@ -725,39 +753,68 @@ local function getFrontmatterHidden()
     local out = {}
     local any = false
     for k, v in pairs(raw) do
-        if v == true and k ~= "tomedown" and VALID_HIDEABLE_KEY[k] then
-            out[k] = true
+        if v == true and isValidHideableKey(k) then
+            out[k:lower()] = true
             any = true
         end
     end
     return any and out or nil
 end
 
-local function isFrontmatterKeyEnabled(key)
-    if key == "tomedown" or not VALID_HIDEABLE_KEY[key] then
+local function isFrontmatterKeyEnabled(key, file)
+    if not isValidHideableKey(key) then
         return true
     end
-    local hidden = getSetting("fm_hidden", nil)
-    return not (type(hidden) == "table" and hidden[key] == true)
+    local lk = key:lower()
+    local hidden = getFrontmatterHidden(file)
+    return not (type(hidden) == "table" and hidden[lk] == true)
 end
 
-local function setFrontmatterKeyEnabled(key, enabled)
-    if key == "tomedown" or not VALID_HIDEABLE_KEY[key] then
+local function setFrontmatterKeyEnabled(key, enabled, file)
+    if not isValidHideableKey(key) then
+        return
+    end
+    local lk = key:lower()
+    if file then
+        local override = getBookStyleOverride(file, "fm_hidden")
+        local next_map = {}
+        if type(override) == "table" then
+            for k, v in pairs(override) do
+                if v == true and isValidHideableKey(k) then
+                    next_map[k:lower()] = true
+                end
+            end
+        else
+            local global_hidden = getFrontmatterHidden()
+            if type(global_hidden) == "table" then
+                for k, v in pairs(global_hidden) do
+                    if v == true and isValidHideableKey(k) then
+                        next_map[k:lower()] = true
+                    end
+                end
+            end
+        end
+        if enabled then
+            next_map[lk] = nil
+        else
+            next_map[lk] = true
+        end
+        setBookStyleOverride(file, "fm_hidden", next(next_map) and next_map or nil)
         return
     end
     local current = getSetting("fm_hidden", nil)
     local next_map = {}
     if type(current) == "table" then
         for k, v in pairs(current) do
-            if v == true and k ~= "tomedown" and VALID_HIDEABLE_KEY[k] then
-                next_map[k] = true
+            if v == true and isValidHideableKey(k) then
+                next_map[k:lower()] = true
             end
         end
     end
     if enabled then
-        next_map[key] = nil
+        next_map[lk] = nil
     else
-        next_map[key] = true
+        next_map[lk] = true
     end
     setSetting("fm_hidden", next(next_map) and next_map or nil)
 end
@@ -765,7 +822,7 @@ end
 local function sanitizeFrontmatterOrder(raw)
     local tokens = {}
     if type(raw) == "string" then
-        for tok in raw:gmatch("[%w_]+") do
+        for tok in raw:gmatch("[%w_%-]+") do
             tokens[#tokens + 1] = tok:lower()
         end
     elseif type(raw) == "table" then
@@ -777,7 +834,7 @@ local function sanitizeFrontmatterOrder(raw)
     end
     local out, seen = {}, {}
     for __, k in ipairs(tokens) do
-        if k ~= "tomedown" and VALID_ORDER_KEY[k] and not seen[k] then
+        if k ~= "" and k ~= "tomedown" and not seen[k] then
             seen[k] = true
             out[#out + 1] = k
         end
@@ -785,14 +842,167 @@ local function sanitizeFrontmatterOrder(raw)
     return #out > 0 and out or nil
 end
 
-local function getFrontmatterOrder()
+local function getFrontmatterOrder(file)
+    if file then
+        local override = getBookStyleOverride(file, "fm_order")
+        if override ~= nil then
+            return sanitizeFrontmatterOrder(override)
+        end
+    end
     return sanitizeFrontmatterOrder(getSetting("fm_order", nil))
 end
 
-local function setFrontmatterOrder(raw)
+local function setFrontmatterOrder(raw, file)
     local clean = sanitizeFrontmatterOrder(raw)
+    if file then
+        setBookStyleOverride(file, "fm_order", clean)
+        return clean
+    end
     setSetting("fm_order", clean)
     return clean
+end
+
+local function parseCustomFields(raw)
+    if type(raw) ~= "string" or raw:match("^%s*$") then
+        return nil
+    end
+    local fields = {}
+    local seen = {}
+    -- Support both newline-separated lines and comma-separated pairs
+    -- e.g. "genre: sci-fi, project: thesis" or lines
+    local normalized = raw:gsub("\r\n", "\n"):gsub("\r", "\n")
+    local lines = {}
+    for line in normalized:gmatch("[^\n]+") do
+        lines[#lines + 1] = line
+    end
+    for __, line in ipairs(lines) do
+        for pair in line:gmatch("[^,]+") do
+            local k, v = pair:match("^%s*([%w_%-]+)%s*:%s*(.-)%s*$")
+            if k and k ~= "" then
+                local lk = k:lower()
+                if not NON_HIDEABLE_CORE_KEY[lk] and not seen[lk] then
+                    seen[lk] = true
+                    fields[#fields + 1] = { key = k, val = v or "" }
+                end
+            end
+        end
+    end
+    return #fields > 0 and fields or nil
+end
+
+local function serializeCustomFields(fields)
+    if type(fields) ~= "table" or #fields == 0 then
+        return ""
+    end
+    local lines = {}
+    for __, f in ipairs(fields) do
+        if type(f) == "table" and f.key then
+            lines[#lines + 1] = f.key .. ": " .. tostring(f.val or "")
+        end
+    end
+    return table.concat(lines, "\n")
+end
+
+local function getCustomFrontmatterEnabled(file)
+    if file then
+        return getBookStyleOverride(file, "fm_custom_enabled") == true
+    end
+    return getSetting("fm_custom_enabled", false) == true
+end
+
+local function setCustomFrontmatterEnabled(enabled, file)
+    if file then
+        setBookStyleOverride(file, "fm_custom_enabled", enabled and true or nil)
+        return
+    end
+    setSetting("fm_custom_enabled", enabled and true or nil)
+end
+
+local function getRawCustomFrontmatterFields(file)
+    if file then
+        local book_raw = getBookStyleOverride(file, "fm_custom_fields")
+        return type(book_raw) == "string" and parseCustomFields(book_raw) or nil
+    end
+    local global_raw = getSetting("fm_custom_fields", nil)
+    return type(global_raw) == "string" and parseCustomFields(global_raw) or nil
+end
+
+local function getDefinedCustomFrontmatterFields(file)
+    local combined = {}
+    local idx_by_key = {}
+    if getCustomFrontmatterEnabled(nil) then
+        local global_fields = getRawCustomFrontmatterFields(nil)
+        if global_fields then
+            for __, f in ipairs(global_fields) do
+                local lk = f.key:lower()
+                combined[#combined + 1] = {
+                    key = f.key,
+                    val = f.val,
+                    scope = "global",
+                }
+                idx_by_key[lk] = #combined
+            end
+        end
+    end
+    if file and getCustomFrontmatterEnabled(file) then
+        local book_fields = getRawCustomFrontmatterFields(file)
+        if book_fields then
+            for __, f in ipairs(book_fields) do
+                local lk = f.key:lower()
+                local existing = idx_by_key[lk]
+                if existing then
+                    combined[existing] = {
+                        key = f.key,
+                        val = f.val,
+                        scope = "book",
+                    }
+                else
+                    combined[#combined + 1] = {
+                        key = f.key,
+                        val = f.val,
+                        scope = "book",
+                    }
+                    idx_by_key[lk] = #combined
+                end
+            end
+        end
+    end
+    return #combined > 0 and combined or nil
+end
+
+local function getCustomFrontmatterFields(file)
+    local defined = getDefinedCustomFrontmatterFields(file)
+    if not defined then
+        return nil
+    end
+    local active = {}
+    for __, f in ipairs(defined) do
+        if isFrontmatterKeyEnabled(f.key, file) then
+            active[#active + 1] = { key = f.key, val = f.val, scope = f.scope }
+        end
+    end
+    return #active > 0 and active or nil
+end
+
+local function setCustomFrontmatterFields(raw, file)
+    local parsed = parseCustomFields(raw)
+    local serialized = parsed and serializeCustomFields(parsed) or nil
+    if file then
+        setBookStyleOverride(file, "fm_custom_fields", serialized)
+        if serialized ~= nil then
+            setBookStyleOverride(file, "fm_custom_enabled", true)
+        elseif raw == nil then
+            setBookStyleOverride(file, "fm_custom_enabled", nil)
+        end
+        return serialized
+    end
+    setSetting("fm_custom_fields", serialized)
+    if serialized ~= nil then
+        setSetting("fm_custom_enabled", true)
+    elseif raw == nil then
+        setSetting("fm_custom_enabled", nil)
+    end
+    return serialized
 end
 
 local function getFrontmatterEnabled(file)
@@ -926,6 +1136,14 @@ return {
     sanitizeFrontmatterOrder = sanitizeFrontmatterOrder,
     getFrontmatterOrder = getFrontmatterOrder,
     setFrontmatterOrder = setFrontmatterOrder,
+    parseCustomFields = parseCustomFields,
+    serializeCustomFields = serializeCustomFields,
+    getCustomFrontmatterEnabled = getCustomFrontmatterEnabled,
+    setCustomFrontmatterEnabled = setCustomFrontmatterEnabled,
+    getRawCustomFrontmatterFields = getRawCustomFrontmatterFields,
+    getDefinedCustomFrontmatterFields = getDefinedCustomFrontmatterFields,
+    getCustomFrontmatterFields = getCustomFrontmatterFields,
+    setCustomFrontmatterFields = setCustomFrontmatterFields,
     getFrontmatterEnabled = getFrontmatterEnabled,
     setFrontmatterEnabled = setFrontmatterEnabled,
     getBookCovers = getBookCovers,

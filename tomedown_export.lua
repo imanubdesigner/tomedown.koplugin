@@ -46,6 +46,8 @@ local getIndexLinks = shared.getIndexLinks
 local getNoteStyle = shared.getNoteStyle
 local getFrontmatterHidden = shared.getFrontmatterHidden
 local getFrontmatterOrder = shared.getFrontmatterOrder
+local getRawCustomFrontmatterFields = shared.getRawCustomFrontmatterFields
+local getCustomFrontmatterFields = shared.getCustomFrontmatterFields
 local getFrontmatterEnabled = shared.getFrontmatterEnabled
 local getBookCovers = shared.getBookCovers
 local getIncludeBookmarks = shared.getIncludeBookmarks
@@ -653,7 +655,7 @@ function M:buildBook(file, live_annotations)
                     bookinfo = metadata.collect(file, status,
                         ds:readSetting("summary"), props)
                 end
-                local fm_hidden = getFrontmatterHidden()
+                local fm_hidden = getFrontmatterHidden(file)
                 local meta_parts = {
                     tostring((not (fm_hidden and fm_hidden.series) and series) or ""),
                     tostring((not (fm_hidden and fm_hidden.series) and series_index) or ""),
@@ -678,6 +680,14 @@ function M:buildBook(file, live_annotations)
                     and (bookinfoMeta(bookinfo, tags) or "removed") or nil
                 if bookinfo_meta then
                     meta_parts[#meta_parts + 1] = "bookinfo:" .. bookinfo_meta
+                end
+                local custom_f = getCustomFrontmatterFields(file)
+                if custom_f and #custom_f > 0 then
+                    local cf_parts = {}
+                    for __, f in ipairs(custom_f) do
+                        cf_parts[#cf_parts + 1] = tostring(f.key) .. "=" .. tostring(f.val)
+                    end
+                    meta_parts[#meta_parts + 1] = "custom:" .. table.concat(cf_parts, "\31")
                 end
                 local meta = table.concat(meta_parts, "\31")
                 book = {
@@ -1049,8 +1059,9 @@ function M:runExport(files, opts)
                         notes_title = getNotesTitle(file),
                         markers = preserve,
                         fm_enabled = getFrontmatterEnabled(file),
-                        fm_hidden = getFrontmatterHidden(),
-                        fm_order = getFrontmatterOrder(),
+                        fm_hidden = getFrontmatterHidden(file),
+                        fm_order = getFrontmatterOrder(file),
+                        custom_fields = getCustomFrontmatterFields(file),
                         highlight_details = getHighlightDetails(file),
                         chapter_headings = getChapterHeadings(file),
                         highlight_context = getHighlightContext(file),
@@ -1124,10 +1135,23 @@ function M:runExport(files, opts)
                             end
                         end
                         if old then
+                            local custom_owned
+                            local g_raw_cf = getRawCustomFrontmatterFields(nil)
+                            local b_raw_cf = getRawCustomFrontmatterFields(file)
+                            if g_raw_cf or b_raw_cf then
+                                custom_owned = {}
+                                for __, f in ipairs(g_raw_cf or {}) do
+                                    custom_owned[f.key:lower()] = true
+                                end
+                                for __, f in ipairs(b_raw_cf or {}) do
+                                    custom_owned[f.key:lower()] = true
+                                end
+                            end
                             local merged, info = merge.apply(old, md,
                                 record and record.regions,
                                 { mode = mode, notes_title = getNotesTitle(file),
-                                  bookinfo = book.imported })
+                                  bookinfo = book.imported,
+                                  custom_owned = custom_owned })
                             content = merged
                             if restored or recovered then
                                 -- the parked file stays in .bak as it is: it is

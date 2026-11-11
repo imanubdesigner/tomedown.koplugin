@@ -970,5 +970,24 @@ msgstr "Frontmatter YAML: %1"
 msgid "Show Tomedown icon in the top bar"
 msgstr "Mostra icona Tomedown nella barra superiore"
 
+msgid "Custom fields"
+msgstr "Campi personalizzati"
+
+msgid "Custom frontmatter fields"
+msgstr "Campi personalizzati frontmatter"
+
+msgid "Custom frontmatter fields…"
+msgstr "Campi personalizzati frontmatter…"
+
+msgid "comma-separated keys; leave empty to follow global order"
+msgstr "chiavi separate da virgola; lascia vuoto per seguire l'ordine globale"
+
+msgid "key: value (one per line); leave empty for none"
+msgstr "chiave: valore (uno per riga); lascia vuoto per nessuno"
+
+msgid "key: value (one per line) for this book"
+msgstr "chiave: valore (uno per riga) per questo libro"
+
+
 
 

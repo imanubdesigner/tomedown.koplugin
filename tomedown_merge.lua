@@ -289,7 +289,9 @@ function merge.mergeFrontmatter(disk_fm, rendered_fm, extra_owned)
     local disk = parseFm(disk_fm)
     local rendered = parseFm(rendered_fm)
     local function owned(key)
-        return OWNED[key] or (extra_owned and extra_owned[key])
+        local lk = type(key) == "string" and key:lower() or key
+        return OWNED[key] or OWNED[lk]
+            or (extra_owned and (extra_owned[key] or extra_owned[lk]))
     end
     local old_managed = tagSet(disk.blocks.tomedown_book_tags)
     local new_managed = tagSet(rendered.blocks.tomedown_book_tags)
@@ -914,7 +916,22 @@ function merge.apply(disk_md, rendered_md, stored_fps, opts)
     if type(disk_md) == "string" then
         disk_md = normalizeText(disk_md)
     end
-    local extra_owned = opts.bookinfo and BOOKINFO_OWNED or nil
+    local extra_owned
+    if opts.bookinfo or type(opts.custom_owned) == "table" then
+        extra_owned = {}
+        if opts.bookinfo then
+            for k, v in pairs(BOOKINFO_OWNED) do
+                extra_owned[k] = v
+            end
+        end
+        if type(opts.custom_owned) == "table" then
+            for k, v in pairs(opts.custom_owned) do
+                if v then
+                    extra_owned[tostring(k):lower()] = true
+                end
+            end
+        end
+    end
     local rendered = merge.split(rendered_md)
     if not rendered then
         -- preserve folds the render into the file on disk: with no

@@ -62,6 +62,13 @@ local isFrontmatterKeyEnabled = shared.isFrontmatterKeyEnabled
 local setFrontmatterKeyEnabled = shared.setFrontmatterKeyEnabled
 local getFrontmatterOrder = shared.getFrontmatterOrder
 local setFrontmatterOrder = shared.setFrontmatterOrder
+local getCustomFrontmatterEnabled = shared.getCustomFrontmatterEnabled
+local setCustomFrontmatterEnabled = shared.setCustomFrontmatterEnabled
+local getRawCustomFrontmatterFields = shared.getRawCustomFrontmatterFields
+local getDefinedCustomFrontmatterFields = shared.getDefinedCustomFrontmatterFields
+local getCustomFrontmatterFields = shared.getCustomFrontmatterFields
+local setCustomFrontmatterFields = shared.setCustomFrontmatterFields
+local serializeCustomFields = shared.serializeCustomFields
 local getFrontmatterEnabled = shared.getFrontmatterEnabled
 local setFrontmatterEnabled = shared.setFrontmatterEnabled
 local getBookCovers = shared.getBookCovers
@@ -832,6 +839,7 @@ end
 -- part of hashBook, so without this a settings toggle would leave the
 -- already exported .md files stale until the highlights change.
 function M:invalidateExportHashes()
+    self.book_cache = {}
     local records = getSetting("exports", {})
     local changed = false
     for __, record in pairs(records) do
@@ -850,6 +858,9 @@ end
 -- zone appears or disappears), and must leave every other book's hash
 -- alone, so the rest of the library is not exported again for nothing
 function M:invalidateExportHash(file)
+    if self.book_cache and file then
+        self.book_cache[file] = nil
+    end
     local records = getSetting("exports", {})
     local record = records[file]
     if record and record.hash ~= nil then
@@ -965,13 +976,14 @@ function M:editCoversFolder(touchmenu)
     return dialog
 end
 
-function M:editFrontmatterOrder(touchmenu)
-    local current_order = getFrontmatterOrder() or DEFAULT_FRONTMATTER_ORDER
+function M:editFrontmatterOrder(touchmenu, file)
+    local current_order = getFrontmatterOrder(file) or DEFAULT_FRONTMATTER_ORDER
     local dialog
     dialog = InputDialog:new{
         title = _("Frontmatter key order"),
         input = table.concat(current_order, ", "),
-        hint = _("comma-separated keys; leave empty for default order"),
+        hint = file and _("comma-separated keys; leave empty to follow global order")
+            or _("comma-separated keys; leave empty for default order"),
         buttons = {
             {
                 {
@@ -987,8 +999,12 @@ function M:editFrontmatterOrder(touchmenu)
                     text = _("Save"),
                     callback = function()
                         local value = dialog:getInputText() or ""
-                        setFrontmatterOrder(value)
-                        self:invalidateExportHashes()
+                        setFrontmatterOrder(value, file)
+                        if file then
+                            self:invalidateExportHash(file)
+                        else
+                            self:invalidateExportHashes()
+                        end
                         UIManager:close(dialog)
                         if touchmenu and touchmenu.updateItems then
                             touchmenu:updateItems()
@@ -1000,6 +1016,247 @@ function M:editFrontmatterOrder(touchmenu)
     }
     UIManager:show(dialog)
     return dialog
+end
+
+function M:editCustomFrontmatterFields(touchmenu, file)
+    local current_fields = getRawCustomFrontmatterFields(file)
+    local initial_text = current_fields and serializeCustomFields(current_fields) or ""
+    local dialog
+    dialog = InputDialog:new{
+        title = _("Custom frontmatter fields"),
+        input = initial_text,
+        hint = file and _("key: value (one per line) for this book")
+            or _("key: value (one per line); leave empty for none"),
+        buttons = {
+            {
+                {
+                    text = _("Cancel"),
+                    id = "close",
+                    callback = function()
+                        UIManager:close(dialog)
+                    end,
+                },
+            },
+            {
+                {
+                    text = _("Save"),
+                    callback = function()
+                        local value = dialog:getInputText() or ""
+                        setCustomFrontmatterFields(value, file)
+                        if file then
+                            self:invalidateExportHash(file)
+                        else
+                            self:invalidateExportHashes()
+                        end
+                        UIManager:close(dialog)
+                        self:refreshFrontmatterFieldsMenu(touchmenu, file)
+                    end,
+                },
+            },
+        },
+    }
+    UIManager:show(dialog)
+    return dialog
+end
+
+function M:genFrontmatterFieldsMenu(file, live_ref)
+    local rows = live_ref or {}
+    for i = #rows, 1, -1 do
+        rows[i] = nil
+    end
+
+    local fm_defs = {
+        { key = "cover",      text = _("Book cover (cover)") },
+        { key = "series",     text = _("Series (series, series_index)") },
+        { key = "language",   text = _("Language (language)") },
+        { key = "pages",      text = _("Page count (pages)") },
+        { key = "exported",   text = _("Export date (exported)") },
+        { key = "highlights", text = _("Highlight count (highlights)") },
+        { key = "special",    text = _("Special highlight count (special)") },
+        { key = "status",     text = _("Reading status (status)") },
+        { key = "progress",   text = _("Reading progress (progress)") },
+    }
+
+    if file then
+        rows[#rows + 1] = {
+            text = _("Follow global setting"),
+            radio = true,
+            keep_menu_open = true,
+            separator = true,
+            checked_func = function()
+                return getBookStyleOverride(file, "fm_hidden") == nil
+                    and getBookStyleOverride(file, "fm_custom_enabled") == nil
+                    and getBookStyleOverride(file, "fm_custom_fields") == nil
+                    and getBookStyleOverride(file, "fm_order") == nil
+            end,
+            callback = function(touchmenu)
+                setBookStyleOverride(file, "fm_hidden", nil)
+                setBookStyleOverride(file, "fm_custom_enabled", nil)
+                setBookStyleOverride(file, "fm_custom_fields", nil)
+                setBookStyleOverride(file, "fm_order", nil)
+                self:invalidateExportHash(file)
+                self:refreshFrontmatterFieldsMenu(touchmenu or { item_table = rows }, file)
+            end,
+        }
+    else
+        rows[#rows + 1] = {
+            key = "fm_enabled",
+            text = _("Include YAML frontmatter"),
+            separator = true,
+            checked_func = function()
+                return getFrontmatterEnabled()
+            end,
+            keep_menu_open = true,
+            callback = function()
+                setFrontmatterEnabled(not getFrontmatterEnabled())
+                self:invalidateExportHashes()
+            end,
+        }
+    end
+
+    local defined_custom = getDefinedCustomFrontmatterFields(file) or {}
+    local global_custom_in_book = {}
+    local book_custom_in_book = {}
+    if file then
+        for __, cf in ipairs(defined_custom) do
+            if cf.scope == "book" then
+                book_custom_in_book[#book_custom_in_book + 1] = cf
+            else
+                global_custom_in_book[#global_custom_in_book + 1] = cf
+            end
+        end
+    end
+
+    for idx, def in ipairs(fm_defs) do
+        local k = def.key
+        local is_last_std = (idx == #fm_defs) and (#global_custom_in_book == 0)
+        rows[#rows + 1] = {
+            key = k,
+            text = def.text,
+            separator = is_last_std or nil,
+            enabled_func = not file and function()
+                return getFrontmatterEnabled()
+            end or nil,
+            checked_func = function()
+                return isFrontmatterKeyEnabled(k, file)
+            end,
+            keep_menu_open = true,
+            callback = function()
+                setFrontmatterKeyEnabled(k, not isFrontmatterKeyEnabled(k, file), file)
+                if file then
+                    self:invalidateExportHash(file)
+                else
+                    self:invalidateExportHashes()
+                end
+            end,
+        }
+    end
+
+    -- In Current Book, global custom keys appear right in the field list
+    -- so the user can uncheck any global custom key for this book.
+    if file and #global_custom_in_book > 0 then
+        for idx, cf in ipairs(global_custom_in_book) do
+            local ck = cf.key
+            local label = (cf.val and cf.val ~= "") and (ck .. ": " .. cf.val) or ck
+            rows[#rows + 1] = {
+                key = ck:lower(),
+                text = label,
+                separator = (idx == #global_custom_in_book) or nil,
+                checked_func = function()
+                    return isFrontmatterKeyEnabled(ck, file)
+                end,
+                keep_menu_open = true,
+                callback = function()
+                    setFrontmatterKeyEnabled(ck, not isFrontmatterKeyEnabled(ck, file), file)
+                    self:invalidateExportHash(file)
+                end,
+            }
+        end
+    end
+
+    local custom_on = getCustomFrontmatterEnabled(file)
+    rows[#rows + 1] = {
+        key = "custom",
+        text = _("Custom fields"),
+        separator = not custom_on or nil,
+        enabled_func = not file and function()
+            return getFrontmatterEnabled()
+        end or nil,
+        checked_func = function()
+            return getCustomFrontmatterEnabled(file)
+        end,
+        keep_menu_open = true,
+        callback = function(touchmenu)
+            setCustomFrontmatterEnabled(not getCustomFrontmatterEnabled(file), file)
+            if file then
+                self:invalidateExportHash(file)
+            else
+                self:invalidateExportHashes()
+            end
+            self:refreshFrontmatterFieldsMenu(touchmenu or { item_table = rows }, file)
+        end,
+    }
+
+    if custom_on then
+        local own_custom = file and book_custom_in_book or defined_custom
+        for __, cf in ipairs(own_custom) do
+            local ck = cf.key
+            local label = (cf.val and cf.val ~= "") and (ck .. ": " .. cf.val) or ck
+            rows[#rows + 1] = {
+                key = ck:lower(),
+                text = label,
+                enabled_func = not file and function()
+                    return getFrontmatterEnabled()
+                end or nil,
+                checked_func = function()
+                    return isFrontmatterKeyEnabled(ck, file)
+                end,
+                keep_menu_open = true,
+                callback = function()
+                    setFrontmatterKeyEnabled(ck, not isFrontmatterKeyEnabled(ck, file), file)
+                    if file then
+                        self:invalidateExportHash(file)
+                    else
+                        self:invalidateExportHashes()
+                    end
+                end,
+            }
+        end
+        rows[#rows + 1] = {
+            key = "edit_custom",
+            text = _("Custom frontmatter fields…"),
+            separator = true,
+            enabled_func = not file and function()
+                return getFrontmatterEnabled()
+            end or nil,
+            callback = function(touchmenu)
+                return self:editCustomFrontmatterFields(touchmenu or { item_table = rows }, file)
+            end,
+        }
+    end
+
+    rows[#rows + 1] = {
+        key = "fm_order",
+        text = _("Frontmatter key order…"),
+        enabled_func = not file and function()
+            return getFrontmatterEnabled()
+        end or nil,
+        callback = function(touchmenu)
+            return self:editFrontmatterOrder(touchmenu, file)
+        end,
+    }
+
+    return rows
+end
+
+function M:refreshFrontmatterFieldsMenu(touchmenu, file)
+    if not touchmenu or not touchmenu.item_table then
+        return
+    end
+    self:genFrontmatterFieldsMenu(file, touchmenu.item_table)
+    if touchmenu.updateItems then
+        touchmenu:updateItems()
+    end
 end
 
 function M:renameBookToTemplate(file, touchmenu)
@@ -1946,66 +2203,16 @@ function M:genSettingsMenu()
                 setSetting("include_bookmarks", not getSetting("include_bookmarks", false))
             end,
         },
-        {
-            text = _("Frontmatter fields"),
-            sub_item_table = (function()
-                local fm_defs = {
-                    { key = "cover",      text = _("Book cover (cover)") },
-                    { key = "series",     text = _("Series (series, series_index)") },
-                    { key = "language",   text = _("Language (language)") },
-                    { key = "pages",      text = _("Page count (pages)") },
-                    { key = "exported",   text = _("Export date (exported)") },
-                    { key = "highlights", text = _("Highlight count (highlights)") },
-                    { key = "special",    text = _("Special highlight count (special)") },
-                    { key = "status",     text = _("Reading status (status)") },
-                    { key = "progress",   text = _("Reading progress (progress)"), separator = true },
-                }
-                local rows = {
-                    {
-                        key = "fm_enabled",
-                        text = _("Include YAML frontmatter"),
-                        separator = true,
-                        checked_func = function()
-                            return getFrontmatterEnabled()
-                        end,
-                        keep_menu_open = true,
-                        callback = function()
-                            setFrontmatterEnabled(not getFrontmatterEnabled())
-                            self:invalidateExportHashes()
-                        end,
-                    },
-                }
-                for __, def in ipairs(fm_defs) do
-                    local k = def.key
-                    rows[#rows + 1] = {
-                        key = k,
-                        text = def.text,
-                        separator = def.separator,
-                        enabled_func = function()
-                            return getFrontmatterEnabled()
-                        end,
-                        checked_func = function()
-                            return isFrontmatterKeyEnabled(k)
-                        end,
-                        keep_menu_open = true,
-                        callback = function()
-                            setFrontmatterKeyEnabled(k, not isFrontmatterKeyEnabled(k))
-                            self:invalidateExportHashes()
-                        end,
-                    }
-                end
-                rows[#rows + 1] = {
-                    text = _("Frontmatter key order…"),
-                    enabled_func = function()
-                        return getFrontmatterEnabled()
-                    end,
-                    callback = function(touchmenu)
-                        return self:editFrontmatterOrder(touchmenu)
-                    end,
-                }
-                return rows
-            end)(),
-        },
+        (function()
+            local fm_sub = self:genFrontmatterFieldsMenu(nil)
+            return {
+                text = _("Frontmatter fields"),
+                sub_item_table = fm_sub,
+                sub_item_table_func = function()
+                    return self:genFrontmatterFieldsMenu(nil, fm_sub)
+                end,
+            }
+        end)(),
         {
             text_func = function()
                 local labels = {
@@ -3023,6 +3230,9 @@ function M:genBookMenu()
                 if touchmenu and touchmenu.closeMenu then
                     touchmenu:closeMenu()
                 end
+                if self.book_cache then
+                    self.book_cache[current] = nil
+                end
                 -- asked for this book by name: "Do not export" stops
                 -- automatic runs, not this one
                 self:runExport({ current }, { force = true })
@@ -3240,7 +3450,7 @@ function M:genBookStyleMenu(file)
         return rows
     end
 
-    local function choiceRow(title_tmpl, key, effective_fn, labels, options, sep)
+    local function choiceRow(title_tmpl, key, effective_fn, labels, options, sep, on_change)
         local sub = {
             {
                 text = _("Follow global setting"),
@@ -3250,10 +3460,13 @@ function M:genBookStyleMenu(file)
                 checked_func = function()
                     return getBookStyleOverride(file, key) == nil
                 end,
-                callback = function()
+                callback = function(touchmenu)
                     if getBookStyleOverride(file, key) ~= nil then
                         setBookStyleOverride(file, key, nil)
                         self:invalidateExportHash(file)
+                        if on_change then
+                            on_change(touchmenu)
+                        end
                     end
                 end,
             },
@@ -3267,10 +3480,13 @@ function M:genBookStyleMenu(file)
                 checked_func = function()
                     return getBookStyleOverride(file, key) == val
                 end,
-                callback = function()
+                callback = function(touchmenu)
                     if getBookStyleOverride(file, key) ~= val then
                         setBookStyleOverride(file, key, val)
                         self:invalidateExportHash(file)
+                        if on_change then
+                            on_change(touchmenu)
+                        end
                     end
                 end,
             }
@@ -3410,8 +3626,32 @@ function M:genBookStyleMenu(file)
             { val = true,  text = _("Enabled") },
             { val = false, text = _("Disabled") },
         },
-        true
+        getFrontmatterEnabled(file) == false,
+        function(touchmenu)
+            self:refreshBookStyleMenu(touchmenu, file)
+        end
     )
+
+    if getFrontmatterEnabled(file) then
+        local sub_fields = self:genFrontmatterFieldsMenu(file)
+        rows[#rows + 1] = {
+            key = "fm_fields",
+            text = _("Frontmatter fields"),
+            separator = true,
+            mandatory_func = function()
+                local has_hidden = getBookStyleOverride(file, "fm_hidden") ~= nil
+                local has_custom_on = getBookStyleOverride(file, "fm_custom_enabled") ~= nil
+                local has_custom = getBookStyleOverride(file, "fm_custom_fields") ~= nil
+                local has_order = getBookStyleOverride(file, "fm_order") ~= nil
+                return (not has_hidden and not has_custom_on and not has_custom and not has_order)
+                    and _("Global") or _("Custom")
+            end,
+            sub_item_table = sub_fields,
+            sub_item_table_func = function()
+                return self:genFrontmatterFieldsMenu(file, sub_fields)
+            end,
+        }
+    end
 
     rows[#rows + 1] = {
         key = "reset_book_style",
@@ -3420,9 +3660,10 @@ function M:genBookStyleMenu(file)
         enabled_func = function()
             return hasBookStyleOverrides(file)
         end,
-        callback = function()
+        callback = function(touchmenu)
             clearBookStyleOverrides(file)
             self:invalidateExportHash(file)
+            self:refreshBookStyleMenu(touchmenu, file)
         end,
     }
 
@@ -3573,6 +3814,23 @@ function M:refreshBookInfoMenu(touchmenu, file)
     end
     local live = touchmenu.item_table
     local fresh = self:genBookInfoMenu(file or self:getCurrentFile())
+    for i = #live, 1, -1 do
+        live[i] = nil
+    end
+    for _, item in ipairs(fresh) do
+        live[#live + 1] = item
+    end
+    if touchmenu.updateItems then
+        touchmenu:updateItems()
+    end
+end
+
+function M:refreshBookStyleMenu(touchmenu, file)
+    if not touchmenu or not touchmenu.item_table then
+        return
+    end
+    local live = touchmenu.item_table
+    local fresh = self:genBookStyleMenu(file or self:getCurrentFile())
     for i = #live, 1, -1 do
         live[i] = nil
     end

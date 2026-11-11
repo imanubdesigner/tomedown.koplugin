@@ -27,7 +27,7 @@ render.FORMAT_VERSION = "1.0"
 render.FRONTMATTER_KEYS = {
     "title", "author", "cover", "series", "series_index",
     "language", "pages", "exported", "highlights", "special",
-    "status", "progress",
+    "status", "progress", "custom",
     "published", "rating", "review", "date_started", "date_finished",
     "collections", "tags",
 }
@@ -524,6 +524,43 @@ function render.buildBookMd(book, opts)
     end
     if book.progress and not isHidden("progress") then
         fm_blocks.progress = { "progress: " .. yamlQuote(book.progress) }
+    end
+    local explicit_order_set = {}
+    if type(opts.fm_order) == "table" then
+        for __, k in ipairs(opts.fm_order) do
+            if type(k) == "string" then
+                explicit_order_set[k:lower()] = true
+            end
+        end
+    end
+    if not isHidden("custom") and type(opts.custom_fields) == "table" then
+        local custom_lines = {}
+        for __, field in ipairs(opts.custom_fields) do
+            if type(field) == "table" and field.key and field.key ~= "" then
+                local k = field.key
+                local lk = k:lower()
+                if not (fm_hidden and fm_hidden[lk] == true) and not fm_blocks[lk] then
+                    local v = tostring(field.val or "")
+                    local qv
+                    if v:match('^".*"$') or v:match("^'.*'$")
+                            or v:match("^%-?%d+%.?%d*$")
+                            or v == "true" or v == "false" or v == "null" or v:match("^%[.*%]$") then
+                        qv = v
+                    else
+                        qv = yamlQuote(v)
+                    end
+                    local line = k .. ": " .. qv
+                    if explicit_order_set[lk] then
+                        fm_blocks[lk] = { line }
+                    else
+                        custom_lines[#custom_lines + 1] = line
+                    end
+                end
+            end
+        end
+        if #custom_lines > 0 then
+            fm_blocks.custom = custom_lines
+        end
     end
     -- imported book information: only present when the reader imported
     -- this one book from its menu, so a normal export is unchanged

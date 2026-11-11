@@ -5127,7 +5127,12 @@ do
     T.check(fm_menu and fm_menu.text == "Frontmatter fields",
         "28: Frontmatter fields submenu in Settings -> Style")
     local fm_rows = fm_menu.sub_item_table
-    T.check(#fm_rows == 11, "28: 1 YAML toggle + 9 hideable field checkboxes + 1 order entry")
+    T.check(#fm_rows == 12,
+        "28: 1 YAML toggle + 9 hideable field checkboxes + Custom fields (off by default) + order entry")
+    T.check(fm_rows[11].key == "custom"
+            and fm_rows[11].text == "Custom fields"
+            and fm_rows[11].checked_func() == false,
+        "28: Custom fields is unchecked by default and named cleanly")
 
     -- Toggle off 'progress' and 'special' via menu callbacks
     local prog_row = fm_rows[10]
@@ -5145,7 +5150,7 @@ do
         "28: tomedown key cannot be disabled")
 
     -- Custom frontmatter order via dialog
-    local order_row = fm_rows[11]
+    local order_row = fm_rows[12]
     local dlg = order_row.callback()
     T.check(dlg ~= nil, "28: Frontmatter key order opens InputDialog")
     dlg:setText("tags, status, title, author")
@@ -5202,19 +5207,27 @@ do
     T.check(style_row and style_row.text == "Style & format",
         "28: Style & format is the last row in Current book menu")
     local bstyle = style_row.sub_item_table_func()
-    T.check(#bstyle == 9, "28: 8 per-book style choices + 1 reset row")
+    T.check(#bstyle == 10, "28: 8 per-book style choices + 1 frontmatter fields + 1 reset row")
     T.check(bstyle[4].mandatory_func() == "Global",
         "28: chapter_headings starts on Global")
-    T.check(bstyle[9].enabled_func() == false,
+    T.check(bstyle[9].text == "Frontmatter fields" and bstyle[9].mandatory_func() == "Global",
+        "28: Frontmatter fields row is present and starts on Global")
+    T.check(bstyle[10].enabled_func() == false,
         "28: Reset to global style settings disabled when no overrides exist")
 
     -- Pin FILE to chapter_headings = "none", highlight_details = "none", include_bookmarks = true via submenu callbacks
     bstyle[4].sub_item_table[5].callback() -- "none"
     bstyle[3].sub_item_table[5].callback() -- "none"
     bstyle[7].sub_item_table[2].callback() -- include_bookmarks = true
+    -- Pin FILE to hide progress in frontmatter via Frontmatter fields
+    bstyle[9].sub_item_table[10].callback() -- progress toggled off
+    T.check(shared.isFrontmatterKeyEnabled("progress", FILE) == false
+            and shared.isFrontmatterKeyEnabled("progress") == true,
+        "28: progress hidden for FILE only, global still enabled")
     T.check(bstyle[4].mandatory_func() == "Custom"
             and bstyle[7].mandatory_func() == "Custom"
-            and bstyle[9].enabled_func() == true,
+            and bstyle[9].mandatory_func() == "Custom"
+            and bstyle[10].enabled_func() == true,
         "28: mandatory shows Custom and Reset is enabled after setting per-book override")
 
     plugin:runExport({ FILE, FILE2 }, { force = true })
@@ -5224,18 +5237,106 @@ do
     local file2_md = T.readFile(DIR .. "/" .. file2_base .. ".md") or ""
     T.check(not T.contains(file1_md, "# Capitolo I")
             and not T.contains(file1_md, "**p. 10**")
-            and T.contains(file1_md, "Segnalibro di pagina"),
-        "28: FILE uses per-book override (no chapter headings, no highlight details, page bookmarks enabled)")
-    T.check(T.contains(file2_md, "**p. 3**"),
-        "28: FILE2 still uses global settings (page and date details): base="
+            and T.contains(file1_md, "Segnalibro di pagina")
+            and not T.contains(file1_md, "progress:"),
+        "28: FILE uses per-book override (no chapter headings, no highlight details, page bookmarks enabled, no progress)")
+    T.check(T.contains(file2_md, "**p. 3**")
+            and T.contains(file2_md, "status:"),
+        "28: FILE2 still uses global settings (page and date details, status enabled): base="
             .. tostring(file2_base) .. " md=" .. tostring(file2_md))
 
+    -- If YAML frontmatter is set to Disabled, Frontmatter fields row disappears
+    bstyle[8].sub_item_table[3].callback() -- fm_enabled = false
+    local bstyle_disabled = style_row.sub_item_table_func()
+    T.check(#bstyle_disabled == 9 and bstyle_disabled[9].key == "reset_book_style",
+        "28: Frontmatter fields row disappears when YAML frontmatter is disabled")
+    bstyle[8].sub_item_table[1].callback() -- reset to global (enabled)
+
     -- Reset FILE back to global settings
-    bstyle[9].callback()
+    bstyle[10].callback()
     T.check(bstyle[4].mandatory_func() == "Global"
             and bstyle[7].mandatory_func() == "Global"
-            and bstyle[9].enabled_func() == false,
+            and bstyle[9].mandatory_func() == "Global"
+            and bstyle[10].enabled_func() == false,
         "28: Reset to global style settings clears all overrides for FILE")
+
+    do
+        -- Test Custom Frontmatter fields: progressive disclosure, global -> per-book checkboxes, and book-only custom fields
+        local global_fm_rows = plugin:genSettingsMenu()[3].sub_item_table[8].sub_item_table
+        T.check(#global_fm_rows == 12 and global_fm_rows[11].key == "custom"
+                and global_fm_rows[11].checked_func() == false,
+            "28: Custom fields starts unchecked with 12 rows")
+        -- Check 'Custom fields' in Global -> 'Custom frontmatter fields…' appears in place
+        global_fm_rows[11].callback()
+        T.check(global_fm_rows[11].checked_func() == true
+                and #global_fm_rows == 13
+                and global_fm_rows[12].key == "edit_custom",
+            "28: checking Custom fields reveals Custom frontmatter fields… in place")
+        local cf_dlg = global_fm_rows[12].callback()
+        cf_dlg:setText("genre: sci-fi\nproject: test")
+        cf_dlg:simulateSave()
+        T.check(#global_fm_rows == 15
+                and global_fm_rows[12].key == "genre"
+                and global_fm_rows[13].key == "project",
+            "28: saving global custom fields adds individual checkboxes in Global menu")
+
+        -- Open Current book -> Style & format -> Frontmatter fields: global custom keys appear as checkboxes
+        local book_fm_rows = plugin:genBookStyleMenu(FILE)[9].sub_item_table
+        T.check(book_fm_rows[11].key == "genre" and book_fm_rows[11].checked_func() == true
+                and book_fm_rows[12].key == "project" and book_fm_rows[12].checked_func() == true,
+            "28: global custom keys appear as checkboxes in Current book -> Frontmatter fields")
+        -- Uncheck 'project' for FILE only
+        book_fm_rows[12].callback()
+        T.check(shared.isFrontmatterKeyEnabled("project", FILE) == false
+                and shared.isFrontmatterKeyEnabled("project") == true,
+            "28: unchecking a global custom key in Current book disables it for FILE only")
+
+        -- Enable book-specific Custom fields in Current book and add 'doi: 10.1234/test'
+        T.check(book_fm_rows[13].key == "custom" and book_fm_rows[13].checked_func() == false,
+            "28: per-book Custom fields is unchecked by default")
+        book_fm_rows[13].callback()
+        T.check(book_fm_rows[13].checked_func() == true
+                and book_fm_rows[14].key == "edit_custom",
+            "28: checking per-book Custom fields reveals per-book Custom frontmatter fields…")
+        local book_cf_dlg = book_fm_rows[14].callback()
+        book_cf_dlg:setText("doi: 10.1234/test")
+        book_cf_dlg:simulateSave()
+        T.check(book_fm_rows[14].key == "doi" and book_fm_rows[14].checked_func() == true,
+            "28: book-specific custom key appears as checkbox in Current book")
+        -- Verify 'doi' does NOT appear in Global or FILE2
+        local file2_fm_rows = plugin:genBookStyleMenu(FILE2)[9].sub_item_table
+        for __, r in ipairs(file2_fm_rows) do
+            T.check(r.key ~= "doi", "28: book-only custom key doi does not leak to FILE2")
+        end
+
+        shared.setFrontmatterOrder("doi, title, author, tags", FILE)
+        local ord_book = shared.getFrontmatterOrder(FILE)
+        T.check(ord_book and ord_book[1] == "doi" and ord_book[2] == "title",
+            "28: per-book frontmatter order set for FILE")
+
+        plugin:runExport({ FILE, FILE2 }, { force = true })
+        UIManager:runPending()
+        local custom_md = T.readFile(MD_PATH) or ""
+        local custom_md2 = T.readFile(DIR .. "/" .. file2_base .. ".md") or ""
+        T.check(T.contains(custom_md, 'doi: "10.1234/test"')
+                and T.contains(custom_md, 'genre: "sci-fi"')
+                and not T.contains(custom_md, "project:"),
+            "28: FILE exports book-only doi + global genre, and omits unchecked global project")
+        T.check(T.contains(custom_md2, 'genre: "sci-fi"')
+                and T.contains(custom_md2, 'project: "test"')
+                and not T.contains(custom_md2, "doi:"),
+            "28: FILE2 exports both global custom fields and not FILE's book-only doi")
+        local pos_doi = custom_md:find('doi: "10.1234/test"', 1, true)
+        local pos_title = custom_md:find('title:', 1, true)
+        T.check(pos_doi ~= nil and pos_title ~= nil and pos_doi < pos_title,
+            "28: per-book key order places doi before title in YAML")
+
+        -- Clean up test custom fields
+        shared.setCustomFrontmatterFields(nil)
+        shared.setCustomFrontmatterFields(nil, FILE)
+        shared.setFrontmatterKeyEnabled("project", true, FILE)
+        shared.setFrontmatterOrder(nil, FILE)
+    end
 
     -- Top bar icon toggle (Settings -> Style -> Show Tomedown icon in the top bar)
     T.check(shared.getTopbarIcon() == false,
