@@ -204,11 +204,21 @@ function render.parseTagList(text)
     if type(text) ~= "string" then
         return out, rejected
     end
-    -- Split on commas, newlines, and Calibre subject facet delimiters (--)
+    -- Split on commas, newlines, Calibre subject facet delimiters (--),
+    -- and natural language conjunctions (and, &).
+    -- When splitting on conjunctions, capitalize each part so that
+    -- LCSH compound phrases (e.g. "Detective and mystery stories") yield
+    -- consistent capitalized tags ("Detective", "Mystery-stories").
+    local has_conjunction = text:match("%s+[aA][nN][dD]%s+") or text:match("%s+&%s+")
     local normalized = text:gsub("%-%-", ", ")
+        :gsub("%s+[aA][nN][dD]%s+", ", ")
+        :gsub("%s+&%s+", ", ")
     for part in normalized:gmatch("[^,\n]+") do
         local tag = render.sanitizeTag(part)
         if tag ~= "" then
+            if has_conjunction and tag:match("^%a") then
+                tag = tag:sub(1, 1):upper() .. tag:sub(2)
+            end
             local key = tag:lower()
             if not seen[key] then
                 seen[key] = true
@@ -1156,10 +1166,17 @@ function render.buildIndexMd(books, opts)
         end
         local seen, lines, current = {}, {}, nil
         for __, raw_tag in ipairs(tags) do
-            local norm_tag = tostring(raw_tag or ""):gsub("%-%-", ", ")
+            local str = tostring(raw_tag or "")
+            local has_conj = str:match("%s+[aA][nN][dD]%s+") or str:match("%s+&%s+")
+            local norm_tag = str:gsub("%-%-", ", ")
+                :gsub("%s+[aA][nN][dD]%s+", ", ")
+                :gsub("%s+&%s+", ", ")
             for part in norm_tag:gmatch("[^,\n]+") do
                 local tag = render.sanitizeTag(part)
                 if tag ~= "" then
+                    if has_conj and tag:match("^%a") then
+                        tag = tag:sub(1, 1):upper() .. tag:sub(2)
+                    end
                     local key = tag:lower()
                     if not seen[key] then
                         seen[key] = true
@@ -1270,7 +1287,7 @@ function render.buildIndexMd(books, opts)
             if tags_below and #tag_lines > 0 then
                 local joined = table.concat(tag_lines, "<br>")
                 if #tag_lines > 1 then
-                    joined = '<span style="line-height:1.9;display:inline-block">'
+                    joined = '<span style="line-height:1.9;display:inline-block;white-space:nowrap">'
                         .. joined .. '</span>'
                 end
                 book_cell = link .. tag_separator .. joined
@@ -1347,7 +1364,7 @@ function render.buildIndexMd(books, opts)
                 if #tag_lines > 0 then
                     tag_text = table.concat(tag_lines, "<br>")
                     if #tag_lines > 1 then
-                        tag_text = '<span style="line-height:1.9;display:inline-block">'
+                        tag_text = '<span style="line-height:1.9;display:inline-block;white-space:nowrap">'
                             .. tag_text .. '</span>'
                     end
                 end
