@@ -4864,7 +4864,7 @@ do
         "26: the date overrides are gone")
     local removed = T.readFile(MD_PATH) or ""
     for __, key in ipairs({ "published:", "rating:", "review:",
-            "date_started:", "date_finished:", "collections:" }) do
+            "date_started:", "date_finished:", "collections:", "tomedown_book_tags:" }) do
         T.check(not removed:find(key, 1, true),
             "26: the removal deletes the imported field: " .. key)
     end
@@ -5189,6 +5189,40 @@ do
     T.check(T.contains(exported_h2_md, "\n## Capitolo I\n")
             and T.contains(exported_h2_md, "- **p. 10**\n"),
         "28: chapter_headings = h2 and highlight_details = page_only applied")
+
+    -- Automatic transition to .txt (parks .md into .bak, excludes from index)
+    do
+        shared.setSetting("with_index", true)
+        shared.setExportFormat("txt")
+        plugin:invalidateExportHashes()
+        plugin:runExport({ FILE }, { force = true })
+        UIManager:runPending()
+        T.check(not T.fileExists(MD_PATH),
+            "28: switching to txt removes .md from active vault")
+        T.check(T.fileExists(MD_PATH .. ".bak"),
+            "28: switching to txt parks .md safely into .md.bak")
+        T.check(T.fileExists(TXT_PATH),
+            "28: switching to txt writes .txt file")
+        local index_txt_mode = T.readFile(DIR .. "/" .. INDEX_NAME) or ""
+        T.check(not T.contains(index_txt_mode, "The Three Impostors"),
+            "28: index excludes book when in txt-only mode")
+
+        -- Switching back to .md (restores from .bak, removes leftover .txt, cleans .bak, re-includes in index)
+        shared.setExportFormat("md")
+        plugin:invalidateExportHashes()
+        plugin:runExport({ FILE }, { force = true })
+        UIManager:runPending()
+        T.check(T.fileExists(MD_PATH),
+            "28: switching back to md restores .md file")
+        T.check(not T.fileExists(TXT_PATH),
+            "28: switching back to md cleans up leftover .txt")
+        T.check(T.fileExists(MD_PATH .. ".bak"),
+            "28: .md.bak is kept safe beside the restored .md")
+        local index_md_mode = T.readFile(DIR .. "/" .. INDEX_NAME) or ""
+        T.check(T.contains(index_md_mode, "The Three Impostors"),
+            "28: index re-includes book when restored to md")
+        shared.setSetting("with_index", false)
+    end
 
     -- Reset settings
     shared.setFrontmatterKeyEnabled("progress", true)

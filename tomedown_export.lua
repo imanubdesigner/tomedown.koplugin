@@ -643,7 +643,7 @@ function M:buildBook(file, live_annotations)
                 local tags, tags_managed
                 if imported then
                     tags = metadata.tags(file, props)
-                    tags_managed = true
+                    tags_managed = not removing
                 else
                     local stored_tags = shared.getBookTags(file)
                     tags = stored_tags and render.parseTagList(
@@ -780,13 +780,24 @@ function M:buildIndexEntries(dir, export_records)
                         special = special + 1
                     end
                 end
+                local index_tags = {}
+                local seen_itags = {}
+                local function add_itag(t)
+                    local s = render.sanitizeTag(t)
+                    if s ~= "" and not seen_itags[s:lower()] then
+                        seen_itags[s:lower()] = true
+                        index_tags[#index_tags + 1] = s
+                    end
+                end
+                for __, t in ipairs(book.tags or {}) do add_itag(t) end
+                for __, t in ipairs(book.keywords or {}) do add_itag(t) end
                 entries[#entries + 1] = {
                     link = book.base,
                     title = book.title,
                     author = book.author,
                     series = book.series,
                     series_index = book.series_index,
-                    tags = book.tags or {},
+                    tags = index_tags,
                     status = book.status,
                     rating = book.rating,
                     count = book.count,
@@ -1075,6 +1086,12 @@ function M:runExport(files, opts)
                             and record.base ~= book.base then
                         local_existing = readIfExists(dir .. "/" .. record.base .. ".md")
                     end
+                    if not local_existing and write_md then
+                        local snapshot = readIfExists(md_path .. ".bak")
+                        if snapshot then
+                            local_existing = snapshot
+                        end
+                    end
                     local old, from_cloud = mergeBase(book.base .. ".md", md_path,
                         local_existing, preserve)
                     -- Preserve coming back on brings the parked file back:
@@ -1187,6 +1204,12 @@ function M:runExport(files, opts)
                         if write_md then
                             written_ok, err =
                                 util.writeToFile(content, md_path, true, false, true)
+                        elseif write_txt and lfs.attributes(md_path, "mode") == "file" then
+                            local old_md = readIfExists(md_path)
+                            if old_md then
+                                parkZone(md_path, old_md)
+                                os.remove(md_path)
+                            end
                         end
                         if written_ok and write_txt then
                             local txt_head, txt_tail
@@ -1215,6 +1238,10 @@ function M:runExport(files, opts)
                             if not tok then
                                 written_ok, err = false, terr
                             end
+                        elseif written_ok and write_md and not write_txt then
+                            if lfs.attributes(txt_path, "mode") == "file" then
+                                os.remove(txt_path)
+                            end
                         end
                     end
                     if written_ok then
@@ -1225,7 +1252,7 @@ function M:runExport(files, opts)
                         if write_txt then
                             written[#written + 1] = txt_path
                         end
-                        if cover_rel then
+                        if cover_rel and write_md then
                             written[#written + 1] = dir .. "/" .. cover_rel
                         end
                         export_records[file] = {

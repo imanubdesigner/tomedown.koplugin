@@ -37,6 +37,7 @@ merge.OWNED = OWNED
 local BOOKINFO_OWNED = {
     published = true, rating = true, review = true,
     date_started = true, date_finished = true, collections = true,
+    tomedown_book_tags = true,
 }
 merge.BOOKINFO_OWNED = BOOKINFO_OWNED
 
