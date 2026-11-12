@@ -645,8 +645,8 @@ do
     local tagged_index = T.readFile(INDEX_PATH) or ""
     T.check(T.contains(tagged_index, "| Tags |"),
         "the index grows a Tags column in the column layout")
-    T.check(T.contains(tagged_index, '<span style="line-height:1.9;display:inline-block;white-space:nowrap">#Horror<br>#Psicologico</span>'),
-        "the book tags reach the index stacked one per line")
+    T.check(T.contains(tagged_index, '<span style="white-space:nowrap">#Horror</span> <span style="white-space:nowrap">#Psicologico</span>'),
+        "the book tags reach the index as unbreakable pills")
 
     -- the default layout keeps the same tags under the title, after the
     -- thin rule, and drops the column that used to widen the table
@@ -660,8 +660,8 @@ do
     T.check(T.contains(below_index,
             "[[Arthur Machen - The Three Impostors\\|The Three Impostors]]<hr style="),
         "the default layout puts the tags under the title")
-    T.check(T.contains(below_index, "#Horror #Psicologico"),
-        "the tags still reach the index")
+    T.check(T.contains(below_index, '<span style="white-space:nowrap">#Horror</span> <span style="white-space:nowrap">#Psicologico</span>'),
+        "the tags still reach the index as unbreakable pills")
 
     -- with markers the ledger is what the merge keeps in step
     store.tomedown.preserve = true
