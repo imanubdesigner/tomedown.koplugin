@@ -204,8 +204,16 @@ function render.parseTagList(text)
     if type(text) ~= "string" then
         return out, rejected
     end
-    -- Split on commas, newlines, and Calibre subject facet delimiters (--)
+    -- Split on commas, newlines, Calibre subject facet delimiters (--),
+    -- and natural language conjunctions (and, &).
+    -- When splitting on conjunctions, capitalize the word immediately
+    -- following so LCSH compound phrases (e.g. "Detective and mystery stories")
+    -- yield consistent capitalized tags ("Detective", "Mystery-stories").
     local normalized = text:gsub("%-%-", ", ")
+        :gsub("%s+[aA][nN][dD]%s+(%a)", function(c) return ", " .. c:upper() end)
+        :gsub("%s+&%s+(%a)", function(c) return ", " .. c:upper() end)
+        :gsub("%s+[aA][nN][dD]%s+", ", ")
+        :gsub("%s+&%s+", ", ")
     for part in normalized:gmatch("[^,\n]+") do
         local tag = render.sanitizeTag(part)
         if tag ~= "" then
@@ -601,7 +609,10 @@ function render.buildBookMd(book, opts)
     addTag("ebook")
     addTag(_("highlights"))
     for __, kw in ipairs(book.keywords or {}) do
-        addTag(kw)
+        local sub_tags = render.parseTagList(kw)
+        for __, t in ipairs(sub_tags) do
+            addTag(t)
+        end
     end
     -- Tags chosen from the book's own menu. `tomedown_book_tags` below
     -- is the ledger of what this plugin owns: the next merge drops an
@@ -1144,40 +1155,39 @@ function render.buildIndexMd(books, opts)
     -- the index shows the tags chosen from the book menu, as the
     -- clickable #tag Obsidian understands; the entries are sanitized
     -- again because an older file or a test may hand in raw values.
-    -- A table cell does not wrap, so a long list is broken into short
-    -- lines here: one long line is what makes the table scroll.
-    local tag_line_width = 24
-    local function tagsLines(tags)
+    -- Each tag pill is wrapped in a span with white-space:nowrap so
+    -- hyphens never break across lines, while the outer container gives
+    -- vertical line-height breathing room for natural multi-line wrapping.
+    local function tagsPillsHtml(tags)
         if type(tags) ~= "table" then
-            return {}
+            return ""
         end
-        local seen, lines, current = {}, {}, nil
+        local seen, pills = {}, {}
         for __, raw_tag in ipairs(tags) do
-            local norm_tag = tostring(raw_tag or ""):gsub("%-%-", ", ")
+            local str = tostring(raw_tag or "")
+            local norm_tag = str:gsub("%-%-", ", ")
+                :gsub("%s+[aA][nN][dD]%s+(%a)", function(c) return ", " .. c:upper() end)
+                :gsub("%s+&%s+(%a)", function(c) return ", " .. c:upper() end)
+                :gsub("%s+[aA][nN][dD]%s+", ", ")
+                :gsub("%s+&%s+", ", ")
             for part in norm_tag:gmatch("[^,\n]+") do
                 local tag = render.sanitizeTag(part)
                 if tag ~= "" then
                     local key = tag:lower()
                     if not seen[key] then
                         seen[key] = true
-                        local piece = "#" .. tag
-                        if current == nil then
-                            current = piece
-                        elseif #current + 1 + #piece <= tag_line_width then
-                            current = current .. " " .. piece
-                        else
-                            lines[#lines + 1] = current
-                            current = piece
-                        end
+                        pills[#pills + 1] = '<span style="white-space:nowrap">#' .. tag .. '</span>'
                     end
                 end
             end
         end
-        if current ~= nil then
-            lines[#lines + 1] = current
+        if #pills == 0 then
+            return ""
         end
-        return lines
+        return '<span style="line-height:1.9;display:inline-block">'
+            .. table.concat(pills, " ") .. '</span>'
     end
+    render.tagsPillsHtml = tagsPillsHtml
     -- A thin rule with room above and below, used when the tags sit
     -- under the title instead of in a column of their own.
     local tag_separator = '<hr style="margin:12px 0 10px 0;border:0;'
@@ -1195,7 +1205,7 @@ function render.buildIndexMd(books, opts)
         local has_tags = false
         if not tags_below then
             for __, b in ipairs(list) do
-                if #tagsLines(b.tags) > 0 then
+                if tagsPillsHtml(b.tags) ~= "" then
                     has_tags = true
                     break
                 end
@@ -1262,15 +1272,10 @@ function render.buildIndexMd(books, opts)
                 -- the star speaks every language: 12 · ★3
                 count_txt = count_txt .. " · ★" .. tostring(special)
             end
-            local tag_lines = tagsLines(b.tags)
+            local tag_html = tagsPillsHtml(b.tags)
             local book_cell = link
-            if tags_below and #tag_lines > 0 then
-                local joined = table.concat(tag_lines, "<br>")
-                if #tag_lines > 1 then
-                    joined = '<span style="line-height:1.9;display:inline-block">'
-                        .. joined .. '</span>'
-                end
-                book_cell = link .. tag_separator .. joined
+            if tags_below and tag_html ~= "" then
+                book_cell = link .. tag_separator .. tag_html
             end
             -- word over the bar, the percentage glued to the bar with a
             -- no-break space so Obsidian can never drop it on its own line;
@@ -1340,15 +1345,7 @@ function render.buildIndexMd(books, opts)
                 cells[#cells + 1] = series
             end
             if has_tags then
-                local tag_text = ""
-                if #tag_lines > 0 then
-                    tag_text = table.concat(tag_lines, "<br>")
-                    if #tag_lines > 1 then
-                        tag_text = '<span style="line-height:1.9;display:inline-block">'
-                            .. tag_text .. '</span>'
-                    end
-                end
-                cells[#cells + 1] = tag_text ~= "" and tag_text or "—"
+                cells[#cells + 1] = tag_html ~= "" and tag_html or "—"
             end
             if one_date_column then
                 cells[#cells + 1] = status_cell

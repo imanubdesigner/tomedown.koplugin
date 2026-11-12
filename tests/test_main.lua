@@ -645,8 +645,8 @@ do
     local tagged_index = T.readFile(INDEX_PATH) or ""
     T.check(T.contains(tagged_index, "| Tags |"),
         "the index grows a Tags column in the column layout")
-    T.check(T.contains(tagged_index, "| #Horror #Psicologico |"),
-        "the book tags reach the index as clickable tags")
+    T.check(T.contains(tagged_index, '<span style="white-space:nowrap">#Horror</span> <span style="white-space:nowrap">#Psicologico</span>'),
+        "the book tags reach the index as unbreakable pills")
 
     -- the default layout keeps the same tags under the title, after the
     -- thin rule, and drops the column that used to widen the table
@@ -660,8 +660,8 @@ do
     T.check(T.contains(below_index,
             "[[Arthur Machen - The Three Impostors\\|The Three Impostors]]<hr style="),
         "the default layout puts the tags under the title")
-    T.check(T.contains(below_index, "#Horror #Psicologico"),
-        "the tags still reach the index")
+    T.check(T.contains(below_index, '<span style="white-space:nowrap">#Horror</span> <span style="white-space:nowrap">#Psicologico</span>'),
+        "the tags still reach the index as unbreakable pills")
 
     -- with markers the ledger is what the merge keeps in step
     store.tomedown.preserve = true
@@ -889,8 +889,8 @@ if richMd then
     T.check(T.contains(richMd, 'progress: "96%"'), "progress rounded from percent_finished")
     T.check(T.contains(richMd, "  - horror"), "keyword tag")
     T.check(T.contains(richMd, "  - gothic-fiction"), "second keyword tag")
-    T.check(T.contains(richMd, "  - Occult-Supernatural"),
-        "dirty keyword sanitized: spaces and &")
+    T.check(T.contains(richMd, "  - Occult\n  - Supernatural"),
+        "conjunction & splits compound keyword into separate tags")
     T.check(T.contains(richMd, "  - American-Horror-tales"),
         "keyword with spaces becomes a dash tag")
     T.check(T.contains(richMd, "  - Horror-tales-American"),
@@ -4864,7 +4864,7 @@ do
         "26: the date overrides are gone")
     local removed = T.readFile(MD_PATH) or ""
     for __, key in ipairs({ "published:", "rating:", "review:",
-            "date_started:", "date_finished:", "collections:" }) do
+            "date_started:", "date_finished:", "collections:", "tomedown_book_tags:" }) do
         T.check(not removed:find(key, 1, true),
             "26: the removal deletes the imported field: " .. key)
     end
@@ -5189,6 +5189,40 @@ do
     T.check(T.contains(exported_h2_md, "\n## Capitolo I\n")
             and T.contains(exported_h2_md, "- **p. 10**\n"),
         "28: chapter_headings = h2 and highlight_details = page_only applied")
+
+    -- Automatic transition to .txt (parks .md into .bak, excludes from index)
+    do
+        shared.setSetting("with_index", true)
+        shared.setExportFormat("txt")
+        plugin:invalidateExportHashes()
+        plugin:runExport({ FILE }, { force = true })
+        UIManager:runPending()
+        T.check(not T.fileExists(MD_PATH),
+            "28: switching to txt removes .md from active vault")
+        T.check(T.fileExists(MD_PATH .. ".bak"),
+            "28: switching to txt parks .md safely into .md.bak")
+        T.check(T.fileExists(TXT_PATH),
+            "28: switching to txt writes .txt file")
+        local index_txt_mode = T.readFile(DIR .. "/" .. INDEX_NAME) or ""
+        T.check(not T.contains(index_txt_mode, "The Three Impostors"),
+            "28: index excludes book when in txt-only mode")
+
+        -- Switching back to .md (restores from .bak, removes leftover .txt, cleans .bak, re-includes in index)
+        shared.setExportFormat("md")
+        plugin:invalidateExportHashes()
+        plugin:runExport({ FILE }, { force = true })
+        UIManager:runPending()
+        T.check(T.fileExists(MD_PATH),
+            "28: switching back to md restores .md file")
+        T.check(not T.fileExists(TXT_PATH),
+            "28: switching back to md cleans up leftover .txt")
+        T.check(T.fileExists(MD_PATH .. ".bak"),
+            "28: .md.bak is kept safe beside the restored .md")
+        local index_md_mode = T.readFile(DIR .. "/" .. INDEX_NAME) or ""
+        T.check(T.contains(index_md_mode, "The Three Impostors"),
+            "28: index re-includes book when restored to md")
+        shared.setSetting("with_index", false)
+    end
 
     -- Reset settings
     shared.setFrontmatterKeyEnabled("progress", true)

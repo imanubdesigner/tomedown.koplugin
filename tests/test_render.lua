@@ -428,8 +428,8 @@ local weird = render.buildBookMd({
     keywords = { "Sci-Fi & Fantasy" },
     annotations = {},
 })
-T.check(T.contains(weird, "  - Sci-Fi-Fantasy"),
-    "a dirty keyword is sanitized, not quoted as it was")
+T.check(T.contains(weird, "  - Sci-Fi\n  - Fantasy"),
+    "conjunction & splits compound keyword into separate capitalized tags")
 
 -- ------------------------------------------------------------ page bookmarks
 local bmBook = render.buildBookMd({
@@ -692,8 +692,8 @@ T.check(T.contains(indexTags,
         "| Book | Author | Series | Tags | Status | Highlights |"),
     "the tags column sits between Series and Status")
 T.check(T.contains(indexTags,
-        "| [[Au - Tagged\\|Tagged]] | Au | Saga #1 | #Horror #Psicologico |"),
-    "the tags are clickable, separated by a space")
+        '| [[Au - Tagged\\|Tagged]] | Au | Saga #1 | <span style="line-height:1.9;display:inline-block"><span style="white-space:nowrap">#Horror</span> <span style="white-space:nowrap">#Psicologico</span></span> |'),
+    "the tags are rendered as unbreakable pills with breathing room")
 T.check(T.contains(indexTags, "| Book | Author | Highlights |"),
     "a table with no tags of its own keeps no Tags column")
 T.check(not T.contains(indexTags, "| [[Au - Plain\\|Plain]] | Au | — | 1 |"),
@@ -710,8 +710,8 @@ T.check(not T.contains(tagsBelow, "| Tags |"),
 T.check(T.contains(tagsBelow,
         "[[Au - Tagged\\|Tagged]]<hr style=\"margin:12px 0 10px 0;"
         .. "border:0;border-top:1px solid rgba(128,128,128,0.45)\">"
-        .. "#Horror #Psicologico |"),
-    "the tags sit under the title after a spaced thin rule in the same cell")
+        .. '<span style="line-height:1.9;display:inline-block"><span style="white-space:nowrap">#Horror</span> <span style="white-space:nowrap">#Psicologico</span></span> |'),
+    "the tags sit under the title after a spaced thin rule as unbreakable pills")
 
 local wrappedTags = render.buildIndexMd({
     {
@@ -719,11 +719,10 @@ local wrappedTags = render.buildIndexMd({
         tags = { "Strega", "Paranormale", "Vecchie", "football", "1500s" },
     },
 }, {})
-T.check(T.contains(wrappedTags,
-        "#Strega #Paranormale<br>#Vecchie #football<br>#1500s"),
-    "a long tag list wraps inside the cell instead of widening it")
+T.check(T.contains(wrappedTags, '<span style="white-space:nowrap">#Strega</span> <span style="white-space:nowrap">#Paranormale</span>'),
+    "tags are rendered as unbreakable pills with spaces between them")
 T.check(T.contains(wrappedTags, '<span style="line-height:1.9;display:inline-block">'),
-    "multi-line tags are wrapped in a line-height span for vertical breathing room in Obsidian")
+    "tags are wrapped in a line-height span for vertical breathing room in Obsidian")
 
 local multiColTags = render.buildIndexMd({
     {
@@ -733,6 +732,8 @@ local multiColTags = render.buildIndexMd({
 }, { index_layout = "tags_column" })
 T.check(T.contains(multiColTags, '<span style="line-height:1.9;display:inline-block">'),
     "multi-line tags column is wrapped in a line-height span")
+T.check(T.contains(multiColTags, '<span style="white-space:nowrap">#Strega</span>'),
+    "column tags are individual unbreakable pills")
 
 local dirtyIndexTags = render.buildIndexMd({
     {
@@ -740,7 +741,7 @@ local dirtyIndexTags = render.buildIndexMd({
         tags = { "Horror tales", "1500", "horror-tales", "" },
     },
 }, { index_layout = "tags_column" })
-T.check(T.contains(dirtyIndexTags, "| #Horror-tales |"),
+T.check(T.contains(dirtyIndexTags, '<span style="white-space:nowrap">#Horror-tales</span>'),
     "raw index tags are sanitized, deduplicated and numbers dropped")
 
 -- the compact layout folds Status and Last read into a single column
@@ -1007,11 +1008,17 @@ local tagged = render.buildBookMd({
     count = 1,
     annotations = { { text = "X" } },
 })
-T.check(T.contains(tagged, "  - Occult-Supernatural"), "the rendered tag is sanitized")
+T.check(T.contains(tagged, "  - Occult\n  - Supernatural"),
+    "conjunction & splits compound keyword into separate capitalized tags")
 T.check(T.contains(tagged, "  - American-Horror-tales"),
     "the second dirty keyword too")
 T.check(not T.contains(tagged, "Occult &"), "no raw keyword reaches the frontmatter")
 T.check(not T.contains(tagged, "- !!!"), "the dead keyword is not exported")
+
+local detectiveSplit = render.parseTagList("Detective and mystery stories, English")
+T.check(#detectiveSplit == 3 and detectiveSplit[1] == "Detective"
+        and detectiveSplit[2] == "Mystery-stories" and detectiveSplit[3] == "English",
+    "conjunction 'and' splits LCSH heading into capitalized tags")
 
 -- ------------------------------------------------------- reading bar
 T.check(render.progressBar("0%") == "▱▱▱▱▱",
