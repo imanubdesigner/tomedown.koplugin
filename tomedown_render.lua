@@ -601,7 +601,10 @@ function render.buildBookMd(book, opts)
     addTag("ebook")
     addTag(_("highlights"))
     for __, kw in ipairs(book.keywords or {}) do
-        addTag(kw)
+        local sub_tags = render.parseTagList(kw)
+        for __, t in ipairs(sub_tags) do
+            addTag(t)
+        end
     end
     -- Tags chosen from the book's own menu. `tomedown_book_tags` below
     -- is the ledger of what this plugin owns: the next merge drops an

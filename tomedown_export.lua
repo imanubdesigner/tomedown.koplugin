@@ -790,7 +790,12 @@ function M:buildIndexEntries(dir, export_records)
                     end
                 end
                 for __, t in ipairs(book.tags or {}) do add_itag(t) end
-                for __, t in ipairs(book.keywords or {}) do add_itag(t) end
+                for __, t in ipairs(book.keywords or {}) do
+                    local sub_tags = render.parseTagList(t)
+                    for __, st in ipairs(sub_tags) do
+                        add_itag(st)
+                    end
+                end
                 entries[#entries + 1] = {
                     link = book.base,
                     title = book.title,
@@ -956,7 +961,10 @@ function M:runExport(files, opts)
             end
         end
         for __, tag in ipairs(book.keywords or {}) do
-            add(tag)
+            local sub_tags = render.parseTagList(tag)
+            for __, st in ipairs(sub_tags) do
+                add(st)
+            end
         end
         for __, tag in ipairs(book.tags or {}) do
             add(tag)
