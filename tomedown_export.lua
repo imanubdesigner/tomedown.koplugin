@@ -310,21 +310,17 @@ end
 -- form is what both the hash and the exported frontmatter see)
 local function parseKeywords(keywords)
     local out = {}
-    local function add(v)
-        if type(v) == "string" or type(v) == "number" then
-            local s = render.sanitizeTag(tostring(v))
-            if s ~= "" then
+    if type(keywords) == "table" then
+        for __, v in ipairs(keywords) do
+            local sub_tags = render.parseTagList(tostring(v))
+            for __, s in ipairs(sub_tags) do
                 out[#out + 1] = s
             end
         end
-    end
-    if type(keywords) == "table" then
-        for __, v in ipairs(keywords) do
-            add(v)
-        end
     elseif type(keywords) == "string" then
-        for part in keywords:gmatch("[^,\n]+") do
-            add(part)
+        local sub_tags = render.parseTagList(keywords)
+        for __, s in ipairs(sub_tags) do
+            out[#out + 1] = s
         end
     end
     local seen, deduped = {}, {}

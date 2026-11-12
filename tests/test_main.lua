@@ -645,8 +645,8 @@ do
     local tagged_index = T.readFile(INDEX_PATH) or ""
     T.check(T.contains(tagged_index, "| Tags |"),
         "the index grows a Tags column in the column layout")
-    T.check(T.contains(tagged_index, "| #Horror #Psicologico |"),
-        "the book tags reach the index as clickable tags")
+    T.check(T.contains(tagged_index, '<span style="line-height:1.9;display:inline-block;white-space:nowrap">#Horror<br>#Psicologico</span>'),
+        "the book tags reach the index stacked one per line")
 
     -- the default layout keeps the same tags under the title, after the
     -- thin rule, and drops the column that used to widen the table
@@ -889,8 +889,8 @@ if richMd then
     T.check(T.contains(richMd, 'progress: "96%"'), "progress rounded from percent_finished")
     T.check(T.contains(richMd, "  - horror"), "keyword tag")
     T.check(T.contains(richMd, "  - gothic-fiction"), "second keyword tag")
-    T.check(T.contains(richMd, "  - Occult-Supernatural"),
-        "dirty keyword sanitized: spaces and &")
+    T.check(T.contains(richMd, "  - Occult\n  - Supernatural"),
+        "conjunction & splits compound keyword into separate tags")
     T.check(T.contains(richMd, "  - American-Horror-tales"),
         "keyword with spaces becomes a dash tag")
     T.check(T.contains(richMd, "  - Horror-tales-American"),

@@ -206,19 +206,17 @@ function render.parseTagList(text)
     end
     -- Split on commas, newlines, Calibre subject facet delimiters (--),
     -- and natural language conjunctions (and, &).
-    -- When splitting on conjunctions, capitalize each part so that
-    -- LCSH compound phrases (e.g. "Detective and mystery stories") yield
-    -- consistent capitalized tags ("Detective", "Mystery-stories").
-    local has_conjunction = text:match("%s+[aA][nN][dD]%s+") or text:match("%s+&%s+")
+    -- When splitting on conjunctions, capitalize the word immediately
+    -- following so LCSH compound phrases (e.g. "Detective and mystery stories")
+    -- yield consistent capitalized tags ("Detective", "Mystery-stories").
     local normalized = text:gsub("%-%-", ", ")
+        :gsub("%s+[aA][nN][dD]%s+(%a)", function(c) return ", " .. c:upper() end)
+        :gsub("%s+&%s+(%a)", function(c) return ", " .. c:upper() end)
         :gsub("%s+[aA][nN][dD]%s+", ", ")
         :gsub("%s+&%s+", ", ")
     for part in normalized:gmatch("[^,\n]+") do
         local tag = render.sanitizeTag(part)
         if tag ~= "" then
-            if has_conjunction and tag:match("^%a") then
-                tag = tag:sub(1, 1):upper() .. tag:sub(2)
-            end
             local key = tag:lower()
             if not seen[key] then
                 seen[key] = true
@@ -1160,40 +1158,42 @@ function render.buildIndexMd(books, opts)
     -- A table cell does not wrap, so a long list is broken into short
     -- lines here: one long line is what makes the table scroll.
     local tag_line_width = 24
-    local function tagsLines(tags)
+    local function tagsLines(tags, single_per_line)
         if type(tags) ~= "table" then
             return {}
         end
         local seen, lines, current = {}, {}, nil
         for __, raw_tag in ipairs(tags) do
             local str = tostring(raw_tag or "")
-            local has_conj = str:match("%s+[aA][nN][dD]%s+") or str:match("%s+&%s+")
             local norm_tag = str:gsub("%-%-", ", ")
+                :gsub("%s+[aA][nN][dD]%s+(%a)", function(c) return ", " .. c:upper() end)
+                :gsub("%s+&%s+(%a)", function(c) return ", " .. c:upper() end)
                 :gsub("%s+[aA][nN][dD]%s+", ", ")
                 :gsub("%s+&%s+", ", ")
             for part in norm_tag:gmatch("[^,\n]+") do
                 local tag = render.sanitizeTag(part)
                 if tag ~= "" then
-                    if has_conj and tag:match("^%a") then
-                        tag = tag:sub(1, 1):upper() .. tag:sub(2)
-                    end
                     local key = tag:lower()
                     if not seen[key] then
                         seen[key] = true
                         local piece = "#" .. tag
-                        if current == nil then
-                            current = piece
-                        elseif #current + 1 + #piece <= tag_line_width then
-                            current = current .. " " .. piece
+                        if single_per_line then
+                            lines[#lines + 1] = piece
                         else
-                            lines[#lines + 1] = current
-                            current = piece
+                            if current == nil then
+                                current = piece
+                            elseif #current + 1 + #piece <= tag_line_width then
+                                current = current .. " " .. piece
+                            else
+                                lines[#lines + 1] = current
+                                current = piece
+                            end
                         end
                     end
                 end
             end
         end
-        if current ~= nil then
+        if not single_per_line and current ~= nil then
             lines[#lines + 1] = current
         end
         return lines
@@ -1282,7 +1282,7 @@ function render.buildIndexMd(books, opts)
                 -- the star speaks every language: 12 · ★3
                 count_txt = count_txt .. " · ★" .. tostring(special)
             end
-            local tag_lines = tagsLines(b.tags)
+            local tag_lines = tagsLines(b.tags, not tags_below)
             local book_cell = link
             if tags_below and #tag_lines > 0 then
                 local joined = table.concat(tag_lines, "<br>")

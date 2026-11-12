@@ -692,8 +692,8 @@ T.check(T.contains(indexTags,
         "| Book | Author | Series | Tags | Status | Highlights |"),
     "the tags column sits between Series and Status")
 T.check(T.contains(indexTags,
-        "| [[Au - Tagged\\|Tagged]] | Au | Saga #1 | #Horror #Psicologico |"),
-    "the tags are clickable, separated by a space")
+        '| [[Au - Tagged\\|Tagged]] | Au | Saga #1 | <span style="line-height:1.9;display:inline-block;white-space:nowrap">#Horror<br>#Psicologico</span> |'),
+    "the tags are stacked one per line with breathing room")
 T.check(T.contains(indexTags, "| Book | Author | Highlights |"),
     "a table with no tags of its own keeps no Tags column")
 T.check(not T.contains(indexTags, "| [[Au - Plain\\|Plain]] | Au | — | 1 |"),
