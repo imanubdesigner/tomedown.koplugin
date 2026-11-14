@@ -29,28 +29,28 @@
 I made Tomedown because I wanted my books organized in a single `.md` file
 holding all my highlights.
 
-Every book you read in KOReader becomes one Markdown file of its own, with
-YAML frontmatter and an automatic index. The files are written to a folder on
-the device first (`clipboard/tomedown`, changeable); sending them to your
-cloud (any WebDAV server, or Dropbox/FTP) is an option, and so is reading
-them in Obsidian. No app in the middle.
+Every book you read in KOReader becomes its own Markdown (or plain `.txt`) file,
+with YAML frontmatter, an automatic library index, and an optional daily reading
+digest. Files are written to a folder on the device first
+(`clipboard/tomedown`, changeable); sending them to your cloud (WebDAV,
+Dropbox, or FTP) is completely optional, and so is reading them in Obsidian.
 
-- **One file per book**, not one file for everything: unlike *Export
-  highlights and notes*, every volume stays separate;
-- **An index that ties the library together**: `00 - Index.md`, a clickable
-  table of every book, ordered by author, title, last read or highlights, with
-  a *Reading now* section at the top for the books you are reading;
-- **Tags for the book you are reading**: add them from the open book's menu,
-  choosing from the tags already used in your library, and they join its
-  frontmatter and the index, ready to filter in Obsidian;
-- **Rating, review and dates in the note**: import them from KOReader one book
-  at a time (or for the whole library at once) and Tomedown keeps them up to
-  date as you read, without touching a book you never imported;
-- **A book can stay out of the way**: hide it from the index, or stop exporting
-  it altogether, without deleting the note already written;
+- **One file per book**, not one file for everything: export as `.md`, `.txt`,
+  or both, with automatic file lifecycle management when you switch formats;
+- **A navigable library index**: `00 - Index.md`, with optional covers,
+  5-cell progress bars, custom sorting/layouts, Obsidian or standard Markdown
+  links, and clean `#tag` pills (with automatic Calibre/EPUB tag splitting);
+- **Chronological Reading Digest**: `00 - Reading Digest.md` gathers all your
+  highlights across every book grouped by day;
+- **6 Universal Highlight Styles**: flag quotes with *Special Highlight* and
+  render them as Obsidian callouts (`[!highlight]`), GitHub alerts
+  (`[!IMPORTANT]`), `==highlight==`, `==**bold**==`, `⭐ **bold**`, or `**bold**`;
+- **Custom templates, folders & frontmatter**: organize by author, series, or
+  reading status; use `{author}` / `{title}` / `{series}` filename patterns;
+  customize YAML fields, order, and per-book overrides;
 - **Your notes survive**: write in the file from Obsidian and the next export
-  folds the new highlights in instead of overwriting them;
-- **The cloud is optional**: the local export needs no network at all.
+  folds new highlights in without overwriting your notes or inline comments;
+- **The cloud is optional**: local export needs no network at all.
 
 It has been in daily use since 1.0, and most of what changed in these releases
 comes from reading my own library, and from people who took the time to
@@ -84,12 +84,13 @@ verified online merge, the offline round trip and the Obsidian edits on beta
 2. The plugin is plain Lua: it runs wherever KOReader runs and touches no
 hardware.
 
-1. Plug the Kindle in via USB mass storage.
+1. Install wirelessly via **Storefront** or **KOReader AppStore**, or plug your
+   e-reader in via USB mass storage.
 
-2. Download `tomedown.koplugin-v*.zip` from the
+2. If installing manually, download `tomedown.koplugin-v*.zip` from
    [Releases](https://github.com/imanubdesigner/tomedown.koplugin/releases)
-   page and unzip it *into* `/mnt/us/koreader/plugins/`: the zip already
-   contains the `tomedown.koplugin/` directory.
+   and unzip it *into* `/mnt/us/koreader/plugins/` (the zip already contains
+   `tomedown.koplugin/`).
 
 3. Unplug the Kindle and restart KOReader (or: ☰ menu → *Plugin management* →
    enable *Tomedown*).

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Sfondo giallo Tomedown pieno, angoli arrotondati -->
+  <rect width="32" height="32" rx="7.5" fill="#f5d849"/>
+  <!-- Simbolo Markdown M in nero puro -->
+  <path d="M5.5 22V10h3.2l3.3 5 3.3-5h3.2v12h-2.8v-7.2l-2.7 4h-2l-2.7-4V22z" fill="#181816"/>
+  <!-- Freccia Down in nero puro -->
+  <path d="M22 10v7h-2.4l3.9 5 3.9-5H25v-7z" fill="#181816"/>
+</svg>

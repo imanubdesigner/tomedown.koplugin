@@ -1,114 +1,67 @@
-# Obsidian guide: the files as they sit in the vault
+# Obsidian guide: your notes inside the vault
 
-Three sheets on what Tomedown writes into your vault: the book file as
-every export produces it by default, the same file with *Keep my notes:
-all books* on, and the index that ties the library together. A section
-shows how a quote gets an id of its own and can be linked on its own, and
-the last one sets up Remotely Save if you want the vault synced by itself.
-The [first export](README.md#first-export) shows the flow end to end; this
-page zooms into the file itself. The sheets need nothing installed in
-Obsidian: the files are plain Markdown either way.
+A visual guide to how exported books, reading progress, and index tables look and function inside an Obsidian vault.
 
-## The book file, as exported (default)
+For full technical specifications of the generated Markdown, YAML properties, and index tables, see the [File format & specifications](docs/file-format.md) page.
 
-![01 — The book file: plain Markdown with no heading and no markers; anything you write in it is gone at the next export; switch on Keep my notes: all books to keep your words](assets/obsidian-guide/01-the-book-file.svg)
+## The book note in Obsidian
 
-The frontmatter, then straight into the generated block: no heading, no
-markers, no comments — nothing to hide from any Markdown app, which is
-the point of the default. The flip side is in the sheet's second callout:
-every export rebuilds the file from scratch, so anything you write in it
-is gone at the next run. If you want to write, flip *Keep my notes: all books*
-(Settings → My notes) and read sheet 02 before the next export.
+Every exported book note is a self-contained Markdown file ready for Obsidian.
 
-## With *Keep my notes: all books* on
+![01 — The book note in Obsidian: full YAML frontmatter, cover art, chapter headings, and quotes](assets/obsidian-guide/01-the-book-file.svg)
 
-![02 — Keep my notes on: the tagged heading, two blank lines of room, your words above the marker, and the generated block below it](assets/obsidian-guide/02-preserve-on.svg)
+- **Reading View vs. Live Preview**: in Reading View, YAML frontmatter renders cleanly as Obsidian Properties, and internal Tomedown hashes stay out of sight.
+- **Embedded Covers**: when *Include book covers* is enabled, covers are stored in your vault folder (default `covers/`) and render natively in Obsidian (requires Obsidian 1.8.1 or newer).
+- **Wikilinks**: internal references connect book titles directly across your notes.
 
-The file grows a write zone: the heading with its gray tag (rename the
-heading in Settings → My notes, the tag stays), two blank lines of room, and
-your words above the marker. Below the marker the plugin owns the lines
-and rebuilds them from the book; an edit made *inside* the block is caught
-by the hash in the marker and the previous file comes back as `.bak`. In
-reading view the comments and markers disappear (`Ctrl+E` switches back
-to the source), and switching the toggle off again rewrites every file
-plain on the next export — each current one kept as `.bak`.
+## Personal notes with *Keep my notes*
 
-## The index
+Enable **Tomedown → Settings → My notes → Keep my notes: all books** (or per book in the book menu) to turn exported files into shared workspaces.
+
+![02 — Keep my notes: your thoughts above the marker survive every export, updates merge below it](assets/obsidian-guide/02-preserve-on.svg)
+
+<figure class="doc-shot">
+  <div class="doc-shot-frame">
+    <img class="zoom-keep-notes" src="assets/keep-my-notes-obsidian.webp" alt="Keep my notes in Obsidian: your reflections written above the marker survive every export" />
+  </div>
+  <figcaption>Personal notes written in <code>## My notes...</code> survive every export — the boundary marker protects your writing.</figcaption>
+</figure>
+
+1. **Write freely**: write reflections, permanent notes, and synthesis directly under the `## My notes...` section.
+2. **Resilient merging**: when you take new highlights on your e-reader, Tomedown folds them into the generated section below without touching a single word of your manual notes.
+3. **Safety copies**: if content inside the generated block is ever altered unexpectedly, Tomedown creates a `.bak` backup copy before merging. For a complete deep dive, see [Keep my notes](docs/keep-my-notes.md).
+
+## The Library Index (`00 - Index.md`)
+
+`00 - Index.md` acts as your personal bookshelf dashboard in Obsidian.
 
 ![03 — The index: one 00 - Index.md with the stats line, two tables of wiki links, its own write zone, and the toggle that generates it](assets/obsidian-guide/03-the-index.svg)
 
-`00 - Index.md` is one file for the whole library: a stats line (books,
-highlights, starred specials), then the series books and the rest, each
-title a wiki link that opens that book's own note, with a Status column
-holding the reading status over the progress bar, the percentage glued
-to the bar so it never wraps to a line of its own, and a Last read
-column with the date it was last opened. It is generated by
-*Create an index note (00 - Index.md)* (Settings → My notes),
-**on by default**, and it plays by the same rules as the books: heading,
-room and your words above the marker survive every export, the tables
-below are rebuilt.
+- **Interactive table**: click any book title or cover to navigate straight to that book note.
+- **Visual reading progress**: 5-cell Unicode indicators (`▰▰▰▰▰`) display exact completion percentages without breaking columns.
+- **Stacked tag pills**: subject tags stack vertically as clean pills, preventing table widening.
+- **Customizable views**: choose between *Tags under the title*, *Tags column*, or *Tags column, compact* in *Settings → Index*.
 
 ## Link to a single highlight
 
-Flip *Add link IDs to highlights* (Settings → Highlights for Obsidian)
-and every quote ends with an id of its own on its last line, `^hl-` and
-eight characters:
+Enable **Settings → Style → Add link IDs to highlights** to attach stable block IDs (`^hl-xxxxxxxx`) to every quote:
 
-> First highlighted sentence. ^hl-4f2a9c31
+<figure class="doc-shot">
+  <div class="doc-shot-frame">
+    <img class="zoom-link-ids" src="assets/link-ids-obsidian.webp" alt="Single highlight IDs in Obsidian: ^hl-xxxxxxxx at the end of each quote" />
+  </div>
+  <figcaption>Each quote gets a stable <code>^hl-xxxxxxxx</code> block ID in Obsidian.</figcaption>
+</figure>
 
-The id belongs to the highlight rather than to the export, so it stays
-put: the same quote keeps it through every re-export, and a link written
-once keeps working. `[[Book title#^hl-4f2a9c31]]` jumps to that one
-quote from anywhere in the vault, `![[Book title#^hl-4f2a9c31]]` embeds
-the quote into the page you are writing. The toggle is off by default,
-and the apps that ignore ids show `^hl-4f2a9c31` as plain text at the
-end of the quote.
+Because block IDs are tied to quote hashes, they persist across future re-exports:
 
-## Setting up Remotely Save
+- **Jump to a highlight**: `[[Book title#^hl-dfd750fa]]` opens the note directly focused on that quote.
+- **Transclude anywhere**: `![[Book title#^hl-dfd750fa]]` embeds the quote live into any other note or daily journal in your vault.
 
-Obsidian is just one way to read the notes: the files are plain Markdown,
-so any editor, reader or wiki works. If you do use Obsidian, only
-**Remotely Save** needs configuring: the Tomedown plugin lives on
-KOReader, nothing special has to be installed in Obsidian. **Book covers
-(*Include book covers*) require Obsidian 1.8.1 or newer**: that is the
-version that started rendering `<img>` tags whose `src` points at a file
-inside the vault; older versions show a broken image. The steps below use
-Koofr (the README's example cloud); with any other WebDAV server
-(Nextcloud, ownCloud, a NAS…), substitute its address and credentials.
+## Syncing with your vault
 
-1. On Koofr create an app (Security → Applications) and copy the **app
-   password**, not the account one.
-2. In Obsidian install **Remotely Save** and configure:
-   - type: **WebDAV**
-   - server: `https://app.koofr.net/dav/Koofr`
-   - user: your Koofr account e-mail
-   - password: the app password
-   - **remote folder / base dir: `/Bookshelf`**
-   - **Abort Sync If Modification Above Percentage: `100 (disable the
-     protection)`**: Tomedown re-exports notes in bulk (first export,
-     toggling *Include book covers*, migrations), which trips the default
-     `50` guard and aborts the sync with *"you set changing files >= 50%
-     is not allowed"*; the vault is regenerated from KOReader at any time,
-     so disabling that protection is safe
-3. In Remotely Save's local data, point to the folder that holds your books
-   vault (in this example `Bookshelf/`).
-4. Sync.
+To sync notes automatically between your e-reader and Obsidian on computer or mobile:
 
-One setting deserves a page of its own: Remotely Save's experimental
-**Sync Direction**. Leave it on **Bidirectional (default)**:
-[SYNC-DIRECTION.md](SYNC-DIRECTION.md) explains the five options and
-where your edits live.
-
-Result: `Bookshelf/Kindle/*.md` arrive in Obsidian, `00 - Index.md` opens as
-a clickable table and every title opens that book's file.
-
-![The book index in Obsidian: the stats line under the properties, then covers, titles, authors, the status word over its bar and percentage, the last read date and the highlight count](assets/obsidian/index_v2_cover.png)
-
-## See also
-
-- [README — Keep my notes](docs/keep-my-notes.md): the setting, the merge
-  and the `.bak` files, step by step.
-- [SYNC-DIRECTION.md](SYNC-DIRECTION.md): which Remotely Save sync
-  direction to pick, and where your edits live.
-- [TUTORIAL.md](TUTORIAL.md): the same flow as a full tutorial.
+- Follow the step-by-step [Setup tutorial (Koofr & Remotely Save)](TUTORIAL.md) to connect via WebDAV.
+- Read [Sync direction guide](SYNC-DIRECTION.md) to understand how bidirectional sync keeps your notes safe.
 - [README](README.md): installation, the menu, settings and file format.

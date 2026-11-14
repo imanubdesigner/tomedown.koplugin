@@ -9,3 +9,6 @@ crash.log
 *.png.bak
 
 .DS_Store
+
+# Website build artifact
+site/dist/

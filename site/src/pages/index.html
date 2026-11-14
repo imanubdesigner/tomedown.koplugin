@@ -1,0 +1,301 @@
+<!-- title: Tomedown · Your KOReader highlights, one Markdown file per book | description: A KOReader plugin that turns every volume you read into its own Markdown file with frontmatter, covers, and an automatic library index. No middleman. -->
+      <section class="hero">
+        <div class="hero-inner">
+          <span class="eyebrow">KOReader plugin · Markdown exports</span>
+          <h1>Your highlights, one <em>Book</em> at a time</h1>
+          <p class="lead">
+            Turns every volume you read in KOReader into an independent, beautifully formatted Markdown note, complete with YAML frontmatter, cover art, and an automatic library index.
+          </p>
+          <p class="muted">
+            Direct from your e-reader to your notes vault. No servers, no tracking, no locked gates.
+          </p>
+          <div class="actions">
+            <a href="{{base}}/download/" class="btn btn-primary">Download plugin</a>
+            <a href="{{base}}/docs/" class="btn btn-ghost">Explore the docs</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="showcase">
+        <div class="container">
+          <div class="hero-showcase">
+            <figure class="showcase-note showcase-note-left" data-reveal>
+              <figcaption class="margin-quote">
+                Every book gets its own <mark>permanent</mark> note.
+              </figcaption>
+              <svg class="margin-arrow" viewBox="0 0 150 84" fill="none" aria-hidden="true">
+                <path class="arrow-shaft" pathLength="1" d="M 18 10 C 32 54, 82 68, 134 62" />
+                <path class="arrow-head" pathLength="1" d="M 120 48 L 136 62 L 120 75" />
+              </svg>
+            </figure>
+
+            <img
+              class="showcase-img"
+              src="{{base}}/assets/img/hero-showcase.webp"
+              alt="Obsidian book note alongside KOReader on Kindle showing the Special Highlight menu"
+              width="1680"
+              height="927"
+            />
+
+            <figure class="showcase-note showcase-note-right" data-reveal>
+              <figcaption class="margin-quote">
+                Make any highlight <mark>Special</mark>, anytime.
+              </figcaption>
+              <svg class="margin-arrow" viewBox="0 0 120 76" fill="none" aria-hidden="true">
+                <path class="arrow-shaft" pathLength="1" d="M 98 6 C 106 42, 74 64, 16 62" />
+                <path class="arrow-head" pathLength="1" d="M 30 48 L 14 62 L 30 73" />
+              </svg>
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <hr class="section-divider" />
+
+      <section id="features" class="section">
+        <div class="container">
+          <div class="section-head" data-reveal>
+            <span class="eyebrow">Principles &amp; Capabilities</span>
+            <h2>Crafted for permanence, clarity, and control.</h2>
+            <p class="muted" style="max-width: 640px; margin: 12px auto 0;">Standard tools treat annotations as volatile logs. Tomedown gives every volume the dignity of an enduring literary document.</p>
+          </div>
+          <div class="bento-grid">
+            <article class="bento-card bento-span-7" data-reveal>
+              <h3>Autonomous book notes</h3>
+              <p>Each read volume produces its own standalone document formatted with YAML frontmatter, tags, and reading stats. Ready for Obsidian, Logseq, or any plaintext environment.</p>
+              <div class="bento-visual bento-tree" aria-hidden="true">
+                <div class="tree-row tree-active"><span>00 - Index.md</span><span class="bento-pill">catalog</span></div>
+                <div class="tree-row"><span>00 - Reading Digest.md</span><span class="bento-pill">daily</span></div>
+                <div class="tree-row"><span>Arthur Machen - The Three Impostors.md</span><span class="bento-pill bento-pill-hl">YAML + quotes</span></div>
+              </div>
+            </article>
+
+            <article class="bento-card bento-span-5" data-reveal>
+              <h3>Visual library catalog</h3>
+              <p><code>00 - Index.md</code> creates an interactive bookshelf with 90×120 covers, 5-cell progress bars, custom sorting, and non-breaking tag pills.</p>
+              <div class="bento-visual bento-index" aria-hidden="true">
+                <div class="index-bar"><code>[■■■□□] 60%</code><span>Reading</span></div>
+                <div class="index-pills"><span>#fiction</span><span>#classics</span><span>#mystery</span></div>
+              </div>
+            </article>
+
+            <article class="bento-card bento-span-5" data-reveal>
+              <h3>Chronological reading timeline</h3>
+              <p><code>00 - Reading Digest.md</code> unifies every quote across your entire library by date, forming a seamless journal of your intellectual journey.</p>
+              <div class="bento-visual bento-timeline" aria-hidden="true">
+                <div><span class="tl-date">Nov 13</span><span class="tl-book">[[The Three Impostors]] · 4 quotes</span></div>
+                <div><span class="tl-date">Nov 11</span><span class="tl-book">[[The Great God Pan]] · 2 quotes</span></div>
+              </div>
+            </article>
+
+            <article class="bento-card bento-span-7" data-reveal>
+              <h3>Expressive highlight styles</h3>
+              <p>Choose between Obsidian callouts, GitHub alerts, standard highlights, star badges, or bold typography, with surrounding sentence context and granular block IDs.</p>
+              <div class="bento-visual bento-styles" aria-hidden="true">
+                <code>[!highlight]</code>
+                <code>[!IMPORTANT]</code>
+                <code>==highlight==</code>
+                <code>⭐ **bold**</code>
+                <code>**bold**</code>
+              </div>
+            </article>
+
+            <article class="bento-card bento-span-6" data-reveal>
+              <h3>Two-way resilient merge</h3>
+              <p>Write your permanent notes directly inside book files in your vault. When new highlights arrive from your e-reader, Tomedown merges them safely around your reflections.</p>
+              <div class="bento-visual bento-merge" aria-hidden="true">
+                <span class="merge-ok">✓ Personal notes kept</span>
+                <span class="merge-add">+ New highlights folded in</span>
+                <span class="merge-bak">.bak safety copy</span>
+              </div>
+            </article>
+
+            <article class="bento-card bento-span-6" data-reveal>
+              <h3>Adaptive folder hierarchies</h3>
+              <p>Structure your vault by author, series, or reading status. Use dynamic template tokens and export clean <code>.md</code>, <code>.txt</code>, or both simultaneously.</p>
+              <div class="bento-visual bento-tokens" aria-hidden="true">
+                <code>{author}</code>
+                <code>{title}</code>
+                <code>{series}</code>
+                <span class="bento-pill bento-pill-hl">.md / .txt</span>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- Visual Showcase: Interactive Spotlight -->
+      <section class="section section-alt">
+        <div class="container">
+          <div class="section-head" data-reveal>
+            <span class="eyebrow">Visual Guides</span>
+            <h2>How it looks in practice.</h2>
+          </div>
+
+          <div class="spotlight" data-reveal>
+            <div class="spotlight-tabs" role="tablist" aria-label="Obsidian views">
+              <button type="button" class="spotlight-tab is-active" role="tab" aria-selected="true" data-slide="0">
+                <code>00 - Index.md</code>
+                <span>Library catalog</span>
+              </button>
+              <button type="button" class="spotlight-tab" role="tab" aria-selected="false" data-slide="1">
+                <code>00 - Reading Digest.md</code>
+                <span>Daily journal</span>
+              </button>
+              <button type="button" class="spotlight-tab" role="tab" aria-selected="false" data-slide="2">
+                <code>Book Note.md</code>
+                <span>Single book</span>
+              </button>
+            </div>
+
+            <div class="spotlight-stage">
+              <figure class="spotlight-slide is-active" data-slide="0">
+                <div class="spotlight-frame">
+                  <img src="{{base}}/assets/img/showcase-index.webp" alt="00 - Index.md in Obsidian showing book covers, progress bars, and stacked tag pills" loading="lazy" />
+                </div>
+                <figcaption>
+                  <strong>00 - Index.md</strong>: 90×120 covers, 5-cell progress bars, and stacked <code>#tag</code> pills generated automatically.
+                </figcaption>
+              </figure>
+
+              <figure class="spotlight-slide" data-slide="1">
+                <div class="spotlight-frame">
+                  <img src="{{base}}/assets/img/showcase-digest.webp" alt="00 - Reading Digest.md in Obsidian showing chronological highlights grouped by day and book" loading="lazy" />
+                </div>
+                <figcaption>
+                  <strong>00 - Reading Digest.md</strong>: every highlight across your library gathered chronologically by day and book.
+                </figcaption>
+              </figure>
+
+              <figure class="spotlight-slide" data-slide="2">
+                <div class="spotlight-frame">
+                  <img src="{{base}}/assets/img/showcase-book.webp" alt="Single book Markdown note in Obsidian with cover art, chapter headings, highlights, and personal note" loading="lazy" />
+                </div>
+                <figcaption>
+                  <strong>Single book note</strong>: full-color cover, chapter headings, highlights, and your own personal notes preserved safely.
+                </figcaption>
+              </figure>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="how-it-works" class="section section-pipeline">
+        <div class="container">
+          <div class="section-head" data-reveal>
+            <span class="eyebrow">The Architecture</span>
+            <h2>How your reading becomes a permanent library.</h2>
+            <p class="muted" style="max-width: 620px; margin: 12px auto 0;">Three elegant layers. No cloud lock-in, no loss of personal notes, and zero proprietary database.</p>
+          </div>
+
+          <div class="pipeline-grid">
+            <!-- Stage 1: The Reader -->
+            <div class="pipeline-card" data-reveal>
+              <div class="pipeline-num">01</div>
+              <div class="pipeline-badge">On Device</div>
+              <div class="pipeline-visual">
+                <div class="pv-device">
+                  <div class="pv-device-top"><span>KOReader</span><span>E-ink</span></div>
+                  <div class="pv-quote">
+                    <span class="pv-star">★ Special</span>
+                    <p>“The world is full of obvious things…”</p>
+                    <span class="pv-meta">p. 42 · 14:20</span>
+                  </div>
+                </div>
+              </div>
+              <div class="pipeline-body">
+                <h3>Read &amp; mark freely</h3>
+                <p>Highlight passages and flag standout quotes with <strong>Special Highlight</strong>. Tomedown extracts page numbers, chapters, and surrounding context without altering your reading flow.</p>
+              </div>
+            </div>
+
+            <div class="pipeline-connector" aria-hidden="true">
+              <svg viewBox="0 0 40 40" fill="none"><path d="M10 20h20m-6-6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+
+            <!-- Stage 2: The Exporter -->
+            <div class="pipeline-card pipeline-card-hl" data-reveal>
+              <div class="pipeline-num">02</div>
+              <div class="pipeline-badge pipeline-badge-hl">Pure Lua Engine</div>
+              <div class="pipeline-visual">
+                <div class="pv-engine">
+                  <div class="pv-chip"><code>tomedown.koplugin</code></div>
+                  <div class="pv-flow">
+                    <span class="pv-tag">✓ Hash checked</span>
+                    <span class="pv-tag">✓ .bak preserved</span>
+                    <span class="pv-tag pv-tag-hl">✓ Notes kept intact</span>
+                  </div>
+                </div>
+              </div>
+              <div class="pipeline-body">
+                <h3>Autonomous export &amp; merge</h3>
+                <p>On book close or on demand, clean <code>.md</code> files are crafted. If you previously wrote personal thoughts in Obsidian, Tomedown folds new highlights in without touching your writing.</p>
+              </div>
+            </div>
+
+            <div class="pipeline-connector" aria-hidden="true">
+              <svg viewBox="0 0 40 40" fill="none"><path d="M10 20h20m-6-6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+
+            <!-- Stage 3: The Vault -->
+            <div class="pipeline-card" data-reveal>
+              <div class="pipeline-num">03</div>
+              <div class="pipeline-badge">Your Vault</div>
+              <div class="pipeline-visual">
+                <div class="pv-vault">
+                  <div class="pv-vault-header">
+                    <span class="pv-dot"></span><span>Obsidian / Logseq / Plain Text</span>
+                  </div>
+                  <div class="pv-vault-files">
+                    <div><span>📋</span> <code>00 - Index.md</code></div>
+                    <div><span>⏱️</span> <code>00 - Reading Digest.md</code></div>
+                    <div><span>📖</span> <code>Arthur Machen.md</code></div>
+                  </div>
+                </div>
+              </div>
+              <div class="pipeline-body">
+                <h3>Living personal vault</h3>
+                <p>Browse your catalog with <code>00 - Index.md</code>, review daily highlights in your <code>Reading Digest</code>, and link to single quotes with stable block IDs. Forever yours, completely offline.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="pipeline-bridge" data-reveal>
+            <div class="bridge-tag">The Optional Bridge</div>
+            <p><strong>Offline USB</strong> by default, or automatic wireless sync via <strong>WebDAV, Koofr, Nextcloud, Dropbox, or FTP</strong> whenever your e-reader connects to Wi-Fi.</p>
+            <a href="{{base}}/docs/quickstart/" class="btn btn-ghost">Get started in 2 minutes →</a>
+          </div>
+        </div>
+      </section>
+
+      <section id="faq" class="section section-alt">
+        <div class="container">
+          <div class="faq-split">
+            <div class="faq-intro" data-reveal>
+              <span class="eyebrow">Frequently Asked</span>
+              <h2>Clear answers.</h2>
+              <p class="muted">Quick answers before you install. Deep dives and troubleshooting live in the documentation.</p>
+              <a href="{{base}}/docs/faq/" class="btn btn-ghost">Browse all FAQs →</a>
+            </div>
+            <div class="faq-list">
+              <details data-reveal><summary>Do I need an account or cloud server?</summary><p>No. Tomedown exports directly to local storage on your e-reader. Cloud syncing (WebDAV, Dropbox, FTP) is completely optional.</p></details>
+              <details data-reveal><summary>Which hardware and readers are supported?</summary><p>Any device capable of running KOReader (Kindle, Kobo, Android, PocketBook). The plugin is written in pure Lua and does not access proprietary hardware APIs.</p></details>
+              <details data-reveal><summary>Where do the exported files go?</summary><p>By default into <code>clipboard/tomedown</code> inside KOReader's data folder (one Markdown or <code>.txt</code> file per book, plus <code>00 - Index.md</code>). You can change the folder in <a href="{{base}}/docs/settings/">Settings</a>.</p></details>
+              <details data-reveal><summary>Will re-exporting erase my notes written in Obsidian?</summary><p>No. With <em>Keep my notes</em> active, Tomedown parses existing notes, preserves personal commentary outside the highlight blocks, and maintains backup copies (<code>.bak</code>).</p></details>
+              <details data-reveal><summary>Can I customize how notes and files are named?</summary><p>Yes. Tomedown supports custom filename templates (e.g., <code>{author} - {title}</code>) and folder categorization (by author, series, or status).</p></details>
+              <details data-reveal><summary>Is Tomedown open source?</summary><p>Yes, licensed under the GNU AGPLv3. No telemetry, no proprietary lock-in.</p></details>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="cta">
+        <div class="container center" data-reveal>
+          <h2>Your books, your thoughts, your files.</h2>
+          <p>Free, open source, and built to last twenty years.</p>
+          <div class="actions">
+            <a href="{{base}}/download/" class="btn btn-primary">Download plugin</a>
+            <a href="{{base}}/docs/" class="btn btn-ghost">Read documentation</a>
+          </div>
+        </div>
+      </section>

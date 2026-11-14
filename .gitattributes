@@ -18,4 +18,5 @@ assets/menu export-ignore
 assets/obsidian export-ignore
 assets/obsidian-guide export-ignore
 assets/tutorials export-ignore
+site export-ignore
 
