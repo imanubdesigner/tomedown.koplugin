@@ -19,43 +19,108 @@ Enable **Treat every highlight as special** if you want *all* highlights to use 
   <img src="{{base}}/assets/img/special-highlight-kindle.svg" alt="KOReader text selection popup showing Special Highlight below Highlight" />
 </figure>
 
-<div class="special-styles-grid" aria-label="Comparison of the 6 special highlight styles">
-  <div class="style-sample">
-    <div class="style-sample-head"><span>1. Callout</span><code>[!highlight]</code></div>
-    <div class="style-render style-render-callout">
-      <div class="style-render-title">Highlight</div>
-      <p>She had the feeling that he resented her presence in the country, and was anxious to replace her with a proprietor less poverty-stricken.</p>
-    </div>
+<div class="styles-showcase" data-reveal aria-label="Interactive 6 special highlight styles preview">
+  <div class="showcase-tabs" role="tablist">
+    <button type="button" class="style-tab is-active" role="tab" aria-selected="true" data-style="callout">
+      <span class="tab-badge">01</span>
+      <code>[!highlight]</code>
+      <span class="tab-label">Callout</span>
+    </button>
+    <button type="button" class="style-tab" role="tab" aria-selected="false" data-style="alert">
+      <span class="tab-badge">02</span>
+      <code>[!IMPORTANT]</code>
+      <span class="tab-label">Alert</span>
+    </button>
+    <button type="button" class="style-tab" role="tab" aria-selected="false" data-style="highlight">
+      <span class="tab-badge">03</span>
+      <code>==text==</code>
+      <span class="tab-label">Highlight</span>
+    </button>
+    <button type="button" class="style-tab" role="tab" aria-selected="false" data-style="hl-bold">
+      <span class="tab-badge">04</span>
+      <code>==**text**==</code>
+      <span class="tab-label">Highlight &amp; Bold</span>
+    </button>
+    <button type="button" class="style-tab" role="tab" aria-selected="false" data-style="star">
+      <span class="tab-badge">05</span>
+      <code>⭐ **text**</code>
+      <span class="tab-label">Star &amp; Bold</span>
+    </button>
+    <button type="button" class="style-tab" role="tab" aria-selected="false" data-style="bold">
+      <span class="tab-badge">06</span>
+      <code>**text**</code>
+      <span class="tab-label">Bold</span>
+    </button>
   </div>
-  <div class="style-sample">
-    <div class="style-sample-head"><span>2. Alert</span><code>[!IMPORTANT]</code></div>
-    <div class="style-render style-render-alert">
-      <div class="style-render-title">Important</div>
-      <p>She had the feeling that he resented her presence in the country, and was anxious to replace her with a proprietor less poverty-stricken.</p>
+
+  <div class="showcase-window">
+    <div class="window-header">
+      <div class="window-dots">
+        <span></span><span></span><span></span>
+      </div>
+      <div class="window-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <span>Arthur Machen - The Three Impostors.md</span>
+      </div>
+      <span class="window-env">Obsidian Live Render</span>
     </div>
-  </div>
-  <div class="style-sample">
-    <div class="style-sample-head"><span>3. Highlight</span><code>==text==</code></div>
-    <div class="style-render style-render-quote">
-      <p><mark>She had the feeling that he resented her presence in the country, and was anxious to replace her with a proprietor less poverty-stricken.</mark></p>
-    </div>
-  </div>
-  <div class="style-sample">
-    <div class="style-sample-head"><span>4. Highlight &amp; Bold</span><code>==**text**==</code></div>
-    <div class="style-render style-render-quote">
-      <p><mark><strong>She had the feeling that he resented her presence in the country, and was anxious to replace her with a proprietor less poverty-stricken.</strong></mark></p>
-    </div>
-  </div>
-  <div class="style-sample">
-    <div class="style-sample-head"><span>5. Star &amp; Bold</span><code>⭐ **text**</code></div>
-    <div class="style-render style-render-quote">
-      <p>⭐ <strong>She had the feeling that he resented her presence in the country, and was anxious to replace her with a proprietor less poverty-stricken.</strong></p>
-    </div>
-  </div>
-  <div class="style-sample">
-    <div class="style-sample-head"><span>6. Bold</span><code>**text**</code></div>
-    <div class="style-render style-render-quote">
-      <p><strong>She had the feeling that he resented her presence in the country, and was anxious to replace her with a proprietor less poverty-stricken.</strong></p>
+
+    <div class="window-content">
+      <!-- 1. Callout -->
+      <div class="style-pane is-active" data-pane="callout">
+        <div class="obsidian-callout callout-highlight">
+          <div class="callout-header">
+            <svg class="callout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+            <span class="callout-title">Highlight</span>
+          </div>
+          <p class="callout-body">“She had the feeling that he resented her presence in the country, and was anxious to replace her with a proprietor less poverty-stricken.”</p>
+        </div>
+        <div class="quote-meta">• <strong>p. 26</strong> · 14/11/2026 10:20</div>
+      </div>
+
+      <!-- 2. Alert -->
+      <div class="style-pane" data-pane="alert">
+        <div class="obsidian-callout callout-alert">
+          <div class="callout-header">
+            <svg class="callout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span class="callout-title">Important</span>
+          </div>
+          <p class="callout-body">“She had the feeling that he resented her presence in the country, and was anxious to replace her with a proprietor less poverty-stricken.”</p>
+        </div>
+        <div class="quote-meta">• <strong>p. 26</strong> · 14/11/2026 10:20</div>
+      </div>
+
+      <!-- 3. Highlight -->
+      <div class="style-pane" data-pane="highlight">
+        <blockquote class="obsidian-quote">
+          <p><mark class="render-mark">She had the feeling that he resented her presence in the country, and was anxious to replace her with a proprietor less poverty-stricken.</mark></p>
+        </blockquote>
+        <div class="quote-meta">• <strong>p. 26</strong> · 14/11/2026 10:20</div>
+      </div>
+
+      <!-- 4. Highlight & Bold -->
+      <div class="style-pane" data-pane="hl-bold">
+        <blockquote class="obsidian-quote">
+          <p><mark class="render-mark"><strong>She had the feeling that he resented her presence in the country, and was anxious to replace her with a proprietor less poverty-stricken.</strong></mark></p>
+        </blockquote>
+        <div class="quote-meta">• <strong>p. 26</strong> · 14/11/2026 10:20</div>
+      </div>
+
+      <!-- 5. Star & Bold -->
+      <div class="style-pane" data-pane="star">
+        <blockquote class="obsidian-quote">
+          <p><span class="render-star">⭐</span> <strong>She had the feeling that he resented her presence in the country, and was anxious to replace her with a proprietor less poverty-stricken.</strong></p>
+        </blockquote>
+        <div class="quote-meta">• <strong>p. 26</strong> · 14/11/2026 10:20</div>
+      </div>
+
+      <!-- 6. Bold -->
+      <div class="style-pane" data-pane="bold">
+        <blockquote class="obsidian-quote">
+          <p><strong>She had the feeling that he resented her presence in the country, and was anxious to replace her with a proprietor less poverty-stricken.</strong></p>
+        </blockquote>
+        <div class="quote-meta">• <strong>p. 26</strong> · 14/11/2026 10:20</div>
+      </div>
     </div>
   </div>
 </div>

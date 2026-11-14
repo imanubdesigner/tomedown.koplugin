@@ -128,6 +128,26 @@
     });
   }
 
+  // 6 Special Highlights Interactive Switcher
+  var showcase = document.querySelector(".styles-showcase");
+  if (showcase) {
+    var styleTabs = showcase.querySelectorAll(".style-tab");
+    var stylePanes = showcase.querySelectorAll(".style-pane");
+    styleTabs.forEach(function (tab) {
+      tab.addEventListener("click", function () {
+        var targetStyle = tab.getAttribute("data-style");
+        styleTabs.forEach(function (t) {
+          var on = t === tab;
+          t.classList.toggle("is-active", on);
+          t.setAttribute("aria-selected", on ? "true" : "false");
+        });
+        stylePanes.forEach(function (p) {
+          p.classList.toggle("is-active", p.getAttribute("data-pane") === targetStyle);
+        });
+      });
+    });
+  }
+
   // light / dark theme toggle (follows OS by default)
   var themeBtn = document.getElementById("theme-toggle");
   if (themeBtn) {
