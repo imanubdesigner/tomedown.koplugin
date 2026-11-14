@@ -1,8 +1,58 @@
-<!-- title: Page not found · Tomedown | description: This page does not exist. -->
-      <section class="page-head">
-        <div class="container narrow center">
-          <span class="eyebrow">404</span>
-          <h1>This page is <em>not here</em></h1>
-          <p class="lead">It may have moved. Try the <a href="{{base}}/docs/">docs</a> or go back <a href="{{base}}/">home</a>.</p>
+<!-- title: 404 · Page Not Found · Tomedown | description: The requested page does not exist or has wandered from the stacks. -->
+      <section class="error-section">
+        <div class="container narrow">
+          <div class="error-head center" data-reveal>
+            <div class="error-monument">
+              <span class="error-giant-num">404</span>
+              <span class="error-giant-badge">Folio missing</span>
+            </div>
+            <h1>Page <em>not found</em></h1>
+            <p class="lead">The chapter or document you requested is not on this shelf.</p>
+          </div>
+
+          <div class="folio-card" data-reveal>
+            <div class="folio-header">
+              <div class="folio-dots">
+                <span></span><span></span><span></span>
+              </div>
+              <span class="folio-tab"><code>00 - 404 Not Found.md</code></span>
+              <span class="folio-badge">Missing Note</span>
+            </div>
+
+            <div class="folio-body">
+              <pre class="folio-frontmatter"><code>---
+title: "The Missing Tome"
+status: "unlocated"
+pages: 0
+tomedown: "2.0.1"
+tags:
+  - #lost-chapter
+  - #404
+---</code></pre>
+
+              <div class="folio-quote">
+                <div class="folio-callout">
+                  <span class="callout-icon">📖</span>
+                  <div class="callout-content">
+                    <p>The passage you are searching for is not on this shelf. Perhaps it was moved, renamed, or never bound into this volume.</p>
+                  </div>
+                </div>
+
+                <p class="folio-scribe">
+                  “The words you seek belong to <mark>another tome</mark> entirely.”
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="error-guide center" data-reveal>
+            <p class="muted">Let us guide you back to familiar shelves:</p>
+            <div class="actions error-actions">
+              <a href="{{base}}/" class="btn btn-primary">Return to the library</a>
+              <a href="{{base}}/docs/" class="btn btn-ghost">Browse the docs</a>
+              <a href="{{base}}/docs/quickstart/" class="btn btn-ghost">Quickstart</a>
+              <a href="{{base}}/download/" class="btn btn-ghost">Download</a>
+            </div>
+          </div>
         </div>
       </section>

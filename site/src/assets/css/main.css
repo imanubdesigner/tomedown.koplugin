@@ -228,11 +228,17 @@ mark { background: var(--hl); color: var(--hl-ink); padding: 0 0.15em; }
 .pronounce .word { font-family: var(--serif); font-size: 1.5rem; color: var(--ink); }
 .pronounce .say { font-family: var(--mono); font-size: 0.82rem; color: var(--muted); margin: 0 6px; }
 .pronounce abbr { font-style: italic; text-decoration: none; margin-right: 4px; }
-.actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 28px; }
+.actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 24px; }
 .btn {
-  display: inline-block; text-decoration: none; font-weight: 500;
-  padding: 11px 22px; border-radius: 999px; border: 1px solid var(--line);
-  transition: transform .15s ease, background .15s ease;
+  display: inline-block;
+  text-decoration: none;
+  font-size: 0.88rem;
+  font-weight: 500;
+  line-height: 1.4;
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  transition: transform .15s ease, background .15s ease, border-color .15s ease;
 }
 .btn:hover { transform: translateY(-1px); }
 .btn-primary, .btn-primary:visited {
@@ -946,6 +952,170 @@ mark { background: var(--hl); color: var(--hl-ink); padding: 0 0.15em; }
 .page-head { padding: clamp(56px, 9vw, 110px) 0 24px; }
 .page-head h1 { font-size: clamp(2.4rem, 6vw, 3.8rem); }
 .lead { font-size: 20px; color: var(--ink-2); text-wrap: pretty; }
+
+/* 404 Literary Lost Folio */
+.error-section {
+  padding: clamp(48px, 7vw, 84px) 0 96px;
+}
+.error-head {
+  margin-bottom: 36px;
+}
+.error-monument {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.error-giant-num {
+  font-family: var(--serif);
+  font-size: clamp(88px, 16vw, 150px);
+  line-height: 0.85;
+  letter-spacing: -0.04em;
+  font-weight: 400;
+  color: var(--ink);
+  background: linear-gradient(180deg, var(--ink) 0%, color-mix(in srgb, var(--ink) 65%, var(--hl)) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  user-select: none;
+}
+:root[data-theme="dark"] .error-giant-num {
+  background: linear-gradient(180deg, #ffffff 10%, #fff176 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.error-giant-badge {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--hl);
+  color: var(--hl-ink);
+  margin-top: 4px;
+}
+.error-head h1 {
+  font-size: clamp(34px, 5.5vw, 54px);
+  margin: 16px 0 12px;
+}
+.folio-card {
+  background: var(--paper-2);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 24px 56px -20px rgba(0, 0, 0, 0.28);
+  margin: 0 auto 48px;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.folio-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 30px 64px -16px rgba(0, 0, 0, 0.35);
+}
+.folio-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+  font-family: var(--mono);
+  font-size: 0.78rem;
+}
+.folio-dots {
+  display: flex;
+  gap: 6px;
+}
+.folio-dots span {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--line);
+}
+.folio-tab code {
+  background: transparent;
+  color: var(--ink);
+  font-weight: 600;
+  padding: 0;
+}
+.folio-badge {
+  font-size: 0.68rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--hl) 40%, transparent);
+  color: var(--ink);
+  font-weight: 600;
+}
+.folio-body {
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.folio-frontmatter {
+  margin: 0;
+  background: var(--code-bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px 16px;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+.folio-frontmatter code {
+  background: transparent;
+  padding: 0;
+}
+.folio-callout {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  background: color-mix(in srgb, var(--paper) 70%, var(--code-bg));
+  border-left: 3px solid var(--hl);
+  border-radius: 8px;
+  padding: 14px 16px;
+  font-size: 0.94rem;
+  line-height: 1.55;
+}
+.callout-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+.callout-content p {
+  margin: 0;
+  color: var(--ink);
+}
+.folio-scribe {
+  font-family: "Caveat", "Instrument Serif", cursive;
+  font-size: 1.85rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--ink-2);
+  text-align: center;
+  margin: 8px 0 0;
+}
+.folio-scribe mark {
+  background: linear-gradient(var(--hl), var(--hl)) no-repeat left center;
+  background-size: 100% 100%;
+  color: var(--hl-ink);
+  padding: 0 0.22em;
+  border-radius: 4px;
+}
+.error-guide p {
+  margin-bottom: 20px;
+  font-size: 0.95rem;
+}
+.error-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
+}
+@media (max-width: 680px) {
+  .error-actions {
+    flex-wrap: wrap;
+  }
+}
 .prose h2 { margin-top: 1.8em; font-size: clamp(28px, 3vw, 38px); line-height: 1.05; }
 .prose h3 { font-family: var(--sans); font-size: 20px; font-weight: 600; line-height: 1.25; margin-top: 1.6em; }
 .prose p, .prose li { color: var(--ink); }
