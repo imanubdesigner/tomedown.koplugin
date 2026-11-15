@@ -252,15 +252,22 @@ A few things worth knowing:
 
 ## Backup copies
 
-Inside a book, *Backup copies* in the Tomedown menu lists the copies that
-sit beside that book's file (the saved notes and the safety copy, each
-with the day it was saved) and deletes one when you tap it and confirm. The
-box says what the copy holds, and warns when the saved notes copy is the only
-place those notes are right now. The row appears only while the book has a
-copy, and leaves with the last one.
+Inside a book, **Backup copies** in the Tomedown menu (`Current book → Backup copies`) lists the copies that sit beside that book's file and allows you to inspect and delete them:
 
-The result toast and the *Last export* popup report the backups of the last
-run: `%1 files backed up (.bak)`.
+```text
+Current book
+└── Backup copies
+    ├── Saved notes      → file .bak   (preserved personal notes)
+    ├── Safety copy      → file .bak.1 (latest emergency snapshot)
+    └── Safety copy      → file .bak.2 (previous snapshot in rotation)
+```
+
+- **Saved notes (`.bak`)**: the zoned file parked when you turned *Keep my notes* off for this book. It restores your personal notes automatically when *Keep my notes* is turned back on.
+- **Safety copies (`.bak.1`, `.bak.2`, `.bak.3`)**: automatic snapshots created before an external overwrite, when merging incoming edits from Obsidian, or when recovering hand edits made inside the generated block. Tomedown keeps up to three generations in FIFO rotation (`.bak.1` newest, `.bak.2` earlier, `.bak.3` oldest).
+
+Tapping any copy opens KOReader's confirmation dialog displaying its modification date, exact time, file size, and a warning if the saved notes copy is the only place those notes exist right now. The menu row appears only while the book has a backup copy, and leaves with the last one.
+
+The result toast and the *Last export* popup report the backups of the last run: `%1 files backed up (.bak)`.
 
 ## Good to know
 

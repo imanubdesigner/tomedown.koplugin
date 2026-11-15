@@ -100,17 +100,17 @@ menu.
 
 | Entry | What to do |
 |---|---|
-| *Treat every highlight as special* | off by default: every highlight uses your special highlight style instead of a plain quote; when off, only *Special Highlight* marks use it |
-| *How special highlights look: %1* | only while the row above is off (the row is grayed out otherwise): choose **Callout** (`> [!highlight]`, default), **Alert** (`> [!IMPORTANT]`), **Highlight** (`==text==`), **Highlight & Bold** (`==**text**==`), **Star & Bold** (`⭐ **text**`), or **Bold** (`**text**`) |
 | *Personal notes format: %1* | defaults to **Inline** (places your note right below the quote); switch to **Footnotes** (`[^1]`) to collect personal notes at the end of the chapter or file |
+| *How special highlights look: %1* | only while *Treat every highlight as special* is off: choose **Callout** (`> [!highlight]`, default), **Alert** (`> [!IMPORTANT]`), **Highlight** (`==text==`), **Highlight & Bold** (`==**text**==`), **Star & Bold** (`⭐ **text**`), or **Bold** (`**text**`) |
+| *Treat every highlight as special* | off by default: every highlight uses your special highlight style instead of a plain quote; when off, only *Special Highlight* marks use it |
 | *Add link IDs to highlights* | off by default: writes a stable `^hl-xxxxxxxx` id at the end of every quote, so Obsidian can link to one single highlight and embed it. See [File format](file-format.md#links-to-a-single-highlight) |
+| *Include book covers* | off by default: exports every cover into `covers/` (or your custom folder) and embeds it in the book file and in the index; the cover leaves the device after a successful upload, the vault copy is the master one. Requires **Obsidian 1.8.1 or newer** |
+| *Covers folder: %1* | defaults to `covers`: custom folder name for extracted cover images (e.g. `_covers` to easily collapse or hide assets in Obsidian, `assets`, etc.). Changing it updates links and rebuilds the index |
+| *Include page bookmarks* | off by default: adds a `# Page bookmarks` section (bookmarked page + note) after the highlights |
 | *Frontmatter fields* | toggle YAML frontmatter on or off (*Include YAML frontmatter*, on by default), toggle optional keys (`cover`, `series`, `language`, `pages`, `exported`, `highlights`, `special`, `status`, `progress`), add custom properties (*Custom frontmatter fields…*), or set a custom comma-separated key order (*Frontmatter key order…*). `tomedown` stays first and enabled at all times. See [Customizing frontmatter fields and order](file-format.md#customizing-frontmatter-fields-and-order) |
 | *Highlight details: %1* | defaults to **Page and date** (`- **p. 15** · 05/11/2026 10:20`); can be set to **Page only**, **Date only**, or **None** |
 | *Chapter headings: %1* | defaults to **Heading 1 (`# Chapter`)**; can be set to **Heading 2 (`## Chapter`)**, **Heading 3 (`### Chapter`)**, or **None (continuous list)** |
 | *Include highlight context* | off by default: when enabled on reflowable books (EPUB, FB2, MOBI…), extracts the words immediately preceding and following each highlight and renders a `- **Context:** *…*` line below the quote |
-| *Include page bookmarks* | off by default: adds a `# Page bookmarks` section (bookmarked page + note) after the highlights |
-| *Include book covers* | off by default: exports every cover into `covers/` (or your custom folder) and embeds it in the book file and in the index; the cover leaves the device after a successful upload, the vault copy is the master one. Requires **Obsidian 1.8.1 or newer** |
-| *Covers folder: %1* | defaults to `covers`: custom folder name for extracted cover images (e.g. `_covers` to easily collapse or hide assets in Obsidian, `assets`, etc.). Changing it updates links and rebuilds the index |
 | *Show Tomedown icon in the top bar* | adds a dedicated Tomedown icon directly in KOReader's top bar for one-tap access while reading |
 
 All style rows rewrite every already exported file on the next export:
@@ -118,6 +118,17 @@ none of them is part of the book's hash, so flipping one invalidates the
 stored hashes, the way *Include book covers* does above.
 
 You can also override **Export format**, **Personal notes format**, **Highlight details**, **Chapter headings**, **Highlight context**, **Book cover**, **Page bookmarks**, and **YAML frontmatter** for a single book without changing the global settings via **Tomedown → Current book → Style & format** (*Reset to global style settings* restores the global defaults for that book).
+
+## Status and diagnostics (Last export)
+
+![The Last export popup](../assets/menu/settings/last-export-status-kindle.svg)
+
+Tapping **Last export** in the main Tomedown menu opens a full-screen diagnostic dialog summarizing your library and sync status:
+- **Network status**: Wi-Fi connected or offline.
+- **Server and remote folder**: current cloud storage destination.
+- **Last export**: timestamp and count of exported vs. skipped books, along with backed up files (`.bak`).
+- **Last upload**: timestamp and count of successfully uploaded notes.
+- **Pending uploads**: files waiting in the queue to be uploaded on the next connection.
 
 ## Updates
 

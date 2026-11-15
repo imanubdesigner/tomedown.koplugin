@@ -97,7 +97,8 @@ Because `tomedown_book_tags` is a YAML property rather than a tag, Obsidian does
 
 *Current book → Book info → Tags: %1 → Delete tags…* allows managing the global suggestion cache and removing obsolete tags from all managed books.
 
-### Extended book metadata (opt-in)
+<a id="imported-book-information"></a>
+### Extended book metadata & imported book information
 
 Tomedown can incorporate rich metadata tracked by KOReader (ratings, reviews, reading dates, and collections). This feature is **opt-in per book** via *Current book → Book info → Import book info*, ensuring that existing notes remain untouched until you choose to import them.
 
@@ -121,6 +122,14 @@ collections:
 | `date_finished` | Timestamp when the book was marked completed |
 | `collections` | KOReader bookshelf collections |
 
+<a id="customizing-frontmatter-fields-and-order"></a>
+### Customizing frontmatter fields and order
+
+Under **Settings → Style → Frontmatter fields** (or per-book under **Current book → Style & format → Frontmatter fields**), you can tailor which keys are included and in what sequence:
+- Toggle standard properties on or off (`cover`, `series`, `language`, `pages`, `exported`, `highlights`, `special`, `status`, `progress`).
+- Add **Custom frontmatter fields…** (`key: value`, one per line) to embed custom Obsidian properties such as `type: book` or `vault: literature`.
+- Set a **Frontmatter key order…** as a comma-separated list of keys to control their exact top-to-bottom order in the YAML block.
+
 ## Highlights and formatting rules
 
 - **Stable page references**: Tomedown uses `pageref` (real book page numbers) when provided by the document format, falling back to sequential screen pages.
@@ -128,7 +137,7 @@ collections:
 - **Formatting styles**: Configurable globally under *Settings → Style* or per-book under *Current book → Style & format*. For a visual comparison of all 6 styles (Callout, Alert, Highlight, Highlight & Bold, Star & Bold, and Bold), see the [Highlight Styles guide](universal-highlights.md).
 - **Inline vs. Footnotes**: Personal annotations attached to highlights can appear directly under quotes or grouped at the end of the chapter/file as Markdown footnotes (`[^1]`).
 - **Context lines**: When enabled on reflowable files, Tomedown extracts words before and after the quote to render a `- **Context:** *…*` line.
-- **Block link IDs**: Stable IDs (`^hl-xxxxxxxx`) can be appended to quotes for fine-grained wikilinking in Obsidian (see [Obsidian guide](obsidian.md#link-to-a-single-highlight)).
+- <a id="links-to-a-single-highlight"></a>**Block link IDs**: Stable IDs (`^hl-xxxxxxxx`) can be appended to quotes for fine-grained wikilinking in Obsidian (see [Obsidian guide](obsidian.md#link-to-a-single-highlight)).
 
 ## Library Index table specification (`00 - Index.md`)
 

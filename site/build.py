@@ -151,11 +151,13 @@ def build_docs(site, docs_root, slugmap, nav):
             if re.match(r"(https?:|mailto:|#|\{\{)", target):
                 return m.group(0)
             path, _, frag = target.partition("#")
-            name = Path(path).name
+            name = Path(path).name.lower()
             frag = f"#{frag}" if frag else ""
             if name in slugmap:
                 return f'href="{{{{base}}}}/docs/{slugmap[name]}/{frag}"'
-            if name == "README.md":
+            if name == "readme.md":
+                if frag == "#install":
+                    return f'href="{{{{base}}}}/download/"'
                 return f'href="{{{{base}}}}/{frag}"'
             return f'href="{REPO_BLOB}{path.replace("../", "")}{frag}"'
 
@@ -183,7 +185,7 @@ def build_docs(site, docs_root, slugmap, nav):
         if len(flat) < 2:
             return ""
         lis = "".join(
-            f'<li class="toc-l{lvl}"><a href="#{html.escape(hid)}">{html.escape(name)}</a></li>'
+            f'<li class="toc-l{lvl}"><a href="#{html.escape(hid)}">{html.escape(html.unescape(name))}</a></li>'
             for hid, name, lvl in flat
         )
         return f'<aside class="docs-toc" aria-label="In this chapter"><h4>In this chapter</h4><ul>{lis}</ul></aside>'
@@ -353,7 +355,11 @@ def main():
 
     site = Site(args.base, args.offline_fonts)
     nav = json.loads((ROOT / "docs-nav.json").read_text(encoding="utf-8"))
-    slugmap = {Path(i["src"]).name: i["slug"] for s in nav["sections"] for i in s["items"]}
+    slugmap = {}
+    for s in nav["sections"]:
+        for i in s["items"]:
+            slugmap[Path(i["src"]).name.lower()] = i["slug"]
+            slugmap[i["slug"].lower()] = i["slug"]
     # a title in docs-nav.json wins; otherwise the first heading of the file
     for sec in nav["sections"]:
         for i in sec["items"]:

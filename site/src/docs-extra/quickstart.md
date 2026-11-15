@@ -37,7 +37,16 @@ You do **not** need a cloud account or Obsidian to use Tomedown. Everything work
 ## 2. Run your first export
 
 1. Open **☰ → Tomedown**.
-2. On a fresh install, Tomedown offers to export your entire reading history in one tap. You can also choose **Export this book**, **Export new and changed books**, or **Choose books…**.
+2. On a fresh install, Tomedown offers to export your entire reading history in one tap. You can also pick from several flexible export actions:
+   - **Export this book**: exports only the volume currently open.
+   - **Export new and changed books**: exports books where highlights, progress, or tags were added or updated.
+   - **Choose books…**: opens an interactive multi-selection checklist to tick exactly which books you want to export.
+   - **Repair all files**: regenerates every note cleanly from KOReader's reading history (ideal if a file was deleted accidentally or a sync had issues).
+
+<figure class="doc-device-figure">
+  <img src="{{base}}/assets/img/picker-menu-kindle.svg" alt="KOReader Tomedown Choose books checklist menu" />
+</figure>
+
 3. Your notes are written immediately to your device:
 
 ```text
@@ -47,7 +56,7 @@ koreader/clipboard/tomedown/
 └── ...
 ```
 
-> **Tip:** Enable **Settings → Files → Export when I close a book** if you want Tomedown to update the file automatically whenever you close a book or put your device to sleep.
+> **Tip:** Enable **Settings → Files → Export when I close a book** if you want Tomedown to update the file automatically whenever you close a book or put your device to sleep. You can also long-press any book in KOReader's **File Manager**, **History**, or **Bookshelf** to export or manage its tags directly.
 
 ## 3. Read or sync (when you're ready)
 

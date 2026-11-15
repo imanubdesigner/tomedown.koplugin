@@ -46,13 +46,17 @@ If you change your template after exporting, Tomedown can rename existing files 
 
 ## Index layout, links & clean tags (`00 - Index.md`)
 
-In **Settings → Files**, you can tailor the library index:
+In **Settings → Index**, you can tailor the library index:
 
-- **Index order**: sort by **Author**, **Title**, **Last read**, or **Highlights**.
+- **Index order**: sort by **Author** *(default)*, **Title**, **Last read** (newest first), or **Highlights** (most first).
 - **Index layout**: **Tags under the title** *(default)*, **Tags column**, or **Tags column, compact**.
 - **Index link style**: choose **Obsidian wikilink** (`[[Book]]`) or **Standard Markdown** (`[Book](Book.md)`) if you use another Markdown app.
-- **Show Reading now in the index**: repeats currently active books at the top of the index.
+- **Show Reading now in the index**: repeats currently active books in a dedicated top section.
 - **Smart tag splitting & pills**: EPUB/Calibre subject facets (like `Fiction -- Mystery & Detective`) are automatically split into clean individual tags and stacked vertically as unbreakable `#tag` pills so the index table stays tidy.
+
+<figure class="doc-device-figure">
+  <img src="{{base}}/assets/img/index-order-kindle.svg" alt="KOReader Tomedown Index order settings submenu showing Author, Title, Last read, and Highlights" />
+</figure>
 
 <figure class="doc-shot">
   <div class="doc-shot-frame">
@@ -69,4 +73,17 @@ In **Settings → Files**, you can tailor the library index:
 
 <figure class="doc-device-figure">
   <img src="{{base}}/assets/img/topbar-icon-kindle.svg" alt="KOReader top bar showing the dedicated Tomedown icon next to the menu icons" />
+</figure>
+
+## Manage books anywhere (Long-press shortcuts)
+
+You don't need to open a book to manage how it exports. When you long-press any book in KOReader's **File Manager**, **History**, **Collections**, or **Bookshelf**, Tomedown adds direct shortcuts to the file dialog:
+
+- **Export this book**: runs an immediate export for that volume without touching the rest of your library.
+- **Tags…**: opens the tag picker and suggestion manager.
+- **Book visibility…**: choose whether the book appears in the index, exports silently, or is excluded (`Do not export`).
+- **Import book info** / **Remove imported book info…**: opt-in or remove extended KOReader metadata (rating, review, reading dates).
+
+<figure class="doc-device-figure">
+  <img src="{{base}}/assets/img/file-dialog-longpress-kindle.svg" alt="KOReader file dialog showing Tomedown direct action buttons on long press" />
 </figure>

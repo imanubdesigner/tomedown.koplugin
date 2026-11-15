@@ -58,6 +58,7 @@ Because block IDs are tied to quote hashes, they persist across future re-export
 - **Jump to a highlight**: `[[Book title#^hl-dfd750fa]]` opens the note directly focused on that quote.
 - **Transclude anywhere**: `![[Book title#^hl-dfd750fa]]` embeds the quote live into any other note or daily journal in your vault.
 
+<a id="setting-up-remotely-save"></a>
 ## Syncing with your vault
 
 To sync notes automatically between your e-reader and Obsidian on computer or mobile:
