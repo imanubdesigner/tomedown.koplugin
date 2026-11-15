@@ -190,10 +190,15 @@ def build_docs(site, docs_root, slugmap, nav):
 
     md = markdown.Markdown(extensions=["tables", "fenced_code", "toc", "sane_lists"],
                            extension_configs={"toc": {"permalink": "#", "permalink_class": "header-anchor", "permalink_title": "Permanent link"}})
+    anchor_svg = ('<svg class="anchor-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" '
+                  'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" '
+                  'aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>'
+                  '<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>')
     for _, item, src in entries:
         text = src.read_text(encoding="utf-8")
         md.reset()
         body = fix_links(md.convert(text))
+        body = re.sub(r'(<a class="header-anchor"[^>]*>)#</a>', r'\1' + anchor_svg + '</a>', body)
         toc_html = render_toc(getattr(md, "toc_tokens", []))
         cls = "container docs docs-has-toc" if toc_html else "container docs"
         page = (f'<div class="{cls}">{sidebar(item["slug"])}'
@@ -202,14 +207,57 @@ def build_docs(site, docs_root, slugmap, nav):
                     item.get("description", "Tomedown documentation"), page)
 
     first = entries[0][1]["slug"]
-    cards = "".join(
-        f'<li><a href="{{{{base}}}}/docs/{i["slug"]}/"><strong>{html.escape(i["title"])}</strong>'
-        f'<span>{html.escape(i.get("description", ""))}</span></a></li>'
-        for _, i, _ in entries)
-    landing = (f'<div class="container docs">{sidebar("")}<article class="prose">'
-               f'<h1>Documentation</h1><p>Everything about Tomedown, in one place.</p>'
-               f'<ul class="doc-cards">{cards}</ul></article></div>')
-    site.render("/docs/", "Docs · Tomedown", "Tomedown documentation: install, settings, file format, Obsidian.", landing)
+    
+    sections_html = []
+    sec_num = 1
+    for sec in nav["sections"]:
+        sec_title = sec.get("title", "")
+        card_items = []
+        for i in sec.get("items", []):
+            card_items.append(
+                f'<a href="{{{{base}}}}/docs/{i["slug"]}/" class="hub-card" data-title="{html.escape(i["title"]).lower()}" data-desc="{html.escape(i.get("description", "")).lower()}">'
+                f'  <div class="hub-card-header">'
+                f'    <span class="hub-card-tag">{html.escape(sec_title)}</span>'
+                f'    <svg class="hub-card-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-7-7l7 7-7 7"/></svg>'
+                f'  </div>'
+                f'  <h3>{html.escape(i["title"])}</h3>'
+                f'  <p>{html.escape(i.get("description", ""))}</p>'
+                f'</a>'
+            )
+        cards_grid = "\n".join(card_items)
+        sections_html.append(
+            f'<div class="hub-chapter">'
+            f'  <div class="hub-chapter-header">'
+            f'    <span class="hub-chapter-num">Chapter {sec_num:02d}</span>'
+            f'    <h2>{html.escape(sec_title)}</h2>'
+            f'  </div>'
+            f'  <div class="hub-cards-grid">\n{cards_grid}\n  </div>'
+            f'</div>'
+        )
+        sec_num += 1
+
+    all_sections = "\n".join(sections_html)
+    landing = (
+        f'<div class="container hub-container">'
+        f'  <header class="hub-hero center">'
+        f'    <span class="eyebrow">Knowledge Base &amp; Technical Guides</span>'
+        f'    <h1>The <em>Library</em> Reference</h1>'
+        f'    <p class="lead">Everything you need to craft an enduring personal library from your e-reader highlights.</p>'
+        f'    <div class="hub-search-wrap">'
+        f'      <svg class="hub-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>'
+        f'      <input type="search" id="hub-search-input" class="hub-search-input" placeholder="Jump to any chapter or keyword..." autocomplete="off" />'
+        f'      <kbd class="hub-search-kbd">⌘K</kbd>'
+        f'    </div>'
+        f'  </header>'
+        f'  <div id="hub-content" class="hub-chapters-wrap">{all_sections}</div>'
+        f'  <p id="hub-empty" class="hub-empty" hidden>No matching chapters found. Try a different keyword.</p>'
+        f'  <footer class="hub-footer center">'
+        f'    <p class="hub-quote">“Every volume, every note, every highlight — forever yours in plain text.”</p>'
+        f'    <p class="muted">Free software under the AGPL-3.0 license · Zero telemetry · 100% offline first.</p>'
+        f'  </footer>'
+        f'</div>'
+    )
+    site.render("/docs/", "Documentation · Tomedown", "Comprehensive documentation: setup, settings, formats, highlight styles, and Obsidian integration.", landing)
     return first
 
 

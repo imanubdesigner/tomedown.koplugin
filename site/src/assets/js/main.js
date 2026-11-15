@@ -148,6 +148,48 @@
     });
   }
 
+
+  // Documentation Hub Live Filter & Command Palette (Ctrl+K / Cmd+K)
+  var searchInput = document.getElementById("hub-search-input");
+  if (searchInput) {
+    var chapters = document.querySelectorAll(".hub-chapter");
+    var emptyMsg = document.getElementById("hub-empty");
+
+    var filterDocs = function () {
+      var q = searchInput.value.trim().toLowerCase();
+      var totalVisible = 0;
+      chapters.forEach(function (chap) {
+        var chapCards = chap.querySelectorAll(".hub-card");
+        var visibleCount = 0;
+        chapCards.forEach(function (c) {
+          var title = c.getAttribute("data-title") || "";
+          var desc = c.getAttribute("data-desc") || "";
+          var match = !q || title.indexOf(q) !== -1 || desc.indexOf(q) !== -1;
+          c.style.display = match ? "" : "none";
+          if (match) visibleCount++;
+        });
+        chap.style.display = visibleCount > 0 ? "" : "none";
+        totalVisible += visibleCount;
+      });
+      if (emptyMsg) {
+        emptyMsg.hidden = totalVisible > 0;
+      }
+    };
+
+    searchInput.addEventListener("input", filterDocs);
+
+    window.addEventListener("keydown", function (e) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        searchInput.focus();
+        searchInput.select();
+      } else if (e.key === "Escape" && document.activeElement === searchInput && searchInput.value) {
+        searchInput.value = "";
+        filterDocs();
+      }
+    });
+  }
+
   // light / dark theme toggle (follows OS by default)
   var themeBtn = document.getElementById("theme-toggle");
   if (themeBtn) {
