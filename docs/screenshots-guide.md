@@ -9,14 +9,14 @@ Questa guida contiene l'elenco completo di tutti gli screenshot da realizzare pe
 Per questi screenshot puoi copiare la cartella [~/Downloads/tomedown.koplugin](file:///home/manu/Downloads/tomedown.koplugin) direttamente sul dispositivo in `/mnt/us/koreader/plugins/tomedown.koplugin` (oppure usare KOReader locale su Omarchy).
 
 ### 1. Menu Principale con Nuova Icona Top Bar
-- **File di destinazione:** `assets/menu/reader/tomedown_reader_new_menu.png`
+- **File di destinazione:** `assets/menu/reader/tomedown_reader_new_menu.svg`
 - **Inquadratura:** Schermata intera con un libro aperto e il menu a discesa di Tomedown aperto.
 - **Cosa mostrare:**
   - Nella barra superiore di navigazione: la **nuova icona** ufficiale (sagoma libro con nastro segnalibro ad ala di rondine e freccia centrata).
   - Nel menu: le voci con icone, tra cui *Esporta questo libro*, *Esporta libri nuovi e modificati*, *Esporta digest di lettura*, *Libro corrente*, *Impostazioni*, *Informazioni*.
 
 ### 2. Popup Informazioni (About) con Nuovo Logo
-- **File di destinazione:** `assets/menu/about_popup_v210.png`
+- **File di destinazione:** `assets/menu/about_popup_v210.svg`
 - **Inquadratura:** Popup centrato *Informazioni su Tomedown*.
 - **Cosa mostrare:**
   - Il nuovo logo panoramico ad alta definizione (icona libro + scritta tipografica *Tomedown*).
@@ -24,7 +24,7 @@ Per questi screenshot puoi copiare la cartella [~/Downloads/tomedown.koplugin](f
   - La descrizione e i link ai repository Codeberg e GitHub.
 
 ### 3. Menu Impostazioni → File
-- **File di destinazione:** `assets/menu/settings/markdown_menu.png`
+- **File di destinazione:** `assets/menu/settings/files_menu.svg`
 - **Inquadratura:** Schermata del gruppo *Impostazioni → File*.
 - **Cosa mostrare:**
   - *Cartella locale*, *Struttura cartelle*, *Crea un digest di lettura (00 - Reading Digest.md)*.
@@ -32,13 +32,13 @@ Per questi screenshot puoi copiare la cartella [~/Downloads/tomedown.koplugin](f
   - *Esporta impostazioni su file*, *Ripristina impostazioni da backup…*.
 
 ### 4. Finestra Conferma Pulizia Backup
-- **File di destinazione:** `assets/menu/settings/confirm_delete_backups.png`
+- **File di destinazione:** `assets/menu/settings/confirm_delete_backups.svg`
 - **Inquadratura:** Popup ConfirmBox centrato.
 - **Percorso:** *Impostazioni* → *File* → *Copie di backup* → *Elimina tutti i backup…*.
 - **Cosa mostrare:** Il popup con il conteggio dei file: *"Eliminare tutti i N file di backup (*.bak) nella cartella locale? Le note esportate non verranno toccate."* con pulsanti *Elimina* e *Annulla*.
 
 ### 5. Menu Impostazioni → Indice
-- **File di destinazione:** `assets/menu/settings/index_menu.png`
+- **File di destinazione:** `assets/menu/settings/index_menu.svg`
 - **Inquadratura:** Schermata del gruppo *Impostazioni → Indice*.
 - **Cosa mostrare:**
   - *Crea una nota indice (00 - Index.md)*, *Ordinamento indice*, *Layout indice*, *Link indice*.
@@ -46,20 +46,20 @@ Per questi screenshot puoi copiare la cartella [~/Downloads/tomedown.koplugin](f
   - *Mostra libri completati nell'indice*, *Mostra bacheca libreria nell'indice*, *Mostra nuvola di tag nell'indice*.
 
 ### 6. Menu Impostazioni → Stile
-- **File di destinazione:** `assets/menu/settings/settings_highlights_menu.png`
+- **File di destinazione:** `assets/menu/settings/style_menu.svg`
 - **Inquadratura:** Schermata del gruppo *Impostazioni → Stile*.
 - **Cosa mostrare:**
   - *Note a mano libera*, *Cartella disegni: drawings*.
   - *Titolo del libro nel testo*, *Stile panoramica*, *Bacheca di lettura*, *Sinossi libro*, *Tag nel testo*, *Vetrina citazioni speciali*.
 
 ### 7. Sottomenu Stile Panoramica (Overview Style)
-- **File di destinazione:** `assets/menu/settings/overview_style_menu.png`
+- **File di destinazione:** `assets/menu/settings/overview_style_menu.svg`
 - **Inquadratura:** Popup radio a schermo.
 - **Percorso:** *Impostazioni* → *Stile* → *Stile panoramica*.
 - **Cosa mostrare:** Le 4 scelte: *Intestazione nel testo*, *Citazione classica*, *Callout ([!summary])*, *Tabella*.
 
 ### 8. Sottomenu Copie di Backup Datate
-- **File di destinazione:** `assets/menu/settings/backup_copies_dated_menu.png`
+- **File di destinazione:** `assets/menu/settings/backup_copies_dated_menu.svg`
 - **Inquadratura:** Sottomenu delle copie di backup in *Libro corrente → Copie di backup*.
 - **Cosa mostrare:** Le etichette trasparenti con le date reali dei file (es. `Note salvate · 16 Nov 26`, `Ultimo snapshot · 14 Nov 26`).
 

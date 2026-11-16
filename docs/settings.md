@@ -13,9 +13,9 @@ book's own menu: see [Keep my notes](keep-my-notes.md) and
 
 ## Files
 
-<!-- SCREENSHOT_PLACEHOLDER: assets/menu/settings/markdown_menu.png -->
+<!-- SCREENSHOT_PLACEHOLDER: assets/menu/settings/files_menu.svg -->
 > [!NOTE] **[SCREENSHOT DA REALIZZARE: Menu Impostazioni → File]**
-> - **File di destinazione:** `assets/menu/settings/markdown_menu.png`
+> - **File di destinazione:** `assets/menu/settings/files_menu.svg`
 > - **Inquadratura:** Schermata intera menu KOReader su Kindle / e-reader.
 > - **Percorso Kindle:** Menu ☰ → *Tomedown* → *Impostazioni* → *File*.
 > - **Voci da mostrare:** Cartella locale, Struttura cartelle, *Crea un digest di lettura (00 - Reading Digest.md)*, Esporta alla chiusura, Formato esportazione (.md/.txt), Copie di backup, *Esporta impostazioni su file*, *Ripristina impostazioni da backup…*.
@@ -33,9 +33,9 @@ book's own menu: see [Keep my notes](keep-my-notes.md) and
 | *Export settings to file* | exports all Tomedown configuration options deterministically to `tomedown_settings_backup.lua` inside your local export folder |
 | *Restore settings from backup…* | safely restores your Tomedown configuration from `tomedown_settings_backup.lua` with a confirmation dialog |
 
-<!-- SCREENSHOT_PLACEHOLDER: assets/menu/settings/confirm_delete_backups.png -->
+<!-- SCREENSHOT_PLACEHOLDER: assets/menu/settings/confirm_delete_backups.svg -->
 > [!NOTE] **[SCREENSHOT DA REALIZZARE: Finestra Conferma Pulizia Backup]**
-> - **File di destinazione:** `assets/menu/settings/confirm_delete_backups.png`
+> - **File di destinazione:** `assets/menu/settings/confirm_delete_backups.svg`
 > - **Inquadratura:** Popup di conferma centrato a schermo.
 > - **Percorso Kindle:** *Tomedown* → *Impostazioni* → *File* → *Copie di backup* → *Elimina tutti i backup…*.
 > - **Dettaglio:** Mostra il messaggio con il conteggio dei file trovati: *"Eliminare tutti i N file di backup (*.bak) nella cartella locale? Le note esportate non verranno toccate."*.
@@ -45,9 +45,9 @@ extraction forces colour rendering even on greyscale e-ink screens.
 
 ## Index
 
-<!-- SCREENSHOT_PLACEHOLDER: assets/menu/settings/index_menu.png -->
+<!-- SCREENSHOT_PLACEHOLDER: assets/menu/settings/index_menu.svg -->
 > [!NOTE] **[SCREENSHOT DA REALIZZARE: Menu Impostazioni → Indice]**
-> - **File di destinazione:** `assets/menu/settings/index_menu.png`
+> - **File di destinazione:** `assets/menu/settings/index_menu.svg`
 > - **Inquadratura:** Schermata del gruppo Indice su KOReader.
 > - **Percorso Kindle:** Menu ☰ → *Tomedown* → *Impostazioni* → *Indice*.
 > - **Voci da mostrare:** *Crea una nota indice (00 - Index.md)*, Ordinamento indice, Layout indice, Link indice, *Mostra Sto leggendo nell'indice*, *Visualizzazione tag nell'indice*, *Mostra libri completati nell'indice*, *Mostra bacheca libreria nell'indice*, *Mostra nuvola di tag nell'indice*.
@@ -76,9 +76,9 @@ default layout and rebuilds the index once, without touching a book note.
 
 ## Style
 
-<!-- SCREENSHOT_PLACEHOLDER: assets/menu/settings/settings_highlights_menu.png -->
+<!-- SCREENSHOT_PLACEHOLDER: assets/menu/settings/style_menu.svg -->
 > [!NOTE] **[SCREENSHOT DA REALIZZARE: Menu Impostazioni → Stile]**
-> - **File di destinazione:** `assets/menu/settings/settings_highlights_menu.png`
+> - **File di destinazione:** `assets/menu/settings/style_menu.svg`
 > - **Inquadratura:** Schermata del gruppo Stile su KOReader.
 > - **Percorso Kindle:** Menu ☰ → *Tomedown* → *Impostazioni* → *Stile*.
 > - **Voci da mostrare:** Formato note personali, Aspetto citazioni speciali, Tratta ogni evidenziazione come speciale, ID di collegamento, Copertine, Segnalibri, Campi frontmatter, Dettagli citazione, Intestazioni capitoli, Contesto, *Note a mano libera*, *Cartella disegni*, *Titolo del libro nel testo*, *Stile panoramica*, *Bacheca di lettura*, *Sinossi libro*, *Tag nel testo*, *Vetrina citazioni speciali*.
@@ -108,9 +108,9 @@ default layout and rebuilds the index once, without touching a book note.
 | *Include Special highlights showcase* | off by default: places a collapsible `> [!highlight]- ★ Special highlights (N)` showcase block highlighting your favorite passages at the top of the note |
 | *Show Tomedown icon in the top bar* | on by default: adds the Tomedown icon to KOReader's reader top navigation bar |
 
-<!-- SCREENSHOT_PLACEHOLDER: assets/menu/settings/overview_style_menu.png -->
+<!-- SCREENSHOT_PLACEHOLDER: assets/menu/settings/overview_style_menu.svg -->
 > [!NOTE] **[SCREENSHOT DA REALIZZARE: Sottomenu Stile Panoramica]**
-> - **File di destinazione:** `assets/menu/settings/overview_style_menu.png`
+> - **File di destinazione:** `assets/menu/settings/overview_style_menu.svg`
 > - **Inquadratura:** Sottomenu radio popup centrato su KOReader.
 > - **Percorso Kindle:** *Tomedown* → *Impostazioni* → *Stile* → *Stile panoramica*.
 > - **Voci da mostrare:** Scelte radio: *Intestazione nel testo*, *Citazione classica*, *Callout ([!summary])*, *Tabella*.
