@@ -83,19 +83,23 @@ tags:
 <!-- tomedown:end body -->
 ```
 
-<!-- SCREENSHOT_PLACEHOLDER: assets/obsidian/book_note_v210.png -->
-> [!NOTE] **[SCREENSHOT DA REALIZZARE: Nota del Libro in Obsidian]**
-> - **File di destinazione:** `assets/obsidian/book_note_v210.png`
-> - **Inquadratura:** Finestra Obsidian (Live Preview o Reading View) con un libro aperto (es. *The Three Impostors*).
+<!-- SCREENSHOT_PLACEHOLDER: assets/obsidian/book_modules_v210.png -->
+> [!NOTE] **[SCREENSHOT DA REALIZZARE 1/2: Moduli Intestazione Libro in Obsidian]**
+> - **File di destinazione:** `assets/obsidian/book_modules_v210.png`
+> - **Inquadratura:** Zoomato in *Reading View* sulla parte centrale (saltando lo YAML lungo e la copertina alta).
 > - **Dettagli da mostrare:**
->   - Frontmatter properties in alto.
->   - Intestazione H1 con titolo del libro e H3 con autore/serie.
->   - Bacheca di lettura (`> [!book]`) con stato, stelle e link all'indice.
->   - Sinossi collassabile (`> [!abstract]-`).
->   - Box Panoramica statistiche (`> [!summary]`).
->   - Vetrina citazioni speciali (`> [!highlight]- ★`).
->   - Citazioni con formato data/ora letterario: `- **p. 15** · 16 Nov 2026 | 10:20`.
->   - Embed nota manoscritta SVG incorporata nella pagina.
+>   - Titolo H1 `# The Three Impostors` + H3 `### by Arthur Machen`.
+>   - Bacheca di lettura (`> [!book] Reading dashboard`) con stato, stelle e date.
+>   - Sinossi collassabile (`> [!abstract]- Book synopsis`) e tag cliccabili (`#Fiction #Horror-tales`).
+>   - Box Panoramica (`> [!summary] Overview`) e Vetrina citazioni speciali (`> [!highlight]- ★ Special highlights`).
+
+<!-- SCREENSHOT_PLACEHOLDER: assets/obsidian/book_quotes_v210.png -->
+> [!NOTE] **[SCREENSHOT DA REALIZZARE 2/2: Citazioni con Date Letterarie & Contesto]**
+> - **File di destinazione:** `assets/obsidian/book_quotes_v210.png`
+> - **Inquadratura:** Zoomato su 2 citazioni consecutive (una speciale `> [!highlight]` e una normale) in *Reading View*.
+> - **Dettagli da mostrare:**
+>   - Nuovo formato data/ora letterario: `- **p. 5** · 16 Nov 2026 | 09:41`.
+>   - Riga `- **Context:**` con contesto estratto dal testo.
 
 The sample above reflects an English interface. When running KOReader in Italian, German, French, Spanish, or Brazilian Portuguese, all exported headings and status labels are translated automatically (see [Languages](developing.md#languages)).
 

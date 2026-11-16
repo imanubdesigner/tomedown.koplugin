@@ -69,18 +69,24 @@ Per questi screenshot puoi copiare la cartella [~/Downloads/tomedown.koplugin](f
 
 Apri il tuo vault Obsidian (ad es. `TomedownTest` o la tua cartella note sincronizzata) preferibilmente in **Dark Mode** o **Light Mode** pulita (tema Obsidian standard o minimale).
 
-### 9. Scheda Libro Completa con Nuovi Moduli
-- **File di destinazione:** `assets/obsidian/book_note_v210.png`
-- **Modalità:** Reading View o Live Preview.
-- **File da aprire:** Una nota di un libro con varie evidenziazioni (es. *The Three Impostors*).
+### 9a. Moduli Intestazione Libro (Dashboard, Sinossi, Overview & Speciali)
+- **File di destinazione:** `assets/obsidian/book_modules_v210.png`
+- **Modalità:** Reading View (zoomato, saltando lo YAML lungo e la copertina alta).
+- **File da aprire:** `Arthur Machen - The Three Impostors.md` (dentro `Obsidian-Screnshots/`).
 - **Elementi da mostrare:**
-  - Proprietà frontmatter in cima.
   - Titolo H1 `# The Three Impostors` e sottotitolo H3 `### by Arthur Machen`.
-  - Bacheca di lettura `> [!book]` (con Stato, Rating a stelle, Date di lettura e link `← Book index`).
-  - Sinossi collassabile `> [!abstract]- Synopsis`.
-  - Box Panoramica (ad es. callout `> [!summary] Overview` o tabella).
-  - Vetrina citazioni speciali `> [!highlight]- ★ Special highlights`.
-  - Citazioni con il nuovo formato orario pulito letterario: `- **p. 3** · 16 Nov 2026 | 09:29`.
+  - Bacheca di lettura `> [!book] Reading dashboard` (Stato, Rating `★★★★★ (5/5)`, Date di lettura e link `← Book index`).
+  - Sinossi collassabile `> [!abstract]- Book synopsis` e tag cliccabili `#Fiction #Horror-tales #English`.
+  - Box Panoramica `> [!summary] Overview` (`4 highlights · ★ 1 special`).
+  - Vetrina citazioni speciali `> [!highlight]- ★ Special highlights (1)`.
+
+### 9b. Citazioni con Date Letterarie & Contesto
+- **File di destinazione:** `assets/obsidian/book_quotes_v210.png`
+- **Modalità:** Reading View.
+- **File da aprire:** `Arthur Machen - The Three Impostors.md` (scorrendo subito sotto i moduli).
+- **Elementi da mostrare:**
+  - Una citazione speciale (`> [!highlight]`) e una normale consecutive.
+  - Il nuovo formato orario pulito letterario: `- **p. 5** · 16 Nov 2026 | 09:41` con `- **Context:**`.
 
 ### 10. Reading Digest Giornaliero
 - **File di destinazione:** `assets/obsidian/reading_digest_v210.png`
@@ -90,17 +96,16 @@ Apri il tuo vault Obsidian (ad es. `TomedownTest` o la tua cartella note sincron
   - Intestazione `# Reading digest` e citazione letteraria iniziale.
   - Intestazione giorno letteraria: `## 16 Nov 2026`.
   - Due libri diversi sotto la stessa data separati dalla linea sottile `---`.
-  - Metadati orari puliti sotto ogni citazione (es. `• Adventure... · p. 11 · 09:41`).
+  - Metadati orari puliti sotto ogni citazione (es. `• Adventure... · p. 10 · 09:41`).
 
-### 11. Indice Evoluto con Trofei e Dashboard
+### 11. Indice Evoluto con Dashboard, Tag Cloud & Trofei
 - **File di destinazione:** `assets/obsidian/index_v210_trophy_dashboard.png`
-- **Modalità:** Reading View.
+- **Modalità:** Reading View (solo la parte alta dell'indice, senza bisogno di includere tutta la tabella `My books` in basso).
 - **File da aprire:** `00 - Index.md`.
 - **Elementi da mostrare:**
-  - La bacheca libreria (Dashboard) in alto.
-  - La stanza dei trofei: `### Completed books` con rating e statistiche.
-  - La tabella principale dei libri con copertine e tag.
-  - La sezione *Tag cloud* con le etichette pesate e cliccabili.
+  - La bacheca libreria (`> [!summary] Library dashboard`) in alto.
+  - La nuvola di tag (`🏷️ #Horror-tales (2)...`) subito sotto.
+  - La stanza dei trofei: `### Completed books` con *The Portent* al 100% e `★★★★★`.
 
 ### 12. Dettaglio Disegno / Nota a Mano Libera (Stylus)
 - **File di destinazione:** `assets/obsidian/handwritten_drawing_embed.png`
