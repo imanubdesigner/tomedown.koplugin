@@ -29,7 +29,7 @@ book's own menu: see [Keep my notes](keep-my-notes.md) and
 | *Create a reading digest (00 - Reading Digest.md)* | off by default: creates a consolidated chronological digest (`00 - Reading Digest.md`) grouping highlights across all books by day, with literary dates (`16 Nov 2026`) and clean quote times (`09:41`) |
 | *Export when I close a book* | off by default: exports the book when you close it, and again (silently, no network) before the device suspends |
 | *Export format: %1* | defaults to **Markdown (.md)**; can be switched to **Plain text (.txt)** or **Both (.md and .txt)** to generate a clean, human-readable `.txt` file per book without YAML or HTML |
-| *Backup copies (%1)* | opens the backups submenu listing existing backup copies with transparent labels and real file dates (`Saved notes · 16 Nov 26`, `Latest snapshot · 14 Nov 26`). Includes **Delete all backups…** to clean stale copies across your library with a single confirmation |
+| *Backup copies (%1)* | opens the backups submenu listing existing backup copies with transparent labels and real file dates (`Saved notes · 16 Nov 26`, `Latest snapshot · 14 Nov 26`). Includes **Delete all backup copies…** to clean stale copies across your library with a single confirmation |
 | *Export settings to file* | exports all Tomedown configuration options deterministically to `tomedown_settings_backup.lua` inside your local export folder |
 | *Restore settings from backup…* | safely restores your Tomedown configuration from `tomedown_settings_backup.lua` with a confirmation dialog |
 
