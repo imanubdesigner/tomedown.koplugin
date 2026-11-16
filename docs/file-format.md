@@ -183,7 +183,7 @@ Obsidian, Notion, and GitHub natively render `> [!highlight]` (or `> [!IMPORTANT
 
 <figure class="doc-shot">
   <div class="doc-shot-frame">
-    <img src="../assets/img/highlights-context-obsidian.webp" alt="Obsidian note displaying callouts with surrounding context lines" />
+    <img src="../assets/highlights-context-obsidian.webp" alt="Obsidian note displaying callouts with surrounding context lines" />
   </div>
   <figcaption>Special highlight callout with surrounding sentence context in Obsidian.</figcaption>
 </figure>

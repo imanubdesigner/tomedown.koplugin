@@ -119,11 +119,34 @@ Enable **Treat every highlight as special** if you want *all* highlights to use 
         <blockquote class="obsidian-quote">
           <p><strong>She had the feeling that he resented her presence in the country, and was anxious to replace her with a proprietor less poverty-stricken.</strong></p>
         </blockquote>
-        <div class="quote-meta">• <strong>p. 26</strong> · 14/11/2026 10:20</div>
+        <div class="quote-meta">• <strong>p. 26</strong> · 14 Nov 2026 | 10:20</div>
       </div>
     </div>
   </div>
 </div>
+
+## Book layout & reading dashboard
+
+Starting in **v2.1.0**, you can configure rich visual modules for every exported book note in **Settings → Style**:
+
+- **Book title in body**: includes `# Book Title` H1 and `### by Author · *Series (#N)*` H3 at the start of the body.
+- **Overview style**: pick how the highlights count and star metrics look:
+  - **Inline / Heading**: `### **14 highlights · ★ 2 special**` (default).
+  - **Classic blockquote**: `> **14 highlights · ★ 2 special**`.
+  - **Callout**: `> [!summary] Overview` box.
+  - **Table**: compact markdown summary table.
+- **Reading dashboard**: embeds an interactive `> [!book]` callout at the top of the note with Status, 5-star Rating, Reading dates (`10 Nov 2026 → 16 Nov 2026`), and a link back to `00 - Index.md`.
+- **Book synopsis**: automatically extracts the EPUB description into a collapsible `> [!abstract]- Synopsis` callout.
+- **Body tags**: appends `#tag1 #tag2` clickable hashtags directly below the header.
+- **Special highlights showcase**: generates a collapsible `> [!highlight]- ★ Special highlights (N)` section showcasing your starred quotes at the top.
+
+## Handwritten notes & Stylus drawings
+
+If your device supports a stylus (e.g. Kindle Scribe, Kobo Sage/Elipsa, Android e-ink, or via KOReader's `pencil.koplugin`), Tomedown extracts handwritten annotations from your `.sdr` directory:
+
+- Point-sequence pen strokes are converted to crisp **SVG** vector files.
+- Drawings are saved into the `drawings/` folder inside your vault (customizable via *Settings → Style → Drawings folder*).
+- Drawings are embedded with standard Markdown syntax (`![Handwritten note · p. X](drawings/...)`) and receive permanent block IDs (`^hl-xxxxxxxx`).
 
 ## Personal notes format (Inline vs Footnotes)
 
@@ -134,7 +157,7 @@ When you attach a note to a highlight in KOReader, **Personal notes format** con
 
 ## Highlight details, chapters & context
 
-- **Highlight details**: choose **Page and date** (`- **p. 15** · 05/11/2026 10:20`), **Page only**, **Date only**, or **None**.
+- **Highlight details**: choose **Page and date** (`- **p. 15** · 16 Nov 2026 | 10:20`), **Page only**, **Date only**, or **None**.
 - **Chapter headings**: choose **Heading 1 (`#`)**, **Heading 2 (`##`)**, **Heading 3 (`###`)**, or **None (continuous list)**.
 - **Include highlight context**: on reflowable books (EPUB, FB2, MOBI…), extracts the words right before and after your highlight and adds a `- **Context:** *…*` line below the quote so you never lose the surrounding sentence.
 - **Add link IDs to highlights**: appends a stable `^hl-xxxxxxxx` block ID at the end of each quote so Obsidian can link to or embed a single highlight.

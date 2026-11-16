@@ -15,6 +15,18 @@ No. Tomedown writes plain `.md` (or `.txt`) files directly to a folder on your d
 
 Anywhere KOReader runs (Kindle, Kobo, Android, PocketBook…). The plugin is plain Lua and touches no hardware.
 
+### Does Tomedown support stylus and handwritten notes?
+
+Yes! Starting in **v2.1.0**, on devices supporting a pen or stylus (Kindle Scribe, Kobo Sage/Elipsa, Android e-ink, or via KOReader's `pencil.koplugin`), Tomedown extracts pen drawings from `.sdr` folders, renders vector point sequences into scalable SVG images, and embeds them directly in your notes inside the `drawings/` folder.
+
+### Can I backup and restore my Tomedown configuration?
+
+Yes. In **Settings → Files**, tap **Export settings to file** to save a snapshot of all your settings to `tomedown_settings_backup.lua`. You can restore your configuration at any time using **Restore settings from backup…**.
+
+### Can I delete stale backup copies across my entire library?
+
+Yes. In **Settings → Files → Backup copies**, tap **Delete all backups…** to scan your library and clean all `.bak` copies across every book with a single confirmation. Original exported notes are never touched.
+
 ### Is it free and open source?
 
 Yes. Tomedown is free software licensed under the GNU AGPL-3.0, with no telemetry and no lock-in.

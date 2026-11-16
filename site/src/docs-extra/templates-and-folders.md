@@ -52,6 +52,10 @@ In **Settings → Index**, you can tailor the library index:
 - **Index layout**: **Tags under the title** *(default)*, **Tags column**, or **Tags column, compact**.
 - **Index link style**: choose **Obsidian wikilink** (`[[Book]]`) or **Standard Markdown** (`[Book](Book.md)`) if you use another Markdown app.
 - **Show Reading now in the index**: repeats currently active books in a dedicated top section.
+- **Index tags display**: choose **Show all** *(default)*, **First 3 (+N)** for a compact badge, or **Collapsible (<details>)** to fold long tag lists behind an expandable dropdown.
+- **Completed books trophy room**: enable **Show Completed books in the index** to generate a `### Completed books` showcase celebrating finished books with ratings and stats.
+- **Library dashboard**: enable **Show Library dashboard in the index** for a top-level reading overview table.
+- **Tag cloud**: enable **Show tag cloud in the index** for an alphabetical directory of all tags with volume counts.
 - **Smart tag splitting & pills**: EPUB/Calibre subject facets (like `Fiction -- Mystery & Detective`) are automatically split into clean individual tags and stacked vertically as unbreakable `#tag` pills so the index table stays tidy.
 
 <figure class="doc-device-figure">
@@ -65,11 +69,20 @@ In **Settings → Index**, you can tailor the library index:
   <figcaption><code>00 - Index.md</code> in Obsidian: covers, 5-cell progress bars, and stacked <code>#tag</code> pills.</figcaption>
 </figure>
 
-## Covers, page bookmarks & top bar icon
+## Covers, page bookmarks & drawings
 
 - **Include book covers**: exports full-color cover images into `covers/` (or any custom name you set in **Covers folder**, like `_covers` or `assets`, with automatic migration).
+- **Drawings folder**: customize the vault directory where stylus sketches and vector drawings are saved (defaults to `drawings`).
 - **Include page bookmarks**: adds a `# Page bookmarks` section at the end of the book note with bookmarked page numbers and notes.
 - **Show Tomedown icon in the top bar** *(Settings → Style)*: adds a dedicated Tomedown icon directly in KOReader's top bar for one-tap access while reading.
+
+## Settings export & backup cleanup
+
+Starting in **v2.1.0**, you can manage your settings and backups in **Settings → Files**:
+
+- **Export settings to file**: writes a clean, portable backup of all your Tomedown options to `tomedown_settings_backup.lua`.
+- **Restore settings from backup…**: restores your exact configuration from `tomedown_settings_backup.lua` with a safety confirmation dialog.
+- **Delete all backups…**: inside *Backup copies*, scans your vault and safely removes stale `.bak` copies while keeping all original notes intact.
 
 <figure class="doc-device-figure">
   <img src="{{base}}/assets/img/topbar-icon-kindle.svg" alt="KOReader top bar showing the dedicated Tomedown icon next to the menu icons" />

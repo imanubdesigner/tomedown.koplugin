@@ -13,12 +13,19 @@
 
 While each book gets its own note (e.g. `Arthur Machen - The Three Impostors.md`), the **Reading Digest** gives you a daily timeline across your entire library:
 
-- **Newest day first**: highlights are grouped chronologically by date.
+- **Literary Date Headings**: highlights are grouped chronologically by date using clean literary formats (`## 16 Nov 2026`).
+- **Clean Timestamps**: each quote displays its exact time of capture (`09:41`) without repetitive dates.
+- **Divider Between Books**: multiple books read on the same calendar day are cleanly separated by a subtle horizontal rule (`---`).
 - **Direct wikilinks**: each book heading links straight to its book note in your vault.
+- **Configurable Overview**: library summary stats at the top adapt to your configured *Overview style* (Inline, Blockquote, Callout, or Table).
 - **Consistent styling**: quotes keep your chosen highlight style (callouts, alerts, bold, or stars), with page numbers and timestamps.
 
 ## How to export it
 
+### 1. Automatic Export
+Enable **Settings → Files → Create a reading digest (00 - Reading Digest.md)**. Whenever you run a regular export or close a book with auto-export enabled, the digest is kept up to date automatically alongside your library.
+
+### 2. On-demand Export
 1. Open KOReader's top menu (from the file browser or inside a book).
 2. Tap **Tomedown**.
 3. Tap **Export reading digest**.
