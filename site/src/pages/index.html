@@ -63,10 +63,24 @@
             <article class="bento-card bento-span-7" data-reveal>
               <h3>Autonomous book notes</h3>
               <p>Each read volume produces its own standalone document formatted with YAML frontmatter, tags, and reading stats. Ready for Obsidian, Logseq, or any plaintext environment.</p>
-              <div class="bento-visual bento-tree" aria-hidden="true">
-                <div class="tree-row tree-active"><span>00 - Index.md</span><span class="bento-pill">catalog</span></div>
-                <div class="tree-row"><span>00 - Reading Digest.md</span><span class="bento-pill">daily</span></div>
-                <div class="tree-row"><span>Arthur Machen - The Three Impostors.md</span><span class="bento-pill bento-pill-hl">YAML + quotes</span></div>
+              <div class="bento-window" aria-hidden="true">
+                <div class="bento-window-head">
+                  <div class="window-dots">
+                    <span></span><span></span><span></span>
+                  </div>
+                  <div class="bento-window-title">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    <span>Arthur Machen - The Three Impostors.md</span>
+                  </div>
+                  <span class="bento-window-env">vault/books</span>
+                </div>
+                <div class="bento-window-body">
+                  <div><span class="bento-code-dim">---</span></div>
+                  <div><span class="bento-code-key">author:</span> <span class="bento-code-val">Arthur Machen</span> <span class="bento-pill bento-pill-hl" style="margin-left: 8px;">YAML</span></div>
+                  <div><span class="bento-code-key">progress:</span> <span class="bento-code-val">[■■■■□] 82%</span> · <span class="bento-code-dim">9 highlights</span></div>
+                  <div><span class="bento-code-dim">---</span></div>
+                  <div class="bento-quote-row">&gt; “There are mysteries which are better left unexamined…” ^h-112</div>
+                </div>
               </div>
             </article>
 
@@ -74,8 +88,16 @@
               <h3>Visual library catalog</h3>
               <p><code>00 - Index.md</code> creates an interactive bookshelf with 90×120 covers, 5-cell progress bars, custom sorting, and non-breaking tag pills.</p>
               <div class="bento-visual bento-index" aria-hidden="true">
-                <div class="index-bar"><code>[■■■□□] 60%</code><span>Reading</span></div>
-                <div class="index-pills"><span>#fiction</span><span>#classics</span><span>#mystery</span></div>
+                <div class="index-bar">
+                  <span class="index-book-tag">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                    Arthur Machen
+                  </span>
+                  <code>[■■■□□] 60%</code>
+                </div>
+                <div class="index-pills">
+                  <span>#fiction</span><span>#classics</span><span>#mystery</span>
+                </div>
               </div>
             </article>
 
@@ -83,8 +105,20 @@
               <h3>Chronological reading timeline</h3>
               <p><code>00 - Reading Digest.md</code> unifies every quote across your entire library by date, forming a seamless journal of your intellectual journey.</p>
               <div class="bento-visual bento-timeline" aria-hidden="true">
-                <div><span class="tl-date">Nov 13</span><span class="tl-book">[[The Three Impostors]] · 4 quotes</span></div>
-                <div><span class="tl-date">Nov 11</span><span class="tl-book">[[The Great God Pan]] · 2 quotes</span></div>
+                <div class="tl-item">
+                  <div class="tl-item-left">
+                    <span class="tl-date">13 Nov 26</span>
+                    <span class="tl-book">[[The Three Impostors]]</span>
+                  </div>
+                  <span class="bento-pill">4 quotes</span>
+                </div>
+                <div class="tl-item">
+                  <div class="tl-item-left">
+                    <span class="tl-date">11 Nov 26</span>
+                    <span class="tl-book">[[The Great God Pan]]</span>
+                  </div>
+                  <span class="bento-pill">2 quotes</span>
+                </div>
               </div>
             </article>
 
@@ -92,12 +126,12 @@
               <h3>Expressive highlight styles</h3>
               <p>Choose from 6 special highlight styles—Obsidian callouts, GitHub alerts, highlighted text, star badges, or bold typography—with surrounding sentence context and granular block IDs.</p>
               <div class="bento-visual bento-styles" aria-hidden="true">
-                <code>[!highlight]</code>
-                <code>[!IMPORTANT]</code>
-                <code>==highlight==</code>
-                <code>==**bold**==</code>
-                <code>⭐ **bold**</code>
-                <code>**bold**</code>
+                <code class="b-style-hl">📌 [!highlight]</code>
+                <code>⚠️ [!IMPORTANT]</code>
+                <code class="b-style-hl">==highlight==</code>
+                <code>==**bold hl**==</code>
+                <code class="b-style-hl">⭐ **star**</code>
+                <code>**bold text**</code>
               </div>
             </article>
 
@@ -106,8 +140,8 @@
               <p>Write your permanent notes directly inside book files in your vault. When new highlights arrive from your e-reader, Tomedown merges them safely around your reflections.</p>
               <div class="bento-visual bento-merge" aria-hidden="true">
                 <span class="merge-ok">✓ Personal notes kept</span>
-                <span class="merge-add">+ New highlights folded in</span>
-                <span class="merge-bak">.bak safety copy</span>
+                <span class="merge-add">+ New quotes folded in</span>
+                <span class="merge-bak">🛡️ .bak safety copy</span>
               </div>
             </article>
 
@@ -115,9 +149,9 @@
               <h3>Adaptive folder hierarchies</h3>
               <p>Structure your vault by author, series, or reading status. Use dynamic template tokens and export clean <code>.md</code>, <code>.txt</code>, or both simultaneously.</p>
               <div class="bento-visual bento-tokens" aria-hidden="true">
-                <code>{author}</code>
-                <code>{title}</code>
-                <code>{series}</code>
+                <code>📁 {author}</code>
+                <code>📖 {title}</code>
+                <code>🏷️ {series}</code>
                 <span class="bento-pill bento-pill-hl">.md / .txt</span>
               </div>
             </article>
@@ -184,29 +218,29 @@
       <section id="how-it-works" class="section section-pipeline">
         <div class="container">
           <div class="section-head" data-reveal>
-            <span class="eyebrow">The Architecture</span>
-            <h2>How your reading becomes a permanent library.</h2>
-            <p class="muted" style="max-width: 620px; margin: 12px auto 0;">Three elegant layers. No cloud lock-in, no loss of personal notes, and zero proprietary database.</p>
+            <span class="eyebrow">The Reading Workflow</span>
+            <h2>From your e-reader to your vault. Zero friction.</h2>
+            <p class="muted" style="max-width: 640px; margin: 12px auto 0;">Read peacefully in bed. Close your book. Find every highlight, cover, and stat neatly waiting in your vault—without accounts, clouds, or lost reflections.</p>
           </div>
 
           <div class="pipeline-grid">
             <!-- Stage 1: The Reader -->
             <div class="pipeline-card" data-reveal>
               <div class="pipeline-num">01</div>
-              <div class="pipeline-badge">On Device</div>
+              <div class="pipeline-badge">On Your E-Reader</div>
               <div class="pipeline-visual">
                 <div class="pv-device">
-                  <div class="pv-device-top"><span>KOReader</span><span>E-ink</span></div>
+                  <div class="pv-device-top"><span>KOReader</span><span>E-ink Screen</span></div>
                   <div class="pv-quote">
-                    <span class="pv-star">★ Special</span>
+                    <span class="pv-star">★ Special Highlight</span>
                     <p>“The world is full of obvious things…”</p>
-                    <span class="pv-meta">p. 42 · 14:20</span>
+                    <span class="pv-meta">p. 42 · Chapter IV</span>
                   </div>
                 </div>
               </div>
               <div class="pipeline-body">
                 <h3>Read &amp; mark freely</h3>
-                <p>Highlight passages and flag standout quotes with <strong>Special Highlight</strong>. Tomedown extracts page numbers, chapters, and surrounding context without altering your reading flow.</p>
+                <p>Highlight passages and star standout quotes with <strong>Special Highlight</strong>. Tomedown extracts chapters, page numbers, and surrounding context without altering your reading flow.</p>
               </div>
             </div>
 
@@ -217,20 +251,20 @@
             <!-- Stage 2: The Exporter -->
             <div class="pipeline-card pipeline-card-hl" data-reveal>
               <div class="pipeline-num">02</div>
-              <div class="pipeline-badge pipeline-badge-hl">Pure Lua Engine</div>
+              <div class="pipeline-badge pipeline-badge-hl">Silent Automation · Zero Cloud</div>
               <div class="pipeline-visual">
                 <div class="pv-engine">
                   <div class="pv-chip"><code>tomedown.koplugin</code></div>
                   <div class="pv-flow">
-                    <span class="pv-tag">✓ Hash checked</span>
-                    <span class="pv-tag">✓ .bak preserved</span>
-                    <span class="pv-tag pv-tag-hl">✓ Notes kept intact</span>
+                    <span class="pv-tag pv-tag-hl">✓ New highlights folded in</span>
+                    <span class="pv-tag">✓ Personal Obsidian notes safe</span>
+                    <span class="pv-tag">🛡️ Automatic .bak safety copy</span>
                   </div>
                 </div>
               </div>
               <div class="pipeline-body">
-                <h3>Autonomous export &amp; merge</h3>
-                <p>On book close or on demand, clean <code>.md</code> files are crafted. If you previously wrote personal thoughts in Obsidian, Tomedown folds new highlights in without touching your writing.</p>
+                <h3>Smart export &amp; note merge</h3>
+                <p>The moment you close your book, pure Markdown files are generated locally. If you already wrote personal thoughts in Obsidian, Tomedown weaves new highlights in without ever touching your writing.</p>
               </div>
             </div>
 
@@ -241,7 +275,7 @@
             <!-- Stage 3: The Vault -->
             <div class="pipeline-card" data-reveal>
               <div class="pipeline-num">03</div>
-              <div class="pipeline-badge">Your Vault</div>
+              <div class="pipeline-badge">Your Permanent Vault</div>
               <div class="pipeline-visual">
                 <div class="pv-vault">
                   <div class="pv-vault-header">
@@ -255,14 +289,14 @@
                 </div>
               </div>
               <div class="pipeline-body">
-                <h3>Living personal vault</h3>
-                <p>Browse your catalog with <code>00 - Index.md</code>, review daily highlights in your <code>Reading Digest</code>, and link to single quotes with stable block IDs. Forever yours, completely offline.</p>
+                <h3>A library that belongs to you</h3>
+                <p>Browse your bookshelf in <code>00 - Index.md</code>, review daily quotes in your <code>Reading Digest</code>, and connect ideas with stable block IDs. Forever yours, completely offline.</p>
               </div>
             </div>
           </div>
 
           <div class="pipeline-bridge" data-reveal>
-            <div class="bridge-tag">The Optional Bridge</div>
+            <div class="bridge-tag">The Seamless Bridge</div>
             <p><strong>Offline USB</strong> by default, or automatic wireless sync via <strong>WebDAV, Koofr, Nextcloud, Dropbox, or FTP</strong> whenever your e-reader connects to Wi-Fi.</p>
             <a href="{{base}}/docs/quickstart/" class="btn btn-ghost">Get started in 2 minutes →</a>
           </div>
