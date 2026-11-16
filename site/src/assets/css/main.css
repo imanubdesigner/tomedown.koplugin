@@ -511,12 +511,15 @@ mark { background: var(--hl); color: var(--hl-ink); padding: 0 0.15em; }
   border-radius: 16px;
   border: 1px solid var(--line);
   background: #1e1e1e;
+  aspect-ratio: 1200 / 976;
   box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.45);
 }
 .spotlight-frame img {
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
   transform-origin: center top;
 }
 .spotlight-slide.is-active .spotlight-frame img {
@@ -1561,7 +1564,11 @@ mark { background: var(--hl); color: var(--hl-ink); padding: 0 0.15em; }
 .doc-spotlight .spotlight-tabs {
   margin-bottom: 16px;
 }
+.doc-spotlight .spotlight-frame {
+  aspect-ratio: auto;
+}
 .doc-spotlight .spotlight-frame img {
+  height: auto;
   border: 0 !important;
   border-radius: 0 !important;
 }
