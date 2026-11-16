@@ -1318,6 +1318,20 @@ mark { background: var(--hl); color: var(--hl-ink); padding: 0 0.15em; }
 .prose th { background: var(--paper-2); }
 .prose blockquote { margin: 1.2em 0; padding-left: 1em; border-left: 3px solid var(--hl); color: var(--ink-2); }
 .prose img { border: 1px solid var(--line); border-radius: 10px; }
+.docs .prose img:not([src$=".svg"]):not([src*="obsidian-guide"]) {
+  display: block;
+  max-width: 100%;
+  margin: 28px auto;
+  border: 1.5px solid color-mix(in srgb, var(--hl) 42%, var(--line));
+  border-radius: 14px;
+  box-shadow: 0 18px 42px -14px rgba(0, 0, 0, 0.38), 0 0 0 4px color-mix(in srgb, var(--hl) 8%, transparent);
+  transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+}
+.docs .prose img:not([src$=".svg"]):not([src*="obsidian-guide"]):hover {
+  transform: translateY(-2px);
+  border-color: var(--hl);
+  box-shadow: 0 22px 48px -14px rgba(0, 0, 0, 0.45), 0 0 0 5px color-mix(in srgb, var(--hl) 14%, transparent);
+}
 .prose hr { border: 0; border-top: 1px solid var(--line); margin: 2em 0; }
 
 /* docs layout */
