@@ -177,8 +177,6 @@ menu.
 
 ### Beta versions
 
-![Beta versions submenu](../assets/menu/settings/updates_beta_menu.png)
-
 | Entry | What to do |
 |---|---|
 | *Receive beta versions* | off by default: while ticked, the *Check for beta updates* row below appears and the changelog lists prereleases (tags like `0.4.0-beta.1`) too |
