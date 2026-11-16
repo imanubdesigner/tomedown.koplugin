@@ -9,9 +9,18 @@
                 Pure Lua plugin for KOReader. Drop one folder into <code>plugins/</code> and export clean Markdown or plain text, completely offline.
               </p>
               <div class="actions dl-actions">
-                <a id="latest-link" href="https://github.com/imanubdesigner/tomedown.koplugin/releases/latest" class="btn btn-primary">Download plugin (.zip)</a>
-                <a href="https://codeberg.org/imanubdesigner/tomedown.koplugin/releases" class="btn btn-ghost">Codeberg mirror</a>
-                <a href="{{base}}/changelog/" class="btn btn-ghost">Changelog</a>
+                <a id="latest-link" href="https://github.com/imanubdesigner/tomedown.koplugin/releases/latest" class="btn btn-primary">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  <span>Download plugin (.zip)</span>
+                </a>
+                <a href="https://codeberg.org/imanubdesigner/tomedown.koplugin/releases" class="btn btn-ghost">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 9 9c0 3.8-2.4 7-5.8 8.3L12 15l-3.2 5.3C5.4 19 3 15.8 3 12a9 9 0 0 1 9-9z"/></svg>
+                  <span>Codeberg mirror</span>
+                </a>
+                <a href="{{base}}/changelog/" class="btn btn-ghost">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                  <span>Changelog</span>
+                </a>
               </div>
             </div>
 
@@ -21,10 +30,34 @@
                 <span class="dl-version-pill" id="latest-version">v2.0.1</span>
               </div>
               <dl class="colophon-list">
-                <div><dt>Package</dt><dd><code>tomedown.koplugin.zip</code></dd></div>
-                <div><dt>Runtime</dt><dd>Pure Lua · Zero deps</dd></div>
-                <div><dt>Updates</dt><dd>Built-in in-app updater</dd></div>
-                <div><dt>License</dt><dd>GNU AGPL-3.0</dd></div>
+                <div>
+                  <dt>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                    Package
+                  </dt>
+                  <dd><code>tomedown.koplugin.zip</code></dd>
+                </div>
+                <div>
+                  <dt>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                    Runtime
+                  </dt>
+                  <dd>Pure Lua · Zero deps</dd>
+                </div>
+                <div>
+                  <dt>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                    Updates
+                  </dt>
+                  <dd>Built-in in-app updater</dd>
+                </div>
+                <div>
+                  <dt>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    License
+                  </dt>
+                  <dd>GNU AGPL-3.0</dd>
+                </div>
               </dl>
             </aside>
           </div>
@@ -42,22 +75,42 @@
 
           <ol class="dl-steps">
             <li class="dl-step" data-reveal>
-              <span class="journey-num">01</span>
+              <div class="dl-step-head">
+                <div class="dl-step-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2" width="10" height="7" rx="1"/><path d="M9 9v4a3 3 0 0 0 3 3h0a3 3 0 0 0 3-3V9"/><line x1="12" y1="16" x2="12" y2="22"/><line x1="10" y1="5" x2="10" y2="5.01"/><line x1="14" y1="5" x2="14" y2="5.01"/></svg>
+                </div>
+                <span class="dl-step-badge">Step 01</span>
+              </div>
               <h3>Connect via USB</h3>
               <p>Plug your Kindle, Kobo, or e-reader into your computer in USB mass storage mode.</p>
             </li>
             <li class="dl-step" data-reveal>
-              <span class="journey-num">02</span>
+              <div class="dl-step-head">
+                <div class="dl-step-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><polyline points="9 14 12 17 15 14"/></svg>
+                </div>
+                <span class="dl-step-badge">Step 02</span>
+              </div>
               <h3>Unzip into <code>plugins/</code></h3>
               <p>Extract the archive into KOReader's <code>plugins/</code> folder. The zip already contains <code>tomedown.koplugin/</code>.</p>
             </li>
             <li class="dl-step" data-reveal>
-              <span class="journey-num">03</span>
+              <div class="dl-step-head">
+                <div class="dl-step-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><polyline points="21 3 21 8 16 8"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><polyline points="8 16 3 16 3 21"/></svg>
+                </div>
+                <span class="dl-step-badge">Step 03</span>
+              </div>
               <h3>Restart KOReader</h3>
-              <p>Unplug your device and restart KOReader (or enable it in <strong>☰ → Plugin management</strong>).</p>
+              <p>Unplug your device and restart KOReader (or enable it in <span class="inline-menu-icon" aria-label="menu"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></span> <strong>Plugin management</strong>).</p>
             </li>
             <li class="dl-step" data-reveal>
-              <span class="journey-num">04</span>
+              <div class="dl-step-head">
+                <div class="dl-step-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/><path d="m16 9 2 2 4-4"/></svg>
+                </div>
+                <span class="dl-step-badge">Step 04</span>
+              </div>
               <h3>Open Tomedown</h3>
               <p>Find <strong>Tomedown</strong> right at the top of KOReader's menu and run your first local export.</p>
             </li>
@@ -74,14 +127,20 @@
             <div class="dl-stores">
               <div class="dl-store-card">
                 <div class="dl-store-top">
-                  <strong>Storefront</strong>
+                  <div class="dl-store-title">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                    <strong>Storefront</strong>
+                  </div>
                   <span class="bento-pill bento-pill-hl">Wireless</span>
                 </div>
                 <p>Open <strong>Storefront</strong> in KOReader, search <code>Tomedown</code>, and tap <strong>Install</strong>.</p>
               </div>
               <div class="dl-store-card">
                 <div class="dl-store-top">
-                  <strong>AppStore</strong>
+                  <div class="dl-store-title">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    <strong>AppStore</strong>
+                  </div>
                   <span class="bento-pill bento-pill-hl">Wireless</span>
                 </div>
                 <p>Browse <strong>AppStore</strong> on your device, pick <code>Tomedown</code>, and restart KOReader.</p>
@@ -94,10 +153,34 @@
               <span class="eyebrow">Plugin Paths</span>
               <h3>Where <code>plugins/</code> lives</h3>
               <dl class="dl-paths">
-                <div><dt>Kindle</dt><dd><code>/mnt/us/koreader/plugins/</code></dd></div>
-                <div><dt>Kobo</dt><dd><code>.adds/koreader/plugins/</code></dd></div>
-                <div><dt>Android</dt><dd><code>/sdcard/koreader/plugins/</code></dd></div>
-                <div><dt>PocketBook</dt><dd><code>applications/koreader/plugins/</code></dd></div>
+                <div>
+                  <dt>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                    Kindle
+                  </dt>
+                  <dd><code>/mnt/us/koreader/plugins/</code></dd>
+                </div>
+                <div>
+                  <dt>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                    Kobo
+                  </dt>
+                  <dd><code>.adds/koreader/plugins/</code></dd>
+                </div>
+                <div>
+                  <dt>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                    Android
+                  </dt>
+                  <dd><code>/sdcard/koreader/plugins/</code></dd>
+                </div>
+                <div>
+                  <dt>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    PocketBook
+                  </dt>
+                  <dd><code>applications/koreader/plugins/</code></dd>
+                </div>
               </dl>
             </div>
 
@@ -105,9 +188,24 @@
               <span class="eyebrow">Good to Know</span>
               <h3>Requirements &amp; updates</h3>
               <ul class="dl-checks">
-                <li><strong>KOReader</strong> with modern highlights (older <code>.sdr</code> files work too).</li>
-                <li><strong>No cloud required</strong>: local export works completely offline; WebDAV, Dropbox, and FTP are optional.</li>
-                <li><strong>Future updates</strong>: after the first install, update in one tap via <strong>Settings → Updates → Check for updates</strong>.</li>
+                <li>
+                  <span class="dl-check-bullet" aria-hidden="true">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  </span>
+                  <div><strong>KOReader</strong> with modern highlights (older <code>.sdr</code> files work too).</div>
+                </li>
+                <li>
+                  <span class="dl-check-bullet" aria-hidden="true">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  </span>
+                  <div><strong>No cloud required</strong>: local export works completely offline; WebDAV, Dropbox, and FTP are optional.</div>
+                </li>
+                <li>
+                  <span class="dl-check-bullet" aria-hidden="true">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  </span>
+                  <div><strong>Future updates</strong>: after the first install, update in one tap via <strong>Settings → Updates → Check for updates</strong>.</div>
+                </li>
               </ul>
               <p class="dl-next"><a href="{{base}}/docs/quickstart/" class="btn btn-ghost">First local export guide →</a></p>
             </div>
