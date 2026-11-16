@@ -8,11 +8,12 @@ and its tag left out.
 
 ```markdown
 ---
+tomedown: "1.0"
 title: "The Three Impostors"
 author: "Arthur Machen"
 language: "en"
 pages: 210
-exported: 2026-11-05
+exported: 2026-11-16
 highlights: 14
 special: 2
 status: "reading"
@@ -27,9 +28,33 @@ tags:
 
 <!-- tomedown:begin body hash=9e7017ad — ⛔ generated below: do not edit inside or updates stop arriving · write your notes above -->
 
+# The Three Impostors
+### by Arthur Machen
+
+> [!book]
+> - **Status:** Reading (38%)
+> - **Rating:** ★★★★☆ (4/5)
+> - **Reading dates:** 10 Nov 2026 → 16 Nov 2026
+> - **Index:** [[00 - Index|← Book index]]
+
+> [!abstract]- Synopsis
+> A gripping mystery following Mr. Dyson and Mr. Phillips through the gaslit streets of London...
+
+#horror #weird-fiction
+
 ---
 
-# **14 highlights · ★ 2 special**
+> [!summary] Overview
+> **14 highlights · ★ 2 special**
+
+---
+
+> [!highlight]- ★ Special highlights (2)
+> > “It is an old story; but it is ever new to those who have the eyes to see and the heart to feel.”
+> > — *Chapter I* · p. 15
+>
+> > “I yield to fantasy, I cannot withstand the influence of the grotesque.”
+> > — *Prologue* · p. 5
 
 ---
 
@@ -37,12 +62,17 @@ tags:
 
 > It is an old story; but it is ever new to those who have the eyes to see and the heart to feel.
 
-- **p. 15** · 05/11/2026 10:20
+- **p. 15** · 16 Nov 2026 | 10:20
   - **NOTE:** *to reread*
 
 > Another highlight.
 
-- **p. 18** · 05/11/2026 11:30
+- **p. 18** · 16 Nov 2026 | 11:30
+
+![Handwritten note · p. 25](drawings/Arthur%20Machen%20-%20The%20Three%20Impostors%20-%20note-1.svg) ^hl-3a8f19bc
+
+- **p. 25** · 16 Nov 2026 | 12:05 · ✍️ Handwritten note
+  - **NOTE:** *Margin sketch and arrow*
 
 ---
 
@@ -50,10 +80,24 @@ tags:
 
 > Check the epilogue again
 
-- **p. 120** · 04/09/2026 08:15
+- **p. 120** · 04 Sep 2026 | 08:15
 
 <!-- tomedown:end body -->
 ```
+
+<!-- SCREENSHOT_PLACEHOLDER: assets/obsidian/book_note_v210.png -->
+> [!NOTE] **[SCREENSHOT DA REALIZZARE: Nota del Libro in Obsidian]**
+> - **File di destinazione:** `assets/obsidian/book_note_v210.png`
+> - **Inquadratura:** Finestra Obsidian (Live Preview o Reading View) con un libro aperto (es. *The Three Impostors*).
+> - **Dettagli da mostrare:**
+>   - Frontmatter properties in alto.
+>   - Intestazione H1 con titolo del libro e H3 con autore/serie.
+>   - Bacheca di lettura (`> [!book]`) con stato, stelle e link all'indice.
+>   - Sinossi collassabile (`> [!abstract]-`).
+>   - Box Panoramica statistiche (`> [!summary]`).
+>   - Vetrina citazioni speciali (`> [!highlight]- ★`).
+>   - Citazioni con formato data/ora letterario: `- **p. 15** · 16 Nov 2026 | 10:20`.
+>   - Embed nota manoscritta SVG incorporata nella pagina.
 
 The sample is what an English KOReader produces; with an Italian interface
 the same text comes out translated (see [Languages](developing.md#languages)).
@@ -321,3 +365,114 @@ away. A book set to *Book visibility: hidden from the index* or *not
 exported*, from its own menu or from the file dialog, is left out of every
 table; when every exported book is hidden the index says so instead of
 claiming the library is empty.
+
+### Library index additions (v2.1.0)
+
+Under *Settings → Index*, you can enable rich modular components in `00 - Index.md`:
+
+- **Trophy Room (*Show Completed books in the index*)**:
+  Adds a `### Completed books` section listing every finished book in your library with its rating, read completion date, and highlight count.
+- **Library Dashboard (*Show Library dashboard in the index*)**:
+  Inserts an overview summary table displaying total books, volumes in progress, finished books, and total highlight count.
+- **Tag Cloud (*Show tag cloud in the index*)**:
+  Generates an alphabetical directory of all tags across your library with book count badges, ideal for quick navigation.
+- **Tag Display Folding (*Index tags display*)**:
+  Choose between **Show all**, **First 3 (+N)**, or **Collapsible (<details>)** to fold extensive tag lists behind an expandable HTML `<details>` summary.
+
+<!-- SCREENSHOT_PLACEHOLDER: assets/obsidian/index_v210_trophy_dashboard.png -->
+> [!NOTE] **[SCREENSHOT DA REALIZZARE: Indice con Trofei e Dashboard in Obsidian]**
+> - **File di destinazione:** `assets/obsidian/index_v210_trophy_dashboard.png`
+> - **Inquadratura:** Nota `00 - Index.md` aperta in Obsidian.
+> - **Dettagli da mostrare:**
+>   - La sezione *Bacheca libreria* / Dashboard con i totali.
+>   - La stanza dei trofei `### Completed books` con le stelle e i libri completati.
+>   - La tabella principale dei libri con tag collassati o compatti.
+>   - La nuvola di tag in calce alla pagina.
+
+---
+
+## Handwritten notes & Stylus drawings
+
+For devices equipped with a stylus (Kindle Scribe, Kobo Sage/Elipsa, Android e-ink, or via KOReader's `pencil.koplugin`), Tomedown automatically discovers handwritten annotations in the book's `.sdr` directory:
+
+1. **Drawing Extraction**:
+   - Vector drawings (point-sequence strokes) are transformed into scalable, sharp **SVG** vector files via a pure Lua vector generator.
+   - Raster drawings (e.g. pencil PNGs) are extracted with transparent borders.
+   - Images are placed into the `drawings/` folder inside your vault (customizable via *Settings → Style → Drawings folder*).
+2. **Standard Markdown Embeds**:
+   - In the book note, drawings are embedded natively using standard Markdown image syntax:
+     ```markdown
+     ![Handwritten note · p. 25](drawings/Author%20-%20Title%20-%20note-1.svg) ^hl-3a8f19bc
+     - **p. 25** · 16 Nov 2026 | 12:05 · ✍️ Handwritten note
+       - **NOTE:** *Margin sketch and arrow*
+     ```
+   - Each drawing receives an Obsidian block ID (`^hl-...`), allowing you to link directly to or embed the handwritten drawing anywhere in your vault: `![[Book Title#^hl-3a8f19bc]]`.
+   - Any text note attached to the stylus annotation in KOReader appears right below as a formatted user note.
+
+<!-- SCREENSHOT_PLACEHOLDER: assets/obsidian/handwritten_drawing_embed.png -->
+> [!NOTE] **[SCREENSHOT DA REALIZZARE: Embed Disegno Stylus in Obsidian]**
+> - **File di destinazione:** `assets/obsidian/handwritten_drawing_embed.png`
+> - **Inquadratura:** Dettaglio di una nota libro in Obsidian che mostra un disegno o annotazione a penna/stylus (SVG o PNG) perfettamente visualizzato tra il testo.
+
+---
+
+## Reading Digest (`00 - Reading Digest.md`)
+
+When *Create a reading digest (00 - Reading Digest.md)* is enabled in *Settings → Files* (or exported on demand via *Tomedown → Export reading digest*), Tomedown compiles a chronological reading journal grouping all highlights across your whole library by day:
+
+```markdown
+---
+tomedown: "1.0"
+title: "Reading digest"
+exported: "2026-11-16"
+highlights: 25
+tags:
+  - ebook
+  - digest
+---
+
+# Reading digest
+
+> *"Welcome to the quiet space where authors' thoughts linger, and your own reflections take shape."*
+
+---
+
+**2 books** · **25 highlights** · **★ 4 special**
+
+## 16 Nov 2026
+
+### [[Arthur Machen - The Three Impostors|The Three Impostors]] — *Arthur Machen*
+
+> I certainly think,” replied Phillipps, “that, if you pull out that coin...
+
+- *Adventure of the Gold Tiberius* · **p. 11** · 09:41
+
+> Phillipps,” replied the elder and (it must be said) the more pompous of the two...
+
+- *Prologue* · **p. 5** · 09:41
+
+---
+
+### [[Edgar Wallace - The Three Just Men|The Three Just Men]] — *Edgar Wallace*
+
+> Her eyes went rapidly down the “Wanted to Buy” column.
+
+- *I: The Firm of Oberzohn* · **p. 3** · 09:29
+```
+
+Key features of the Reading Digest:
+- **Literary Date Headings**: `## 16 Nov 2026` groups quotes chronologically by day.
+- **Clean Timestamps**: Under each quote, only the time of capture (`09:41`) is displayed, avoiding repetitive date text.
+- **Divider Between Books**: A clean rule `---` cleanly separates different volumes read on the same calendar day.
+- **Overview Block Support**: Adopts your configured *Overview style* (Inline, Blockquote, Callout, Table) for library stats.
+
+<!-- SCREENSHOT_PLACEHOLDER: assets/obsidian/reading_digest_v210.png -->
+> [!NOTE] **[SCREENSHOT DA REALIZZARE: Reading Digest in Obsidian]**
+> - **File di destinazione:** `assets/obsidian/reading_digest_v210.png`
+> - **Inquadratura:** Documento `00 - Reading Digest.md` aperto in Obsidian.
+> - **Dettagli da mostrare:**
+>   - Titolo `# Reading digest` e citazione letteraria iniziale.
+>   - Riepilogo statistiche (libri, highlights, citazioni speciali).
+>   - Intestazione giorno `## 16 Nov 2026`.
+>   - Due libri diversi sotto la stessa data, separati dalla linea orizzontale `---`.
+>   - Metadati orari puliti sotto ogni citazione (es. `· 09:41`).

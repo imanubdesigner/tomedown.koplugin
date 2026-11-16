@@ -1,13 +1,19 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
-  <!-- Bordo documento con piega (stroke da 3px, perfetto per E-ink) -->
-  <path d="M10 5 h19 l9 9 v29 h-28 z" fill="none" stroke="#000000" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />
-  
-  <!-- Linea della piega in alto a destra -->
-  <path d="M29 5 v9 h9" fill="none" stroke="#000000" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />
-
-  <!-- Lettera M (piena, senza scatola di contorno interna) -->
-  <path d="M15 35 V21 h3.2 l3.3 5 3.3-5 H28 v14 h-3 v-8.2 l-2.8 4.2 h-1.4 L18 26.8 V35 z" fill="#000000" />
-
-  <!-- Freccia Markdown rivolta verso il basso ben spaziata -->
-  <path d="M31 21 v7 h-2.5 l3.5 5 3.5-5 H33 v-7 z" fill="#000000" />
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <title>appbar.tomedown.svg</title>
+  <g id="Layer_1" data-name="Layer 1">
+    <!-- Sagoma Libro / Pagina pulita senza dorso (stroke 2.2px) -->
+    <path d="M12.5 5.5 L35.5 5.5 C37.433 5.5 39 7.067 39 9 L39 39 C39 40.933 37.433 42.5 35.5 42.5 L12.5 42.5 C10.567 42.5 9 40.933 9 39 L9 9 C9 7.067 10.567 5.5 12.5 5.5 Z" fill="none" stroke="#000000" stroke-width="2.2" stroke-linejoin="round"/>
+    
+    <!-- Segnalibro a nastro pieno ad ala di rondine in alto a destra -->
+    <polygon points="33.909,5.5 33.909,13.822 31.883,12.23 29.857,13.822 29.857,5.5" fill="#000000"/>
+    
+    <!-- Freccia Markdown perfettamente centrata a x=24 -->
+    <g>
+      <line x1="24" y1="15" x2="24" y2="26" fill="none" stroke="#000000" stroke-width="2.2" stroke-linecap="round"/>
+      <polyline points="19,21.5 24,26.5 29,21.5" fill="none" stroke="#000000" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- Highlight orizzontale perfettamente centrato a x=24 -->
+      <line x1="17.5" y1="33" x2="30.5" y2="33" fill="#000000" stroke="#000000" stroke-width="2.2" stroke-linecap="round"/>
+    </g>
+  </g>
 </svg>

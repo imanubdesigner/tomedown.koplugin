@@ -26,6 +26,7 @@ local _ = require("tomedown_i18n")
 local render = require("tomedown_render")
 local merge = require("tomedown_merge")
 local Cover = require("tomedown_cover")
+local Handwritten = require("tomedown_handwritten")
 local shared = require("tomedown_shared")
 local metadata = require("tomedown_metadata")
 
@@ -42,6 +43,7 @@ local getIndexPreserve = shared.getIndexPreserve
 local getFilenameTemplate = shared.getFilenameTemplate
 local getFolderLayout = shared.getFolderLayout
 local getCoversFolder = shared.getCoversFolder
+local getDrawingsFolder = shared.getDrawingsFolder
 local getIndexLinks = shared.getIndexLinks
 local getNoteStyle = shared.getNoteStyle
 local getFrontmatterHidden = shared.getFrontmatterHidden
@@ -51,6 +53,17 @@ local getCustomFrontmatterFields = shared.getCustomFrontmatterFields
 local getFrontmatterEnabled = shared.getFrontmatterEnabled
 local getBookCovers = shared.getBookCovers
 local getIncludeBookmarks = shared.getIncludeBookmarks
+local getIncludeHandwritten = shared.getIncludeHandwritten
+local getBookHeading = shared.getBookHeading
+local getOverviewStyle = shared.getOverviewStyle
+local getIndexTagsMode = shared.getIndexTagsMode
+local getReadingDashboard = shared.getReadingDashboard
+local getBookSynopsis = shared.getBookSynopsis
+local getBodyTags = shared.getBodyTags
+local getSpecialShowcase = shared.getSpecialShowcase
+local getCompletedBooks = shared.getCompletedBooks
+local getIndexDashboard = shared.getIndexDashboard
+local getIndexTagCloud = shared.getIndexTagCloud
 local getHighlightDetails = shared.getHighlightDetails
 local getChapterHeadings = shared.getChapterHeadings
 local getHighlightContext = shared.getHighlightContext
@@ -211,6 +224,25 @@ function M:legacyAnnotations(ds)
     return items
 end
 
+local function sortAnnotationItems(out)
+    table.sort(out, function(a, b)
+        if a.sort_pos and b.sort_pos then
+            local d = posCompare(a.sort_pos, b.sort_pos)
+            if d ~= 0 then
+                return d < 0
+            end
+        end
+        if a.sort_page ~= b.sort_page then
+            return a.sort_page < b.sort_page
+        end
+        if a.sort_time ~= b.sort_time then
+            return a.sort_time < b.sort_time
+        end
+        return tostring(a.text or "") < tostring(b.text or "")
+    end)
+    return out
+end
+
 -- keeps only the highlights (drawer), drops page bookmarks
 -- and deleted entries, then sorts them by page
 function M:cleanAnnotations(raw)
@@ -219,7 +251,9 @@ function M:cleanAnnotations(raw)
         return out
     end
     for __, item in ipairs(raw) do
-        if type(item) == "table" and not item.deleted and item.drawer then
+        if type(item) == "table" and not item.deleted and item.drawer
+                and item.drawer ~= "pencil" and item.drawer ~= "stylus"
+                and not item.handwritten then
             local text = trim(item.text)
             if text then
                 local datetime = item.datetime_updated or item.datetime
@@ -251,27 +285,53 @@ function M:cleanAnnotations(raw)
             end
         end
     end
-    table.sort(out, function(a, b)
-        if a.sort_pos and b.sort_pos then
-            local d = posCompare(a.sort_pos, b.sort_pos)
-            if d ~= 0 then
-                return d < 0
-            end
+    return sortAnnotationItems(out)
+end
+
+-- collects handwritten/stylus annotations from .sdr and DocSettings
+function M:cleanHandwritten(file, ds, raw)
+    local out = {}
+    local items = Handwritten.collect(file, ds, raw)
+    if type(items) ~= "table" or #items == 0 then
+        return out
+    end
+    for idx, item in ipairs(items) do
+        local datetime = item.datetime_updated or item.datetime
+        local pos = type(item.pos0) == "string" and item.pos0 or nil
+        if not pos and type(item.page) == "string"
+                and item.page:sub(1, 1) == "/" then
+            pos = item.page
         end
-        if a.sort_page ~= b.sort_page then
-            return a.sort_page < b.sort_page
-        end
-        if a.sort_time ~= b.sort_time then
-            return a.sort_time < b.sort_time
-        end
-        return a.text < b.text
-    end)
-    return out
+        local pageno = tonumber(item.pageno) or 0
+        local drawing_id = item.drawing_id or ("note-" .. tostring(idx))
+        out[#out + 1] = {
+            text = _("Handwritten note"),
+            note = trim(item.note),
+            chapter = trim(item.chapter),
+            page = pageLabel(item),
+            date = render.fmtDateTime(datetime),
+            sort_pos = pos and posTokens(pos) or nil,
+            sort_page = pageno,
+            sort_time = tostring(datetime or ""),
+            special = item.special or nil,
+            handwritten = true,
+            drawing_source = item.drawing_source,
+            drawing_strokes = item.drawing_strokes,
+            drawing_width = item.drawing_width,
+            drawing_height = item.drawing_height,
+            drawing_ext = item.drawing_ext or "png",
+            drawing_id = drawing_id,
+            id_seed = item.datetime or ("hw:" .. tostring(drawing_id)),
+            id_pos = pos or ("p:" .. tostring(pageno)),
+            id_text = "handwritten:" .. tostring(drawing_id),
+        }
+    end
+    return sortAnnotationItems(out)
 end
 
 -- keeps the page bookmarks (page, without pos0/pos1), drops deleted
 -- entries and auto-generated notes, then sorts them by page
-function M:cleanBookmarks(raw)
+function M:cleanBookmarks(raw, skip_pencil_notes)
     local out = {}
     if type(raw) ~= "table" then
         return out
@@ -280,17 +340,21 @@ function M:cleanBookmarks(raw)
         if type(item) == "table" and not item.deleted
             and item.page ~= nil and not (item.pos0 and item.pos1) then
             local note = trim(item.note) or trim(item.text)
-            if note and note:match("^@ %d%d%d%d%-%d%d%-%d%d %d%d:%d%d:%d%d$") then
-                note = nil
+            if skip_pencil_notes and note and Handwritten.isPencilBookmarkNote(note) then
+                -- already exported as a visual handwritten annotation
+            else
+                if note and note:match("^@ %d%d%d%d%-%d%d%-%d%d %d%d:%d%d:%d%d$") then
+                    note = nil
+                end
+                local datetime = item.datetime_updated or item.datetime
+                out[#out + 1] = {
+                    text = note,
+                    page = pageLabel(item),
+                    date = render.fmtDateTime(datetime),
+                    sort_page = tonumber(item.pageno) or 0,
+                    sort_time = tostring(datetime or ""),
+                }
             end
-            local datetime = item.datetime_updated or item.datetime
-            out[#out + 1] = {
-                text = note,
-                page = pageLabel(item),
-                date = render.fmtDateTime(datetime),
-                sort_page = tonumber(item.pageno) or 0,
-                sort_time = tostring(datetime or ""),
-            }
         end
     end
     table.sort(out, function(a, b)
@@ -367,7 +431,7 @@ local function hashBook(title, author, annotations, meta, bookmarks)
         parts[#parts + 1] = "meta:" .. meta
     end
     for __, a in ipairs(annotations) do
-        parts[#parts + 1] = table.concat({
+        local entry = table.concat({
             tostring(a.sort_page or 0),
             tostring(a.sort_time or ""),
             tostring(a.page or ""),
@@ -378,6 +442,10 @@ local function hashBook(title, author, annotations, meta, bookmarks)
             -- must catch up with it
             tostring(a.special or ""),
         }, "\31")
+        if a.handwritten then
+            entry = entry .. "\31hw:" .. tostring(a.drawing_id or "")
+        end
+        parts[#parts + 1] = entry
     end
     for __, b in ipairs(bookmarks or {}) do
         parts[#parts + 1] = "bm:" .. table.concat({
@@ -478,7 +546,9 @@ function M:bookSubdir(props, status)
     raw = tostring(raw):gsub("\r?\n", "; ")
     local safe = util.getSafeFilename(raw, nil, nil, -1)
     local covers_folder = getCoversFolder()
-    if safe == "" or safe:lower() == "covers" or safe:lower() == covers_folder:lower() then
+    local drawings_folder = getDrawingsFolder()
+    if safe == "" or safe:lower() == "covers" or safe:lower() == covers_folder:lower()
+            or safe:lower() == "drawings" or safe:lower() == drawings_folder:lower() then
         return nil
     end
     return safe
@@ -574,8 +644,25 @@ function M:buildBook(file, live_annotations)
                 end
             end
             local annotations = self:cleanAnnotations(raw)
+            local include_hw = getIncludeHandwritten(file)
+            local hw = include_hw and self:cleanHandwritten(file, ds, raw) or {}
+            if #hw > 0 then
+                for __, h in ipairs(hw) do
+                    if not h.chapter and #annotations > 0 then
+                        local best_chap
+                        for ___, a in ipairs(annotations) do
+                            if a.chapter and (tonumber(a.sort_page) or 0) <= (tonumber(h.sort_page) or 0) then
+                                best_chap = a.chapter
+                            end
+                        end
+                        h.chapter = best_chap
+                    end
+                    annotations[#annotations + 1] = h
+                end
+                sortAnnotationItems(annotations)
+            end
             local bookmarks = getIncludeBookmarks(file)
-                and self:cleanBookmarks(raw) or {}
+                and self:cleanBookmarks(raw, #hw > 0) or {}
             if #annotations > 0 or #bookmarks > 0 then
                 -- the open book's props are the ones KOReader read from
                 -- the file; the .sdr copy is the last flush and may not
@@ -619,6 +706,10 @@ function M:buildBook(file, live_annotations)
                 local language = props.language
                 if type(language) ~= "string" or language == "" then
                     language = nil
+                end
+                local description = props.description
+                if type(description) ~= "string" or description == "" then
+                    description = nil
                 end
                 local keywords = parseKeywords(props.keywords)
                 -- tags chosen from the book's own menu; nil means the
@@ -694,6 +785,7 @@ function M:buildBook(file, live_annotations)
                     series = series,
                     series_index = series_index,
                     language = language,
+                    description = description,
                     pages = pages,
                     status = status,
                     progress = progress,
@@ -830,12 +922,17 @@ end
 
 function M:buildDigestBooks()
     local list = {}
+    local dir = self:getLocalDir()
+    local drawings_folder = getDrawingsFolder()
     for __, file in ipairs(self:listBookFiles()) do
         if getBookExclusion(file) == nil then
             local open = self:openReader(file)
             local live = open and open.annotation and open.annotation.annotations
             local book = self:buildBook(file, live)
             if book and book.annotations and #book.annotations > 0 then
+                if getIncludeHandwritten(file) then
+                    Handwritten.ensureDrawings(book, dir, drawings_folder)
+                end
                 list[#list + 1] = {
                     link = book.base,
                     title = book.title,
@@ -864,6 +961,7 @@ function M:exportDigest(touchmenu)
         callout = getSetting("callout", false),
         special_marker = getSetting("special_marker", "callout"),
         note_style = getNoteStyle(),
+        overview_style = getOverviewStyle(),
     })
     local ok, err = util.writeToFile(digest_md, digest_path, true, false, true)
     if not ok then
@@ -925,6 +1023,10 @@ function M:runExport(files, opts)
     local current_covers = getCoversFolder()
     if current_covers ~= "covers" and lfs.attributes(dir .. "/covers", "mode") == "directory" then
         Cover.migrateFolder(dir, "covers", current_covers)
+    end
+    local current_drawings = getDrawingsFolder()
+    if current_drawings ~= "drawings" and lfs.attributes(dir .. "/drawings", "mode") == "directory" then
+        Handwritten.migrateFolder(dir, "drawings", current_drawings)
     end
     local with_index = getSetting("with_index", true)
 
@@ -1072,6 +1174,8 @@ function M:runExport(files, opts)
                     if book_cover and book.base:find("/", 1, true) then
                         book_cover = "../" .. book_cover
                     end
+                    local hw_written = (write_md and getIncludeHandwritten(file))
+                        and Handwritten.ensureDrawings(book, dir, current_drawings) or {}
                     local render_opts = {
                         no_chapter_label = _("No chapter"),
                         cover = book_cover,
@@ -1088,6 +1192,13 @@ function M:runExport(files, opts)
                         highlight_details = getHighlightDetails(file),
                         chapter_headings = getChapterHeadings(file),
                         highlight_context = getHighlightContext(file),
+                        book_heading = getBookHeading(file),
+                        overview_style = getOverviewStyle(file),
+                        reading_dashboard = getReadingDashboard(file),
+                        book_synopsis = getBookSynopsis(file),
+                        body_tags = getBodyTags(file),
+                        special_showcase = getSpecialShowcase(file),
+                        index_links = getIndexLinks(),
                     }
                     local md = render.buildBookMd(book, render_opts)
                     -- fold the file on disk into the render: the reader's
@@ -1267,6 +1378,9 @@ function M:runExport(files, opts)
                         if cover_rel and write_md then
                             written[#written + 1] = dir .. "/" .. cover_rel
                         end
+                        for __, hw_path in ipairs(hw_written) do
+                            written[#written + 1] = hw_path
+                        end
                         export_records[file] = {
                             hash = book.hash,
                             base = book.base,
@@ -1321,8 +1435,12 @@ function M:runExport(files, opts)
                 index_order = getSetting("index_order", "author"),
                 index_layout = getSetting("index_layout", "tags_below"),
                 index_links = getIndexLinks(),
+                index_tags_mode = getIndexTagsMode(),
                 hidden_books = hidden,
                 reading_now = getSetting("reading_now", true),
+                completed_books = getCompletedBooks(),
+                index_dashboard = getIndexDashboard(),
+                index_tag_cloud = getIndexTagCloud(),
             })
             -- the index is a region too: the reader may have annotated it
             local content = index_md
@@ -1433,6 +1551,7 @@ function M:runExport(files, opts)
                 callout = getSetting("callout", false),
                 special_marker = getSetting("special_marker", "callout"),
                 note_style = getNoteStyle(),
+                overview_style = getOverviewStyle(),
             })
             local digest_ok, digest_err =
                 util.writeToFile(digest_md, digest_path, true, false, true)
@@ -1558,6 +1677,12 @@ function M:runExport(files, opts)
                 Cover.deleteUploaded(ok_paths, dir, getCoversFolder())
                 if getCoversFolder() ~= "covers" then
                     Cover.deleteUploaded(ok_paths, dir, "covers")
+                end
+            end
+            if getSetting("include_handwritten", true) ~= false then
+                Handwritten.deleteUploaded(ok_paths, dir, getDrawingsFolder())
+                if getDrawingsFolder() ~= "drawings" then
+                    Handwritten.deleteUploaded(ok_paths, dir, "drawings")
                 end
             end
             reportUpload(ok_count, fail_count)

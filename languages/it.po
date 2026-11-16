@@ -526,14 +526,59 @@ msgstr "Scrivi i tuoi pensieri, le tue emozioni, le tue domande."
 msgid "Backup copies"
 msgstr "Copie di backup"
 
-msgid "Safety copy"
-msgstr "Copia di sicurezza"
+msgid "Safety copy · %1"
+msgstr "Copia di sicurezza · %1"
 
-msgid "Saved notes"
-msgstr "Note salvate"
+msgid "Saved notes · %1"
+msgstr "Note salvate · %1"
 
-msgid "Older copy"
-msgstr "Copia precedente"
+msgid "Older copy · %1"
+msgstr "Copia precedente · %1"
+
+msgid "Latest snapshot · %1"
+msgstr "Istantanea recente · %1"
+
+msgid "Snapshot 2 · %1"
+msgstr "Istantanea 2 · %1"
+
+msgid "Snapshot 3 · %1"
+msgstr "Istantanea 3 · %1"
+
+msgid "Backup copies (%1)"
+msgstr "Copie di backup (%1)"
+
+msgid "Delete all backup copies…"
+msgstr "Elimina tutte le copie di backup…"
+
+msgid "Delete all %1 backup copies (.bak)?\n\nIt cannot be undone."
+msgstr "Eliminare tutte le %1 copie di backup (.bak)?\n\nNon si può annullare."
+
+msgid "%1 backup copies deleted."
+msgstr "%1 copie di backup eliminate."
+
+msgid "Export settings to file"
+msgstr "Esporta impostazioni su file"
+
+msgid "Settings exported to %1"
+msgstr "Impostazioni esportate in %1"
+
+msgid "The settings backup could not be written."
+msgstr "Impossibile scrivere il backup delle impostazioni."
+
+msgid "Restore settings from backup…"
+msgstr "Ripristina impostazioni da backup…"
+
+msgid "Restore all Tomedown settings from %1?\n\nCurrent settings will be replaced."
+msgstr "Ripristinare tutte le impostazioni di Tomedown da %1?\n\nLe impostazioni attuali verranno sostituite."
+
+msgid "Restore"
+msgstr "Ripristina"
+
+msgid "Settings restored from backup."
+msgstr "Impostazioni ripristinate dal backup."
+
+msgid "The settings backup could not be read."
+msgstr "Impossibile leggere il backup delle impostazioni."
 
 msgid "Text of yours that a rewrite was about to replace and that does not come back by itself."
 msgstr "Testo tuo che una riscrittura stava per sostituire e che non torna da solo."
@@ -987,6 +1032,129 @@ msgstr "chiave: valore (uno per riga); lascia vuoto per nessuno"
 
 msgid "key: value (one per line) for this book"
 msgstr "chiave: valore (uno per riga) per questo libro"
+
+msgid "Handwritten note"
+msgstr "Nota a mano libera"
+
+msgid "Drawings folder name"
+msgstr "Nome cartella disegni"
+
+msgid "e.g. drawings, attachments, assets"
+msgstr "es. drawings, attachments, assets"
+
+msgid "Include handwritten notes"
+msgstr "Includi note a mano libera"
+
+msgid "Drawings folder: %1"
+msgstr "Cartella disegni: %1"
+
+msgid "Handwritten notes: %1"
+msgstr "Note a mano libera: %1"
+
+msgid "by %1"
+msgstr "di %1"
+
+msgid "Overview"
+msgstr "Panoramica"
+
+msgid "Special"
+msgstr "Speciali"
+
+msgid "Books"
+msgstr "Libri"
+
+msgid "Include book title in body"
+msgstr "Includi titolo del libro nel testo"
+
+msgid "Book title in body: %1"
+msgstr "Titolo nel testo: %1"
+
+msgid "Overview style: %1"
+msgstr "Stile riepilogo: %1"
+
+msgid "Inline / Heading"
+msgstr "In linea / Titolo"
+
+msgid "Classic blockquote"
+msgstr "Citazione classica"
+
+msgid "Callout ([!summary])"
+msgstr "Callout ([!summary])"
+
+msgid "Table"
+msgstr "Tabella"
+
+msgid "Reading dashboard"
+msgstr "Scheda di lettura"
+
+msgid "pages"
+msgstr "pagine"
+
+msgid "Rating"
+msgstr "Valutazione"
+
+msgid "Reading dates"
+msgstr "Date di lettura"
+
+msgid "Book synopsis"
+msgstr "Sinossi del libro"
+
+msgid "Special highlights"
+msgstr "Citazioni speciali"
+
+msgid "Library dashboard"
+msgstr "Panoramica libreria"
+
+msgid "Completed books"
+msgstr "Libri completati"
+
+msgid "Show all"
+msgstr "Mostra tutti"
+
+msgid "First 3 (+N)"
+msgstr "Primi 3 (+N)"
+
+msgid "Collapsible (<details>)"
+msgstr "Espandibile (<details>)"
+
+msgid "Index tags display: %1"
+msgstr "Tag nell'indice: %1"
+
+msgid "Show Completed books in the index"
+msgstr "Mostra Libri completati nell'indice"
+
+msgid "Show Library dashboard in the index"
+msgstr "Mostra Panoramica libreria nell'indice"
+
+msgid "Show tag cloud in the index"
+msgstr "Mostra mappa dei tag nell'indice"
+
+msgid "Include reading dashboard"
+msgstr "Includi scheda di lettura"
+
+msgid "Include book synopsis"
+msgstr "Includi sinossi del libro"
+
+msgid "Include clickable tags in body"
+msgstr "Includi tag cliccabili nel testo"
+
+msgid "Include Special highlights showcase"
+msgstr "Includi vetrina citazioni speciali"
+
+msgid "Reading dashboard: %1"
+msgstr "Scheda di lettura: %1"
+
+msgid "Book synopsis: %1"
+msgstr "Sinossi del libro: %1"
+
+msgid "Body tags: %1"
+msgstr "Tag nel testo: %1"
+
+msgid "Special highlights showcase: %1"
+msgstr "Vetrina citazioni speciali: %1"
+
+
+
 
 
 

@@ -246,16 +246,88 @@ function render.fmtDate(dt)
     return dt
 end
 
--- "2026-09-26 10:11:12" -> "26/09/2026 10:11"
+local SHORT_MONTHS = {
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+}
+
+-- "2026-11-16" or "16/11/2026" -> "16 Nov 2026"
+function render.fmtDateLiterary(dt)
+    if type(dt) ~= "string" then
+        return ""
+    end
+    local y, m, d = dt:match("^(%d%d%d%d)-(%d%d)-(%d%d)")
+    if not y then
+        d, m, y = dt:match("^(%d%d)/(%d%d)/(%d%d%d%d)")
+    end
+    if y and m and d then
+        local m_idx = tonumber(m)
+        local d_num = tonumber(d)
+        local m_name = m_idx and SHORT_MONTHS[m_idx]
+        if m_name and d_num then
+            return tostring(d_num) .. " " .. m_name .. " " .. y
+        end
+    end
+    return dt
+end
+
+-- "2026-11-16 09:29:12" -> "16 Nov 2026 | 09:29"
 function render.fmtDateTime(dt)
     if type(dt) ~= "string" then
         return ""
     end
     local y, m, d, hhmm = dt:match("^(%d%d%d%d)-(%d%d)-(%d%d)[ T](%d%d:%d%d)")
-    if y then
-        return d .. "/" .. m .. "/" .. y .. " " .. hhmm
+    if not y then
+        d, m, y, hhmm = dt:match("^(%d%d)/(%d%d)/(%d%d%d%d)[ T](%d%d:%d%d)")
     end
-    return render.fmtDate(dt)
+    if y and m and d and hhmm then
+        return render.fmtDateLiterary(y .. "-" .. m .. "-" .. d) .. " | " .. hhmm
+    end
+    return render.fmtDateLiterary(dt)
+end
+
+-- "2026-11-16 09:41:20" or "16/11/2026 09:41" or "16 Nov 2026 | 09:41" -> "09:41"
+function render.fmtTimeOnly(dt)
+    if type(dt) ~= "string" then
+        return ""
+    end
+    local hhmm = dt:match("[ T|]%s*(%d%d:%d%d)") or dt:match("^(%d%d:%d%d)$")
+    return hhmm or ""
+end
+
+--- Strip HTML tags and decode common HTML entities from an EPUB description.
+function render.cleanSynopsis(raw)
+    if type(raw) ~= "string" or raw == "" then
+        return nil
+    end
+    local s = raw:gsub("\r\n", "\n"):gsub("\r", "\n")
+    s = s:gsub("<[bB][rR]%s*/?>", "\n")
+    s = s:gsub("</[pP]>", "\n\n")
+    s = s:gsub("</[dD][iI][vV]>", "\n")
+    s = s:gsub("<[^>]+>", "")
+    s = s:gsub("&nbsp;", " ")
+        :gsub("&amp;", "&")
+        :gsub("&quot;", '"')
+        :gsub("&#39;", "'")
+        :gsub("&apos;", "'")
+        :gsub("&lt;", "<")
+        :gsub("&gt;", ">")
+    local lines = {}
+    for line in (s .. "\n"):gmatch("(.-)\n") do
+        local trimmed = line:gsub("^%s+", ""):gsub("%s+$", "")
+        if trimmed ~= "" then
+            lines[#lines + 1] = trimmed
+        elseif #lines > 0 and lines[#lines] ~= "" then
+            lines[#lines + 1] = ""
+        end
+    end
+    while #lines > 0 and lines[#lines] == "" do
+        table.remove(lines)
+    end
+    if #lines == 0 then
+        return nil
+    end
+    return table.concat(lines, "\n")
 end
 
 -- safe text inside an Obsidian wikilink
@@ -727,6 +799,115 @@ function render.buildBookMd(book, opts)
         add("---")
     end
 
+    local has_book_heading = opts.book_heading == true and fm_enabled
+    if has_book_heading then
+        add("")
+        add("# " .. tostring(book.title or ""))
+        local sub_parts = {}
+        if book.author and tostring(book.author) ~= "" and tostring(book.author) ~= "N/A" then
+            sub_parts[#sub_parts + 1] = (_("by %1"):gsub("%%1", tostring(book.author)))
+        end
+        if book.series and tostring(book.series) ~= "" then
+            local s = "*" .. tostring(book.series)
+            if book.series_index ~= nil and tostring(book.series_index) ~= "" then
+                s = s .. " (#" .. tostring(book.series_index) .. ")"
+            end
+            s = s .. "*"
+            sub_parts[#sub_parts + 1] = s
+        end
+        if #sub_parts > 0 then
+            add("### " .. table.concat(sub_parts, " · "))
+        end
+        add("")
+        add("---")
+    end
+
+    local has_card_extras = false
+    if opts.reading_dashboard == true then
+        local status_labels = {
+            reading = "🟡 **" .. _("Reading") .. "**",
+            complete = "🟢 **" .. _("Complete") .. "**",
+            abandoned = "⚪ **" .. _("Abandoned") .. "**",
+        }
+        add("")
+        add("> [!book] " .. _("Reading dashboard"))
+        local st_parts = {}
+        if book.status and status_labels[book.status] then
+            st_parts[#st_parts + 1] = status_labels[book.status]
+        end
+        local detail_parts = {}
+        if book.progress and tostring(book.progress) ~= "" then
+            detail_parts[#detail_parts + 1] = tostring(book.progress)
+        end
+        if book.pages and tonumber(book.pages) and tonumber(book.pages) > 0 then
+            detail_parts[#detail_parts + 1] = tostring(book.pages) .. " " .. _("pages")
+        end
+        if #detail_parts > 0 then
+            st_parts[#st_parts + 1] = "(" .. table.concat(detail_parts, " · ") .. ")"
+        end
+        if #st_parts > 0 then
+            add("> - **" .. _("Status") .. ":** " .. table.concat(st_parts, " "))
+        end
+        local r_stars = render.stars(book.rating)
+        if r_stars then
+            add("> - **" .. _("Rating") .. ":** " .. r_stars .. " (" .. tostring(book.rating) .. "/5)")
+        end
+        if book.date_started or book.date_finished then
+            local d_parts = {}
+            if book.date_started then
+                d_parts[#d_parts + 1] = render.fmtDateLiterary(tostring(book.date_started))
+            end
+            if book.date_finished then
+                d_parts[#d_parts + 1] = render.fmtDateLiterary(tostring(book.date_finished))
+            end
+            add("> - **" .. _("Reading dates") .. ":** " .. table.concat(d_parts, " → "))
+        end
+        local idx_link = render.bookLink("00 - Index", "← " .. _("Book index"), opts.index_links, false)
+        add("> - **" .. _("Index") .. ":** " .. idx_link)
+        has_card_extras = true
+    end
+
+    if opts.book_synopsis == true then
+        local syn = render.cleanSynopsis(book.description)
+        if syn then
+            add("")
+            add("> [!abstract]- " .. _("Book synopsis"))
+            for line in (syn .. "\n"):gmatch("(.-)\n") do
+                add(line == "" and ">" or ("> " .. line))
+            end
+            has_card_extras = true
+        end
+    end
+
+    if opts.body_tags == true then
+        local btags, bseen = {}, {}
+        local function addBodyTag(raw_t)
+            for __, st in ipairs(render.parseTagList(tostring(raw_t or ""))) do
+                local k = st:lower()
+                if not bseen[k] then
+                    bseen[k] = true
+                    btags[#btags + 1] = "#" .. st
+                end
+            end
+        end
+        for __, kw in ipairs(book.keywords or {}) do
+            addBodyTag(kw)
+        end
+        for __, tg in ipairs(book.tags or {}) do
+            addBodyTag(tg)
+        end
+        if #btags > 0 then
+            add("")
+            add(table.concat(btags, " "))
+            has_card_extras = true
+        end
+    end
+
+    if has_card_extras then
+        add("")
+        add("---")
+    end
+
     local open = false
     if count > 0 then
         -- the recap heads the block: how many highlights, and the
@@ -738,8 +919,58 @@ function render.buildBookMd(book, opts)
             headline = headline .. " · ★ "
                 .. (_("%1 special"):gsub("%%1", tostring(special_count)))
         end
+        local ostyle = opts.overview_style or "inline"
         add("")
-        add("# **" .. headline .. "**")
+        if ostyle == "blockquote" then
+            add("> **" .. headline .. "**")
+        elseif ostyle == "callout" then
+            add("> [!summary] " .. _("Overview"))
+            add("> **" .. headline .. "**")
+        elseif ostyle == "table" then
+            if special_count > 0 then
+                add("| " .. _("Highlights") .. " | " .. _("Special") .. " |")
+                add("|:---:|:---:|")
+                add("| " .. tostring(count) .. " | ★ " .. tostring(special_count) .. " |")
+            else
+                add("| " .. _("Highlights") .. " |")
+                add("|:---:|")
+                add("| " .. tostring(count) .. " |")
+            end
+        elseif has_book_heading then
+            add("### **" .. headline .. "**")
+        else
+            add("# **" .. headline .. "**")
+        end
+        add("")
+        add("---")
+    end
+
+    if opts.special_showcase == true and special_count > 0 then
+        add("")
+        add("> [!highlight]- ★ " .. _("Special highlights") .. " (" .. tostring(special_count) .. ")")
+        local first_sp = true
+        for __, a in ipairs(annotations) do
+            if a.special then
+                if not first_sp then
+                    add(">")
+                end
+                first_sp = false
+                local stext = tostring(a.text or ""):gsub("\r\n", "\n"):gsub("\r", "\n")
+                for line in (stext .. "\n"):gmatch("(.-)\n") do
+                    add("> “" .. line .. "”")
+                end
+                local ref = {}
+                if a.chapter and tostring(a.chapter) ~= "" then
+                    ref[#ref + 1] = tostring(a.chapter)
+                end
+                if a.page and tostring(a.page) ~= "" then
+                    ref[#ref + 1] = "p. " .. tostring(a.page)
+                end
+                if #ref > 0 then
+                    add("> — *" .. table.concat(ref, " · ") .. "*")
+                end
+            end
+        end
         add("")
         add("---")
     end
@@ -809,29 +1040,55 @@ function render.buildBookMd(book, opts)
         local is_special = a.special and not opts.callout
         local as_callout = opts.callout or (is_special and marker == "callout")
         local as_alert = is_special and marker == "alert"
-        if as_callout then
-            add("> [!highlight]")
-        elseif as_alert then
-            add("> [!IMPORTANT]")
-        end
-        local text = tostring(a.text or ""):gsub("\r\n", "\n"):gsub("\r", "\n")
-        local quote_lines = {}
-        for line in (text .. "\n"):gmatch("(.-)\n") do
-            quote_lines[#quote_lines + 1] = line
-        end
-        if is_special then
-            if marker == "bold" then
-                wrapStyled(quote_lines, "**", "**", "**", nil)
-            elseif marker == "highlight" then
-                wrapStyled(quote_lines, "==", "==", "==", nil)
-            elseif marker == "highlight_bold" then
-                wrapStyled(quote_lines, "==**", "**==", "**", nil)
-            elseif marker == "star_bold" then
-                wrapStyled(quote_lines, "**", "**", "**", "⭐ ")
+        if a.handwritten then
+            if a.drawing and tostring(a.drawing) ~= "" then
+                local alt = _("Handwritten note")
+                if a.page and tostring(a.page) ~= "" then
+                    alt = alt .. " · p. " .. tostring(a.page)
+                end
+                local img_md = "![" .. alt .. "](" .. render.encodeLinkTarget(a.drawing) .. ")"
+                if as_callout then
+                    add("> [!highlight]")
+                    add("> " .. img_md)
+                elseif as_alert then
+                    add("> [!IMPORTANT]")
+                    add("> " .. img_md)
+                else
+                    add(img_md)
+                end
+            else
+                if as_callout then
+                    add("> [!highlight]")
+                elseif as_alert then
+                    add("> [!IMPORTANT]")
+                end
+                add("> ✍️ " .. tostring(a.text or _("Handwritten note")))
             end
-        end
-        for __, line in ipairs(quote_lines) do
-            add("> " .. line)
+        else
+            if as_callout then
+                add("> [!highlight]")
+            elseif as_alert then
+                add("> [!IMPORTANT]")
+            end
+            local text = tostring(a.text or ""):gsub("\r\n", "\n"):gsub("\r", "\n")
+            local quote_lines = {}
+            for line in (text .. "\n"):gmatch("(.-)\n") do
+                quote_lines[#quote_lines + 1] = line
+            end
+            if is_special then
+                if marker == "bold" then
+                    wrapStyled(quote_lines, "**", "**", "**", nil)
+                elseif marker == "highlight" then
+                    wrapStyled(quote_lines, "==", "==", "==", nil)
+                elseif marker == "highlight_bold" then
+                    wrapStyled(quote_lines, "==**", "**==", "**", nil)
+                elseif marker == "star_bold" then
+                    wrapStyled(quote_lines, "**", "**", "**", "⭐ ")
+                end
+            end
+            for __, line in ipairs(quote_lines) do
+                add("> " .. line)
+            end
         end
         -- Obsidian block ID: the end of the last line of the quote (or
         -- of the callout), after any closing emphasis. Checked in
@@ -847,6 +1104,9 @@ function render.buildBookMd(book, opts)
         end
         if show_date and a.date and tostring(a.date) ~= "" then
             meta[#meta + 1] = tostring(a.date)
+        end
+        if a.handwritten then
+            meta[#meta + 1] = "✍️ " .. _("Handwritten note")
         end
         local ctx_line = show_context and formatContext(a) or nil
         local note_lines
@@ -1033,9 +1293,15 @@ function render.buildIndexMd(books, opts)
     end
 
     local total_highlights, total_special = 0, 0
+    local completed_count, reading_count = 0, 0
     for __, b in ipairs(books) do
         total_highlights = total_highlights + (tonumber(b.count) or 0)
         total_special = total_special + (tonumber(b.special) or 0)
+        if b.status == "complete" then
+            completed_count = completed_count + 1
+        elseif b.status == "reading" then
+            reading_count = reading_count + 1
+        end
     end
     local books_txt = #books == 1 and _("%1 book") or _("%1 books")
     local highlights_txt = total_highlights == 1 and _("%1 highlight")
@@ -1047,8 +1313,66 @@ function render.buildIndexMd(books, opts)
         stats = stats .. " · **★ "
             .. (_("%1 special"):gsub("%%1", tostring(total_special))) .. "**"
     end
-    add(stats)
-    add("")
+    if opts.index_dashboard == true then
+        add("> [!summary] " .. _("Library dashboard"))
+        local b_line = "**" .. (books_txt:gsub("%%1", tostring(#books))) .. "**"
+        if completed_count > 0 then
+            b_line = b_line .. " · **🟢 " .. tostring(completed_count) .. " " .. _("Complete") .. "**"
+        end
+        if reading_count > 0 then
+            b_line = b_line .. " · **🟡 " .. tostring(reading_count) .. " " .. _("Reading") .. "**"
+        end
+        add("> " .. b_line)
+        local h_line = "**" .. (highlights_txt:gsub("%%1", tostring(total_highlights))) .. "**"
+        if total_special > 0 then
+            h_line = h_line .. " · **★ "
+                .. (_("%1 special"):gsub("%%1", tostring(total_special))) .. "**"
+        end
+        add("> " .. h_line)
+        local digest_link = render.bookLink("00 - Reading Digest", _("Reading digest") .. " →", opts.index_links, false)
+        add("> " .. digest_link)
+        add("")
+    else
+        add(stats)
+        add("")
+    end
+
+    if opts.index_tag_cloud == true then
+        local tag_counts, tag_names = {}, {}
+        for __, b in ipairs(books) do
+            local seen_in_book = {}
+            for ___, raw_t in ipairs(b.tags or {}) do
+                for ____, st in ipairs(render.parseTagList(tostring(raw_t or ""))) do
+                    local k = st:lower()
+                    if not seen_in_book[k] then
+                        seen_in_book[k] = true
+                        tag_counts[k] = (tag_counts[k] or 0) + 1
+                        if not tag_names[k] then
+                            tag_names[k] = st
+                        end
+                    end
+                end
+            end
+        end
+        local sorted_tags = {}
+        for k, cnt in pairs(tag_counts) do
+            sorted_tags[#sorted_tags + 1] = { key = k, name = tag_names[k], count = cnt }
+        end
+        table.sort(sorted_tags, function(a, b)
+            if a.count ~= b.count then
+                return a.count > b.count
+            end
+            return a.key < b.key
+        end)
+        if #sorted_tags > 0 then
+            local cloud_parts = {}
+            for __, item in ipairs(sorted_tags) do
+                cloud_parts[#cloud_parts + 1] = "#" .. item.name .. " (" .. tostring(item.count) .. ")"
+            end
+            add("🏷️ " .. table.concat(cloud_parts, " · "))
+            add("")
+        end
+    end
 
     local with_covers = opts.show_covers
     local status_labels = {
@@ -1158,10 +1482,12 @@ function render.buildIndexMd(books, opts)
     -- Each tag pill is wrapped in a span with white-space:nowrap so
     -- hyphens never break across lines, while the outer container gives
     -- vertical line-height breathing room for natural multi-line wrapping.
-    local function tagsPillsHtml(tags)
+    local tags_mode = opts.index_tags_mode or "all"
+    local function tagsPillsHtml(tags, mode_override)
         if type(tags) ~= "table" then
             return ""
         end
+        local mode = mode_override or tags_mode
         local seen, pills = {}, {}
         for __, raw_tag in ipairs(tags) do
             local str = tostring(raw_tag or "")
@@ -1183,6 +1509,24 @@ function render.buildIndexMd(books, opts)
         end
         if #pills == 0 then
             return ""
+        end
+        if mode == "first_3" and #pills > 3 then
+            local head = { pills[1], pills[2], pills[3] }
+            local extra = #pills - 3
+            return '<span style="line-height:1.9;display:inline-block">'
+                .. table.concat(head, " ")
+                .. ' <span style="opacity:0.65;white-space:nowrap">+' .. tostring(extra) .. '</span></span>'
+        elseif mode == "collapsible" and #pills > 3 then
+            local head = { pills[1], pills[2], pills[3] }
+            local rest = {}
+            for i = 4, #pills do
+                rest[#rest + 1] = pills[i]
+            end
+            local extra = #pills - 3
+            return '<span style="line-height:1.9;display:inline-block">'
+                .. table.concat(head, " ")
+                .. ' <details style="display:inline"><summary style="display:inline;cursor:pointer;opacity:0.75">+'
+                .. tostring(extra) .. '</summary> ' .. table.concat(rest, " ") .. '</details></span>'
         end
         return '<span style="line-height:1.9;display:inline-block">'
             .. table.concat(pills, " ") .. '</span>'
@@ -1362,6 +1706,29 @@ function render.buildIndexMd(books, opts)
         end
     end
 
+    if opts.completed_books == true then
+        local completed = {}
+        for __, b in ipairs(books) do
+            if b.status == "complete" then
+                completed[#completed + 1] = b
+            end
+        end
+        table.sort(completed, function(a, b)
+            local aa = tonumber(a.last_read_sort) or 0
+            local bb = tonumber(b.last_read_sort) or 0
+            if aa ~= bb then
+                return aa > bb
+            end
+            return byAuthor(a, b)
+        end)
+        if #completed > 0 then
+            add("### " .. _("Completed books"))
+            add("")
+            addTable(completed, any_filled(completed, "series"))
+            add("")
+        end
+    end
+
     -- A shortcut for the books being read: same table, repeated on
     -- purpose, sorted by the last time they were opened. It sits above
     -- the full index and disappears when nothing is being read.
@@ -1462,14 +1829,18 @@ function render.buildDigestMd(books, opts)
             local day_iso = raw_dt:match("^(%d%d%d%d%-%d%d%-%d%d)")
             local day_label
             if day_iso then
-                day_label = render.fmtDate(day_iso)
+                day_label = render.fmtDateLiterary(day_iso)
             elseif type(a.date) == "string" and a.date ~= "" then
-                day_label = a.date:match("^(%d%d/%d%d/%d%d%d%d)") or a.date
-                local d, m, y = day_label:match("^(%d%d)/(%d%d)/(%d%d%d%d)$")
+                local raw_day = a.date:match("^(%d%d/%d%d/%d%d%d%d)") or a.date
+                local d, m, y = raw_day:match("^(%d%d)/(%d%d)/(%d%d%d%d)$")
                 if d and m and y then
                     day_iso = y .. "-" .. m .. "-" .. d
+                    day_label = render.fmtDateLiterary(day_iso)
+                else
+                    day_label = render.fmtDateLiterary(raw_day)
                 end
             end
+            local time_only = render.fmtTimeOnly(raw_dt ~= "" and raw_dt or a.date)
             items[#items + 1] = {
                 book_link = b.link or b.base or b.title or "",
                 book_title = b.title or b.link or "",
@@ -1479,7 +1850,10 @@ function render.buildDigestMd(books, opts)
                 chapter = a.chapter,
                 page = a.page,
                 date = a.date,
+                time = time_only,
                 special = a.special,
+                handwritten = a.handwritten,
+                drawing = a.drawing_vault_rel or a.drawing,
                 sort_time = raw_dt,
                 sort_page = tonumber(a.sort_page) or 0,
                 day_key = day_iso or "0000-00-00",
@@ -1539,7 +1913,25 @@ function render.buildDigestMd(books, opts)
         stats = stats .. " · **★ "
             .. (_("%1 special"):gsub("%%1", tostring(total_special))) .. "**"
     end
-    add(stats)
+    local ostyle = opts.overview_style or "inline"
+    if ostyle == "blockquote" then
+        add("> " .. stats)
+    elseif ostyle == "callout" then
+        add("> [!summary] " .. _("Overview"))
+        add("> " .. stats)
+    elseif ostyle == "table" then
+        if total_special > 0 then
+            add("| " .. _("Books") .. " | " .. _("Highlights") .. " | " .. _("Special") .. " |")
+            add("|:---:|:---:|:---:|")
+            add("| " .. tostring(total_books) .. " | " .. tostring(#items) .. " | ★ " .. tostring(total_special) .. " |")
+        else
+            add("| " .. _("Books") .. " | " .. _("Highlights") .. " |")
+            add("|:---:|:---:|")
+            add("| " .. tostring(total_books) .. " | " .. tostring(#items) .. " |")
+        end
+    else
+        add(stats)
+    end
 
     local valid_markers = {
         callout = true,
@@ -1573,6 +1965,10 @@ function render.buildDigestMd(books, opts)
 
         local book_id = tostring(item.book_link) .. "\31" .. tostring(item.book_title)
         if book_id ~= current_book then
+            if current_book ~= nil then
+                add("")
+                add("---")
+            end
             add("")
             local link = render.bookLink(item.book_link, item.book_title, opts.index_links, false)
             if item.book_author and tostring(item.book_author) ~= "" then
@@ -1588,29 +1984,55 @@ function render.buildDigestMd(books, opts)
         local is_special = item.special and not opts.callout
         local as_callout = opts.callout or (is_special and marker == "callout")
         local as_alert = is_special and marker == "alert"
-        if as_callout then
-            add("> [!highlight]")
-        elseif as_alert then
-            add("> [!IMPORTANT]")
-        end
-        local text = tostring(item.text or ""):gsub("\r\n", "\n"):gsub("\r", "\n")
-        local quote_lines = {}
-        for line in (text .. "\n"):gmatch("(.-)\n") do
-            quote_lines[#quote_lines + 1] = line
-        end
-        if is_special then
-            if marker == "bold" then
-                wrapStyled(quote_lines, "**", "**", "**", nil)
-            elseif marker == "highlight" then
-                wrapStyled(quote_lines, "==", "==", "==", nil)
-            elseif marker == "highlight_bold" then
-                wrapStyled(quote_lines, "==**", "**==", "**", nil)
-            elseif marker == "star_bold" then
-                wrapStyled(quote_lines, "**", "**", "**", "⭐ ")
+        if item.handwritten then
+            if item.drawing and tostring(item.drawing) ~= "" then
+                local alt = _("Handwritten note")
+                if item.page and tostring(item.page) ~= "" then
+                    alt = alt .. " · p. " .. tostring(item.page)
+                end
+                local img_md = "![" .. alt .. "](" .. render.encodeLinkTarget(item.drawing) .. ")"
+                if as_callout then
+                    add("> [!highlight]")
+                    add("> " .. img_md)
+                elseif as_alert then
+                    add("> [!IMPORTANT]")
+                    add("> " .. img_md)
+                else
+                    add(img_md)
+                end
+            else
+                if as_callout then
+                    add("> [!highlight]")
+                elseif as_alert then
+                    add("> [!IMPORTANT]")
+                end
+                add("> ✍️ " .. tostring(item.text or _("Handwritten note")))
             end
-        end
-        for __, line in ipairs(quote_lines) do
-            add("> " .. line)
+        else
+            if as_callout then
+                add("> [!highlight]")
+            elseif as_alert then
+                add("> [!IMPORTANT]")
+            end
+            local text = tostring(item.text or ""):gsub("\r\n", "\n"):gsub("\r", "\n")
+            local quote_lines = {}
+            for line in (text .. "\n"):gmatch("(.-)\n") do
+                quote_lines[#quote_lines + 1] = line
+            end
+            if is_special then
+                if marker == "bold" then
+                    wrapStyled(quote_lines, "**", "**", "**", nil)
+                elseif marker == "highlight" then
+                    wrapStyled(quote_lines, "==", "==", "==", nil)
+                elseif marker == "highlight_bold" then
+                    wrapStyled(quote_lines, "==**", "**==", "**", nil)
+                elseif marker == "star_bold" then
+                    wrapStyled(quote_lines, "**", "**", "**", "⭐ ")
+                end
+            end
+            for __, line in ipairs(quote_lines) do
+                add("> " .. line)
+            end
         end
         add("")
 
@@ -1621,8 +2043,11 @@ function render.buildDigestMd(books, opts)
         if item.page and tostring(item.page) ~= "" then
             meta[#meta + 1] = "**p. " .. tostring(item.page) .. "**"
         end
-        if item.date and tostring(item.date) ~= "" then
-            meta[#meta + 1] = tostring(item.date)
+        if item.time and tostring(item.time) ~= "" then
+            meta[#meta + 1] = tostring(item.time)
+        end
+        if item.handwritten then
+            meta[#meta + 1] = "✍️ " .. _("Handwritten note")
         end
 
         local note_lines
@@ -1792,7 +2217,11 @@ function render.buildBookTxt(book, opts)
         add("")
         local text = tostring(a.text or ""):gsub("\r\n", "\n"):gsub("\r", "\n")
         local prefix = a.special and "★ " or ""
-        add(prefix .. text)
+        if a.handwritten then
+            add(prefix .. "✍️ " .. (text ~= "" and text or _("Handwritten note")))
+        else
+            add(prefix .. text)
+        end
 
         local meta = {}
         if show_page and a.page and tostring(a.page) ~= "" then

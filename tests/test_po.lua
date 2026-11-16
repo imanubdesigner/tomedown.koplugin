@@ -14,6 +14,7 @@ local SOURCES = {
     "tomedown_export.lua",
     "tomedown_upload.lua",
     "tomedown_render.lua",
+    "tomedown_handwritten.lua",
     "tomedown_update.lua",
     "tomedown_metadata.lua",
     "tomedown_pubdate.lua",
