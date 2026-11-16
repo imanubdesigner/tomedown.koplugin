@@ -75,7 +75,7 @@ Enable **Treat every highlight as special** if you want *all* highlights to use 
           </div>
           <p class="callout-body">“She had the feeling that he resented her presence in the country, and was anxious to replace her with a proprietor less poverty-stricken.”</p>
         </div>
-        <div class="quote-meta">• <strong>p. 26</strong> · 14/11/2026 10:20</div>
+        <div class="quote-meta">• <strong>p. 26</strong> · 14 Nov 2026 | 10:20</div>
       </div>
 
       <!-- 2. Alert -->
@@ -87,7 +87,7 @@ Enable **Treat every highlight as special** if you want *all* highlights to use 
           </div>
           <p class="callout-body">“She had the feeling that he resented her presence in the country, and was anxious to replace her with a proprietor less poverty-stricken.”</p>
         </div>
-        <div class="quote-meta">• <strong>p. 26</strong> · 14/11/2026 10:20</div>
+        <div class="quote-meta">• <strong>p. 26</strong> · 14 Nov 2026 | 10:20</div>
       </div>
 
       <!-- 3. Highlight -->
@@ -95,7 +95,7 @@ Enable **Treat every highlight as special** if you want *all* highlights to use 
         <blockquote class="obsidian-quote">
           <p><mark class="render-mark">She had the feeling that he resented her presence in the country, and was anxious to replace her with a proprietor less poverty-stricken.</mark></p>
         </blockquote>
-        <div class="quote-meta">• <strong>p. 26</strong> · 14/11/2026 10:20</div>
+        <div class="quote-meta">• <strong>p. 26</strong> · 14 Nov 2026 | 10:20</div>
       </div>
 
       <!-- 4. Highlight & Bold -->
@@ -103,7 +103,7 @@ Enable **Treat every highlight as special** if you want *all* highlights to use 
         <blockquote class="obsidian-quote">
           <p><mark class="render-mark"><strong>She had the feeling that he resented her presence in the country, and was anxious to replace her with a proprietor less poverty-stricken.</strong></mark></p>
         </blockquote>
-        <div class="quote-meta">• <strong>p. 26</strong> · 14/11/2026 10:20</div>
+        <div class="quote-meta">• <strong>p. 26</strong> · 14 Nov 2026 | 10:20</div>
       </div>
 
       <!-- 5. Star & Bold -->
@@ -111,7 +111,7 @@ Enable **Treat every highlight as special** if you want *all* highlights to use 
         <blockquote class="obsidian-quote">
           <p><span class="render-star">⭐</span> <strong>She had the feeling that he resented her presence in the country, and was anxious to replace her with a proprietor less poverty-stricken.</strong></p>
         </blockquote>
-        <div class="quote-meta">• <strong>p. 26</strong> · 14/11/2026 10:20</div>
+        <div class="quote-meta">• <strong>p. 26</strong> · 14 Nov 2026 | 10:20</div>
       </div>
 
       <!-- 6. Bold -->
