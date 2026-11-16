@@ -10,6 +10,18 @@ Every exported book note is a self-contained Markdown file ready for Obsidian.
 
 ![01 — The book note in Obsidian: full YAML frontmatter, cover art, chapter headings, and quotes](assets/obsidian-guide/01-the-book-file.svg)
 
+<!-- SCREENSHOT_PLACEHOLDER: assets/obsidian/book_note_v210.png -->
+> [!NOTE] **[SCREENSHOT DA REALIZZARE: Scheda Libro con Dashboard e Sinossi in Obsidian]**
+> - **File di destinazione:** `assets/obsidian/book_note_v210.png`
+> - **Inquadratura:** Visualizzazione di una nota libro esportata (es. `Arthur Machen - The Three Impostors.md`) in Obsidian (Reading View o Live Preview).
+> - **Elementi da mostrare:**
+>   - Proprietà frontmatter in alto.
+>   - Intestazione H1 con titolo `# The Three Impostors` e H3 `### by Arthur Machen`.
+>   - Bacheca di lettura (`> [!book]`) con stato, stelle, date e link all'indice.
+>   - Sinossi collassabile (`> [!abstract]- Synopsis`).
+>   - Box Panoramica (es. `> [!summary] Overview` o tabella).
+>   - Citazioni con formato data/ora letterario: `- **p. 15** · 16 Nov 2026 | 10:20`.
+
 - **Reading View vs. Live Preview**: in Reading View, YAML frontmatter renders cleanly as Obsidian Properties, and internal Tomedown hashes stay out of sight.
 - **Embedded Covers**: when *Include book covers* is enabled, covers are stored in your vault folder (default `covers/`) and render natively in Obsidian (requires Obsidian 1.8.1 or newer).
 - **Wikilinks**: internal references connect book titles directly across your notes.
@@ -41,6 +53,45 @@ Enable **Tomedown → Settings → My notes → Keep my notes: all books** (or p
 - **Visual reading progress**: 5-cell Unicode indicators (`▰▰▰▰▰`) display exact completion percentages without breaking columns.
 - **Stacked tag pills**: subject tags stack vertically as clean pills, preventing table widening.
 - **Customizable views**: choose between *Tags under the title*, *Tags column*, or *Tags column, compact* in *Settings → Index*.
+
+<!-- SCREENSHOT_PLACEHOLDER: assets/obsidian/index_v210_trophy_dashboard.png -->
+> [!NOTE] **[SCREENSHOT DA REALIZZARE: Indice Completo con Trofei e Dashboard in Obsidian]**
+> - **File di destinazione:** `assets/obsidian/index_v210_trophy_dashboard.png`
+> - **Inquadratura:** Visualizzazione di `00 - Index.md` in Obsidian (Reading View).
+> - **Elementi da mostrare:**
+>   - La bacheca riepilogativa della libreria (Library Dashboard).
+>   - La sezione *Completed books* con stelle e date.
+>   - La tabella principale con le copertine dei libri.
+>   - La sezione *Tag cloud* in fondo alla pagina con i tag cliccabili.
+
+## Reading Digest (00 - Reading Digest.md)
+
+A consolidated chronological reading journal grouping all highlights across your whole library by day:
+
+<!-- SCREENSHOT_PLACEHOLDER: assets/obsidian/reading_digest_v210.png -->
+> [!NOTE] **[SCREENSHOT DA REALIZZARE: Reading Digest in Obsidian]**
+> - **File di destinazione:** `assets/obsidian/reading_digest_v210.png`
+> - **Inquadratura:** Visualizzazione di `00 - Reading Digest.md` in Obsidian (Reading View o Live Preview).
+> - **Elementi da mostrare:**
+>   - Intestazione H1 `# Reading digest` e citazione poetica iniziale.
+>   - Statistiche complessive (es. `2 books · 25 highlights · ★ 4 special`).
+>   - Intestazione giorno letteraria: `## 16 Nov 2026`.
+>   - Due libri diversi letti nello stesso giorno, separati dal divisore `---`.
+>   - Metadati citazione orari: `*Chapter* · **p. X** · 09:41`.
+
+## Handwritten notes & Stylus drawings
+
+For stylus devices, handwritten notes are rendered as pure SVG vector strokes or PNGs in `drawings/` and embedded seamlessly inside your book notes:
+
+<!-- SCREENSHOT_PLACEHOLDER: assets/obsidian/handwritten_drawing_embed.png -->
+> [!NOTE] **[SCREENSHOT DA REALIZZARE: Nota a Mano Libera / Disegno Stylus in Obsidian]**
+> - **File di destinazione:** `assets/obsidian/handwritten_drawing_embed.png`
+> - **Inquadratura:** Zoom su una nota libro in Obsidian contenente un disegno o annotazione a penna.
+> - **Elementi da mostrare:**
+>   - L'immagine vettoriale SVG integrata tra le citazioni.
+>   - La riga metadati con icona: `- **p. 25** · 16 Nov 2026 | 12:05 · ✍️ Handwritten note`.
+>   - L'eventuale nota testuale associata: `NOTE: Margin sketch`.
+>   - Il block ID Obsidian `^hl-...`.
 
 ## Link to a single highlight
 

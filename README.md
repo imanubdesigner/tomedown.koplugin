@@ -130,6 +130,9 @@ The result should look like:
 /mnt/us/koreader/plugins/tomedown.koplugin/tomedown_render.lua
 /mnt/us/koreader/plugins/tomedown.koplugin/tomedown_merge.lua
 /mnt/us/koreader/plugins/tomedown.koplugin/tomedown_cover.lua
+/mnt/us/koreader/plugins/tomedown.koplugin/tomedown_handwritten.lua
+/mnt/us/koreader/plugins/tomedown.koplugin/tomedown_metadata.lua
+/mnt/us/koreader/plugins/tomedown.koplugin/tomedown_pubdate.lua
 /mnt/us/koreader/plugins/tomedown.koplugin/tomedown_update.lua
 /mnt/us/koreader/plugins/tomedown.koplugin/_meta.lua
 /mnt/us/koreader/plugins/tomedown.koplugin/languages/it.po
@@ -138,6 +141,7 @@ The result should look like:
 /mnt/us/koreader/plugins/tomedown.koplugin/languages/es.po
 /mnt/us/koreader/plugins/tomedown.koplugin/languages/pt_BR.po
 /mnt/us/koreader/plugins/tomedown.koplugin/assets/logo.png
+/mnt/us/koreader/plugins/tomedown.koplugin/assets/appbar.tomedown.svg
 /mnt/us/koreader/plugins/tomedown.koplugin/LICENSE
 ```
 
@@ -196,6 +200,12 @@ first export; optional Remotely Save in Obsidian) is in
 
 From the file browser the menu has seven rows:
 
+<!-- SCREENSHOT_PLACEHOLDER: assets/menu/reader/tomedown_reader_new_menu.png -->
+> [!NOTE] **[SCREENSHOT DA REALIZZARE: Menu Principale Tomedown in KOReader]**
+> - **File di destinazione:** `assets/menu/reader/tomedown_reader_new_menu.png`
+> - **Inquadratura:** Menu a discesa Tomedown aperto in KOReader con un libro aperto.
+> - **Dettagli da mostrare:** La nuova icona nella navbar in alto (segnalibro a nastro + freccia centrata) e il menu con *Esporta questo libro*, *Esporta libri nuovi e modificati*, *Esporta digest di lettura*, *Libro corrente*, *Informazioni*, ecc.
+
 ![The Tomedown menu in the file browser](assets/menu/reader/tomedown_reader_new_menu.png)
 
 With a book open it has nine: *Export this book* and *Current book* are added
@@ -205,13 +215,20 @@ on top.
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Export this book**             | the open book alone                                                                                                                                           |
 | **Export new and changed books** | only the books whose highlights changed since the last export (per-book hash)                                                                                 |
+| **Export reading digest**        | compiles the consolidated chronological digest (`00 - Reading Digest.md`) grouping highlights across all books by day                                         |
 | **Repair all files**             | writes every file again from KOReader's reading history: for a file deleted by mistake or a sync that went wrong                                              |
 | **Choose books…**                | a list with checkboxes: tick the volumes and export just those                                                                                                |
 | **Current book**                 | the rows that name the open book: *Keep my notes in this book*, *Book info* (*Tags: %1* and the book-info rows), *Book visibility: %1*, *Notes heading: %1*, *Backup copies* and *Style & format*, explained in [Keep my notes](docs/keep-my-notes.md), [Settings](docs/settings.md) and [File format](docs/file-format.md#imported-book-information) |
 | **Upload all files again**       | re-uploads every file already in the local folder, after comparing each one with its cloud copy                                                               |
 | **Last export**                  | a wide popup, one line per entry: network, server, pending uploads, the last export and upload with timestamp and outcome                                     |
-| **Settings**                     | the six groups, described in [Settings](docs/settings.md)                                                                                                    |
-| **About**                        | a popup with the logo, the installed version, the description and the GitHub link                                                                             |
+| **Settings**                     | the seven groups (Files, Index, Style, Book info, Cloud, My notes, Updates), described in [Settings](docs/settings.md)                                        |
+| **About**                        | a popup with the widescreen logo, the installed version, the description and the GitHub link                                                                   |
+
+<!-- SCREENSHOT_PLACEHOLDER: assets/menu/about_popup_v210.png -->
+> [!NOTE] **[SCREENSHOT DA REALIZZARE: Popup Informazioni / About con Nuovo Logo]**
+> - **File di destinazione:** `assets/menu/about_popup_v210.png`
+> - **Inquadratura:** Popup *Informazioni su Tomedown* aperto al centro dello schermo.
+> - **Dettagli da mostrare:** Il nuovo logo panoramico 1357x267, la versione `v2.1.0`, e i link ai repository.
 
 Long-pressing a book in the file browser, in History or in Bookshelf adds the
 same per-book actions to KOReader's file dialog: *Export this book*, *Tags…*,

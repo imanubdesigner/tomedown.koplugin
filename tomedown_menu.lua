@@ -976,6 +976,48 @@ function M:editCoversFolder(touchmenu)
     return dialog
 end
 
+function M:editDrawingsFolder(touchmenu)
+    local dialog
+    dialog = InputDialog:new{
+        title = _("Drawings folder name"),
+        input = shared.getDrawingsFolder(),
+        hint = _("e.g. drawings, attachments, assets"),
+        buttons = {
+            {
+                {
+                    text = _("Cancel"),
+                    id = "close",
+                    callback = function()
+                        UIManager:close(dialog)
+                    end,
+                },
+            },
+            {
+                {
+                    text = _("Save"),
+                    callback = function()
+                        local value = dialog:getInputText() or ""
+                        local old = shared.getDrawingsFolder()
+                        shared.setDrawingsFolder(value)
+                        local new_folder = shared.getDrawingsFolder()
+                        if new_folder ~= old then
+                            local Handwritten = require("tomedown_handwritten")
+                            Handwritten.migrateFolder(self:getLocalDir(), old, new_folder)
+                            self:invalidateExportHashes()
+                        end
+                        UIManager:close(dialog)
+                        if touchmenu and touchmenu.updateItems then
+                            touchmenu:updateItems()
+                        end
+                    end,
+                },
+            },
+        },
+    }
+    UIManager:show(dialog)
+    return dialog
+end
+
 function M:editFrontmatterOrder(touchmenu, file)
     local current_order = getFrontmatterOrder(file) or DEFAULT_FRONTMATTER_ORDER
     local dialog
@@ -1844,6 +1886,67 @@ function M:genSettingsMenu()
                     end,
                 },
             },
+            separator = true,
+        },
+        {
+            text_func = function()
+                return T(_("Backup copies (%1)"), #self:allBackups())
+            end,
+            enabled_func = function()
+                return #self:allBackups() > 0
+            end,
+            sub_item_table_func = function()
+                return self:genAllBackupsMenu()
+            end,
+        },
+        {
+            text = _("Export settings to file"),
+            callback = function()
+                local backup_path = self:getLocalDir() .. "/" .. shared.SETTINGS_BACKUP_FILENAME
+                if shared.exportSettingsToFile(backup_path) then
+                    UIManager:show(Notification:new{
+                        text = T(_("Settings exported to %1"), shared.SETTINGS_BACKUP_FILENAME),
+                        timeout = 3,
+                    })
+                else
+                    UIManager:show(InfoMessage:new{
+                        text = _("The settings backup could not be written."),
+                    })
+                end
+            end,
+        },
+        {
+            text = _("Restore settings from backup…"),
+            enabled_func = function()
+                local backup_path = self:getLocalDir() .. "/" .. shared.SETTINGS_BACKUP_FILENAME
+                return lfs.attributes(backup_path, "mode") == "file"
+            end,
+            callback = function(touchmenu)
+                local backup_path = self:getLocalDir() .. "/" .. shared.SETTINGS_BACKUP_FILENAME
+                UIManager:scheduleIn(0.1, function()
+                    UIManager:show(ConfirmBox:new{
+                        text = T(_("Restore all Tomedown settings from %1?\n\nCurrent settings will be replaced."),
+                            shared.SETTINGS_BACKUP_FILENAME),
+                        ok_text = _("Restore"),
+                        cancel_text = _("Cancel"),
+                        ok_callback = function()
+                            if shared.restoreSettingsFromFile(backup_path) then
+                                if touchmenu and touchmenu.updateItems then
+                                    touchmenu:updateItems()
+                                end
+                                UIManager:show(Notification:new{
+                                    text = _("Settings restored from backup."),
+                                    timeout = 3,
+                                })
+                            else
+                                UIManager:show(InfoMessage:new{
+                                    text = _("The settings backup could not be read."),
+                                })
+                            end
+                        end,
+                    })
+                end)
+            end,
         },
     }
 
@@ -2008,6 +2111,95 @@ function M:genSettingsMenu()
             keep_menu_open = true,
             callback = function()
                 setSetting("reading_now", not getSetting("reading_now", true))
+                setSetting("index_dirty", true)
+            end,
+        },
+        {
+            text_func = function()
+                local labels = {
+                    all = _("Show all"),
+                    first_3 = _("First 3 (+N)"),
+                    collapsible = _("Collapsible (<details>)"),
+                }
+                local current = shared.getIndexTagsMode()
+                return T(_("Index tags display: %1"),
+                    labels[current] or labels.all)
+            end,
+            sub_item_table = {
+                {
+                    text = _("Show all"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return shared.getIndexTagsMode() == "all"
+                    end,
+                    callback = function()
+                        if shared.getIndexTagsMode() ~= "all" then
+                            shared.setIndexTagsMode("all")
+                            setSetting("index_dirty", true)
+                        end
+                    end,
+                },
+                {
+                    text = _("First 3 (+N)"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return shared.getIndexTagsMode() == "first_3"
+                    end,
+                    callback = function()
+                        if shared.getIndexTagsMode() ~= "first_3" then
+                            shared.setIndexTagsMode("first_3")
+                            setSetting("index_dirty", true)
+                        end
+                    end,
+                },
+                {
+                    text = _("Collapsible (<details>)"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return shared.getIndexTagsMode() == "collapsible"
+                    end,
+                    callback = function()
+                        if shared.getIndexTagsMode() ~= "collapsible" then
+                            shared.setIndexTagsMode("collapsible")
+                            setSetting("index_dirty", true)
+                        end
+                    end,
+                },
+            },
+        },
+        {
+            text = _("Show Completed books in the index"),
+            checked_func = function()
+                return shared.getCompletedBooks()
+            end,
+            keep_menu_open = true,
+            callback = function()
+                shared.setCompletedBooks(not shared.getCompletedBooks())
+                setSetting("index_dirty", true)
+            end,
+        },
+        {
+            text = _("Show Library dashboard in the index"),
+            checked_func = function()
+                return shared.getIndexDashboard()
+            end,
+            keep_menu_open = true,
+            callback = function()
+                shared.setIndexDashboard(not shared.getIndexDashboard())
+                setSetting("index_dirty", true)
+            end,
+        },
+        {
+            text = _("Show tag cloud in the index"),
+            checked_func = function()
+                return shared.getIndexTagCloud()
+            end,
+            keep_menu_open = true,
+            callback = function()
+                shared.setIndexTagCloud(not shared.getIndexTagCloud())
                 setSetting("index_dirty", true)
             end,
         },
@@ -2361,9 +2553,158 @@ function M:genSettingsMenu()
                 return getHighlightContext()
             end,
             keep_menu_open = true,
-            separator = true,
             callback = function()
                 setHighlightContext(not getHighlightContext())
+                self:invalidateExportHashes()
+            end,
+        },
+        {
+            text = _("Include handwritten notes"),
+            checked_func = function()
+                return getSetting("include_handwritten", true) ~= false
+            end,
+            keep_menu_open = true,
+            callback = function()
+                local cur = getSetting("include_handwritten", true) ~= false
+                setSetting("include_handwritten", not cur and true or false)
+                self:invalidateExportHashes()
+            end,
+        },
+        {
+            text_func = function()
+                return T(_("Drawings folder: %1"), shared.getDrawingsFolder())
+            end,
+            enabled_func = function()
+                return getSetting("include_handwritten", true) ~= false
+            end,
+            callback = function(touchmenu)
+                self:editDrawingsFolder(touchmenu)
+            end,
+        },
+        {
+            text = _("Include book title in body"),
+            checked_func = function()
+                return shared.getBookHeading()
+            end,
+            keep_menu_open = true,
+            callback = function()
+                shared.setBookHeading(not shared.getBookHeading())
+                self:invalidateExportHashes()
+            end,
+        },
+        {
+            text_func = function()
+                local labels = {
+                    inline = _("Inline / Heading"),
+                    blockquote = _("Classic blockquote"),
+                    callout = _("Callout ([!summary])"),
+                    table = _("Table"),
+                }
+                local current = shared.getOverviewStyle()
+                return T(_("Overview style: %1"),
+                    labels[current] or labels.inline)
+            end,
+            sub_item_table = {
+                {
+                    text = _("Inline / Heading"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return shared.getOverviewStyle() == "inline"
+                    end,
+                    callback = function()
+                        if shared.getOverviewStyle() ~= "inline" then
+                            shared.setOverviewStyle("inline")
+                            self:invalidateExportHashes()
+                        end
+                    end,
+                },
+                {
+                    text = _("Classic blockquote"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return shared.getOverviewStyle() == "blockquote"
+                    end,
+                    callback = function()
+                        if shared.getOverviewStyle() ~= "blockquote" then
+                            shared.setOverviewStyle("blockquote")
+                            self:invalidateExportHashes()
+                        end
+                    end,
+                },
+                {
+                    text = _("Callout ([!summary])"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return shared.getOverviewStyle() == "callout"
+                    end,
+                    callback = function()
+                        if shared.getOverviewStyle() ~= "callout" then
+                            shared.setOverviewStyle("callout")
+                            self:invalidateExportHashes()
+                        end
+                    end,
+                },
+                {
+                    text = _("Table"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return shared.getOverviewStyle() == "table"
+                    end,
+                    callback = function()
+                        if shared.getOverviewStyle() ~= "table" then
+                            shared.setOverviewStyle("table")
+                            self:invalidateExportHashes()
+                        end
+                    end,
+                },
+            },
+        },
+        {
+            text = _("Include reading dashboard"),
+            checked_func = function()
+                return shared.getReadingDashboard()
+            end,
+            keep_menu_open = true,
+            callback = function()
+                shared.setReadingDashboard(not shared.getReadingDashboard())
+                self:invalidateExportHashes()
+            end,
+        },
+        {
+            text = _("Include book synopsis"),
+            checked_func = function()
+                return shared.getBookSynopsis()
+            end,
+            keep_menu_open = true,
+            callback = function()
+                shared.setBookSynopsis(not shared.getBookSynopsis())
+                self:invalidateExportHashes()
+            end,
+        },
+        {
+            text = _("Include clickable tags in body"),
+            checked_func = function()
+                return shared.getBodyTags()
+            end,
+            keep_menu_open = true,
+            callback = function()
+                shared.setBodyTags(not shared.getBodyTags())
+                self:invalidateExportHashes()
+            end,
+        },
+        {
+            text = _("Include Special highlights showcase"),
+            checked_func = function()
+                return shared.getSpecialShowcase()
+            end,
+            keep_menu_open = true,
+            separator = true,
+            callback = function()
+                shared.setSpecialShowcase(not shared.getSpecialShowcase())
                 self:invalidateExportHashes()
             end,
         },
@@ -3134,12 +3475,19 @@ function M:bookBackups(file)
 end
 
 local function backupLabel(copy)
-    if copy.slot ~= ".bak" then
-        return _("Safety copy")
+    local d = os.date("%d %b %y", copy.modified or 0)
+    if copy.slot == ".bak.1" then
+        return T(_("Latest snapshot · %1"), d)
+    elseif copy.slot == ".bak.2" then
+        return T(_("Snapshot 2 · %1"), d)
+    elseif copy.slot == ".bak.3" then
+        return T(_("Snapshot 3 · %1"), d)
+    elseif copy.slot ~= ".bak" then
+        return T(_("Safety copy · %1"), d)
     elseif copy.zoned then
-        return _("Saved notes")
+        return T(_("Saved notes · %1"), d)
     end
-    return _("Older copy")
+    return T(_("Older copy · %1"), d)
 end
 
 local function backupWhat(copy)
@@ -3196,6 +3544,103 @@ function M:genBackupsMenu(file)
         }
     end
     if #items == 0 then
+        items[1] = {
+            text = _("No backup copies for this book"),
+            enabled_func = function() return false end,
+        }
+    end
+    return items
+end
+
+function M:indexBackups()
+    local md_path = self:getLocalDir() .. "/" .. INDEX_FILENAME
+    local copies = {}
+    for __, slot in ipairs(BACKUP_SLOTS) do
+        local path = md_path .. slot
+        local attr = lfs.attributes(path)
+        if attr and attr.mode == "file" then
+            copies[#copies + 1] = {
+                path = path,
+                slot = slot,
+                md_path = md_path,
+                title = _("Book index"),
+                zoned = isZoned(readIfExists(path)),
+                size = attr.size or 0,
+                modified = attr.modification or 0,
+            }
+        end
+    end
+    return copies
+end
+
+function M:allBackups()
+    local copies = {}
+    local seen_paths = {}
+    for __, copy in ipairs(self:indexBackups()) do
+        seen_paths[copy.path] = true
+        copies[#copies + 1] = copy
+    end
+    local records = getSetting("exports", {})
+    local files = {}
+    for file, rec in pairs(records) do
+        if type(rec) == "table" and type(rec.base) == "string" and rec.base ~= "" then
+            files[#files + 1] = { file = file, base = rec.base }
+        end
+    end
+    table.sort(files, function(a, b) return a.base:lower() < b.base:lower() end)
+    for __, entry in ipairs(files) do
+        local leaf = entry.base:match("([^/]+)$") or entry.base
+        for ___, copy in ipairs(self:bookBackups(entry.file)) do
+            if not seen_paths[copy.path] then
+                seen_paths[copy.path] = true
+                copy.title = leaf
+                copies[#copies + 1] = copy
+            end
+        end
+    end
+    return copies
+end
+
+function M:genAllBackupsMenu()
+    local items = {}
+    local all = self:allBackups()
+    for __, copy in ipairs(all) do
+        items[#items + 1] = {
+            text = tostring(copy.title or "") .. " — " .. backupLabel(copy),
+            mandatory = os.date("%Y-%m-%d", copy.modified),
+            callback = function()
+                self:askDeleteBackup(copy)
+            end,
+        }
+    end
+    if #all > 0 then
+        items[#items].separator = true
+        items[#items + 1] = {
+            text = _("Delete all backup copies…"),
+            callback = function()
+                local list = self:allBackups()
+                UIManager:scheduleIn(0.1, function()
+                    UIManager:show(ConfirmBox:new{
+                        text = T(_("Delete all %1 backup copies (.bak)?\n\nIt cannot be undone."), #list),
+                        ok_text = _("Delete"),
+                        cancel_text = _("Keep"),
+                        ok_callback = function()
+                            local removed = 0
+                            for __, c in ipairs(list) do
+                                if os.remove(c.path) then
+                                    removed = removed + 1
+                                end
+                            end
+                            UIManager:show(Notification:new{
+                                text = T(_("%1 backup copies deleted."), removed),
+                                timeout = 3,
+                            })
+                        end,
+                    })
+                end)
+            end,
+        }
+    else
         items[1] = {
             text = _("No backup copies for this book"),
             enabled_func = function() return false end,
@@ -3604,6 +4049,108 @@ function M:genBookStyleMenu(file)
         _("Page bookmarks: %1"),
         "include_bookmarks",
         getIncludeBookmarks,
+        {
+            [true] = _("Enabled"),
+            [false] = _("Disabled"),
+        },
+        {
+            { val = true,  text = _("Enabled") },
+            { val = false, text = _("Disabled") },
+        }
+    )
+
+    rows[#rows + 1] = choiceRow(
+        _("Handwritten notes: %1"),
+        "include_handwritten",
+        shared.getIncludeHandwritten,
+        {
+            [true] = _("Enabled"),
+            [false] = _("Disabled"),
+        },
+        {
+            { val = true,  text = _("Enabled") },
+            { val = false, text = _("Disabled") },
+        }
+    )
+
+    rows[#rows + 1] = choiceRow(
+        _("Book title in body: %1"),
+        "book_heading",
+        shared.getBookHeading,
+        {
+            [true] = _("Enabled"),
+            [false] = _("Disabled"),
+        },
+        {
+            { val = true,  text = _("Enabled") },
+            { val = false, text = _("Disabled") },
+        }
+    )
+
+    rows[#rows + 1] = choiceRow(
+        _("Overview style: %1"),
+        "overview_style",
+        shared.getOverviewStyle,
+        {
+            inline     = _("Inline / Heading"),
+            blockquote = _("Classic blockquote"),
+            callout    = _("Callout ([!summary])"),
+            table      = _("Table"),
+        },
+        {
+            { val = "inline",     text = _("Inline / Heading") },
+            { val = "blockquote", text = _("Classic blockquote") },
+            { val = "callout",    text = _("Callout ([!summary])") },
+            { val = "table",      text = _("Table") },
+        }
+    )
+
+    rows[#rows + 1] = choiceRow(
+        _("Reading dashboard: %1"),
+        "reading_dashboard",
+        shared.getReadingDashboard,
+        {
+            [true] = _("Enabled"),
+            [false] = _("Disabled"),
+        },
+        {
+            { val = true,  text = _("Enabled") },
+            { val = false, text = _("Disabled") },
+        }
+    )
+
+    rows[#rows + 1] = choiceRow(
+        _("Book synopsis: %1"),
+        "book_synopsis",
+        shared.getBookSynopsis,
+        {
+            [true] = _("Enabled"),
+            [false] = _("Disabled"),
+        },
+        {
+            { val = true,  text = _("Enabled") },
+            { val = false, text = _("Disabled") },
+        }
+    )
+
+    rows[#rows + 1] = choiceRow(
+        _("Body tags: %1"),
+        "body_tags",
+        shared.getBodyTags,
+        {
+            [true] = _("Enabled"),
+            [false] = _("Disabled"),
+        },
+        {
+            { val = true,  text = _("Enabled") },
+            { val = false, text = _("Disabled") },
+        }
+    )
+
+    rows[#rows + 1] = choiceRow(
+        _("Special highlights showcase: %1"),
+        "special_showcase",
+        shared.getSpecialShowcase,
         {
             [true] = _("Enabled"),
             [false] = _("Disabled"),

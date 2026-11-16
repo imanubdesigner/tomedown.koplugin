@@ -16,6 +16,7 @@ local util = require("util")
 local SETTINGS_KEY = "tomedown"
 local DEFAULT_LOCAL_SUBDIR = "clipboard/tomedown"
 local DEFAULT_COVERS_FOLDER = "covers"
+local DEFAULT_DRAWINGS_FOLDER = "drawings"
 local INDEX_FILENAME = "00 - Index.md"
 local DIGEST_FILENAME = "00 - Reading Digest.md"
 local FILENAME_TEMPLATE = "%A - %T"
@@ -513,6 +514,36 @@ local function setCoversFolder(folder)
         setSetting("covers_folder", nil)
     else
         setSetting("covers_folder", clean)
+    end
+end
+
+local function sanitizeDrawingsFolder(name)
+    if type(name) ~= "string" then
+        return DEFAULT_DRAWINGS_FOLDER
+    end
+    local trimmed = name:gsub("^%s+", ""):gsub("%s+$", ""):gsub("^[/\\]+", ""):gsub("[/\\]+$", "")
+    if trimmed == "" then
+        return DEFAULT_DRAWINGS_FOLDER
+    end
+    local safe = util.getSafeFilename(trimmed, nil, nil, -1) or ""
+    safe = safe:gsub("^%s+", ""):gsub("%s+$", "")
+    if safe == "" or safe == "." or safe == ".." then
+        return DEFAULT_DRAWINGS_FOLDER
+    end
+    return safe
+end
+
+local function getDrawingsFolder()
+    local folder = getSetting("drawings_folder", DEFAULT_DRAWINGS_FOLDER)
+    return sanitizeDrawingsFolder(folder)
+end
+
+local function setDrawingsFolder(folder)
+    local clean = sanitizeDrawingsFolder(folder)
+    if clean == DEFAULT_DRAWINGS_FOLDER then
+        setSetting("drawings_folder", nil)
+    else
+        setSetting("drawings_folder", clean)
     end
 end
 
@@ -1043,6 +1074,16 @@ local function getIncludeBookmarks(file)
     return getSetting("include_bookmarks", false) == true
 end
 
+local function getIncludeHandwritten(file)
+    if file then
+        local override = getBookStyleOverride(file, "include_handwritten")
+        if override ~= nil then
+            return override == true
+        end
+    end
+    return getSetting("include_handwritten", true) ~= false
+end
+
 local function getHighlightDetails(file)
     local override = file and getBookStyleOverride(file, "highlight_details")
     local mode = override or getSetting("highlight_details", "page_date")
@@ -1120,14 +1161,241 @@ local function setTopbarIcon(on)
     setSetting("topbar_icon", on and true or nil)
 end
 
+local function getBookHeading(file)
+    if file then
+        local override = getBookStyleOverride(file, "book_heading")
+        if override ~= nil then
+            return override == true
+        end
+    end
+    return getSetting("book_heading", true) ~= false
+end
+
+local function setBookHeading(enabled)
+    if enabled == false then
+        setSetting("book_heading", false)
+    else
+        setSetting("book_heading", nil)
+    end
+end
+
+local function getOverviewStyle(file)
+    local override = file and getBookStyleOverride(file, "overview_style")
+    local style = override or getSetting("overview_style", "inline")
+    if style == "blockquote" or style == "callout" or style == "table" then
+        return style
+    end
+    return "inline"
+end
+
+local function setOverviewStyle(style)
+    if style == "blockquote" or style == "callout" or style == "table" then
+        setSetting("overview_style", style)
+    else
+        setSetting("overview_style", nil)
+    end
+end
+
+local function getIndexTagsMode()
+    local mode = getSetting("index_tags_mode", "all")
+    if mode == "first_3" or mode == "collapsible" then
+        return mode
+    end
+    return "all"
+end
+
+local function setIndexTagsMode(mode)
+    if mode == "first_3" or mode == "collapsible" then
+        setSetting("index_tags_mode", mode)
+    else
+        setSetting("index_tags_mode", nil)
+    end
+end
+
+local function getReadingDashboard(file)
+    if file then
+        local override = getBookStyleOverride(file, "reading_dashboard")
+        if override ~= nil then
+            return override == true
+        end
+    end
+    return getSetting("reading_dashboard", false) == true
+end
+
+local function setReadingDashboard(enabled)
+    setSetting("reading_dashboard", enabled and true or nil)
+end
+
+local function getBookSynopsis(file)
+    if file then
+        local override = getBookStyleOverride(file, "book_synopsis")
+        if override ~= nil then
+            return override == true
+        end
+    end
+    return getSetting("book_synopsis", false) == true
+end
+
+local function setBookSynopsis(enabled)
+    setSetting("book_synopsis", enabled and true or nil)
+end
+
+local function getBodyTags(file)
+    if file then
+        local override = getBookStyleOverride(file, "body_tags")
+        if override ~= nil then
+            return override == true
+        end
+    end
+    return getSetting("body_tags", false) == true
+end
+
+local function setBodyTags(enabled)
+    setSetting("body_tags", enabled and true or nil)
+end
+
+local function getSpecialShowcase(file)
+    if file then
+        local override = getBookStyleOverride(file, "special_showcase")
+        if override ~= nil then
+            return override == true
+        end
+    end
+    return getSetting("special_showcase", false) == true
+end
+
+local function setSpecialShowcase(enabled)
+    setSetting("special_showcase", enabled and true or nil)
+end
+
+local function getCompletedBooks()
+    return getSetting("completed_books", false) == true
+end
+
+local function setCompletedBooks(enabled)
+    setSetting("completed_books", enabled and true or nil)
+end
+
+local function getIndexDashboard()
+    return getSetting("index_dashboard", false) == true
+end
+
+local function setIndexDashboard(enabled)
+    setSetting("index_dashboard", enabled and true or nil)
+end
+
+local function getIndexTagCloud()
+    return getSetting("index_tag_cloud", false) == true
+end
+
+local function setIndexTagCloud(enabled)
+    setSetting("index_tag_cloud", enabled and true or nil)
+end
+
+local SETTINGS_BACKUP_FILENAME = "tomedown_settings_backup.lua"
+
+local function serializeLuaValue(val, indent)
+    indent = indent or ""
+    local t = type(val)
+    if t == "string" then
+        return string.format("%q", val)
+    elseif t == "number" or t == "boolean" then
+        return tostring(val)
+    elseif t == "table" then
+        local keys = {}
+        for k in pairs(val) do
+            if type(k) == "string" or type(k) == "number" then
+                keys[#keys + 1] = k
+            end
+        end
+        if #keys == 0 then
+            return "{}"
+        end
+        table.sort(keys, function(a, b)
+            if type(a) ~= type(b) then
+                return type(a) == "number"
+            end
+            return a < b
+        end)
+        local next_indent = indent .. "  "
+        local lines = { "{" }
+        for __, k in ipairs(keys) do
+            local sv = serializeLuaValue(val[k], next_indent)
+            if sv ~= nil then
+                local sk = type(k) == "number"
+                    and ("[" .. tostring(k) .. "]")
+                    or ("[" .. string.format("%q", k) .. "]")
+                lines[#lines + 1] = next_indent .. sk .. " = " .. sv .. ","
+            end
+        end
+        lines[#lines + 1] = indent .. "}"
+        return table.concat(lines, "\n")
+    end
+    return nil
+end
+
+local function exportSettingsToFile(path)
+    if type(path) ~= "string" or path == "" then
+        return false
+    end
+    local target_dir = path:match("^(.*)/[^/]+$")
+    if target_dir then
+        util.makePath(target_dir)
+    end
+    local current = G_reader_settings:readSetting(SETTINGS_KEY, {})
+    if type(current) ~= "table" then
+        current = {}
+    end
+    local body = "-- Tomedown settings backup\nreturn " .. serializeLuaValue(current, "") .. "\n"
+    return replaceFile(path, body)
+end
+
+local function restoreSettingsFromFile(path)
+    if type(path) ~= "string" or path == "" then
+        return false
+    end
+    local raw = readIfExists(path)
+    if not raw or raw:find("\0", 1, true) then
+        return false
+    end
+    local chunk
+    if setfenv and loadstring then
+        chunk = loadstring(raw)
+        if chunk then
+            setfenv(chunk, {})
+        end
+    else
+        chunk = load(raw, "tomedown_settings_backup", "t", {})
+    end
+    if not chunk then
+        return false
+    end
+    local ok, data = pcall(chunk)
+    if not ok or type(data) ~= "table" then
+        return false
+    end
+    G_reader_settings:saveSetting(SETTINGS_KEY, data)
+    if type(G_reader_settings.flush) == "function" then
+        pcall(G_reader_settings.flush, G_reader_settings)
+    end
+    return true
+end
+
 
 return {
     SETTINGS_KEY = SETTINGS_KEY,
+    SETTINGS_BACKUP_FILENAME = SETTINGS_BACKUP_FILENAME,
+    exportSettingsToFile = exportSettingsToFile,
+    restoreSettingsFromFile = restoreSettingsFromFile,
     DEFAULT_LOCAL_SUBDIR = DEFAULT_LOCAL_SUBDIR,
     DEFAULT_COVERS_FOLDER = DEFAULT_COVERS_FOLDER,
+    DEFAULT_DRAWINGS_FOLDER = DEFAULT_DRAWINGS_FOLDER,
     sanitizeCoversFolder = sanitizeCoversFolder,
     getCoversFolder = getCoversFolder,
     setCoversFolder = setCoversFolder,
+    sanitizeDrawingsFolder = sanitizeDrawingsFolder,
+    getDrawingsFolder = getDrawingsFolder,
+    setDrawingsFolder = setDrawingsFolder,
     FRONTMATTER_HIDEABLE_KEYS = FRONTMATTER_HIDEABLE_KEYS,
     DEFAULT_FRONTMATTER_ORDER = DEFAULT_FRONTMATTER_ORDER,
     getFrontmatterHidden = getFrontmatterHidden,
@@ -1148,6 +1416,27 @@ return {
     setFrontmatterEnabled = setFrontmatterEnabled,
     getBookCovers = getBookCovers,
     getIncludeBookmarks = getIncludeBookmarks,
+    getIncludeHandwritten = getIncludeHandwritten,
+    getBookHeading = getBookHeading,
+    setBookHeading = setBookHeading,
+    getOverviewStyle = getOverviewStyle,
+    setOverviewStyle = setOverviewStyle,
+    getIndexTagsMode = getIndexTagsMode,
+    setIndexTagsMode = setIndexTagsMode,
+    getReadingDashboard = getReadingDashboard,
+    setReadingDashboard = setReadingDashboard,
+    getBookSynopsis = getBookSynopsis,
+    setBookSynopsis = setBookSynopsis,
+    getBodyTags = getBodyTags,
+    setBodyTags = setBodyTags,
+    getSpecialShowcase = getSpecialShowcase,
+    setSpecialShowcase = setSpecialShowcase,
+    getCompletedBooks = getCompletedBooks,
+    setCompletedBooks = setCompletedBooks,
+    getIndexDashboard = getIndexDashboard,
+    setIndexDashboard = setIndexDashboard,
+    getIndexTagCloud = getIndexTagCloud,
+    setIndexTagCloud = setIndexTagCloud,
     getHighlightDetails = getHighlightDetails,
     setHighlightDetails = setHighlightDetails,
     getChapterHeadings = getChapterHeadings,
