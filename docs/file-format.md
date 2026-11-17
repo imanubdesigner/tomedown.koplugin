@@ -83,23 +83,19 @@ tags:
 <!-- tomedown:end body -->
 ```
 
-<!-- SCREENSHOT_PLACEHOLDER: assets/obsidian/book_modules_v210.png -->
-> [!NOTE] **[SCREENSHOT DA REALIZZARE 1/2: Moduli Intestazione Libro in Obsidian]**
-> - **File di destinazione:** `assets/obsidian/book_modules_v210.png`
-> - **Inquadratura:** Zoomato in *Reading View* sulla parte centrale (saltando lo YAML lungo e la copertina alta).
-> - **Dettagli da mostrare:**
->   - Titolo H1 `# The Three Impostors` + H3 `### by Arthur Machen`.
->   - Bacheca di lettura (`> [!book] Reading dashboard`) con stato, stelle e date.
->   - Sinossi collassabile (`> [!abstract]- Book synopsis`) e tag cliccabili (`#Fiction #Horror-tales`).
->   - Box Panoramica (`> [!summary] Overview`) e Vetrina citazioni speciali (`> [!highlight]- ★ Special highlights`).
+<figure class="doc-shot">
+  <div class="doc-shot-frame">
+    <img class="zoom-modules" src="../assets/obsidian/book_modules_v210.webp" alt="Book note modules in Obsidian: Reading dashboard, collapsible synopsis, tags, Overview callout, and Special highlights showcase" />
+  </div>
+  <figcaption>Book note header modules in Obsidian: Reading dashboard, collapsible synopsis, tags, Overview, and Special highlights.</figcaption>
+</figure>
 
-<!-- SCREENSHOT_PLACEHOLDER: assets/obsidian/book_quotes_v210.png -->
-> [!NOTE] **[SCREENSHOT DA REALIZZARE 2/2: Citazioni con Date Letterarie & Contesto]**
-> - **File di destinazione:** `assets/obsidian/book_quotes_v210.png`
-> - **Inquadratura:** Zoomato su 2 citazioni consecutive (una speciale `> [!highlight]` e una normale) in *Reading View*.
-> - **Dettagli da mostrare:**
->   - Nuovo formato data/ora letterario: `- **p. 5** · 16 Nov 2026 | 09:41`.
->   - Riga `- **Context:**` con contesto estratto dal testo.
+<figure class="doc-shot">
+  <div class="doc-shot-frame">
+    <img src="../assets/obsidian/book_quotes_v210.webp" alt="Highlights in Obsidian showing literary timestamps and extracted sentence context" />
+  </div>
+  <figcaption>Special callout and standard blockquote highlights with literary timestamps and surrounding context.</figcaption>
+</figure>
 
 The sample above reflects an English interface. When running KOReader in Italian, German, French, Spanish, or Brazilian Portuguese, all exported headings and status labels are translated automatically (see [Languages](developing.md#languages)).
 
@@ -258,15 +254,12 @@ Under *Settings → Index*, you can enable rich modular components in `00 - Inde
 - **Tag Display Folding (*Index tags display*)**:
   Choose between **Show all**, **First 3 (+N)**, or **Collapsible (<details>)** to fold extensive tag lists behind an expandable HTML `<details>` summary.
 
-<!-- SCREENSHOT_PLACEHOLDER: assets/obsidian/index_v210_trophy_dashboard.png -->
-> [!NOTE] **[SCREENSHOT DA REALIZZARE: Indice con Trofei e Dashboard in Obsidian]**
-> - **File di destinazione:** `assets/obsidian/index_v210_trophy_dashboard.png`
-> - **Inquadratura:** Nota `00 - Index.md` aperta in Obsidian.
-> - **Dettagli da mostrare:**
->   - La sezione *Bacheca libreria* / Dashboard con i totali.
->   - La stanza dei trofei `### Completed books` con le stelle e i libri completati.
->   - La tabella principale dei libri con tag collassati o compatti.
->   - La nuvola di tag in calce alla pagina.
+<figure class="doc-shot">
+  <div class="doc-shot-frame">
+    <img class="zoom-index" src="../assets/obsidian/index_v210_trophy_dashboard.webp" alt="00 - Index.md in Obsidian showing Library dashboard, Tag cloud, Completed books trophy room, and Reading now" />
+  </div>
+  <figcaption><code>00 - Index.md</code> in Obsidian: Library dashboard, Tag cloud, and Completed books trophy room.</figcaption>
+</figure>
 
 ---
 
@@ -288,10 +281,12 @@ For devices equipped with a stylus (Kindle Scribe, Kobo Sage/Elipsa, Android e-i
    - Each drawing receives an Obsidian block ID (`^hl-...`), allowing you to link directly to or embed the handwritten drawing anywhere in your vault: `![[Book Title#^hl-3a8f19bc]]`.
    - Any text note attached to the stylus annotation in KOReader appears right below as a formatted user note.
 
-<!-- SCREENSHOT_PLACEHOLDER: assets/obsidian/handwritten_drawing_embed.png -->
-> [!NOTE] **[SCREENSHOT DA REALIZZARE: Embed Disegno Stylus in Obsidian]**
-> - **File di destinazione:** `assets/obsidian/handwritten_drawing_embed.png`
-> - **Inquadratura:** Dettaglio di una nota libro in Obsidian che mostra un disegno o annotazione a penna/stylus (SVG o PNG) perfettamente visualizzato tra il testo.
+<figure class="doc-shot">
+  <div class="doc-shot-frame">
+    <img src="../assets/obsidian/handwritten_drawing_embed.webp" alt="Handwritten SVG stylus drawing embedded inside an Obsidian book note with block ID and literary timestamp" />
+  </div>
+  <figcaption>Pure-Lua vector SVG drawing extracted from KOReader and embedded natively in Obsidian.</figcaption>
+</figure>
 
 ---
 
@@ -345,13 +340,9 @@ Key features of the Reading Digest:
 - **Divider Between Books**: A clean rule `---` cleanly separates different volumes read on the same calendar day.
 - **Overview Block Support**: Adopts your configured *Overview style* (Inline, Blockquote, Callout, Table) for library stats.
 
-<!-- SCREENSHOT_PLACEHOLDER: assets/obsidian/reading_digest_v210.png -->
-> [!NOTE] **[SCREENSHOT DA REALIZZARE: Reading Digest in Obsidian]**
-> - **File di destinazione:** `assets/obsidian/reading_digest_v210.png`
-> - **Inquadratura:** Documento `00 - Reading Digest.md` aperto in Obsidian.
-> - **Dettagli da mostrare:**
->   - Titolo `# Reading digest` e citazione letteraria iniziale.
->   - Riepilogo statistiche (libri, highlights, citazioni speciali).
->   - Intestazione giorno `## 16 Nov 2026`.
->   - Due libri diversi sotto la stessa data, separati dalla linea orizzontale `---`.
->   - Metadati orari puliti sotto ogni citazione (es. `· 09:41`).
+<figure class="doc-shot">
+  <div class="doc-shot-frame">
+    <img class="zoom-digest" src="../assets/obsidian/reading_digest_v210.webp" alt="00 - Reading Digest.md in Obsidian showing literary date headings, horizontal book dividers, and clean quote times" />
+  </div>
+  <figcaption><code>00 - Reading Digest.md</code> in Obsidian: literary day headings, thin book dividers, and clean quote times.</figcaption>
+</figure>

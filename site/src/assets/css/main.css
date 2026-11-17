@@ -1611,18 +1611,31 @@ mark { background: var(--hl); color: var(--hl-ink); padding: 0 0.15em; }
   100% { transform: scale(1.85); }
 }
 
+.doc-shot-frame img.zoom-modules,
+.doc-shot-frame img[src*="book_modules_v210.webp"] {
+  transform-origin: 54% 46%;
+  animation: kenBurnsModules 9s ease-out forwards;
+}
+@keyframes kenBurnsModules {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.22); }
+}
+
 .doc-shot-frame img.zoom-index,
-.doc-shot-frame img[src*="index-obsidian.webp"] {
-  transform-origin: 52% 42%;
+.doc-shot-frame img[src*="index-obsidian.webp"],
+.doc-shot-frame img[src*="index_v210_trophy_dashboard.webp"] {
+  transform-origin: 54% 48%;
   animation: kenBurnsIndex 9s ease-out forwards;
 }
 @keyframes kenBurnsIndex {
   0% { transform: scale(1); }
-  100% { transform: scale(1.28); }
+  100% { transform: scale(1.24); }
 }
 
-.doc-shot-frame img[src*="digest-obsidian.webp"] {
-  transform-origin: 54% 28%;
+.doc-shot-frame img.zoom-digest,
+.doc-shot-frame img[src*="digest-obsidian.webp"],
+.doc-shot-frame img[src*="reading_digest_v210.webp"] {
+  transform-origin: 54% 52%;
   animation: kenBurnsDigest 9s ease-out forwards;
 }
 @keyframes kenBurnsDigest {

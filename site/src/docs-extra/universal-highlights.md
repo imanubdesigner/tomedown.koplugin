@@ -140,6 +140,13 @@ Starting in **v2.1.0**, you can configure rich visual modules for every exported
 - **Body tags**: appends `#tag1 #tag2` clickable hashtags directly below the header.
 - **Special highlights showcase**: generates a collapsible `> [!highlight]- ★ Special highlights (N)` section showcasing your starred quotes at the top.
 
+<figure class="doc-shot">
+  <div class="doc-shot-frame">
+    <img class="zoom-modules" src="{{base}}/assets/img/book_modules_v210.webp" alt="Book note header modules in Obsidian: Reading dashboard, collapsible synopsis, tags, Overview, and Special highlights" />
+  </div>
+  <figcaption>Book layout in Obsidian: Reading dashboard, collapsible Book synopsis, clickable tags, Overview callout, and Special highlights showcase.</figcaption>
+</figure>
+
 ## Handwritten notes & Stylus drawings
 
 If your device supports a stylus (e.g. Kindle Scribe, Kobo Sage/Elipsa, Android e-ink, or via KOReader's `pencil.koplugin`), Tomedown extracts handwritten annotations from your `.sdr` directory:
@@ -147,6 +154,13 @@ If your device supports a stylus (e.g. Kindle Scribe, Kobo Sage/Elipsa, Android 
 - Point-sequence pen strokes are converted to crisp **SVG** vector files.
 - Drawings are saved into the `drawings/` folder inside your vault (customizable via *Settings → Style → Drawings folder*).
 - Drawings are embedded with standard Markdown syntax (`![Handwritten note · p. X](drawings/...)`) and receive permanent block IDs (`^hl-xxxxxxxx`).
+
+<figure class="doc-shot">
+  <div class="doc-shot-frame">
+    <img src="{{base}}/assets/img/handwritten_drawing_embed.webp" alt="Handwritten SVG stylus drawing embedded in an Obsidian book note" />
+  </div>
+  <figcaption>Vector SVG stylus drawing embedded natively inside the note with block ID and literary timestamp.</figcaption>
+</figure>
 
 ## Personal notes format (Inline vs Footnotes)
 
