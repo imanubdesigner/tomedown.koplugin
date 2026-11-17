@@ -1321,7 +1321,9 @@ mark { background: var(--hl); color: var(--hl-ink); padding: 0 0.15em; }
 .prose th { background: var(--paper-2); }
 .prose blockquote { margin: 1.2em 0; padding-left: 1em; border-left: 3px solid var(--hl); color: var(--ink-2); }
 .prose img { border: 1px solid var(--line); border-radius: 10px; }
-.docs .prose img:not([src$=".svg"]):not([src*="obsidian-guide"]) {
+.docs .prose figure:not(.doc-shot):not(.doc-device-figure):not(.spotlight-slide) > img:not([src$=".svg"]):not([src*="obsidian-guide"]),
+.docs .prose > p > img:not([src$=".svg"]):not([src*="obsidian-guide"]),
+.docs .prose > img:not([src$=".svg"]):not([src*="obsidian-guide"]) {
   display: block;
   max-width: 100%;
   margin: 28px auto;
@@ -1330,7 +1332,9 @@ mark { background: var(--hl); color: var(--hl-ink); padding: 0 0.15em; }
   box-shadow: 0 18px 42px -14px rgba(0, 0, 0, 0.38), 0 0 0 4px color-mix(in srgb, var(--hl) 8%, transparent);
   transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
 }
-.docs .prose img:not([src$=".svg"]):not([src*="obsidian-guide"]):hover {
+.docs .prose figure:not(.doc-shot):not(.doc-device-figure):not(.spotlight-slide) > img:not([src$=".svg"]):not([src*="obsidian-guide"]):hover,
+.docs .prose > p > img:not([src$=".svg"]):not([src*="obsidian-guide"]):hover,
+.docs .prose > img:not([src$=".svg"]):not([src*="obsidian-guide"]):hover {
   transform: translateY(-2px);
   border-color: var(--hl);
   box-shadow: 0 22px 48px -14px rgba(0, 0, 0, 0.45), 0 0 0 5px color-mix(in srgb, var(--hl) 14%, transparent);
@@ -1567,29 +1571,47 @@ mark { background: var(--hl); color: var(--hl-ink); padding: 0 0.15em; }
 .doc-spotlight .spotlight-frame {
   aspect-ratio: auto;
 }
-.doc-spotlight .spotlight-frame img {
+.docs .prose .doc-spotlight .spotlight-frame img,
+.docs .prose .doc-shot-frame img,
+.docs .prose .doc-device-frame img {
+  display: block;
+  width: 100%;
   height: auto;
+  margin: 0 !important;
   border: 0 !important;
+  border-color: transparent !important;
   border-radius: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  transition: none !important;
+}
+.docs .prose .doc-spotlight .spotlight-frame img:hover,
+.docs .prose .doc-shot-frame img:hover,
+.docs .prose .doc-device-frame img:hover {
+  border: 0 !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+  transform: none;
 }
 .doc-spotlight .spotlight-slide.is-active .spotlight-frame img {
   animation: none;
 }
 .doc-spotlight .spotlight-slide.is-active .spotlight-frame img.zoom-context {
-  transform-origin: 52% 33%;
+  transform-origin: 50% 46%;
   animation: kenBurnsContext 8.5s ease-out forwards;
 }
 .doc-spotlight .spotlight-slide.is-active .spotlight-frame img.zoom-footnote {
-  transform-origin: 48% 46%;
-  animation: kenBurnsFootnote 5.5s cubic-bezier(.22, 1, .36, 1) forwards;
+  transform-origin: 50% 50%;
+  animation: kenBurnsFootnote 6s cubic-bezier(.22, 1, .36, 1) forwards;
 }
 @keyframes kenBurnsContext {
   0% { transform: scale(1); }
-  100% { transform: scale(1.28); }
+  100% { transform: scale(1.35); }
 }
 @keyframes kenBurnsFootnote {
   0% { transform: scale(1); }
-  100% { transform: scale(1.6); }
+  100% { transform: scale(1.10); }
 }
 
 .doc-shot-frame img.zoom-keep-notes,
@@ -1603,12 +1625,12 @@ mark { background: var(--hl); color: var(--hl-ink); padding: 0 0.15em; }
 }
 
 .doc-shot-frame img.zoom-link-ids {
-  transform-origin: 58% 44%;
+  transform-origin: 50% 50%;
   animation: kenBurnsLinkIds 8.5s ease-out forwards;
 }
 @keyframes kenBurnsLinkIds {
   0% { transform: scale(1); }
-  100% { transform: scale(1.85); }
+  100% { transform: scale(1.08); }
 }
 
 .doc-shot-frame img {
@@ -1620,7 +1642,7 @@ mark { background: var(--hl); color: var(--hl-ink); padding: 0 0.15em; }
 
 .doc-shot-frame img.zoom-context,
 .doc-shot-frame img[src*="highlights-context-obsidian.webp"] {
-  transform-origin: 52% 35%;
+  transform-origin: 50% 46%;
   animation: kenBurnsContext 8s ease-out forwards;
 }
 
@@ -1660,7 +1682,10 @@ mark { background: var(--hl); color: var(--hl-ink); padding: 0 0.15em; }
   margin: 0 auto;
 }
 .doc-device-frame-wide {
-  max-width: 720px;
+  max-width: 760px;
+}
+.docs .prose .doc-device-frame-wide img[src$=".svg"] {
+  max-width: 760px;
 }
 .doc-device-frame img {
   display: block;
