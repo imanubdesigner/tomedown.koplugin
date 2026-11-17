@@ -1504,62 +1504,199 @@ mark { background: var(--hl); color: var(--hl-ink); padding: 0 0.15em; }
   cursor: zoom-in;
   transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
+.guide-interactive-wrapper {
+  position: relative;
+  display: block;
+  margin: 32px auto;
+  border-radius: 16px;
+  overflow: hidden;
+  cursor: zoom-in;
+  box-shadow: 0 20px 48px -18px rgba(0, 0, 0, 0.45);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  background: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.guide-interactive-wrapper:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 26px 56px -14px rgba(0, 0, 0, 0.6), 0 0 0 2px rgba(245, 166, 35, 0.5);
+}
+.guide-interactive-wrapper img {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+.guide-interactive-badge {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(18, 22, 30, 0.88);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #f3f4f6;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  pointer-events: none;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+}
+.guide-interactive-wrapper:hover .guide-interactive-badge {
+  background: rgba(245, 166, 35, 0.95);
+  color: #12161f;
+  border-color: rgba(245, 166, 35, 1);
+  transform: scale(1.04);
+}
 .guide-lightbox {
   position: fixed;
   inset: 0;
-  z-index: 1000;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(8px);
+  z-index: 2000;
+  background: rgba(10, 14, 20, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 32px;
+  padding: 24px 16px 20px;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.25s ease;
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .guide-lightbox.is-open {
   opacity: 1;
   pointer-events: auto;
 }
-.guide-lightbox-inner {
-  position: relative;
-  max-width: 90vw;
-  max-height: 92vh;
+.guide-lightbox-content {
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 95vw;
+  max-height: 94vh;
+  gap: 14px;
 }
-.guide-lightbox-inner img {
-  max-width: 100%;
-  max-height: 92vh;
+.guide-viewport {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  cursor: crosshair;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  max-height: 82vh;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+}
+.guide-viewport.is-overview {
+  cursor: zoom-in;
+}
+.guide-zoom-img {
+  display: block;
+  max-height: 82vh;
+  max-width: min(1000px, 88vw);
   width: auto;
   height: auto;
   object-fit: contain;
-  border-radius: 12px;
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
-  background: #ffffff;
+  transform-origin: 50% 50%;
+  pointer-events: none;
+  will-change: transform, transform-origin;
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.guide-lightbox-close {
-  position: absolute;
-  top: -18px;
-  right: -18px;
-  width: 36px;
-  height: 36px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  background: #1e1e1e;
-  color: #ffffff;
-  font-size: 22px;
-  line-height: 1;
-  cursor: pointer;
+.guide-viewport.is-tracking .guide-zoom-img {
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), transform-origin 0.05s ease-out;
+}
+.guide-toolbar {
   display: flex;
   align-items: center;
-  justify-content: center;
-  transition: transform 0.15s ease, background 0.15s ease;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: rgba(22, 27, 36, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  color: #e5e7eb;
+  font-size: 13px;
+  max-width: 92vw;
+  flex-wrap: wrap;
 }
-.guide-lightbox-close:hover {
-  transform: scale(1.1);
-  background: var(--hl);
-  color: #000000;
+.guide-toolbar-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.guide-zoom-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(245, 166, 35, 0.2);
+  color: #f5a623;
+  font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 12px;
+}
+.guide-toolbar-hint {
+  color: #9ca3af;
+  font-size: 12.5px;
+}
+@media (max-width: 640px) {
+  .guide-toolbar-hint {
+    display: none;
+  }
+}
+.guide-toolbar-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.guide-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1.2;
+}
+.guide-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+.guide-btn-toggle.is-active {
+  background: #f5a623;
+  color: #111827;
+  border-color: #f5a623;
+  font-weight: 600;
+}
+.guide-btn-close {
+  background: rgba(239, 68, 68, 0.18);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
+  margin-left: 6px;
+}
+.guide-btn-close:hover {
+  background: rgba(239, 68, 68, 0.35);
+  color: #ffffff;
+  border-color: rgba(239, 68, 68, 0.6);
 }
 .doc-shot {
   margin: 28px 0 32px;

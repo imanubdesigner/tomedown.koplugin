@@ -117,32 +117,189 @@
     setActive();
   }
 
-  // lightbox overlay for obsidian-guide SVGs
+  // Interactive intelligent zoom inspector for obsidian-guide SVGs
   var guideImages = document.querySelectorAll(".docs .prose img[src*='obsidian-guide']");
   if (guideImages.length) {
+    // 1. Wrap each in-page guide image with interactive wrapper and badge
+    guideImages.forEach(function (img) {
+      if (img.parentElement && img.parentElement.classList.contains("guide-interactive-wrapper")) return;
+      var wrapper = document.createElement("div");
+      wrapper.className = "guide-interactive-wrapper";
+      wrapper.title = "Clicca per esplorare con zoom intelligente";
+      var badge = document.createElement("span");
+      badge.className = "guide-interactive-badge";
+      badge.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg> Zoom interattivo';
+
+      img.parentNode.insertBefore(wrapper, img);
+      wrapper.appendChild(img);
+      wrapper.appendChild(badge);
+    });
+
+    // 2. Create the lightbox inspector dialog
     var overlay = document.createElement("div");
     overlay.className = "guide-lightbox";
-    overlay.innerHTML = "<div class='guide-lightbox-inner'><img src='' alt='' /><button type='button' class='guide-lightbox-close' aria-label='Close'>&times;</button></div>";
+    overlay.setAttribute("role", "dialog");
+    overlay.setAttribute("aria-modal", "true");
+    overlay.setAttribute("aria-label", "Viewer grafico interattivo");
+    overlay.innerHTML =
+      '<div class="guide-lightbox-content">' +
+        '<div class="guide-viewport" title="Clicca per alternare panoramica/dettaglio">' +
+          '<img class="guide-zoom-img" src="" alt="" draggable="false" />' +
+        '</div>' +
+        '<div class="guide-toolbar">' +
+          '<div class="guide-toolbar-info">' +
+            '<span class="guide-zoom-badge">2.4×</span>' +
+            '<span class="guide-toolbar-hint">Muovi il mouse per esplorare • Rotellina per regolare lo zoom</span>' +
+          '</div>' +
+          '<div class="guide-toolbar-actions">' +
+            '<button type="button" class="guide-btn guide-btn-zoom-out" title="Riduci zoom (−)">−</button>' +
+            '<button type="button" class="guide-btn guide-btn-zoom-in" title="Aumenta zoom (+)">+</button>' +
+            '<button type="button" class="guide-btn guide-btn-toggle" title="Alterna panoramica e dettaglio">Panoramica (1×)</button>' +
+            '<button type="button" class="guide-btn guide-btn-close" title="Chiudi (Esc)">✕ Chiudi</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
     document.body.appendChild(overlay);
-    var overlayImg = overlay.querySelector("img");
-    var closeBtn = overlay.querySelector(".guide-lightbox-close");
-    var closeLightbox = function () {
+
+    var viewport = overlay.querySelector(".guide-viewport");
+    var zoomImg = overlay.querySelector(".guide-zoom-img");
+    var badgeScale = overlay.querySelector(".guide-zoom-badge");
+    var btnZoomOut = overlay.querySelector(".guide-btn-zoom-out");
+    var btnZoomIn = overlay.querySelector(".guide-btn-zoom-in");
+    var btnToggle = overlay.querySelector(".guide-btn-toggle");
+    var btnClose = overlay.querySelector(".guide-btn-close");
+
+    var currentScale = 2.4;
+    var defaultZoom = 2.4;
+    var minScale = 1.0;
+    var maxScale = 3.8;
+
+    function applyScale(scale) {
+      currentScale = Math.max(minScale, Math.min(maxScale, Math.round(scale * 10) / 10));
+      badgeScale.textContent = currentScale.toFixed(1) + "×";
+      if (currentScale <= 1.05) {
+        currentScale = 1.0;
+        zoomImg.style.transform = "scale(1)";
+        zoomImg.style.transformOrigin = "50% 50%";
+        viewport.classList.add("is-overview");
+        viewport.classList.remove("is-tracking");
+        btnToggle.textContent = "Dettaglio (2.4×)";
+        btnToggle.classList.remove("is-active");
+      } else {
+        zoomImg.style.transform = "scale(" + currentScale + ")";
+        viewport.classList.remove("is-overview");
+        btnToggle.textContent = "Panoramica (1×)";
+        btnToggle.classList.add("is-active");
+      }
+    }
+
+    function updateOrigin(clientX, clientY) {
+      if (currentScale <= 1.0) return;
+      var rect = viewport.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      var fx = (clientX - rect.left) / rect.width;
+      var fy = (clientY - rect.top) / rect.height;
+      fx = Math.max(0, Math.min(1, fx));
+      fy = Math.max(0, Math.min(1, fy));
+      viewport.classList.add("is-tracking");
+      zoomImg.style.transformOrigin = (fx * 100).toFixed(2) + "% " + (fy * 100).toFixed(2) + "%";
+    }
+
+    function openLightbox(src, alt, initialFx, initialFy) {
+      zoomImg.src = src;
+      zoomImg.alt = alt || "";
+      overlay.classList.add("is-open");
+      document.body.style.overflow = "hidden";
+      applyScale(defaultZoom);
+      var fx = (initialFx !== undefined) ? Math.max(0, Math.min(1, initialFx)) : 0.5;
+      var fy = (initialFy !== undefined) ? Math.max(0, Math.min(1, initialFy)) : 0.25;
+      zoomImg.style.transformOrigin = (fx * 100).toFixed(2) + "% " + (fy * 100).toFixed(2) + "%";
+    }
+
+    function closeLightbox() {
       overlay.classList.remove("is-open");
       document.body.style.overflow = "";
-    };
-    guideImages.forEach(function (img) {
-      img.addEventListener("click", function () {
-        overlayImg.src = img.src;
-        overlayImg.alt = img.alt || "";
-        overlay.classList.add("is-open");
-        document.body.style.overflow = "hidden";
+      viewport.classList.remove("is-tracking");
+    }
+
+    // Attach click to in-page guide wrappers
+    document.querySelectorAll(".guide-interactive-wrapper").forEach(function (w) {
+      w.addEventListener("click", function (e) {
+        var img = w.querySelector("img");
+        if (!img) return;
+        var r = w.getBoundingClientRect();
+        var fx = (e.clientX - r.left) / r.width;
+        var fy = (e.clientY - r.top) / r.height;
+        openLightbox(img.src, img.alt, fx, fy);
       });
     });
-    overlay.addEventListener("click", function (e) {
-      if (e.target === overlay || e.target === closeBtn) closeLightbox();
+
+    // Viewport mousemove -> intelligent tracking
+    viewport.addEventListener("mousemove", function (e) {
+      updateOrigin(e.clientX, e.clientY);
     });
+
+    // Viewport touchmove -> mobile panning
+    viewport.addEventListener("touchmove", function (e) {
+      if (e.touches && e.touches[0]) {
+        updateOrigin(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    }, { passive: true });
+
+    // Wheel zoom
+    viewport.addEventListener("wheel", function (e) {
+      e.preventDefault();
+      var delta = e.deltaY < 0 ? 0.3 : -0.3;
+      applyScale(currentScale + delta);
+      updateOrigin(e.clientX, e.clientY);
+    }, { passive: false });
+
+    // Click viewport to toggle between 1x overview and 2.4x detail
+    viewport.addEventListener("click", function (e) {
+      if (currentScale > 1.0) {
+        applyScale(1.0);
+      } else {
+        applyScale(defaultZoom);
+        updateOrigin(e.clientX, e.clientY);
+      }
+    });
+
+    // Buttons
+    btnZoomIn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      applyScale(currentScale + 0.4);
+    });
+    btnZoomOut.addEventListener("click", function (e) {
+      e.stopPropagation();
+      applyScale(currentScale - 0.4);
+    });
+    btnToggle.addEventListener("click", function (e) {
+      e.stopPropagation();
+      if (currentScale > 1.0) {
+        applyScale(1.0);
+      } else {
+        applyScale(defaultZoom);
+      }
+    });
+    btnClose.addEventListener("click", function (e) {
+      e.stopPropagation();
+      closeLightbox();
+    });
+
+    // Backdrop click
+    overlay.addEventListener("click", function (e) {
+      if (e.target === overlay || e.target.classList.contains("guide-lightbox-content")) {
+        closeLightbox();
+      }
+    });
+
+    // Keyboard navigation
     window.addEventListener("keydown", function (e) {
-      if (e.key === "Escape" && overlay.classList.contains("is-open")) closeLightbox();
+      if (!overlay.classList.contains("is-open")) return;
+      if (e.key === "Escape") closeLightbox();
+      else if (e.key === "+" || e.key === "=") applyScale(currentScale + 0.3);
+      else if (e.key === "-" || e.key === "_") applyScale(currentScale - 0.3);
+      else if (e.key === "0") applyScale(1.0);
     });
   }
 
