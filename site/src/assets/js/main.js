@@ -64,14 +64,20 @@
 
   var API = "https://api.github.com/repos/imanubdesigner/tomedown.koplugin/releases";
 
-  // download page: latest version and zip
+  // download & 404 pages: latest version and zip from GitHub Releases
   var version = document.getElementById("latest-version");
-  if (version) {
+  var versionNum = document.getElementById("latest-version-num");
+  if (version || versionNum) {
     fetch(API + "/latest").then(function (r) { return r.ok ? r.json() : Promise.reject(); })
       .then(function (rel) {
-        version.textContent = rel.tag_name;
+        if (!rel || !rel.tag_name) return;
+        var tag = rel.tag_name;
+        var clean = tag.replace(/^v/i, "");
+        if (version) version.textContent = /^v/i.test(tag) ? tag : "v" + tag;
+        if (versionNum) versionNum.textContent = clean;
         var zip = (rel.assets || []).filter(function (a) { return /\.zip$/.test(a.name); })[0];
-        if (zip) document.getElementById("latest-link").href = zip.browser_download_url;
+        var link = document.getElementById("latest-link");
+        if (zip && link) link.href = zip.browser_download_url;
       }).catch(function () {});
   }
 

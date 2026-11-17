@@ -72,11 +72,21 @@ def write_page(url, text):
     out.write_text(text, encoding="utf-8")
 
 
+def read_plugin_version(docs_root):
+    meta_file = docs_root / "_meta.lua"
+    if meta_file.exists():
+        m = re.search(r'version\s*=\s*"([^"]+)"', meta_file.read_text(encoding="utf-8"))
+        if m:
+            return m.group(1)
+    return "2.1.0"
+
+
 class Site:
-    def __init__(self, base, offline):
+    def __init__(self, base, offline, version="2.1.0"):
         self.base = base.rstrip("/")
         self.layout = (SRC / "layout.html").read_text(encoding="utf-8")
         self.fonts = fonts_block(offline)
+        self.version = version
 
     def render(self, url, title, description, content, wide=False):
         page = self.layout
@@ -86,6 +96,8 @@ class Site:
             "description": html.escape(description, quote=True),
             "content": content,
             "canonical": SITE_URL + url,
+            "version": self.version,
+            "v_version": f"v{self.version}",
         }.items():
             page = page.replace("{{" + key + "}}", val)
         page = page.replace("{{base}}", self.base)
@@ -353,7 +365,7 @@ def main():
     else:
         DIST.mkdir(parents=True, exist_ok=True)
 
-    site = Site(args.base, args.offline_fonts)
+    site = Site(args.base, args.offline_fonts, read_plugin_version(docs_root))
     nav = json.loads((ROOT / "docs-nav.json").read_text(encoding="utf-8"))
     slugmap = {}
     for s in nav["sections"]:
