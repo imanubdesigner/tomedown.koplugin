@@ -264,7 +264,7 @@ Inside an open book, go to **Tomedown → Current book → Style & format** to o
       <figcaption>Open <strong>Tomedown → Current book</strong> to manage notes, visibility, and style for the active book.</figcaption>
     </figure>
     <figure class="spotlight-slide" role="tabpanel">
-      <div class="doc-device-frame">
+      <div class="doc-device-frame doc-device-frame-wide">
         <img src="{{base}}/assets/img/current-book-style-kindle.svg" alt="KOReader Tomedown Current book Style and format submenu" />
       </div>
       <figcaption>Override any formatting option for that book alone, or tap <strong>Reset to global style settings</strong>.</figcaption>

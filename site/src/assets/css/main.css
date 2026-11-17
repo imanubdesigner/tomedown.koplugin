@@ -1489,8 +1489,10 @@ mark { background: var(--hl); color: var(--hl-ink); padding: 0 0.15em; }
 }
 .docs .prose img[src$="keep_my_notes_menu.svg"],
 .docs .prose img[src$="updates_menu.svg"],
+.docs .prose img[src$="style_menu.svg"],
+.docs .prose img[src$="confirm_delete_backups.svg"],
 .docs .prose .doc-device-frame-wide img[src$=".svg"] {
-  max-width: 720px;
+  max-width: 760px;
 }
 .docs .prose img[src*="obsidian-guide"] {
   max-width: 100% !important;
