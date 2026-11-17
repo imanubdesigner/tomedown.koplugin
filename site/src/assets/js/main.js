@@ -125,10 +125,10 @@
       if (img.parentElement && img.parentElement.classList.contains("guide-interactive-wrapper")) return;
       var wrapper = document.createElement("div");
       wrapper.className = "guide-interactive-wrapper";
-      wrapper.title = "Clicca per esplorare con zoom intelligente";
+      wrapper.title = "Click to inspect with interactive zoom";
       var badge = document.createElement("span");
       badge.className = "guide-interactive-badge";
-      badge.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg> Zoom interattivo';
+      badge.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg> Interactive zoom';
 
       img.parentNode.insertBefore(wrapper, img);
       wrapper.appendChild(img);
@@ -140,22 +140,22 @@
     overlay.className = "guide-lightbox";
     overlay.setAttribute("role", "dialog");
     overlay.setAttribute("aria-modal", "true");
-    overlay.setAttribute("aria-label", "Viewer grafico interattivo");
+    overlay.setAttribute("aria-label", "Interactive diagram inspector");
     overlay.innerHTML =
       '<div class="guide-lightbox-content">' +
-        '<div class="guide-viewport" title="Clicca per alternare panoramica/dettaglio">' +
+        '<div class="guide-viewport" title="Click to toggle overview / detail">' +
           '<img class="guide-zoom-img" src="" alt="" draggable="false" />' +
         '</div>' +
         '<div class="guide-toolbar">' +
           '<div class="guide-toolbar-info">' +
             '<span class="guide-zoom-badge">2.4×</span>' +
-            '<span class="guide-toolbar-hint">Muovi il mouse per esplorare • Rotellina per regolare lo zoom</span>' +
+            '<span class="guide-toolbar-hint">Move mouse to inspect • Wheel to zoom</span>' +
           '</div>' +
           '<div class="guide-toolbar-actions">' +
-            '<button type="button" class="guide-btn guide-btn-zoom-out" title="Riduci zoom (−)">−</button>' +
-            '<button type="button" class="guide-btn guide-btn-zoom-in" title="Aumenta zoom (+)">+</button>' +
-            '<button type="button" class="guide-btn guide-btn-toggle" title="Alterna panoramica e dettaglio">Panoramica (1×)</button>' +
-            '<button type="button" class="guide-btn guide-btn-close" title="Chiudi (Esc)">✕ Chiudi</button>' +
+            '<button type="button" class="guide-btn guide-btn-zoom-out" title="Zoom out (−)">−</button>' +
+            '<button type="button" class="guide-btn guide-btn-zoom-in" title="Zoom in (+)">+</button>' +
+            '<button type="button" class="guide-btn guide-btn-toggle" title="Toggle overview / detail">Overview (1×)</button>' +
+            '<button type="button" class="guide-btn guide-btn-close" title="Close (Esc)">✕ Close</button>' +
           '</div>' +
         '</div>' +
       '</div>';
@@ -183,12 +183,12 @@
         zoomImg.style.transformOrigin = "50% 50%";
         viewport.classList.add("is-overview");
         viewport.classList.remove("is-tracking");
-        btnToggle.textContent = "Dettaglio (2.4×)";
+        btnToggle.textContent = "Detail (2.4×)";
         btnToggle.classList.remove("is-active");
       } else {
         zoomImg.style.transform = "scale(" + currentScale + ")";
         viewport.classList.remove("is-overview");
-        btnToggle.textContent = "Panoramica (1×)";
+        btnToggle.textContent = "Overview (1×)";
         btnToggle.classList.add("is-active");
       }
     }
