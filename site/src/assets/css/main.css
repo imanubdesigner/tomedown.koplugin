@@ -1602,8 +1602,8 @@ mark { background: var(--hl); color: var(--hl-ink); padding: 0 0.15em; }
   animation: kenBurnsContext 8.5s ease-out forwards;
 }
 .doc-spotlight .spotlight-slide.is-active .spotlight-frame img.zoom-footnote {
-  transform-origin: 50% 50%;
-  animation: kenBurnsFootnote 6s cubic-bezier(.22, 1, .36, 1) forwards;
+  transform-origin: 5% 94%;
+  animation: kenBurnsFootnote 7s cubic-bezier(.22, 1, .36, 1) forwards;
 }
 @keyframes kenBurnsContext {
   0% { transform: scale(1); }
@@ -1611,7 +1611,7 @@ mark { background: var(--hl); color: var(--hl-ink); padding: 0 0.15em; }
 }
 @keyframes kenBurnsFootnote {
   0% { transform: scale(1); }
-  100% { transform: scale(1.10); }
+  100% { transform: scale(1.78); }
 }
 
 .doc-shot-frame img.zoom-keep-notes,
