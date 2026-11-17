@@ -1487,10 +1487,10 @@ mark { background: var(--hl); color: var(--hl-ink); padding: 0 0.15em; }
   border: 0 !important;
   border-radius: 0 !important;
 }
-.docs .prose img[src$="keep_my_notes_menu.svg"],
-.docs .prose img[src$="updates_menu.svg"],
-.docs .prose img[src$="style_menu.svg"],
-.docs .prose img[src$="confirm_delete_backups.svg"],
+.docs .prose img[src$="/keep_my_notes_menu.svg"],
+.docs .prose img[src$="/updates_menu.svg"],
+.docs .prose img[src$="/style_menu.svg"],
+.docs .prose img[src$="/confirm_delete_backups.svg"],
 .docs .prose .doc-device-frame-wide img[src$=".svg"] {
   max-width: 760px;
 }
