@@ -167,8 +167,6 @@ collections:
 
 To automate metadata imports across your collection, enable *Settings → Book info → Update book info automatically*.
 
----
-
 <a id="special-highlights"></a>
 ## Special highlights & callouts
 
@@ -183,7 +181,7 @@ Obsidian, Notion, and GitHub natively render `> [!highlight]` (or `> [!IMPORTANT
 
 <figure class="doc-shot">
   <div class="doc-shot-frame">
-    <img src="../assets/highlights-context-obsidian.webp" alt="Obsidian note displaying callouts with surrounding context lines" />
+    <img class="zoom-context" src="../assets/highlights-context-obsidian.webp" alt="Obsidian note displaying callouts with surrounding context lines" />
   </div>
   <figcaption>Special highlight callout with surrounding sentence context in Obsidian.</figcaption>
 </figure>
@@ -199,8 +197,6 @@ When *Settings → Style → Include highlight context* is enabled, Tomedown ext
   - **Context:** *…leading thought before the sentence. …following argument after.*
 ```
 
----
-
 <a id="links-to-a-single-highlight"></a>
 ## Granular link IDs (Block references)
 
@@ -212,8 +208,6 @@ With *Settings → Style → Add link IDs to highlights* enabled, every highligh
 
 - **Jump to quote**: `[[Book title#^hl-4f2a9c31]]`
 - **Embed quote live**: `![[Book title#^hl-4f2a9c31]]`
-
----
 
 ## Covers
 
@@ -228,8 +222,6 @@ cover: "covers/Arthur Machen - The Three Impostors.jpg"
   <img src="covers/Arthur Machen - The Three Impostors.jpg" alt="Cover" style="object-fit:contain;max-height:420px;border-radius:4px" />
 </p>
 ```
-
----
 
 ## The index (`00 - Index.md`)
 
@@ -261,8 +253,6 @@ Under *Settings → Index*, you can enable rich modular components in `00 - Inde
   <figcaption><code>00 - Index.md</code> in Obsidian: Library dashboard, Tag cloud, and Completed books trophy room.</figcaption>
 </figure>
 
----
-
 ## Handwritten notes & Stylus drawings
 
 For devices equipped with a stylus (Kindle Scribe, Kobo Sage/Elipsa, Android e-ink, or via KOReader's `pencil.koplugin`), Tomedown automatically discovers handwritten annotations in the book's `.sdr` directory:
@@ -291,8 +281,6 @@ For devices equipped with a stylus (Kindle Scribe, Kobo Sage/Elipsa, Android e-i
   </div>
   <figcaption>Pure-Lua vector SVG drawing extracted from KOReader and embedded natively in Obsidian.</figcaption>
 </figure>
-
----
 
 ## Reading Digest (`00 - Reading Digest.md`)
 

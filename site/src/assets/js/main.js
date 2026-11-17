@@ -12,6 +12,24 @@
     items.forEach(function (el) { el.classList.add("is-visible"); });
   }
 
+  // trigger doc-shot Ken Burns zoom only when scrolled into view
+  var docShots = document.querySelectorAll(".doc-shot");
+  if (docShots.length) {
+    if ("IntersectionObserver" in window) {
+      var shotIo = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) {
+            e.target.classList.add("is-inview");
+            shotIo.unobserve(e.target);
+          }
+        });
+      }, { threshold: 0.2 });
+      docShots.forEach(function (el) { shotIo.observe(el); });
+    } else {
+      docShots.forEach(function (el) { el.classList.add("is-inview"); });
+    }
+  }
+
   // spotlight: tab switcher + gentle auto-cycle (supports home & docs)
   document.querySelectorAll(".spotlight").forEach(function (spotlight) {
     var tabs = spotlight.querySelectorAll(".spotlight-tab");

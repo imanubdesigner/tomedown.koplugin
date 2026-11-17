@@ -1611,6 +1611,19 @@ mark { background: var(--hl); color: var(--hl-ink); padding: 0 0.15em; }
   100% { transform: scale(1.85); }
 }
 
+.doc-shot-frame img {
+  animation-play-state: paused !important;
+}
+.doc-shot.is-inview .doc-shot-frame img {
+  animation-play-state: running !important;
+}
+
+.doc-shot-frame img.zoom-context,
+.doc-shot-frame img[src*="highlights-context-obsidian.webp"] {
+  transform-origin: 52% 35%;
+  animation: kenBurnsContext 8s ease-out forwards;
+}
+
 .doc-shot-frame img.zoom-modules,
 .doc-shot-frame img[src*="book_modules_v210.webp"] {
   transform-origin: 56% 52%;
