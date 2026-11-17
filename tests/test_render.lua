@@ -911,12 +911,14 @@ T.check(render.fmtDate(nil) == "", "nil date is empty")
 T.check(render.fmtDate(42) == "", "non-string date is empty")
 
 -- fmtDateTime
-T.check(render.fmtDateTime("2026-09-02 10:00:00") == "02/09/2026 10:00",
-    "ISO datetime keeps the time")
-T.check(render.fmtDateTime("2026-12-31") == "31/12/2026",
-    "date without time falls back to fmtDate")
-T.check(render.fmtDateTime("01/02/2026") == "01/02/2026",
-    "already formatted date passes through")
+T.check(render.fmtDateTime("2026-11-16 09:29:00") == "16 Nov 2026 | 09:29",
+    "ISO datetime formats into literary date and pipe-separated time")
+T.check(render.fmtDateTime("2026-09-02 10:00:00") == "2 Sep 2026 | 10:00",
+    "ISO datetime keeps the time with single-digit day")
+T.check(render.fmtDateTime("2026-12-31") == "31 Dec 2026",
+    "date without time falls back to fmtDateLiterary")
+T.check(render.fmtDateTime("01/02/2026") == "1 Feb 2026",
+    "DD/MM/YYYY date formats to literary date")
 T.check(render.fmtDateTime(nil) == "", "nil datetime is empty")
 T.check(render.fmtDateTime(42) == "", "non-string datetime is empty")
 
@@ -1308,12 +1310,26 @@ do
             },
         },
     }, { index_links = "markdown", note_style = "footnote" })
-    T.check(T.contains(digest, "**2 books** · **3 highlights** · **★ 1 special**"),
+    T.check(T.contains( digest, "**2 books** · **3 highlights** · **★ 1 special**"),
         "digest stats summary line")
-    local d_nov5 = digest:find("## 05/11/2026", 1, true)
-    local d_nov4 = digest:find("## 04/11/2026", 1, true)
+    T.check(render.fmtDateLiterary("2026-11-16") == "16 Nov 2026"
+            and render.fmtDateLiterary("05/11/2026") == "5 Nov 2026",
+        "fmtDateLiterary formats ISO and DD/MM/YYYY into literary date")
+    T.check(render.fmtTimeOnly("2026-11-16 09:41:20") == "09:41"
+            and render.fmtTimeOnly("16/11/2026 21:15") == "21:15"
+            and render.fmtTimeOnly("16/11/2026") == "",
+        "fmtTimeOnly extracts HH:MM and returns empty when no time is present")
+    local d_nov5 = digest:find("## 5 Nov 2026", 1, true)
+    local d_nov4 = digest:find("## 4 Nov 2026", 1, true)
     T.check(d_nov5 and d_nov4 and d_nov5 < d_nov4,
-        "digest groups newest day first")
+        "digest groups newest day first using literary date heading")
+    T.check(T.contains(digest, "- *Adventure of the Gold Tiberius* · **p. 18** · 21:15 [^1]")
+            and not T.contains(digest, "05/11/2026 21:15"),
+        "digest shows clean HH:MM timestamp without repeating the date")
+    T.check(T.contains(digest, "- **p. 12** · 09:30\n"),
+        "digest second book shows clean HH:MM timestamp")
+    T.check(T.contains(digest, "[^1]\n\n---\n\n### [The Three Just Men]"),
+        "digest inserts horizontal rule separator between different books on the same day")
     local q_newer = digest:find("> Newer quote.", 1, true)
     local q_earlier = digest:find("> Same day earlier.", 1, true)
     T.check(q_newer and q_earlier and q_newer < q_earlier,
@@ -1456,6 +1472,161 @@ do
             and T.contains(txt_out, "Context: …parole prima … parole dopo…")
             and T.contains(txt_out, "Appunto personale in testa."),
         "buildBookTxt formats plain text export with chapters, details, context and user notes")
+
+    -- Book heading in body (H1 title + H3 author/series) and Overview styles (inline, blockquote, callout, table)
+    local hd_book = {
+        title = "The Three Just Men",
+        author = "Edgar Wallace",
+        series = "The Four Just Men",
+        series_index = 5,
+        exported = "2026-11-16",
+        annotations = {
+            { text = "Quote 1", chapter = "Ch I", page = "4", date = "16/11/2026 10:00", special = true },
+            { text = "Quote 2", chapter = "Ch I", page = "8", date = "16/11/2026 10:05" },
+        },
+    }
+    local hd_inline = render.buildBookMd(hd_book, { book_heading = true, overview_style = "inline" })
+    T.check(T.contains(hd_inline, "# The Three Just Men\n### by Edgar Wallace · *The Four Just Men (#5)*\n\n---\n\n### **2 highlights · ★ 1 special**"),
+        "book_heading = true renders H1 title, H3 author/series, and H3 inline overview")
+
+    local hd_bq = render.buildBookMd(hd_book, { book_heading = true, overview_style = "blockquote" })
+    T.check(T.contains(hd_bq, "> **2 highlights · ★ 1 special**"),
+        "overview_style = blockquote renders classic blockquote")
+
+    local hd_callout = render.buildBookMd(hd_book, { book_heading = true, overview_style = "callout" })
+    T.check(T.contains(hd_callout, "> [!summary] Overview\n> **2 highlights · ★ 1 special**"),
+        "overview_style = callout renders [!summary] callout")
+
+    local hd_table = render.buildBookMd(hd_book, { book_heading = true, overview_style = "table" })
+    T.check(T.contains(hd_table, "| Highlights | Special |\n|:---:|:---:|\n| 2 | ★ 1 |"),
+        "overview_style = table renders markdown table for book")
+
+    local d_books = {
+        {
+            link = "Edgar Wallace - The Three Just Men",
+            title = "The Three Just Men",
+            author = "Edgar Wallace",
+            annotations = hd_book.annotations,
+        },
+    }
+    T.check(T.contains(render.buildDigestMd(d_books, { overview_style = "blockquote" }),
+            "> **1 book** · **2 highlights** · **★ 1 special**"),
+        "digest overview_style = blockquote")
+    T.check(T.contains(render.buildDigestMd(d_books, { overview_style = "callout" }),
+            "> [!summary] Overview\n> **1 book** · **2 highlights** · **★ 1 special**"),
+        "digest overview_style = callout")
+    T.check(T.contains(render.buildDigestMd(d_books, { overview_style = "table" }),
+            "| Books | Highlights | Special |\n|:---:|:---:|:---:|\n| 1 | 2 | ★ 1 |"),
+        "digest overview_style = table")
+
+    -- Pillar 4: Index tags display modes (all, first_3, collapsible)
+    local many_tags_book = {
+        {
+            link = "Book",
+            title = "Book",
+            author = "Author",
+            count = 3,
+            tags = { "Detective", "Mystery", "Gothic", "Thriller", "London" },
+        },
+    }
+    local idx_all = render.buildIndexMd(many_tags_book, { index_tags_mode = "all" })
+    T.check(T.contains(idx_all, "#Detective") and T.contains(idx_all, "#London")
+            and not T.contains(idx_all, "+2"),
+        "index_tags_mode = all shows every tag")
+    local idx_f3 = render.buildIndexMd(many_tags_book, { index_tags_mode = "first_3" })
+    T.check(T.contains(idx_f3, "#Detective") and T.contains(idx_f3, "#Gothic")
+            and not T.contains(idx_f3, "#Thriller")
+            and T.contains(idx_f3, "+2</span>"),
+        "index_tags_mode = first_3 shows first 3 tags and +2 badge")
+    local idx_col = render.buildIndexMd(many_tags_book, { index_tags_mode = "collapsible" })
+    T.check(T.contains(idx_col, "<details") and T.contains(idx_col, "+2</summary>")
+            and T.contains(idx_col, "#Thriller") and T.contains(idx_col, "#London"),
+        "index_tags_mode = collapsible wraps remaining tags in <details>")
+
+    -- Pillar 5: Complete Book Card modules (reading_dashboard, book_synopsis, body_tags, special_showcase)
+    local card_book = {
+        title = "The Three Just Men",
+        author = "Edgar Wallace",
+        series = "The Four Just Men",
+        series_index = 5,
+        status = "complete",
+        progress = "100%",
+        pages = 212,
+        rating = 4,
+        date_started = "2026-11-05",
+        date_finished = "2026-11-14",
+        description = "<p>Having recently been pardoned, the <b>Just Men</b> continue their mission.</p><p>Second paragraph.</p>",
+        keywords = { "Detective", "Mystery-stories" },
+        tags = { "English" },
+        exported = "2026-11-16",
+        annotations = {
+            { text = "Six million people rose from their beds.", chapter = "Chapter I", page = "4", date = "13/11/2026 16:34", special = true },
+            { text = "Ordinary highlight.", chapter = "Chapter I", page = "5", date = "13/11/2026 16:40" },
+        },
+    }
+    local full_card_md = render.buildBookMd(card_book, {
+        book_heading = true,
+        reading_dashboard = true,
+        book_synopsis = true,
+        body_tags = true,
+        special_showcase = true,
+    })
+    T.check(T.contains(full_card_md, "> [!book] Reading dashboard")
+            and T.contains(full_card_md, "🟢 **Complete** (100% · 212 pages)")
+            and T.contains(full_card_md, "★★★★☆ (4/5)")
+            and T.contains(full_card_md, "5 Nov 2026 → 14 Nov 2026")
+            and T.contains(full_card_md, "[[00 - Index|← Book index]]"),
+        "reading_dashboard renders status, pages, rating, literary dates and index link")
+    T.check(T.contains(full_card_md, "> [!abstract]- Book synopsis\n> Having recently been pardoned, the Just Men continue their mission.\n>\n> Second paragraph."),
+        "book_synopsis strips HTML and renders collapsible [!abstract]- callout")
+    T.check(T.contains(full_card_md, "\n#Detective #Mystery-stories #English\n"),
+        "body_tags renders clickable hashtags in book body")
+    T.check(T.contains(full_card_md, "> [!highlight]- ★ Special highlights (1)\n> “Six million people rose from their beds.”\n> — *Chapter I · p. 4*"),
+        "special_showcase renders collapsible ★ Special highlights callout before chapters")
+
+    -- Pillar 6: Index Trophy Room (completed_books), Library Dashboard (index_dashboard), and Tag Cloud (index_tag_cloud)
+    local lib_books = {
+        {
+            link = "Edgar Wallace - The Three Just Men",
+            title = "The Three Just Men",
+            author = "Edgar Wallace",
+            status = "complete",
+            progress = "100%",
+            rating = 4,
+            count = 3,
+            special = 1,
+            tags = { "Detective", "Mystery" },
+            last_read = "14/11/2026",
+            last_read_sort = 200,
+        },
+        {
+            link = "George MacDonald - The Portent",
+            title = "The Portent",
+            author = "George MacDonald",
+            status = "reading",
+            progress = "23%",
+            count = 4,
+            special = 2,
+            tags = { "Gothic", "Detective" },
+            last_read = "15/11/2026",
+            last_read_sort = 300,
+        },
+    }
+    local full_idx_md = render.buildIndexMd(lib_books, {
+        completed_books = true,
+        index_dashboard = true,
+        index_tag_cloud = true,
+    })
+    T.check(T.contains(full_idx_md, "> [!summary] Library dashboard")
+            and T.contains(full_idx_md, "🟢 1 Complete")
+            and T.contains(full_idx_md, "🟡 1 Reading")
+            and T.contains(full_idx_md, "[[00 - Reading Digest|Reading digest →]]"),
+        "index_dashboard renders Library dashboard callout with status breakdown and digest link")
+    T.check(T.contains(full_idx_md, "🏷️ #Detective (2) · #Gothic (1) · #Mystery (1)"),
+        "index_tag_cloud aggregates and sorts tags by frequency")
+    T.check(T.contains(full_idx_md, "### Completed books\n")
+            and T.contains(full_idx_md, "### Reading now\n"),
+        "completed_books renders Completed books trophy room section")
 end
 
 T.finish("test_render")

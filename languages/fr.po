@@ -526,14 +526,59 @@ msgstr "Écrivez vos pensées, vos émotions, vos questions."
 msgid "Backup copies"
 msgstr "Copies de sauvegarde"
 
-msgid "Safety copy"
-msgstr "Copie de sécurité"
+msgid "Safety copy · %1"
+msgstr "Copie de sécurité · %1"
 
-msgid "Saved notes"
-msgstr "Notes enregistrées"
+msgid "Saved notes · %1"
+msgstr "Notes enregistrées · %1"
 
-msgid "Older copy"
-msgstr "Copie plus ancienne"
+msgid "Older copy · %1"
+msgstr "Copie plus ancienne · %1"
+
+msgid "Latest snapshot · %1"
+msgstr "Dernier instantané · %1"
+
+msgid "Snapshot 2 · %1"
+msgstr "Instantané 2 · %1"
+
+msgid "Snapshot 3 · %1"
+msgstr "Instantané 3 · %1"
+
+msgid "Backup copies (%1)"
+msgstr "Copies de sauvegarde (%1)"
+
+msgid "Delete all backup copies…"
+msgstr "Supprimer toutes les copies de sauvegarde…"
+
+msgid "Delete all %1 backup copies (.bak)?\n\nIt cannot be undone."
+msgstr "Supprimer les %1 copies de sauvegarde (.bak) ?\n\nCette action est irréversible."
+
+msgid "%1 backup copies deleted."
+msgstr "%1 copies de sauvegarde supprimées."
+
+msgid "Export settings to file"
+msgstr "Exporter les paramètres vers un fichier"
+
+msgid "Settings exported to %1"
+msgstr "Paramètres exportés vers %1"
+
+msgid "The settings backup could not be written."
+msgstr "La sauvegarde des paramètres n'a pas pu être écrite."
+
+msgid "Restore settings from backup…"
+msgstr "Restaurer les paramètres depuis la sauvegarde…"
+
+msgid "Restore all Tomedown settings from %1?\n\nCurrent settings will be replaced."
+msgstr "Restaurer tous les paramètres de Tomedown depuis %1 ?\n\nLes paramètres actuels seront remplacés."
+
+msgid "Restore"
+msgstr "Restaurer"
+
+msgid "Settings restored from backup."
+msgstr "Paramètres restaurés depuis la sauvegarde."
+
+msgid "The settings backup could not be read."
+msgstr "La sauvegarde des paramètres n'a pas pu être lue."
 
 msgid "Text of yours that a rewrite was about to replace and that does not come back by itself."
 msgstr "Un de vos textes qu'une réécriture allait remplacer et qui ne revient pas de lui-même."
@@ -987,6 +1032,129 @@ msgstr "clé : valeur (une par ligne) ; laisser vide pour aucun"
 
 msgid "key: value (one per line) for this book"
 msgstr "clé : valeur (une par ligne) pour ce livre"
+
+msgid "Handwritten note"
+msgstr "Note manuscrite"
+
+msgid "Drawings folder name"
+msgstr "Nom du dossier des dessins"
+
+msgid "e.g. drawings, attachments, assets"
+msgstr "p. ex. drawings, attachments, assets"
+
+msgid "Include handwritten notes"
+msgstr "Inclure les notes manuscrites"
+
+msgid "Drawings folder: %1"
+msgstr "Dossier des dessins : %1"
+
+msgid "Handwritten notes: %1"
+msgstr "Notes manuscrites : %1"
+
+msgid "by %1"
+msgstr "par %1"
+
+msgid "Overview"
+msgstr "Aperçu"
+
+msgid "Special"
+msgstr "Spéciaux"
+
+msgid "Books"
+msgstr "Livres"
+
+msgid "Include book title in body"
+msgstr "Inclure le titre du livre dans le texte"
+
+msgid "Book title in body: %1"
+msgstr "Titre dans le texte : %1"
+
+msgid "Overview style: %1"
+msgstr "Style de l'aperçu : %1"
+
+msgid "Inline / Heading"
+msgstr "En ligne / Titre"
+
+msgid "Classic blockquote"
+msgstr "Citation classique"
+
+msgid "Callout ([!summary])"
+msgstr "Callout ([!summary])"
+
+msgid "Table"
+msgstr "Tableau"
+
+msgid "Reading dashboard"
+msgstr "Tableau de lecture"
+
+msgid "pages"
+msgstr "pages"
+
+msgid "Rating"
+msgstr "Note"
+
+msgid "Reading dates"
+msgstr "Dates de lecture"
+
+msgid "Book synopsis"
+msgstr "Synopsis du livre"
+
+msgid "Special highlights"
+msgstr "Extraits spéciaux"
+
+msgid "Library dashboard"
+msgstr "Tableau de la bibliothèque"
+
+msgid "Completed books"
+msgstr "Livres terminés"
+
+msgid "Show all"
+msgstr "Tout afficher"
+
+msgid "First 3 (+N)"
+msgstr "3 premiers (+N)"
+
+msgid "Collapsible (<details>)"
+msgstr "Repliable (<details>)"
+
+msgid "Index tags display: %1"
+msgstr "Tags dans l'index : %1"
+
+msgid "Show Completed books in the index"
+msgstr "Afficher les livres terminés dans l'index"
+
+msgid "Show Library dashboard in the index"
+msgstr "Afficher le tableau de la bibliothèque dans l'index"
+
+msgid "Show tag cloud in the index"
+msgstr "Afficher le nuage de tags dans l'index"
+
+msgid "Include reading dashboard"
+msgstr "Inclure le tableau de lecture"
+
+msgid "Include book synopsis"
+msgstr "Inclure le synopsis du livre"
+
+msgid "Include clickable tags in body"
+msgstr "Inclure les tags cliquables dans le texte"
+
+msgid "Include Special highlights showcase"
+msgstr "Inclure la vitrine des extraits spéciaux"
+
+msgid "Reading dashboard: %1"
+msgstr "Tableau de lecture : %1"
+
+msgid "Book synopsis: %1"
+msgstr "Synopsis du livre : %1"
+
+msgid "Body tags: %1"
+msgstr "Tags dans le texte : %1"
+
+msgid "Special highlights showcase: %1"
+msgstr "Vitrine des extraits spéciaux : %1"
+
+
+
 
 
 

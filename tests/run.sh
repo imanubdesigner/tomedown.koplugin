@@ -42,6 +42,8 @@ echo "=== test_pubdate"
 "$LUA" test_pubdate.lua
 echo "=== test_metadata"
 "$LUA" test_metadata.lua
+echo "=== test_handwritten"
+"$LUA" test_handwritten.lua
 echo "=== test_main"
 "$LUA" test_main.lua
 echo "=== test_update"

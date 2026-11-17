@@ -354,12 +354,13 @@ if md then
     T.check(T.contains(md, 'author: "Arthur Machen"'), "frontmatter author")
     T.check(T.contains(md, "highlights: 2"), "only the valid highlights")
     T.check(T.contains(md, "  - ebook"), "tag ebook")
-    T.check(not T.contains(md, "# The Three Impostors"), "no h1 in the body")
-    T.check(T.contains(md, "# **2 highlights**"), "count")
+    T.check(T.contains(md, "# The Three Impostors"), "book title h1 in the body")
+    T.check(T.contains(md, "### by Arthur Machen"), "book author h3 in the body")
+    T.check(T.contains(md, "### **2 highlights**"), "count")
     T.check(T.contains(md, "\n# Capitolo I"), "chapter 1")
     T.check(T.contains(md, "\n# Capitolo II"), "chapter 2")
     T.check(T.contains(md, "> Prima frase."), "quote")
-    T.check(T.contains(md, "- **p. 10** · 02/09/2026 10:00\n  - **NOTE:** *nota utente*"), "meta with note")
+    T.check(T.contains(md, "- **p. 10** · 2 Sep 2026 | 10:00\n  - **NOTE:** *nota utente*"), "meta with note")
     T.check(T.contains(md, "nota utente"), "note present")
     T.check(not T.contains(md, "Segnalibro"), "page bookmark excluded")
     T.check(not T.contains(md, "Cancellato"), "deleted highlight excluded")
@@ -1187,7 +1188,7 @@ T.check(cloud[2].text_func() == "Server and folder: not set", "server not set")
 T.check(T.contains(cloud[3].text_func(), "Remote folder: not set"), "remote folder not set")
 -- Files: six static rows
 local files = settings[1].sub_item_table
-T.check(#files == 6, "files rows: " .. #files)
+T.check(#files == 9, "files rows: " .. #files)
 T.check(T.contains(files[1].text_func(), "clipboard/tomedown"), "default local folder")
 T.check(files[2].text_func() == "File name template: Author - Title", "filename template entry")
 T.check(files[3].text_func() == "Folder organization: Single folder", "folder organization entry")
@@ -1195,10 +1196,10 @@ T.check(files[4].text == "Create a reading digest (00 - Reading Digest.md)", "re
 T.check(files[5].text == "Export when I close a book", "auto-export entry")
 T.check(files[5].checked_func() == false, "auto-export off by default")
 
--- Index: five static rows
+-- Index: nine static rows
 do
     local index_group = settings[2].sub_item_table
-    T.check(#index_group == 5, "index rows: " .. #index_group)
+    T.check(#index_group == 9, "index rows: " .. #index_group)
     T.check(index_group[1].text == "Create an index note (00 - Index.md)",
         "index entry with the file name")
     T.check(index_group[2].text_func() == "Index order: Author",
@@ -1276,10 +1277,10 @@ do
     T.check(index_group[5].checked_func() == true, "Reading now on by default")
 end
 
--- Style: twelve static rows
+-- Style: twenty static rows
 do
     local style_group = settings[3].sub_item_table
-    T.check(#style_group == 12, "style rows: " .. #style_group)
+    T.check(#style_group == 20, "style rows: " .. #style_group)
     T.check(style_group[1].text_func() == "Personal notes format: Inline", "note style entry")
     T.check(type(style_group[2].text_func) == "function", "special marker row present")
     T.check(T.contains(style_group[2].text_func(), "Callout"),
@@ -1496,7 +1497,7 @@ T.check(notes[3] == nil,
 
 -- Style: note formatting and highlights
 local highlights = settings[3].sub_item_table
-T.check(#highlights == 12, "style rows: " .. #highlights)
+T.check(#highlights == 20, "style rows: " .. #highlights)
 T.check(highlights[3].text == "Treat every highlight as special",
     "callout entry")
 T.check(highlights[3].checked_func() == false, "callout off by default")
@@ -2010,7 +2011,7 @@ T.check(bmMd ~= nil, "export with page bookmarks")
 if bmMd then
     T.check(T.contains(bmMd, "\n# Page bookmarks"), "bookmarks section")
     T.check(T.contains(bmMd, "> Segnalibro di pagina"), "bookmark note quoted")
-    T.check(T.contains(bmMd, "- **p. 5** · 01/09/2026 09:00"), "bookmark meta row")
+    T.check(T.contains(bmMd, "- **p. 5** · 1 Sep 2026 | 09:00"), "bookmark meta row")
     T.check(T.contains(bmMd, "highlights: 2"), "highlight count unchanged")
     local iBm = bmMd:find("\n# Page bookmarks", 1, true)
     local iLast = bmMd:find("> Seconda riga.", 1, true)
@@ -4613,8 +4614,8 @@ do
     store.lastfile = nil
     ui.document = { file = FILE }
     local items = row.sub_item_table_func()
-    T.check(#items == 2 and items[1].text == "Saved notes"
-            and items[2].text == "Safety copy",
+    T.check(#items == 2 and T.contains(items[1].text, "Saved notes · ")
+            and T.contains(items[2].text, "Latest snapshot · "),
         "25: the saved notes come first, the safety copy after it")
     T.check(type(items[1].mandatory) == "string"
             and items[1].mandatory:match("^%d%d%d%d%-%d%d%-%d%d$"),
@@ -4622,7 +4623,7 @@ do
 
     -- the parked file is where the notes are while the book has no zone
     local box = tap(items[1])
-    T.check(box and T.contains(box.text, "Saved notes")
+    T.check(box and T.contains(box.text, "Saved notes · ")
             and T.contains(box.text, "when you turned Keep my notes off")
             and T.contains(box.text, "deletes those notes for good"),
         "25: the question names the copy and warns that the notes are in it")
@@ -4632,7 +4633,7 @@ do
 
     -- the safety copy: other words, no warning, and nothing else goes
     box = tap(items[2])
-    T.check(box and T.contains(box.text, "Safety copy")
+    T.check(box and T.contains(box.text, "Latest snapshot · ")
             and not T.contains(box.text, "deletes those notes for good"),
         "25: the safety copy has its own question and no warning")
     local plain_before = T.readFile(MD_PATH)
@@ -4662,7 +4663,7 @@ do
     local older = backupRow()
     T.check(older ~= nil, "25: a plain .bak brings the row back")
     items = older.sub_item_table_func()
-    T.check(#items == 1 and items[1].text == "Older copy",
+    T.check(#items == 1 and T.contains(items[1].text, "Older copy · "),
         "25: a plain .bak is listed as an older copy")
     box = tap(items[1])
     T.check(box and T.contains(box.text, "A copy kept by an earlier version")
@@ -5241,12 +5242,12 @@ do
     T.check(style_row and style_row.text == "Style & format",
         "28: Style & format is the last row in Current book menu")
     local bstyle = style_row.sub_item_table_func()
-    T.check(#bstyle == 10, "28: 8 per-book style choices + 1 frontmatter fields + 1 reset row")
+    T.check(#bstyle == 17, "28: 15 per-book style choices + 1 frontmatter fields + 1 reset row")
     T.check(bstyle[4].mandatory_func() == "Global",
         "28: chapter_headings starts on Global")
-    T.check(bstyle[9].text == "Frontmatter fields" and bstyle[9].mandatory_func() == "Global",
+    T.check(bstyle[16].text == "Frontmatter fields" and bstyle[16].mandatory_func() == "Global",
         "28: Frontmatter fields row is present and starts on Global")
-    T.check(bstyle[10].enabled_func() == false,
+    T.check(bstyle[17].enabled_func() == false,
         "28: Reset to global style settings disabled when no overrides exist")
 
     -- Pin FILE to chapter_headings = "none", highlight_details = "none", include_bookmarks = true via submenu callbacks
@@ -5254,14 +5255,14 @@ do
     bstyle[3].sub_item_table[5].callback() -- "none"
     bstyle[7].sub_item_table[2].callback() -- include_bookmarks = true
     -- Pin FILE to hide progress in frontmatter via Frontmatter fields
-    bstyle[9].sub_item_table[10].callback() -- progress toggled off
+    bstyle[16].sub_item_table[10].callback() -- progress toggled off
     T.check(shared.isFrontmatterKeyEnabled("progress", FILE) == false
             and shared.isFrontmatterKeyEnabled("progress") == true,
         "28: progress hidden for FILE only, global still enabled")
     T.check(bstyle[4].mandatory_func() == "Custom"
             and bstyle[7].mandatory_func() == "Custom"
-            and bstyle[9].mandatory_func() == "Custom"
-            and bstyle[10].enabled_func() == true,
+            and bstyle[16].mandatory_func() == "Custom"
+            and bstyle[17].enabled_func() == true,
         "28: mandatory shows Custom and Reset is enabled after setting per-book override")
 
     plugin:runExport({ FILE, FILE2 }, { force = true })
@@ -5280,18 +5281,18 @@ do
             .. tostring(file2_base) .. " md=" .. tostring(file2_md))
 
     -- If YAML frontmatter is set to Disabled, Frontmatter fields row disappears
-    bstyle[8].sub_item_table[3].callback() -- fm_enabled = false
+    bstyle[15].sub_item_table[3].callback() -- fm_enabled = false
     local bstyle_disabled = style_row.sub_item_table_func()
-    T.check(#bstyle_disabled == 9 and bstyle_disabled[9].key == "reset_book_style",
+    T.check(#bstyle_disabled == 16 and bstyle_disabled[16].key == "reset_book_style",
         "28: Frontmatter fields row disappears when YAML frontmatter is disabled")
-    bstyle[8].sub_item_table[1].callback() -- reset to global (enabled)
+    bstyle[15].sub_item_table[1].callback() -- reset to global (enabled)
 
     -- Reset FILE back to global settings
-    bstyle[10].callback()
+    bstyle[17].callback()
     T.check(bstyle[4].mandatory_func() == "Global"
             and bstyle[7].mandatory_func() == "Global"
-            and bstyle[9].mandatory_func() == "Global"
-            and bstyle[10].enabled_func() == false,
+            and bstyle[16].mandatory_func() == "Global"
+            and bstyle[17].enabled_func() == false,
         "28: Reset to global style settings clears all overrides for FILE")
 
     do
@@ -5315,7 +5316,7 @@ do
             "28: saving global custom fields adds individual checkboxes in Global menu")
 
         -- Open Current book -> Style & format -> Frontmatter fields: global custom keys appear as checkboxes
-        local book_fm_rows = plugin:genBookStyleMenu(FILE)[9].sub_item_table
+        local book_fm_rows = plugin:genBookStyleMenu(FILE)[16].sub_item_table
         T.check(book_fm_rows[11].key == "genre" and book_fm_rows[11].checked_func() == true
                 and book_fm_rows[12].key == "project" and book_fm_rows[12].checked_func() == true,
             "28: global custom keys appear as checkboxes in Current book -> Frontmatter fields")
@@ -5338,7 +5339,7 @@ do
         T.check(book_fm_rows[14].key == "doi" and book_fm_rows[14].checked_func() == true,
             "28: book-specific custom key appears as checkbox in Current book")
         -- Verify 'doi' does NOT appear in Global or FILE2
-        local file2_fm_rows = plugin:genBookStyleMenu(FILE2)[9].sub_item_table
+        local file2_fm_rows = plugin:genBookStyleMenu(FILE2)[16].sub_item_table
         for __, r in ipairs(file2_fm_rows) do
             T.check(r.key ~= "doi", "28: book-only custom key doi does not leak to FILE2")
         end
@@ -5396,9 +5397,9 @@ do
     ui.menu.tab_item_table = mock_tabs
 
     local s_menu = plugin:genSettingsMenu()
-    local topbar_row = s_menu[3].sub_item_table[12]
+    local topbar_row = s_menu[3].sub_item_table[20]
     T.check(topbar_row and topbar_row.text == "Show Tomedown icon in the top bar",
-        "28: Show Tomedown icon in the top bar is row 12 of Style")
+        "28: Show Tomedown icon in the top bar is row 20 of Style")
     T.check(topbar_row.checked_func() == false,
         "28: topbar row unchecked by default")
 
@@ -5455,6 +5456,60 @@ do
     package.loaded["ui/elements/reader_menu_order"] = nil
     package.loaded["ui/elements/filemanager_menu_order"] = nil
     ui.menu.tab_item_table = nil
+
+    -- Pillars 7 & 8: C3 backup labels, global backup cleanup (including Index .bak),
+    -- and Export / Restore settings to file
+    do
+        local idx_bak = DIR .. "/" .. INDEX_NAME .. ".bak"
+        local f_ibak = assert(io.open(idx_bak, "wb"))
+        f_ibak:write("<!-- tomedown:begin index -->\n<!-- tomedown:end index -->\n")
+        f_ibak:close()
+
+        local all_b = plugin:allBackups()
+        T.check(#all_b >= 2, "29: allBackups collects index and book backups")
+        local b_menu = plugin:genAllBackupsMenu()
+        T.check(T.contains(b_menu[1].text, "Book index — Saved notes · "),
+            "29: index backup uses C3 label with date")
+        T.check(b_menu[#b_menu].text == "Delete all backup copies…",
+            "29: Delete all backup copies… action sits at the bottom of the menu")
+
+        -- Trigger Delete all backup copies…
+        ConfirmBox.last = nil
+        b_menu[#b_menu].callback()
+        UIManager:runPending()
+        T.check(ConfirmBox.last ~= nil
+                and T.contains(ConfirmBox.last.text, "backup copies (.bak)"),
+            "29: Delete all backup copies shows confirmation dialog")
+        ConfirmBox.last.ok_callback()
+        T.check(#plugin:allBackups() == 0,
+            "29: confirming Delete all backup copies removes every .bak file")
+
+        -- Export & Restore settings
+        local backup_file = DIR .. "/" .. shared.SETTINGS_BACKUP_FILENAME
+        os.remove(backup_file)
+        shared.setOverviewStyle("callout")
+        shared.setIndexTagsMode("first_3")
+        shared.setCompletedBooks(true)
+        T.check(shared.exportSettingsToFile(backup_file) == true
+                and T.fileExists(backup_file),
+            "29: exportSettingsToFile writes tomedown_settings_backup.lua")
+
+        -- Mutate settings and then restore from backup
+        shared.setOverviewStyle("inline")
+        shared.setIndexTagsMode("all")
+        shared.setCompletedBooks(false)
+        T.check(shared.getOverviewStyle() == "inline"
+                and shared.getCompletedBooks() == false,
+            "29: settings mutated before restore")
+
+        T.check(shared.restoreSettingsFromFile(backup_file) == true,
+            "29: restoreSettingsFromFile succeeds")
+        T.check(shared.getOverviewStyle() == "callout"
+                and shared.getIndexTagsMode() == "first_3"
+                and shared.getCompletedBooks() == true,
+            "29: restoreSettingsFromFile restores all saved settings")
+        os.remove(backup_file)
+    end
 end
 
 T.finish("test_main")

@@ -1,0 +1,29 @@
+{
+  "sections": [
+    {"title": "Start here", "items": [
+      {"slug": "quickstart", "src": "extra/quickstart.md", "title": "Getting started", "description": "Install the plugin and run your first local export, no cloud required."},
+      {"slug": "faq", "src": "extra/faq.md", "title": "FAQ", "description": "Quick answers to common questions about formats, notes, tags, and sync."}
+    ]},
+    {"title": "Formats & Output", "items": [
+      {"slug": "file-format", "src": "docs/file-format.md", "title": "Formats & Output", "description": "What .md, .txt, 00 - Index.md, covers, and page bookmarks look like."},
+      {"slug": "reading-digest", "src": "extra/reading-digest.md", "title": "Reading Digest", "description": "Consolidated chronological journal of all daily highlights."}
+    ]},
+    {"title": "Customization", "items": [
+      {"slug": "universal-highlights", "src": "extra/universal-highlights.md", "title": "Highlight Styles & Frontmatter", "description": "6 styles, Inline/Footnotes, details, chapters, context, custom YAML, and per-book overrides."},
+      {"slug": "templates-and-folders", "src": "extra/templates-and-folders.md", "title": "Templates, Folders & Index", "description": ".md/.txt lifecycle, folder grouping, filename patterns, tag pills, covers, and top bar icon."}
+    ]},
+    {"title": "Using Tomedown", "items": [
+      {"slug": "settings", "src": "docs/settings.md", "title": "Menu & Settings", "description": "Every menu entry in Files, Book info, Cloud, My notes, Style and Updates."},
+      {"slug": "keep-my-notes", "src": "docs/keep-my-notes.md", "title": "Keep my notes", "description": "Write in the file; the next export folds highlights in without erasing your notes."}
+    ]},
+    {"title": "Cloud & Obsidian (Optional)", "items": [
+      {"slug": "obsidian", "src": "OBSIDIAN.md", "title": "Obsidian guide", "description": "The files as they sit in the vault."},
+      {"slug": "sync-direction", "src": "SYNC-DIRECTION.md", "title": "Sync direction", "description": "Which Remotely Save option to pick."},
+      {"slug": "tutorial", "src": "TUTORIAL.md", "title": "Cloud & Obsidian tutorial", "description": "Full walkthrough with Koofr WebDAV and Remotely Save."}
+    ]},
+    {"title": "Project & Legal", "items": [
+      {"slug": "developing", "src": "docs/developing.md", "description": "Tests, languages and the release zip."},
+      {"slug": "privacy", "src": "extra/privacy.md", "title": "Privacy", "description": "Zero cookies, zero analytics, and 100% local plugin execution."}
+    ]}
+  ]
+}

@@ -2,9 +2,9 @@
 
 [Back to the README](../README.md).
 
-☰ menu → **Tomedown** → **Settings**, in six groups:
+☰ menu → **Tomedown** → **Settings**, in seven groups:
 
-![The Tomedown settings groups](../assets/menu/settings/settings_menu.png)
+![The Tomedown settings groups](../assets/menu/settings/settings_menu.svg)
 
 Everything here is stored in KOReader's settings and applies to every book.
 The per-book choice, heading, tags and imported book information live in the
@@ -13,37 +13,86 @@ book's own menu: see [Keep my notes](keep-my-notes.md) and
 
 ## Files
 
-![Files settings](../assets/menu/settings/markdown_menu.png)
+![Files settings](../assets/menu/settings/files_menu.svg)
 
 | Entry | What to do |
 |---|---|
 | *Local folder* | defaults to `clipboard/tomedown` inside KOReader's data folder; tap it to browse with KOReader's folder picker (long-press a folder to choose it) |
-| *Create an index note (00 - Index.md)* | builds the Obsidian tables: a stats line on top, then series books and the rest, each with the columns it actually has (links, author, series, highlights with stars, tags, status over the progress bar, last read) |
-| *Index order: %1* | the order of the *My books* table: **Author** (the default), **Title**, **Last read** or **Highlights**. Last read and highlights run newest and most first, with author and title as tie-breakers; series books keep their own order by series and position. Changing it rebuilds only the index at the next export, without rewriting a single book |
-| *Index layout: %1* | how the table carries the tags and the date: **Tags under the title** (the default: each book's tags sit under its title, after a thin rule, so a long list can never widen the table), **Tags column** (tags in their own column between Series and Status) or **Tags column, compact** (the same column, with Status and Last read merged into one). Changing it rebuilds only the index at the next export |
-| *Show Reading now in the index* | on by default: repeats the books being read in a *Reading now* section above the full table, latest opening first. Turning it off rebuilds only the index |
-| *Include page bookmarks* | off by default: adds a `# Page bookmarks` section (bookmarked page + note) after the highlights |
-| *Include book covers* | off by default: exports every cover into `covers/` (or your custom folder) and embeds it in the book file and in the index; the cover leaves the device after a successful upload, the vault copy is the master one. Requires **Obsidian 1.8.1 or newer** |
-| *Covers folder: %1* | defaults to `covers`: custom folder name for extracted cover images (e.g. `_covers` to easily collapse or hide assets in Obsidian, `assets`, etc.). Changing it updates links and rebuilds the index |
+| *Folder layout: %1* | structure of your vault: **Flat** (all books in the root folder, the default), **By author** (`Author/Book.md`), or **By reading status** (`Reading/`, `Complete/`, `Abandoned/`) |
+| *Create a reading digest (00 - Reading Digest.md)* | off by default: creates a consolidated chronological digest (`00 - Reading Digest.md`) grouping highlights across all books by day, with literary dates (`16 Nov 2026`) and clean quote times (`09:41`) |
 | *Export when I close a book* | off by default: exports the book when you close it, and again (silently, no network) before the device suspends |
 | *Export format: %1* | defaults to **Markdown (.md)**; can be switched to **Plain text (.txt)** or **Both (.md and .txt)** to generate a clean, human-readable `.txt` file per book without YAML or HTML |
+| *Backup copies (%1)* | opens the backups submenu listing existing backup copies with transparent labels and real file dates (`Saved notes · 16 Nov 26`, `Latest snapshot · 14 Nov 26`). Includes **Delete all backup copies…** to clean stale copies across your library with a single confirmation |
+| *Export settings to file* | exports all Tomedown configuration options deterministically to `tomedown_settings_backup.lua` inside your local export folder |
+| *Restore settings from backup…* | safely restores your Tomedown configuration from `tomedown_settings_backup.lua` with a confirmation dialog |
 
-Ticking or unticking *Include book covers* rewrites every already exported
-file on the next export: the stored hash is invalidated, so *Export new and
-changed books* re-sends everything once.
-
-*Index order* and *Index layout* are different: the setting marks the index as
-stale, and the next export rebuilds `00 - Index.md` alone even when every book
-is unchanged. With the index switched off the choice is remembered for the
-next time it is created. Upgrading from 1.2.0 moves an existing install to the
-default layout and rebuilds the index once, without touching a book note.
-
-![The index order menu: Author, Title, Last read or Highlights](../assets/menu/settings/index_order_menu.png)
+![Delete all backup copies confirmation](../assets/menu/settings/confirm_delete_backups.svg)
 
 Covers are always exported in full colour, whatever the device: the
 extraction forces colour rendering even on greyscale e-ink screens.
 
+## Index
+
+![Index settings](../assets/menu/settings/index_menu.svg)
+
+| Entry | What to do |
+|---|---|
+| *Create an index note (00 - Index.md)* | on by default: builds the Obsidian tables: a stats line on top, then series books and the rest, each with the columns it actually has (links, author, series, highlights with stars, tags, status over the progress bar, last read) |
+| *Index order: %1* | the order of the *My books* table: **Author** (the default), **Title**, **Last read** or **Highlights**. Last read and highlights run newest and most first, with author and title as tie-breakers; series books keep their own order by series and position. Changing it rebuilds only the index at the next export, without rewriting a single book |
+| *Index layout: %1* | how the table carries the tags and the date: **Tags under the title** (the default: each book's tags sit under its title, after a thin rule, so a long list can never widen the table), **Tags column** (tags in their own column between Series and Status) or **Tags column, compact** (the same column, with Status and Last read merged into one). Changing it rebuilds only the index at the next export |
+| *Index links: %1* | format of internal links inside the index: **Obsidian wikilink** (`[[Link\|Title]]`, the default) or **Standard Markdown** (`[Title](Link.md)`) |
+| *Show Reading now in the index* | on by default: repeats the books being read in a *Reading now* section above the full table, latest opening first. Turning it off rebuilds only the index |
+| *Index tags display: %1* | how tags appear in the index: **Show all** (all tags displayed, default), **First 3 (+N)** (shows the first 3 tags with a compact badge for remaining tags), or **Collapsible (<details>)** (folds all tags behind an expandable dropdown) |
+| *Show Completed books in the index* | off by default: adds a trophy room section (`### Completed books`) highlighting finished volumes with stars and reading metrics |
+| *Show Library dashboard in the index* | off by default: renders a high-level library summary table with total books, completed count, and overall reading progress |
+| *Show tag cloud in the index* | off by default: generates an alphabetical tag cloud section at the bottom of the index with occurrence counts for each tag |
+
+*Index order*, *Index layout*, and *Index links* mark the index as stale,
+and the next export rebuilds `00 - Index.md` alone even when every book is
+unchanged. With the index switched off the choice is remembered for the next
+time it is created. Upgrading from 1.2.0 moves an existing install to the
+default layout and rebuilds the index once, without touching a book note.
+
+![The index order menu: Author, Title, Last read or Highlights](../assets/menu/settings/index_order_menu.svg)
+
+## Style
+
+![Style settings](../assets/menu/settings/style_menu.svg)
+
+| Entry | What to do |
+|---|---|
+| *Personal notes format: %1* | **Inline** (indented right under the quote, default) or **Footnotes** (appends notes as numbered markdown footnotes `[^1]` at the end of the file) |
+| *How special highlights look: %1* | visual style for marked highlights: **Callout ([!highlight])**, **Alert ([!IMPORTANT])**, **Highlight (==text==)**, **Highlight & Bold (==\*\*text\*\*==)**, **Star & Bold (⭐ \*\*text\*\*)**, or **Bold (\*\*text\*\*)** |
+| *Treat every highlight as special* | off by default: turns every highlight into a callout box |
+| *Add link IDs to highlights* | off by default: writes a stable `^hl-xxxxxxxx` id at the end of every quote, so Obsidian can link to one single highlight and embed it. See [File format](file-format.md#links-to-a-single-highlight) |
+| *Include book covers* | off by default: exports every cover into `covers/` (or your custom folder) and embeds it in the book file and in the index; the cover leaves the device after a successful upload. Requires **Obsidian 1.8.1 or newer** |
+| *Covers folder: %1* | defaults to `covers`: custom folder name for extracted cover images (e.g. `_covers`). Changing it updates links and rebuilds the index |
+| *Include page bookmarks* | off by default: adds a `# Page bookmarks` section (bookmarked page + note) after the highlights |
+| *Frontmatter fields* | toggle YAML frontmatter on or off (*Include YAML frontmatter*, on by default), toggle optional keys (`cover`, `series`, `language`, `pages`, `exported`, `highlights`, `special`, `status`, `progress`), or set a custom key order (*Frontmatter key order…*). `tomedown` stays first and enabled at all times. See [Customizing frontmatter fields and order](file-format.md#customizing-frontmatter-fields-and-order) |
+| *Highlight details: %1* | defaults to **Page and date** (`- **p. 15** · 16 Nov 2026 \| 10:20`); can be set to **Page only**, **Date only**, or **None** |
+| *Chapter headings: %1* | defaults to **Heading 1 (`# Chapter`)**; can be set to **Heading 2 (`## Chapter`)**, **Heading 3 (`### Chapter`)**, or **None (continuous list)** |
+| *Include highlight context* | off by default: on reflowable books (EPUB, FB2, MOBI…), extracts surrounding words and renders a `- **Context:** *…*` line below the quote |
+| *Include handwritten notes* | on by default: extracts stylus/pencil drawings from `.sdr` folders, renders them as pure vector SVG or PNG images into `drawings/`, and embeds them into your Markdown notes |
+| *Drawings folder: %1* | defaults to `drawings`: custom folder name for extracted handwritten and stylus drawings |
+| *Include book title in body* | on by default: adds `# Book Title` H1 and `### by Author · *Series (#N)*` H3 at the start of the notes body |
+| *Overview style: %1* | appearance of the highlights recap: **Inline / Heading** (`### **14 highlights · ★ 2 special**`, default), **Classic blockquote** (`> **...**`), **Callout ([!summary])** (`> [!summary] Overview`), or **Table** (compact markdown table) |
+| *Include reading dashboard* | off by default: renders a rich `> [!book]` dashboard at the top of the note with Reading Status, Star Rating, Reading dates (`10 Nov 2026 → 16 Nov 2026`), and a link back to `00 - Index.md` |
+| *Include book synopsis* | off by default: embeds the EPUB description as a clean, collapsible `> [!abstract]- Synopsis` callout |
+| *Include clickable tags in body* | off by default: appends hashtags (`#tag1 #tag2`) below the book header for quick tag filtering in Obsidian |
+| *Include Special highlights showcase* | off by default: places a collapsible `> [!highlight]- ★ Special highlights (N)` showcase block highlighting your favorite passages at the top of the note |
+| *Show Tomedown icon in the top bar* | on by default: adds the Tomedown icon to KOReader's reader top navigation bar |
+
+![Overview style options](../assets/menu/settings/overview_style_menu.svg)
+
+All style rows rewrite every already exported file on the next export:
+none of them is part of the book's hash, so flipping one invalidates the
+stored hashes, the way *Include book covers* does above.
+
+You can also override **Export format**, **Personal notes format**, **Highlight details**, **Chapter headings**, **Highlight context**, **Book cover**, **Page bookmarks**, and **YAML frontmatter** for a single book without changing the global settings via **Tomedown → Current book → Style & format** (*Reset to global style settings* restores the global defaults for that book).
+
 ## Book info
+
+![Book info settings](../assets/menu/settings/book_info_menu.svg)
 
 | Entry | What to do |
 |---|---|
@@ -60,7 +109,7 @@ where each one comes from.
 
 ## Cloud
 
-![Cloud settings](../assets/menu/settings/cloud_menu.png)
+![Cloud settings](../assets/menu/settings/cloud_menu.svg)
 
 | Entry | What to do |
 |---|---|
@@ -70,7 +119,7 @@ where each one comes from.
 
 ## My notes
 
-![My notes settings](../assets/menu/settings/keep_my_notes_menu.png)
+![My notes settings](../assets/menu/settings/keep_my_notes_menu.svg)
 
 | Entry | What to do |
 |---|---|
@@ -84,29 +133,9 @@ The group is rebuilt every time it opens, and in place when one of its
 switches flips: a row that no longer applies leaves without closing the
 menu.
 
-## Highlights for Obsidian
-
-![Highlights for Obsidian settings](../assets/menu/settings/settings_highlights_menu.png)
-
-| Entry | What to do |
-|---|---|
-| *Treat every highlight as special* | off by default: every highlight becomes an `> [!highlight]` callout instead of a plain quote; when off, only *Special Highlight* marks turn into callouts |
-| *How special highlights look: %1* | only while the row above is off, since with every highlight a callout there is nothing left to choose (the row is grayed out): **Callout** is the default and keeps the box on the marked highlights alone, **Bold** writes them as `> **quote**` instead, for the readers that do not know callouts |
-| *Add link IDs to highlights* | off by default: writes a stable `^hl-xxxxxxxx` id at the end of every quote, so Obsidian can link to one single highlight and embed it. See [File format](file-format.md#links-to-a-single-highlight) |
-| *Frontmatter fields* | toggle YAML frontmatter on or off (*Include YAML frontmatter*, on by default), toggle optional keys (`cover`, `series`, `language`, `pages`, `exported`, `highlights`, `special`, `status`, `progress`), or set a custom comma-separated key order (*Frontmatter key order…*). `tomedown` stays first and enabled at all times. See [Customizing frontmatter fields and order](file-format.md#customizing-frontmatter-fields-and-order) |
-| *Highlight details: %1* | defaults to **Page and date** (`- **p. 15** · 05/11/2026 10:20`); can be set to **Page only**, **Date only**, or **None** |
-| *Chapter headings: %1* | defaults to **Heading 1 (`# Chapter`)**; can be set to **Heading 2 (`## Chapter`)**, **Heading 3 (`### Chapter`)**, or **None (continuous list)** |
-| *Include highlight context* | off by default: when enabled on reflowable books (EPUB, FB2, MOBI…), extracts the words immediately preceding and following each highlight and renders a `- **Context:** *…*` line below the quote |
-
-All style rows rewrite every already exported file on the next export:
-none of them is part of the book's hash, so flipping one invalidates the
-stored hashes, the way *Include book covers* does above.
-
-You can also override **Export format**, **Personal notes format**, **Highlight details**, **Chapter headings**, **Highlight context**, **Book cover**, **Page bookmarks**, and **YAML frontmatter** for a single book without changing the global settings via **Tomedown → Current book → Style & format** (*Reset to global style settings* restores the global defaults for that book).
-
 ## Updates
 
-![Updates settings](../assets/menu/settings/updates_menu.png)
+![Updates settings](../assets/menu/settings/updates_menu.svg)
 
 | Entry | What to do |
 |---|---|
@@ -116,8 +145,6 @@ You can also override **Export format**, **Personal notes format**, **Highlight 
 | *Beta versions* | a submenu with everything that is not meant for daily use (below) |
 
 ### Beta versions
-
-![Beta versions submenu](../assets/menu/settings/updates_beta_menu.png)
 
 | Entry | What to do |
 |---|---|

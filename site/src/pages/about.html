@@ -1,0 +1,301 @@
+<!-- title: About · Tomedown | description: Why Tomedown exists: one Markdown file per book, straight into your notes. -->
+      <section class="about-hero">
+        <div class="about-hero-content">
+          <span class="eyebrow">Colophon &amp; Story</span>
+          <h1>Notes belong <em>with</em> the book.</h1>
+          <p class="lead about-hero-lead">
+            Tomedown started as a quiet frustration: every volume I read in KOReader deserved its own permanent Markdown file, not an endless dump of mixed quotes.
+          </p>
+        </div>
+
+        <div class="mouse-scroll-wrap">
+          <a href="#story" class="mouse-scroll" aria-label="Scroll down to the story">
+            <div class="mouse-icon">
+              <div class="mouse-wheel"></div>
+            </div>
+          </a>
+        </div>
+      </section>
+
+      <div id="story" class="about-wrap">
+        <section class="about-editorial">
+          <div class="about-letter">
+            <span class="eyebrow">01 · The Origin</span>
+            <h2>Built for readers who keep a library, not a clipboard.</h2>
+            <p>
+              When you finish a book on an e-reader, your highlights are the map of what stayed with you. Traditional export tools flatten every volume you have ever read into a single, unwieldy file.
+            </p>
+            <p>
+              I built Tomedown so every book gets its own clean note, complete with YAML frontmatter, tags, reading progress, and a navigable library index. It has been in daily use since version 1.0, and almost everything added since (from <em>Keep my notes</em> to the chronological <em>Reading Digest</em> and clean tag pills) came directly from reading real books.
+            </p>
+          </div>
+
+          <div class="about-aside">
+            <aside class="colophon-card" aria-label="Technical colophon">
+              <span class="colophon-tag">Colophon</span>
+              <dl class="colophon-list">
+                <div><dt>Written in</dt><dd>Pure Lua (KOReader plugin)</dd></div>
+                <div><dt>Tested on</dt><dd>Kindle PW5 &amp; Kindle 4 NT</dd></div>
+                <div><dt>Storage</dt><dd>Local first · Cloud optional</dd></div>
+                <div><dt>Formats</dt><dd>Markdown (.md) &amp; Plain text (.txt)</dd></div>
+                <div><dt>Telemetry</dt><dd>None. Zero tracking.</dd></div>
+                <div><dt>License</dt><dd>GNU AGPL-3.0</dd></div>
+              </dl>
+            </aside>
+
+            <figure class="margin-note" data-reveal>
+              <svg class="margin-arrow" viewBox="0 0 180 96" fill="none" aria-hidden="true">
+                <path class="arrow-shaft" pathLength="1" d="M 152 8 C 138 56, 78 72, 16 64" />
+                <path class="arrow-head" pathLength="1" d="M 32 50 L 14 64 L 30 78" />
+              </svg>
+              <figcaption class="margin-quote">
+                Books deserve a <mark>sanctuary</mark>, not a clipboard.
+              </figcaption>
+            </figure>
+          </div>
+        </section>
+
+        <section class="about-contrast" data-reveal>
+          <div class="contrast-box contrast-before">
+            <div class="contrast-head">
+              <span class="contrast-label">The usual way</span>
+              <span class="contrast-pill contrast-pill-dim">Monolithic dump</span>
+            </div>
+            <h3>One tangled file for every book you read</h3>
+            <div class="contrast-tree">
+              <div class="tree-file">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <span>My_Clippings.txt</span>
+              </div>
+              <ul class="tree-entries">
+                <li><span class="tree-book">Book A</span> · quote 1</li>
+                <li><span class="tree-book">Book B</span> · quote 4</li>
+                <li><span class="tree-book">Book A</span> · quote 2 <em class="tree-note">(3 weeks later)</em></li>
+                <li><span class="tree-book">Book C</span> · quote 1</li>
+                <li><span class="tree-book">Book A</span> · quote 3 <em class="tree-note">(next month)</em></li>
+                <li class="tree-muted">… hundreds of pages of jumbled quotes</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="contrast-box contrast-after">
+            <div class="contrast-head">
+              <span class="contrast-label contrast-label-hl">The Tomedown way</span>
+              <span class="contrast-pill contrast-pill-yellow">One note per book</span>
+            </div>
+            <h3>A living library of permanent notes</h3>
+            <div class="contrast-tree">
+              <div class="tree-folder">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                <span>clipboard/tomedown/</span>
+              </div>
+              <ul class="tree-entries">
+                <li class="tree-item-hl">
+                  <span class="file-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></span>
+                  <code>00 - Index.md</code>
+                  <span class="tree-badge">catalog &amp; covers</span>
+                </li>
+                <li class="tree-item-hl">
+                  <span class="file-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+                  <code>00 - Reading Digest.md</code>
+                  <span class="tree-badge">daily timeline</span>
+                </li>
+                <li>
+                  <span class="file-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
+                  <code>Arthur Machen - The Three Impostors.md</code>
+                </li>
+                <li>
+                  <span class="file-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
+                  <code>Charles Brockden Brown - Wieland.md</code>
+                </li>
+                <li>
+                  <span class="file-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
+                  <code>Edgar Wallace - The Three Just Men.md</code>
+                </li>
+                <li>
+                  <span class="file-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
+                  <code>Mary De Morgan - Princess Fiorimonde.md</code>
+                </li>
+                <li class="tree-subfolder">
+                  <span class="file-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span>
+                  <code>covers/</code>
+                  <span class="tree-dim">(extracted full-color art)</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section class="about-manifesto" data-reveal>
+          <div class="manifesto-head">
+            <span class="eyebrow">02 · The Philosophy</span>
+            <h2>Notes as literature. Code as craftsmanship.</h2>
+            <p class="muted">Three convictions that define how Tomedown is designed, built, and maintained.</p>
+          </div>
+
+          <div class="manifesto-grid">
+            <article class="manifesto-card">
+              <div class="manifesto-top">
+                <span class="manifesto-pill">Pillar 01</span>
+                <span class="manifesto-sub">Longevity</span>
+              </div>
+              <h3>Plain files outlive walled gardens</h3>
+              <p>Platforms rise and decay; proprietary cloud databases vanish when business models pivot. Standard Markdown is universal, human-readable, and timeless. Notes written today will still open fifty years from now on any operating system.</p>
+              <div class="manifesto-foot">
+                <code>.md</code> · <code>.txt</code> · zero lock-in
+              </div>
+            </article>
+
+            <article class="manifesto-card manifesto-card-hl">
+              <div class="manifesto-top">
+                <span class="manifesto-pill manifesto-pill-hl">Pillar 02</span>
+                <span class="manifesto-sub">Sovereignty</span>
+              </div>
+              <h3>The reader’s voice is inviolable</h3>
+              <p>Software must respect the reader’s intellectual work. When you write commentary or synthesis in your vault, Tomedown treats your words as sacred: subsequent exports fold new quotes in without ever altering a syllable of your writing.</p>
+              <div class="manifesto-foot">
+                <code>Keep my notes</code> · cryptographic hashes · automatic <code>.bak</code>
+              </div>
+            </article>
+
+            <article class="manifesto-card">
+              <div class="manifesto-top">
+                <span class="manifesto-pill">Pillar 03</span>
+                <span class="manifesto-sub">Independence</span>
+              </div>
+              <h3>Frugal, local, quiet</h3>
+              <p>No telemetry, no analytics, no mandatory accounts. Tomedown executes entirely inside KOReader using pure Lua, drawing minimal battery and emitting zero network packets unless you explicitly choose to bridge your notes to the cloud.</p>
+              <div class="manifesto-foot">
+                100% offline · pure Lua · GNU AGPL-3.0
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="about-brand" data-reveal>
+          <div class="brand-head">
+            <span class="eyebrow">03 · The Visual Identity</span>
+            <h2>The craft behind the mark.</h2>
+            <p class="muted">
+              Every curve, shade, and line in Tomedown’s identity is born from the tactile reality of physical books and e-ink reading.
+            </p>
+          </div>
+
+          <div class="brand-anatomy">
+            <div class="brand-icon-stage">
+              <img src="{{base}}/assets/img/icon.svg" alt="Tomedown Brand Mark" width="140" height="140" />
+              <span class="brand-icon-caption">Master Mark · v6</span>
+            </div>
+            <div class="brand-pillars-grid">
+              <div class="brand-pillar-item">
+                <h4>Layered Pages</h4>
+                <p>Three stacked page edges (<code style="background:none;padding:0;">#f4ecd8</code> / <code style="background:none;padding:0;">#b8aa85</code>) evoke the physical thickness of a volume and the tangible passage of chapters.</p>
+              </div>
+              <div class="brand-pillar-item">
+                <h4>Golden Ribbon</h4>
+                <p>The swallowtail bookmark ribbon (<code style="background:none;padding:0;">#f8c82e</code>) holds your place, representing memory and personal reading progress.</p>
+              </div>
+              <div class="brand-pillar-item">
+                <h4>Markdown Arrow</h4>
+                <p>The calligraphic down-arrow reflects Markdown notation and the direct transfer of knowledge from your e-reader into plain files.</p>
+              </div>
+              <div class="brand-pillar-item">
+                <h4>Amber Highlight</h4>
+                <p>The bold yellow underline (<code style="background:none;padding:0;">#f0b00a</code>) mirrors the physical felt-tip stroke across meaningful sentences.</p>
+              </div>
+            </div>
+          </div>
+
+          <h3 class="brand-swatches-title">The Palette</h3>
+          <p class="muted" style="margin-top:0;">Five essential shades calibrated for long reading sessions and typography.</p>
+
+          <div class="brand-swatches-grid">
+            <div class="brand-swatch-card">
+              <div class="brand-swatch-box" style="background-color: #faf6ee;"></div>
+              <div class="brand-swatch-info">
+                <span class="brand-swatch-name">Book Paper</span>
+                <span class="brand-swatch-hex">#FAF6EE</span>
+                <span class="brand-swatch-role">Warm editorial paper, zero glare</span>
+              </div>
+            </div>
+
+            <div class="brand-swatch-card">
+              <div class="brand-swatch-box" style="background-color: #f0b00a;"></div>
+              <div class="brand-swatch-info">
+                <span class="brand-swatch-name">Amber Highlight</span>
+                <span class="brand-swatch-hex">#F0B00A</span>
+                <span class="brand-swatch-role">Warm highlighter &amp; accent</span>
+              </div>
+            </div>
+
+            <div class="brand-swatch-card">
+              <div class="brand-swatch-box" style="background-color: #1e1e1e;"></div>
+              <div class="brand-swatch-info">
+                <span class="brand-swatch-name">E-ink Charcoal</span>
+                <span class="brand-swatch-hex">#1E1E1E</span>
+                <span class="brand-swatch-role">Device bezel &amp; dark mode</span>
+              </div>
+            </div>
+
+            <div class="brand-swatch-card">
+              <div class="brand-swatch-box" style="background-color: #2c2823;"></div>
+              <div class="brand-swatch-info">
+                <span class="brand-swatch-name">Printer’s Ink</span>
+                <span class="brand-swatch-hex">#2C2823</span>
+                <span class="brand-swatch-role">High-contrast typographic ink</span>
+              </div>
+            </div>
+
+            <div class="brand-swatch-card">
+              <div class="brand-swatch-box" style="background-color: #f4ecd8;"></div>
+              <div class="brand-swatch-info">
+                <span class="brand-swatch-name">Warm Page</span>
+                <span class="brand-swatch-hex">#F4ECD8</span>
+                <span class="brand-swatch-role">Classic cream book leaves</span>
+              </div>
+            </div>
+          </div>
+
+          <h3 class="brand-swatches-title">Typography Trinity</h3>
+          <p class="muted" style="margin-top:0;">Three typefaces balancing literature, user interface, and plain text precision.</p>
+
+          <div class="brand-typography-grid">
+            <div class="brand-type-card">
+              <span class="brand-type-badge">Display &amp; Editorial</span>
+              <div class="brand-type-sample" style="font-family: var(--serif);">Aa &amp; Qq</div>
+              <span class="brand-type-name">Instrument Serif</span>
+              <span class="brand-type-role">Literary authority, editorial warmth, and classic book titles.</span>
+            </div>
+
+            <div class="brand-type-card">
+              <span class="brand-type-badge">Interface &amp; Clarity</span>
+              <div class="brand-type-sample" style="font-family: var(--sans); font-weight: 600;">Aa 123</div>
+              <span class="brand-type-name">Instrument Sans</span>
+              <span class="brand-type-role">Functional UI, responsive controls, and crisp reading menus.</span>
+            </div>
+
+            <div class="brand-type-card">
+              <span class="brand-type-badge">Code &amp; Metadata</span>
+              <div class="brand-type-sample" style="font-family: var(--mono); font-weight: 500;">{ # }</div>
+              <span class="brand-type-name">JetBrains Mono</span>
+              <span class="brand-type-role">Frontmatter YAML, hashes, timestamps, and plain text notes.</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="about-signoff">
+          <div>
+            <span class="eyebrow">04 · Open Source</span>
+            <h2>Free software, shaped by readers.</h2>
+            <p>
+              Inspect the code, open an issue, or help brew the next release.
+            </p>
+          </div>
+          <div class="about-links">
+            <a href="https://github.com/imanubdesigner/tomedown.koplugin" class="btn-pill">GitHub</a>
+            <a href="https://codeberg.org/imanubdesigner/tomedown.koplugin" class="btn-pill">Codeberg</a>
+            <a href="{{base}}/docs/quickstart/" class="btn-pill">Read the docs</a>
+            <a href="https://ko-fi.com/imanubdesigner" class="btn-pill btn-pill-yellow">Buy me a coffee</a>
+          </div>
+        </section>
+      </div>
