@@ -10,17 +10,12 @@ Every exported book note is a self-contained Markdown file ready for Obsidian.
 
 ![01 — The book note in Obsidian: full YAML frontmatter, cover art, chapter headings, and quotes](assets/obsidian-guide/01-the-book-file.svg)
 
-<!-- SCREENSHOT_PLACEHOLDER: assets/obsidian/book_note_v210.png -->
-> [!NOTE] **[SCREENSHOT DA REALIZZARE: Scheda Libro con Dashboard e Sinossi in Obsidian]**
-> - **File di destinazione:** `assets/obsidian/book_note_v210.png`
-> - **Inquadratura:** Visualizzazione di una nota libro esportata (es. `Arthur Machen - The Three Impostors.md`) in Obsidian (Reading View o Live Preview).
-> - **Elementi da mostrare:**
->   - Proprietà frontmatter in alto.
->   - Intestazione H1 con titolo `# The Three Impostors` e H3 `### by Arthur Machen`.
->   - Bacheca di lettura (`> [!book]`) con stato, stelle, date e link all'indice.
->   - Sinossi collassabile (`> [!abstract]- Synopsis`).
->   - Box Panoramica (es. `> [!summary] Overview` o tabella).
->   - Citazioni con formato data/ora letterario: `- **p. 15** · 16 Nov 2026 | 10:20`.
+<figure class="doc-shot">
+  <div class="doc-shot-frame">
+    <img class="zoom-modules" src="assets/obsidian/book_modules_v210.webp" alt="Book note header modules in Obsidian: Reading dashboard, collapsible synopsis, tags, Overview callout, and Special highlights" />
+  </div>
+  <figcaption>Book layout in Obsidian: Reading dashboard, collapsible Book synopsis, clickable tags, Overview callout, and Special highlights showcase.</figcaption>
+</figure>
 
 - **Reading View vs. Live Preview**: in Reading View, YAML frontmatter renders cleanly as Obsidian Properties, and internal Tomedown hashes stay out of sight.
 - **Embedded Covers**: when *Include book covers* is enabled, covers are stored in your vault folder (default `covers/`) and render natively in Obsidian (requires Obsidian 1.8.1 or newer).
@@ -54,44 +49,34 @@ Enable **Tomedown → Settings → My notes → Keep my notes: all books** (or p
 - **Stacked tag pills**: subject tags stack vertically as clean pills, preventing table widening.
 - **Customizable views**: choose between *Tags under the title*, *Tags column*, or *Tags column, compact* in *Settings → Index*.
 
-<!-- SCREENSHOT_PLACEHOLDER: assets/obsidian/index_v210_trophy_dashboard.png -->
-> [!NOTE] **[SCREENSHOT DA REALIZZARE: Indice Completo con Trofei e Dashboard in Obsidian]**
-> - **File di destinazione:** `assets/obsidian/index_v210_trophy_dashboard.png`
-> - **Inquadratura:** Visualizzazione di `00 - Index.md` in Obsidian (Reading View).
-> - **Elementi da mostrare:**
->   - La bacheca riepilogativa della libreria (Library Dashboard).
->   - La sezione *Completed books* con stelle e date.
->   - La tabella principale con le copertine dei libri.
->   - La sezione *Tag cloud* in fondo alla pagina con i tag cliccabili.
+<figure class="doc-shot">
+  <div class="doc-shot-frame">
+    <img class="zoom-index" src="assets/obsidian/index_v210_trophy_dashboard.webp" alt="00 - Index.md in Obsidian showing Library dashboard, Tag cloud, and Completed books trophy room" />
+  </div>
+  <figcaption><code>00 - Index.md</code> in Obsidian: Library dashboard, Tag cloud, and Completed books trophy room.</figcaption>
+</figure>
 
 ## Reading Digest (00 - Reading Digest.md)
 
 A consolidated chronological reading journal grouping all highlights across your whole library by day:
 
-<!-- SCREENSHOT_PLACEHOLDER: assets/obsidian/reading_digest_v210.png -->
-> [!NOTE] **[SCREENSHOT DA REALIZZARE: Reading Digest in Obsidian]**
-> - **File di destinazione:** `assets/obsidian/reading_digest_v210.png`
-> - **Inquadratura:** Visualizzazione di `00 - Reading Digest.md` in Obsidian (Reading View o Live Preview).
-> - **Elementi da mostrare:**
->   - Intestazione H1 `# Reading digest` e citazione poetica iniziale.
->   - Statistiche complessive (es. `2 books · 25 highlights · ★ 4 special`).
->   - Intestazione giorno letteraria: `## 16 Nov 2026`.
->   - Due libri diversi letti nello stesso giorno, separati dal divisore `---`.
->   - Metadati citazione orari: `*Chapter* · **p. X** · 09:41`.
+<figure class="doc-shot">
+  <div class="doc-shot-frame">
+    <img class="zoom-digest" src="assets/obsidian/reading_digest_v210.webp" alt="00 - Reading Digest.md in Obsidian showing literary date headings, horizontal book dividers, and clean quote times" />
+  </div>
+  <figcaption><code>00 - Reading Digest.md</code> in Obsidian: literary day headings, thin book dividers, and clean quote times.</figcaption>
+</figure>
 
 ## Handwritten notes & Stylus drawings
 
 For stylus devices, handwritten notes are rendered as pure SVG vector strokes or PNGs in `drawings/` and embedded seamlessly inside your book notes:
 
-<!-- SCREENSHOT_PLACEHOLDER: assets/obsidian/handwritten_drawing_embed.png -->
-> [!NOTE] **[SCREENSHOT DA REALIZZARE: Nota a Mano Libera / Disegno Stylus in Obsidian]**
-> - **File di destinazione:** `assets/obsidian/handwritten_drawing_embed.png`
-> - **Inquadratura:** Zoom su una nota libro in Obsidian contenente un disegno o annotazione a penna.
-> - **Elementi da mostrare:**
->   - L'immagine vettoriale SVG integrata tra le citazioni.
->   - La riga metadati con icona: `- **p. 25** · 16 Nov 2026 | 12:05 · ✍️ Handwritten note`.
->   - L'eventuale nota testuale associata: `NOTE: Margin sketch`.
->   - Il block ID Obsidian `^hl-...`.
+<figure class="doc-shot">
+  <div class="doc-shot-frame">
+    <img src="assets/obsidian/handwritten_drawing_embed.webp" alt="Handwritten SVG stylus drawing embedded inside an Obsidian book note with block ID and literary timestamp" />
+  </div>
+  <figcaption>Pure-Lua vector SVG drawing extracted from KOReader and embedded natively in Obsidian.</figcaption>
+</figure>
 
 ## Link to a single highlight
 
