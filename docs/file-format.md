@@ -272,14 +272,18 @@ For devices equipped with a stylus (Kindle Scribe, Kobo Sage/Elipsa, Android e-i
    - Raster drawings (e.g. pencil PNGs) are extracted with transparent borders.
    - Images are placed into the `drawings/` folder inside your vault (customizable via *Settings → Style → Drawings folder*).
 2. **Standard Markdown Embeds**:
-   - In the book note, drawings are embedded natively using standard Markdown image syntax:
-     ```markdown
-     ![Handwritten note · p. 25](drawings/Author%20-%20Title%20-%20note-1.svg) ^hl-3a8f19bc
-     - **p. 25** · 16 Nov 2026 | 12:05 · ✍️ Handwritten note
-       - **NOTE:** *Margin sketch and arrow*
-     ```
+   - In the book note, drawings are embedded natively using standard Markdown image syntax.
    - Each drawing receives an Obsidian block ID (`^hl-...`), allowing you to link directly to or embed the handwritten drawing anywhere in your vault: `![[Book Title#^hl-3a8f19bc]]`.
    - Any text note attached to the stylus annotation in KOReader appears right below as a formatted user note.
+
+```markdown
+![Handwritten note · p. 25](drawings/Author%20-%20Title%20-%20note-1.svg) ^hl-3a8f19bc
+
+- **p. 25** · 16 Nov 2026 | 12:05 · ✍️ Handwritten note
+  - **NOTE:** *Margin sketch and arrow*
+```
+
+> **Note on hardware testing:** Handwritten stroke extraction and pure-Lua SVG rendering have been verified against KOReader's `.sdr` / `pencil.koplugin` data structures and automated unit tests, though I do not own a stylus-equipped e-reader (such as Kindle Scribe or Kobo Sage/Elipsa) for full end-to-end hardware testing. If you notice any quirks on your device, please open an issue on GitHub or Codeberg.
 
 <figure class="doc-shot">
   <div class="doc-shot-frame">

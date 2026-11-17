@@ -155,6 +155,8 @@ If your device supports a stylus (e.g. Kindle Scribe, Kobo Sage/Elipsa, Android 
 - Drawings are saved into the `drawings/` folder inside your vault (customizable via *Settings → Style → Drawings folder*).
 - Drawings are embedded with standard Markdown syntax (`![Handwritten note · p. X](drawings/...)`) and receive permanent block IDs (`^hl-xxxxxxxx`).
 
+> **Note on hardware testing:** Stroke extraction and pure-Lua SVG rendering are built and unit-tested against KOReader's `.sdr` / `pencil.koplugin` data format, though I do not own a stylus-equipped e-reader for full end-to-end hardware testing. If anything looks off on your device, feedback on GitHub or Codeberg is very welcome.
+
 <figure class="doc-shot">
   <div class="doc-shot-frame">
     <img src="{{base}}/assets/img/handwritten_drawing_embed.webp" alt="Handwritten SVG stylus drawing embedded in an Obsidian book note" />
