@@ -463,6 +463,49 @@
       }
     });
 
+    // Auto-hide mobile bar on scroll down, reveal on reverse scroll (scroll up)
+    var mobileBar = document.querySelector(".docs-mobile-bar");
+    if (mobileBar) {
+      var lastScrollY = Math.max(0, window.pageYOffset || document.documentElement.scrollTop || 0);
+      var scrollThreshold = 8;
+      var ticking = false;
+
+      window.addEventListener("scroll", function () {
+        if (!ticking) {
+          window.requestAnimationFrame(function () {
+            if (docsNav && docsNav.classList.contains("is-open")) {
+              ticking = false;
+              return;
+            }
+
+            var currentScrollY = Math.max(0, window.pageYOffset || document.documentElement.scrollTop || 0);
+            var delta = currentScrollY - lastScrollY;
+
+            if (currentScrollY <= 40) {
+              mobileBar.classList.remove("is-hidden");
+            } else if (delta > scrollThreshold && currentScrollY > 70) {
+              if (!mobileBar.classList.contains("is-hidden")) {
+                mobileBar.classList.add("is-hidden");
+                if (docsToc && docsToc.classList.contains("is-open")) {
+                  docsToc.classList.remove("is-open");
+                  if (tocToggle) {
+                    tocToggle.setAttribute("aria-expanded", "false");
+                    tocToggle.classList.remove("is-active");
+                  }
+                }
+              }
+            } else if (delta < -scrollThreshold) {
+              mobileBar.classList.remove("is-hidden");
+            }
+
+            lastScrollY = currentScrollY;
+            ticking = false;
+          });
+          ticking = true;
+        }
+      }, { passive: true });
+    }
+
   // light / dark theme toggle (follows OS by default)
   var themeBtn = document.getElementById("theme-toggle");
   if (themeBtn) {
