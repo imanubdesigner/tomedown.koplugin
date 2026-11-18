@@ -371,6 +371,98 @@
     });
   }
 
+    // Docs mobile drawer & TOC dropdown
+    var navToggle = document.getElementById("docs-nav-toggle");
+    var navClose = document.getElementById("docs-nav-close");
+    var docsNav = document.querySelector(".docs-nav");
+    var backdrop = document.getElementById("docs-backdrop");
+    var tocToggle = document.getElementById("docs-toc-toggle");
+    var docsToc = document.querySelector(".docs-toc");
+
+    function closeNavDrawer() {
+      if (docsNav) docsNav.classList.remove("is-open");
+      if (backdrop) backdrop.classList.remove("is-open");
+      if (navToggle) navToggle.setAttribute("aria-expanded", "false");
+      document.body.classList.remove("docs-drawer-open");
+    }
+
+    function openNavDrawer() {
+      if (docsNav) docsNav.classList.add("is-open");
+      if (backdrop) backdrop.classList.add("is-open");
+      if (navToggle) navToggle.setAttribute("aria-expanded", "true");
+      document.body.classList.add("docs-drawer-open");
+      if (docsToc) docsToc.classList.remove("is-open");
+      if (tocToggle) tocToggle.setAttribute("aria-expanded", "false");
+    }
+
+    if (navToggle) {
+      navToggle.addEventListener("click", function () {
+        if (docsNav && docsNav.classList.contains("is-open")) {
+          closeNavDrawer();
+        } else {
+          openNavDrawer();
+        }
+      });
+    }
+
+    if (navClose) {
+      navClose.addEventListener("click", closeNavDrawer);
+    }
+
+    if (backdrop) {
+      backdrop.addEventListener("click", function () {
+        closeNavDrawer();
+        if (docsToc) docsToc.classList.remove("is-open");
+        if (tocToggle) tocToggle.setAttribute("aria-expanded", "false");
+      });
+    }
+
+    if (tocToggle && docsToc) {
+      tocToggle.addEventListener("click", function () {
+        var isOpen = docsToc.classList.toggle("is-open");
+        tocToggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+        tocToggle.classList.toggle("is-active", isOpen);
+        if (isOpen) {
+          closeNavDrawer();
+        }
+      });
+
+      // Close TOC dropdown on click of an anchor link
+      docsToc.querySelectorAll("a").forEach(function (a) {
+        a.addEventListener("click", function () {
+          docsToc.classList.remove("is-open");
+          tocToggle.setAttribute("aria-expanded", "false");
+          tocToggle.classList.remove("is-active");
+        });
+      });
+    }
+
+    window.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") {
+        closeNavDrawer();
+        if (docsToc) {
+          docsToc.classList.remove("is-open");
+          if (tocToggle) {
+            tocToggle.setAttribute("aria-expanded", "false");
+            tocToggle.classList.remove("is-active");
+          }
+        }
+      }
+    });
+
+    window.addEventListener("resize", function () {
+      if (window.innerWidth >= 860) {
+        closeNavDrawer();
+        if (docsToc) {
+          docsToc.classList.remove("is-open");
+          if (tocToggle) {
+            tocToggle.setAttribute("aria-expanded", "false");
+            tocToggle.classList.remove("is-active");
+          }
+        }
+      }
+    });
+
   // light / dark theme toggle (follows OS by default)
   var themeBtn = document.getElementById("theme-toggle");
   if (themeBtn) {

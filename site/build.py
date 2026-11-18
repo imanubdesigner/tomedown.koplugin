@@ -144,7 +144,11 @@ def build_docs(site, docs_root, slugmap, nav):
             entries.append((section["title"], item, src))
 
     def sidebar(active):
-        out = ['<nav class="docs-nav" aria-label="Documentation">']
+        out = ['<nav class="docs-nav" aria-label="Documentation">',
+               '  <div class="docs-nav-header">',
+               '    <span class="docs-nav-title">Chapters</span>',
+               '    <button type="button" class="docs-nav-close" id="docs-nav-close" aria-label="Close chapters menu">✕</button>',
+               '  </div>']
         last = None
         for sec, item, _ in entries:
             if sec != last:
@@ -214,8 +218,22 @@ def build_docs(site, docs_root, slugmap, nav):
         body = fix_links(md.convert(text))
         body = re.sub(r'(<a class="header-anchor"[^>]*>)#</a>', r'\1' + anchor_svg + '</a>', body)
         toc_html = render_toc(getattr(md, "toc_tokens", []))
+        toc_mobile_btn = ('<button type="button" class="docs-mobile-btn docs-mobile-toc-toggle" id="docs-toc-toggle" aria-expanded="false" aria-label="Toggle section outline">'
+                          '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>'
+                          '<span>On this page</span>'
+                          '<svg class="docs-mobile-caret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>'
+                          '</button>') if toc_html else ''
+        mobile_bar = (f'<div class="docs-mobile-bar">'
+                      f'  <button type="button" class="docs-mobile-btn docs-mobile-nav-toggle" id="docs-nav-toggle" aria-expanded="false" aria-label="Open chapters menu">'
+                      f'    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>'
+                      f'    <span>Chapters</span>'
+                      f'  </button>'
+                      f'  {toc_mobile_btn}'
+                      f'</div>'
+                      f'<div class="docs-backdrop" id="docs-backdrop" aria-hidden="true"></div>')
         cls = "container docs docs-has-toc" if toc_html else "container docs"
-        page = (f'<div class="{cls}">{sidebar(item["slug"])}'
+        page = (f'{mobile_bar}'
+                f'<div class="{cls}">{sidebar(item["slug"])}'
                 f'<article class="prose">{body}</article>{toc_html}</div>')
         site.render(f'/docs/{item["slug"]}/', f'{item["title"]} · Tomedown docs',
                     item.get("description", "Tomedown documentation"), page)
