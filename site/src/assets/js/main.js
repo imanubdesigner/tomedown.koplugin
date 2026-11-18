@@ -440,6 +440,7 @@
     window.addEventListener("keydown", function (e) {
       if (e.key === "Escape") {
         closeNavDrawer();
+        if (typeof closeSiteMenu === "function") closeSiteMenu();
         if (docsToc) {
           docsToc.classList.remove("is-open");
           if (tocToggle) {
@@ -453,6 +454,7 @@
     window.addEventListener("resize", function () {
       if (window.innerWidth >= 860) {
         closeNavDrawer();
+        if (typeof closeSiteMenu === "function") closeSiteMenu();
         if (docsToc) {
           docsToc.classList.remove("is-open");
           if (tocToggle) {
@@ -462,6 +464,65 @@
         }
       }
     });
+
+    // Site Mobile Menu Drawer
+    var siteMenuToggle = document.getElementById("site-menu-toggle");
+    var siteMenuClose = document.getElementById("site-menu-close");
+    var siteMenuDrawer = document.getElementById("site-menu-drawer");
+    var siteMenuBackdrop = document.getElementById("site-menu-backdrop");
+
+    function closeSiteMenu() {
+      if (siteMenuDrawer) {
+        siteMenuDrawer.classList.remove("is-open");
+        siteMenuDrawer.setAttribute("aria-hidden", "true");
+      }
+      if (siteMenuBackdrop) {
+        siteMenuBackdrop.classList.remove("is-open");
+      }
+      if (siteMenuToggle) {
+        siteMenuToggle.setAttribute("aria-expanded", "false");
+      }
+      document.body.classList.remove("site-menu-open");
+    }
+
+    function openSiteMenu() {
+      if (siteMenuDrawer) {
+        siteMenuDrawer.classList.add("is-open");
+        siteMenuDrawer.setAttribute("aria-hidden", "false");
+      }
+      if (siteMenuBackdrop) {
+        siteMenuBackdrop.classList.add("is-open");
+      }
+      if (siteMenuToggle) {
+        siteMenuToggle.setAttribute("aria-expanded", "true");
+      }
+      document.body.classList.add("site-menu-open");
+      closeNavDrawer();
+    }
+
+    if (siteMenuToggle) {
+      siteMenuToggle.addEventListener("click", function () {
+        if (siteMenuDrawer && siteMenuDrawer.classList.contains("is-open")) {
+          closeSiteMenu();
+        } else {
+          openSiteMenu();
+        }
+      });
+    }
+
+    if (siteMenuClose) {
+      siteMenuClose.addEventListener("click", closeSiteMenu);
+    }
+
+    if (siteMenuBackdrop) {
+      siteMenuBackdrop.addEventListener("click", closeSiteMenu);
+    }
+
+    if (siteMenuDrawer) {
+      siteMenuDrawer.querySelectorAll("a").forEach(function (link) {
+        link.addEventListener("click", closeSiteMenu);
+      });
+    }
 
     // Auto-hide mobile bar on scroll down, reveal on reverse scroll (scroll up)
     var mobileBar = document.querySelector(".docs-mobile-bar");
@@ -507,14 +568,14 @@
     }
 
   // light / dark theme toggle (follows OS by default)
-  var themeBtn = document.getElementById("theme-toggle");
-  if (themeBtn) {
-    themeBtn.addEventListener("click", function () {
+  var themeBtns = document.querySelectorAll(".theme-toggle");
+  themeBtns.forEach(function (btn) {
+    btn.addEventListener("click", function () {
       var root = document.documentElement;
       var current = root.dataset.theme || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
       var next = current === "dark" ? "light" : "dark";
       root.dataset.theme = next;
       try { localStorage.setItem("tomedown-theme", next); } catch (e) {}
     });
-  }
+  });
 })();
