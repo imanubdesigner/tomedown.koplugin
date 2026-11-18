@@ -71,7 +71,7 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; }
-html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+html { scroll-behavior: smooth; scroll-padding-top: 80px; overflow-x: clip; }
 body {
   margin: 0;
   background: var(--paper);
@@ -80,6 +80,7 @@ body {
   font-size: 20px;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
 }
 img { max-width: 100%; height: auto; }
 a { color: inherit; text-decoration-color: var(--line); text-underline-offset: 3px; }
@@ -89,6 +90,9 @@ code { background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 4px; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
 
 .container { width: min(var(--maxw), 100% - 48px); margin-inline: auto; }
+@media (max-width: 520px) {
+  .container { width: min(var(--maxw), 100% - 32px); }
+}
 .narrow { width: min(720px, 100% - 48px); }
 .center { text-align: center; }
 .muted { color: var(--muted); }
@@ -811,12 +815,22 @@ mark { background: var(--hl); color: var(--hl-ink); padding: 0 0.15em; }
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
+  flex: 1;
+}
+.bento-window-title span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 .bento-window-env {
   font-size: 0.65rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--muted);
+  flex-shrink: 0;
+  margin-left: 8px;
 }
 .bento-window-body {
   padding: 13px 16px;
@@ -859,6 +873,7 @@ mark { background: var(--hl); color: var(--hl-ink); padding: 0 0.15em; }
   border: 1px solid var(--line);
   color: var(--muted);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 .bento-pill-hl {
   background: var(--hl);
@@ -874,8 +889,10 @@ mark { background: var(--hl); color: var(--hl-ink); padding: 0 0.15em; }
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
   color: var(--ink);
   font-weight: 500;
+  min-width: 0;
 }
 .index-book-tag {
   color: var(--ink);
@@ -883,6 +900,10 @@ mark { background: var(--hl); color: var(--hl-ink); padding: 0 0.15em; }
   display: flex;
   align-items: center;
   gap: 5px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .index-pills {
   display: flex;
@@ -900,18 +921,21 @@ mark { background: var(--hl); color: var(--hl-ink); padding: 0 0.15em; }
 .bento-timeline {
   display: grid;
   gap: 8px;
+  min-width: 0;
+  width: 100%;
+}
+.tl-divider {
+  border-top: 1px dashed var(--line);
+  margin: 6px 0;
+  opacity: 0.6;
 }
 .tl-item {
   display: flex;
-  gap: 10px;
-  align-items: center;
-  justify-content: space-between;
-}
-.tl-item-left {
-  display: flex;
   gap: 8px;
   align-items: center;
-  overflow: hidden;
+  justify-content: space-between;
+  min-width: 0;
+  width: 100%;
 }
 .tl-date {
   background: var(--hl);
@@ -921,6 +945,7 @@ mark { background: var(--hl); color: var(--hl-ink); padding: 0 0.15em; }
   font-weight: 600;
   white-space: nowrap;
   font-size: 0.72rem;
+  flex-shrink: 0;
 }
 :root[data-theme="dark"] .tl-date {
   background: none;
@@ -939,6 +964,28 @@ mark { background: var(--hl); color: var(--hl-ink); padding: 0 0.15em; }
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
+  flex: 1;
+  font-size: 0.78rem;
+}
+@media (max-width: 480px) {
+  .tl-item {
+    display: grid;
+    grid-template-columns: auto auto;
+    justify-content: space-between;
+    align-items: center;
+    row-gap: 5px;
+    column-gap: 8px;
+  }
+  .tl-book {
+    grid-column: 1 / -1;
+    font-size: 0.82rem;
+    white-space: normal;
+    word-break: break-word;
+  }
+  .bento-window-env {
+    display: none;
+  }
 }
 .bento-styles,
 .bento-tokens,
@@ -994,6 +1041,51 @@ mark { background: var(--hl); color: var(--hl-ink); padding: 0 0.15em; }
 .merge-bak { color: var(--muted); }
 @media (max-width: 860px) {
   .bento-span-7, .bento-span-6, .bento-span-5 { grid-column: span 12; }
+}
+@media (max-width: 600px) {
+  .bento-card {
+    padding: 20px 16px;
+    border-radius: 16px;
+  }
+  .bento-visual {
+    padding: 12px 14px;
+    border-radius: 12px;
+  }
+  .bento-window {
+    border-radius: 12px;
+  }
+  .bento-window-head {
+    padding: 8px 12px;
+  }
+  .bento-window-body {
+    padding: 12px;
+    font-size: 0.74rem;
+  }
+  .pipeline-card {
+    padding: 20px 16px;
+    border-radius: 16px;
+  }
+  .pipeline-bridge p {
+    min-width: 0;
+    width: 100%;
+  }
+  .pipeline-bridge .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+@media (max-width: 520px) {
+  .spotlight-tabs {
+    gap: 8px;
+  }
+  .spotlight-tab {
+    padding: 6px 12px;
+    gap: 6px;
+    font-size: 0.82rem;
+  }
+  .spotlight-tab span {
+    display: none;
+  }
 }
 /* Pipeline Architecture (How it works) */
 .section-pipeline {
