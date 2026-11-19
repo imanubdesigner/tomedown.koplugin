@@ -399,6 +399,7 @@ function M:showStatus()
     local FrameContainer = require("ui/widget/container/framecontainer")
     local GestureRange = require("ui/gesturerange")
     local HorizontalGroup = require("ui/widget/horizontalgroup")
+    local HorizontalSpan = require("ui/widget/horizontalspan")
     local InputContainer = require("ui/widget/container/inputcontainer")
     local LineWidget = require("ui/widget/linewidget")
     local MovableContainer = require("ui/widget/container/movablecontainer")
@@ -602,9 +603,7 @@ function M:showStatus()
     local btn_row = HorizontalGroup:new{ align = "center" }
     for idx, spec in ipairs(btn_specs) do
         if idx > 1 then
-            btn_row[#btn_row + 1] = CenterContainer:new{
-                dimen = Geom:new{ w = btn_gap, h = 1 },
-            }
+            btn_row[#btn_row + 1] = HorizontalSpan:new{ width = btn_gap }
         end
         btn_row[#btn_row + 1] = Button:new{
             text = spec.text,
