@@ -1181,3 +1181,27 @@ msgstr "Exporter les modifiés"
 
 msgid "Upload now"
 msgstr "Envoyer maintenant"
+
+msgid "Exported"
+msgstr "Exportés"
+
+msgid "Skipped"
+msgstr "Ignorés"
+
+msgid "Errors"
+msgstr "Erreurs"
+
+msgid "Backups"
+msgstr "Sauvegardes"
+
+msgid "Format:"
+msgstr "Format :"
+
+msgid "Folder:"
+msgstr "Dossier :"
+
+msgid "online"
+msgstr "en ligne"
+
+msgid "offline"
+msgstr "hors ligne"

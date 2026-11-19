@@ -14,7 +14,6 @@ local InfoMessage = require("ui/widget/infomessage")
 local NetworkMgr = require("ui/network/manager")
 local Notification = require("ui/widget/notification")
 local TextBoxWidget = require("ui/widget/textboxwidget")
-local TextViewer = require("ui/widget/textviewer")
 local UIManager = require("ui/uimanager")
 local logger = require("logger")
 local util = require("util")
@@ -391,29 +390,115 @@ function M:statusLines()
 end
 
 function M:showStatus()
-    local lines = {}
-    local last_export = getSetting("last_export")
+    local Screen = Device.screen
+    local Geom = require("ui/geometry")
+    local Size = require("ui/size")
+    local Blitbuffer = require("ffi/blitbuffer")
+    local Button = require("ui/widget/button")
+    local CenterContainer = require("ui/widget/container/centercontainer")
+    local FrameContainer = require("ui/widget/container/framecontainer")
+    local GestureRange = require("ui/gesturerange")
+    local HorizontalGroup = require("ui/widget/horizontalgroup")
+    local InputContainer = require("ui/widget/container/inputcontainer")
+    local LineWidget = require("ui/widget/linewidget")
+    local MovableContainer = require("ui/widget/container/movablecontainer")
+    local TextWidget = require("ui/widget/textwidget")
+    local VerticalGroup = require("ui/widget/verticalgroup")
+    local VerticalSpan = require("ui/widget/verticalspan")
 
-    -- 1. Export section
-    lines[#lines + 1] = "── " .. _("Last export") .. " ──"
-    if last_export and last_export.at then
-        local when = render.fmtDateLiterary(os.date("%Y-%m-%d", last_export.at))
-            .. " · " .. os.date("%H:%M", last_export.at)
-        local outcome = T(_("%1 exported, %2 skipped"),
-            last_export.exported or 0, last_export.skipped or 0)
-        if (last_export.backups or 0) > 0 then
-            outcome = outcome .. " · "
-                .. T(_("%1 files backed up (.bak)"), last_export.backups)
-        end
-        if (last_export.errors or 0) > 0 then
-            outcome = outcome .. " · " .. T(_("%1 errors"), last_export.errors)
-        end
-        lines[#lines + 1] = when
-        lines[#lines + 1] = outcome
-    else
-        lines[#lines + 1] = _("Last export: never")
+    local sw, sh = Screen:getWidth(), Screen:getHeight()
+    local frame_w = math.min(math.floor(sw * 0.86), Screen:scaleBySize(460))
+    local pad = Screen:scaleBySize(22)
+    local content_w = frame_w - pad * 2
+    local gap_s = Screen:scaleBySize(8)
+    local gap_m = Screen:scaleBySize(14)
+
+    local function divider()
+        return LineWidget:new{
+            dimen = Geom:new{ w = content_w, h = (Size.line and Size.line.thin) or 1 },
+            background = Blitbuffer.COLOR_LIGHT_GRAY,
+        }
     end
 
+    local function ptfRow(label, value)
+        return TextBoxWidget:new{
+            text = TextBoxWidget.PTF_HEADER
+                .. TextBoxWidget.PTF_BOLD_START .. label .. TextBoxWidget.PTF_BOLD_END
+                .. " " .. tostring(value or ""),
+            face = Font:getFace("cfont", 14),
+            width = content_w,
+        }
+    end
+
+    local last_export = getSetting("last_export")
+    local column = VerticalGroup:new{ align = "center" }
+
+    -- 1. Header: Title + timestamp
+    column[#column + 1] = TextWidget:new{
+        text = _("Last export"),
+        face = Font:getFace("tfont", 22),
+        bold = true,
+    }
+    column[#column + 1] = VerticalSpan:new{ width = Screen:scaleBySize(4) }
+    local subtitle = _("Last export: never")
+    if last_export and last_export.at then
+        subtitle = render.fmtDateLiterary(os.date("%Y-%m-%d", last_export.at))
+            .. "  ·  " .. os.date("%H:%M", last_export.at)
+    end
+    column[#column + 1] = TextWidget:new{
+        text = subtitle,
+        face = Font:getFace("cfont", 14),
+        fgcolor = Blitbuffer.COLOR_DARK_GRAY,
+    }
+
+    -- 2. 3-column KPI stat bar (Exported | Skipped | Errors or Backups)
+    if last_export and last_export.at then
+        column[#column + 1] = VerticalSpan:new{ width = gap_m }
+        column[#column + 1] = divider()
+        column[#column + 1] = VerticalSpan:new{ width = gap_m }
+
+        local col_w = math.floor(content_w / 3)
+        local function kpiTile(num, caption)
+            return CenterContainer:new{
+                dimen = Geom:new{ w = col_w, h = Screen:scaleBySize(54) },
+                VerticalGroup:new{
+                    align = "center",
+                    TextWidget:new{
+                        text = tostring(num or 0),
+                        face = Font:getFace("tfont", 24),
+                        bold = true,
+                    },
+                    VerticalSpan:new{ width = Screen:scaleBySize(2) },
+                    TextWidget:new{
+                        text = caption,
+                        face = Font:getFace("cfont", 12),
+                        fgcolor = Blitbuffer.COLOR_DARK_GRAY,
+                    },
+                },
+            }
+        end
+
+        local third_num = last_export.errors or 0
+        local third_lbl = _("Errors")
+        if third_num == 0 and (last_export.backups or 0) > 0 then
+            third_num = last_export.backups
+            third_lbl = _("Backups")
+        end
+
+        column[#column + 1] = HorizontalGroup:new{
+            align = "center",
+            kpiTile(last_export.exported or 0, _("Exported")),
+            kpiTile(last_export.skipped or 0, _("Skipped")),
+            kpiTile(third_num, third_lbl),
+        }
+    end
+
+    column[#column + 1] = VerticalSpan:new{ width = gap_m }
+    column[#column + 1] = divider()
+    column[#column + 1] = VerticalSpan:new{ width = gap_m }
+
+    -- 3. Details block (left-aligned)
+    local details = VerticalGroup:new{ align = "left" }
     local fmt_labels = {
         md = _("Markdown (.md)"),
         txt = _("Plain text (.txt)"),
@@ -428,95 +513,150 @@ function M:showStatus()
     if cur_fmt ~= "txt" then
         fmt_desc = fmt_desc .. " · " .. (style_labels[shared.getMarkdownStyle()] or style_labels.obsidian)
     end
-    lines[#lines + 1] = T(_("Export format: %1"), fmt_desc)
-    lines[#lines + 1] = T(_("Local folder: %1"), self:getLocalDir())
+    details[#details + 1] = ptfRow(_("Format:"), fmt_desc)
+    details[#details + 1] = VerticalSpan:new{ width = gap_s }
+    details[#details + 1] = ptfRow(_("Folder:"), self:getLocalDir())
 
-    -- 2. Recently exported books
-    if last_export and type(last_export.titles) == "table" and #last_export.titles > 0 then
-        lines[#lines + 1] = ""
-        lines[#lines + 1] = "── " .. _("Exported books") .. " ──"
-        for __, title in ipairs(last_export.titles) do
-            lines[#lines + 1] = "• " .. tostring(title)
-        end
-        local extra = (last_export.exported or 0) - #last_export.titles
-        if extra > 0 then
-            lines[#lines + 1] = T(_("+ %1 more"), extra)
-        end
-    end
-
-    -- 3. Cloud section (compact when disabled, full details when configured)
+    -- Cloud summary
     local server = self:getServer()
     local upload_on = getSetting("upload", false) == true
     local pending_count = 0
     for __ in pairs(getSetting("pending_uploads", {})) do
         pending_count = pending_count + 1
     end
-
-    lines[#lines + 1] = ""
-    lines[#lines + 1] = "── " .. _("Cloud") .. " ──"
+    details[#details + 1] = VerticalSpan:new{ width = gap_s }
     if not upload_on and not server and pending_count == 0 then
-        lines[#lines + 1] = _("Disabled")
+        details[#details + 1] = ptfRow(_("Cloud") .. ":", _("Disabled"))
     else
-        lines[#lines + 1] = NetworkMgr:isConnected()
-            and _("Network: connected") or _("Network: offline")
+        local cloud_parts = {}
+        cloud_parts[#cloud_parts + 1] = NetworkMgr:isConnected() and _("online") or _("offline")
         if server then
-            local desc = server.name or server.url or server.type
-            if server.folder and server.folder ~= "" then
-                desc = desc .. " → " .. server.folder
-            end
-            lines[#lines + 1] = T(_("Server: %1"), desc)
-        else
-            lines[#lines + 1] = _("Server: not set")
-        end
-        local last_upload = getSetting("last_upload")
-        if last_upload and last_upload.at then
-            local u_when = render.fmtDateLiterary(os.date("%Y-%m-%d", last_upload.at))
-                .. " · " .. os.date("%H:%M", last_upload.at)
-            local u_out = T(_("%1 uploaded"), last_upload.uploaded)
-            if (last_upload.errors or 0) > 0 then
-                u_out = u_out .. " · " .. T(_("%1 errors"), last_upload.errors)
-            end
-            lines[#lines + 1] = T(_("Last upload: %1 — %2"), u_when, u_out)
-        else
-            lines[#lines + 1] = _("Last upload: never")
+            cloud_parts[#cloud_parts + 1] = server.name or server.url or server.type
         end
         if pending_count > 0 then
-            lines[#lines + 1] = T(_("Upload pending: %1 files"), pending_count)
+            cloud_parts[#cloud_parts + 1] = T(_("Upload pending: %1 files"), pending_count)
         end
+        details[#details + 1] = ptfRow(_("Cloud") .. ":", table.concat(cloud_parts, " · "))
     end
 
-    local viewer
-    local action_row = {
+    -- 4. Recently exported books (up to 5 titles so the card stays crisp on 6" e-readers)
+    if last_export and type(last_export.titles) == "table" and #last_export.titles > 0 then
+        details[#details + 1] = VerticalSpan:new{ width = gap_m }
+        details[#details + 1] = TextBoxWidget:new{
+            text = TextBoxWidget.PTF_HEADER
+                .. TextBoxWidget.PTF_BOLD_START .. _("Exported books") .. TextBoxWidget.PTF_BOLD_END,
+            face = Font:getFace("cfont", 14),
+            width = content_w,
+        }
+        details[#details + 1] = VerticalSpan:new{ width = Screen:scaleBySize(4) }
+        local shown_n = math.min(#last_export.titles, 5)
+        local book_lines = {}
+        for i = 1, shown_n do
+            book_lines[#book_lines + 1] = "• " .. tostring(last_export.titles[i])
+        end
+        local extra = (last_export.exported or 0) - shown_n
+        if extra > 0 then
+            book_lines[#book_lines + 1] = T(_("+ %1 more"), extra)
+        end
+        details[#details + 1] = TextBoxWidget:new{
+            text = table.concat(book_lines, "\n"),
+            face = Font:getFace("cfont", 13),
+            width = content_w,
+        }
+    end
+
+    column[#column + 1] = details
+    column[#column + 1] = VerticalSpan:new{ width = gap_m }
+    column[#column + 1] = divider()
+    column[#column + 1] = VerticalSpan:new{ width = gap_m }
+
+    -- 5. Action buttons
+    local dialog
+    local btn_specs = {
         {
             text = _("Export updated"),
             callback = function()
-                UIManager:close(viewer)
+                UIManager:close(dialog)
                 self:runExport(self:listBookFiles(), { only_updated = true })
             end,
         },
     }
     if pending_count > 0 and upload_on then
-        action_row[#action_row + 1] = {
+        btn_specs[#btn_specs + 1] = {
             text = _("Upload now"),
             callback = function()
-                UIManager:close(viewer)
+                UIManager:close(dialog)
                 self:flushPendingUploads()
             end,
         }
     end
-    action_row[#action_row + 1] = {
+    btn_specs[#btn_specs + 1] = {
         text = _("Close"),
         callback = function()
-            UIManager:close(viewer)
+            UIManager:close(dialog)
         end,
     }
 
-    viewer = TextViewer:new{
-        title = _("Last export"),
-        text = table.concat(lines, "\n"),
-        buttons_table = { action_row },
+    local btn_gap = Screen:scaleBySize(10)
+    local btn_w = math.floor((content_w - btn_gap * (#btn_specs - 1)) / #btn_specs)
+    local btn_row = HorizontalGroup:new{ align = "center" }
+    for idx, spec in ipairs(btn_specs) do
+        if idx > 1 then
+            btn_row[#btn_row + 1] = CenterContainer:new{
+                dimen = Geom:new{ w = btn_gap, h = 1 },
+            }
+        end
+        btn_row[#btn_row + 1] = Button:new{
+            text = spec.text,
+            width = btn_w,
+            bordersize = (Size.border and Size.border.button) or 1,
+            radius = (Size.radius and Size.radius.button) or 4,
+            text_font_face = "cfont",
+            text_font_size = 15,
+            callback = spec.callback,
+        }
+    end
+    column[#column + 1] = btn_row
+
+    local frame = FrameContainer:new{
+        radius = Size.radius.window,
+        padding = pad,
+        margin = 0,
+        background = Blitbuffer.COLOR_WHITE,
+        column,
     }
-    UIManager:show(viewer)
+
+    dialog = InputContainer:new{
+        align = "center",
+        dimen = Geom:new{ x = 0, y = 0, w = sw, h = sh },
+        CenterContainer:new{
+            dimen = Geom:new{ w = sw, h = sh },
+            MovableContainer:new{ frame },
+        },
+    }
+    if Device:isTouchDevice() then
+        dialog.ges_events = {
+            TapClose = { GestureRange:new{
+                ges = "tap",
+                range = Geom:new{ x = 0, y = 0, w = sw, h = sh },
+            } },
+        }
+        dialog.onTapClose = function(self_d, _arg, ges_ev)
+            if not frame.dimen or ges_ev.pos:notIntersectWith(frame.dimen) then
+                UIManager:close(self_d)
+            end
+            return true
+        end
+    end
+    if Device:hasKeys() then
+        dialog.key_events = { Close = { { Device.input.group.Back } } }
+        dialog.onClose = function(self_d)
+            UIManager:close(self_d)
+            return true
+        end
+    end
+
+    UIManager:show(dialog)
 end
 
 -- pending uploads: flushed when the connection comes back (NetworkConnected),

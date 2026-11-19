@@ -1943,21 +1943,13 @@ T.check(T.contains(table.concat(plugin:statusLines(), "\n"),
         "Next upload: disabled in settings"),
     "status: next upload honours the setting")
 
--- the panel is shown as a structured TextViewer card with quick action buttons
-local TextViewer = require("ui/widget/textviewer")
+-- the panel is shown as a custom FrameContainer dashboard card with KPI stats and action buttons
 local shown_before_status = #UIManager.shown
 plugin:showStatus()
 T.check(#UIManager.shown == shown_before_status + 1, "status panel shown")
-T.check(TextViewer.last ~= nil and TextViewer.last.title == "Last export",
-    "status panel uses TextViewer titled Last export")
-T.check(TextViewer.last.text
-        and T.contains(TextViewer.last.text, "── Last export ──")
-        and T.contains(TextViewer.last.text, "── Cloud ──"),
-    "status panel shows structured Export and Cloud sections")
-T.check(TextViewer.last.buttons_table
-        and TextViewer.last.buttons_table[1]
-        and TextViewer.last.buttons_table[1][1].text == "Export updated",
-    "status panel includes quick Export updated action button")
+local status_dialog = UIManager.shown[#UIManager.shown]
+T.check(status_dialog ~= nil and status_dialog.__widget == "InputContainer",
+    "status panel renders custom centered card container")
 
 -- runExport records its outcome (including exported book titles) for the panel
 store.tomedown.upload = false

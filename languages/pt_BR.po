@@ -1181,3 +1181,27 @@ msgstr "Exportar atualizados"
 
 msgid "Upload now"
 msgstr "Enviar agora"
+
+msgid "Exported"
+msgstr "Exportados"
+
+msgid "Skipped"
+msgstr "Ignorados"
+
+msgid "Errors"
+msgstr "Erros"
+
+msgid "Backups"
+msgstr "Backups"
+
+msgid "Format:"
+msgstr "Formato:"
+
+msgid "Folder:"
+msgstr "Pasta:"
+
+msgid "online"
+msgstr "online"
+
+msgid "offline"
+msgstr "offline"
