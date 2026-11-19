@@ -1144,6 +1144,7 @@ function M:runExport(files, opts)
         return remote, true
     end
 
+    local exported_titles = {}
     for __, file in ipairs(files) do
         local open = self:openReader(file)
         local live = open and open.annotation and open.annotation.annotations
@@ -1381,6 +1382,9 @@ function M:runExport(files, opts)
                     end
                     if written_ok then
                         exported = exported + 1
+                        if #exported_titles < 10 and book.title and tostring(book.title) ~= "" then
+                            exported_titles[#exported_titles + 1] = tostring(book.title)
+                        end
                         if write_md then
                             written[#written + 1] = md_path
                         end
@@ -1587,6 +1591,7 @@ function M:runExport(files, opts)
         skipped = skipped,
         errors = #errors,
         backups = backups,
+        titles = exported_titles,
     })
     if info then
         UIManager:close(info)

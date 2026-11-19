@@ -14,6 +14,7 @@ local InfoMessage = require("ui/widget/infomessage")
 local NetworkMgr = require("ui/network/manager")
 local Notification = require("ui/widget/notification")
 local TextBoxWidget = require("ui/widget/textboxwidget")
+local TextViewer = require("ui/widget/textviewer")
 local UIManager = require("ui/uimanager")
 local logger = require("logger")
 local util = require("util")
@@ -23,6 +24,7 @@ local lfs = require("libs/libkoreader-lfs")
 local T = ffiUtil.template
 local _ = require("tomedown_i18n")
 local merge = require("tomedown_merge")
+local render = require("tomedown_render")
 local shared = require("tomedown_shared")
 
 local INDEX_FILENAME = shared.INDEX_FILENAME
@@ -389,33 +391,132 @@ function M:statusLines()
 end
 
 function M:showStatus()
-    -- KOReader's own inline styling, "Poor Text Formatting": the header
-    -- char must open the text and the two private-use chars wrap what
-    -- gets the bold face. Applied to the already translated lines, so
-    -- the msgids stay plain.
-    local styled = TextBoxWidget.PTF_HEADER
-    for i, line in ipairs(self:statusLines()) do
-        -- every line is "Label: value"; bold the label, up to the first
-        -- colon (values may well contain colons: times, paths)
-        local label, rest = line:match("^(.-:)(.*)$")
-        if label then
-            line = TextBoxWidget.PTF_BOLD_START .. label
-                .. TextBoxWidget.PTF_BOLD_END .. rest
+    local lines = {}
+    local last_export = getSetting("last_export")
+
+    -- 1. Export section
+    lines[#lines + 1] = "── " .. _("Last export") .. " ──"
+    if last_export and last_export.at then
+        local when = render.fmtDateLiterary(os.date("%Y-%m-%d", last_export.at))
+            .. " · " .. os.date("%H:%M", last_export.at)
+        local outcome = T(_("%1 exported, %2 skipped"),
+            last_export.exported or 0, last_export.skipped or 0)
+        if (last_export.backups or 0) > 0 then
+            outcome = outcome .. " · "
+                .. T(_("%1 files backed up (.bak)"), last_export.backups)
         end
-        if i > 1 then
-            styled = styled .. "\n"
+        if (last_export.errors or 0) > 0 then
+            outcome = outcome .. " · " .. T(_("%1 errors"), last_export.errors)
         end
-        styled = styled .. line
+        lines[#lines + 1] = when
+        lines[#lines + 1] = outcome
+    else
+        lines[#lines + 1] = _("Last export: never")
     end
-    UIManager:show(InfoMessage:new{
-        -- the smallest info face (18pt vs the default 24): every entry
-        -- stays on a single line instead of wrapping into a wall of text
-        face = Font:getFace("xx_smallinfofont"),
-        -- 90% of the screen (the default is 2/3): bold labels plus long
-        -- dates and outcomes still fit on one line
-        width = math.floor(Device.screen:getWidth() * 0.9),
-        text = styled,
-    })
+
+    local fmt_labels = {
+        md = _("Markdown (.md)"),
+        txt = _("Plain text (.txt)"),
+        both = _("Both (.md and .txt)"),
+    }
+    local style_labels = {
+        obsidian = _("Obsidian"),
+        standard = _("Standard"),
+    }
+    local cur_fmt = shared.getExportFormat()
+    local fmt_desc = fmt_labels[cur_fmt] or fmt_labels.md
+    if cur_fmt ~= "txt" then
+        fmt_desc = fmt_desc .. " · " .. (style_labels[shared.getMarkdownStyle()] or style_labels.obsidian)
+    end
+    lines[#lines + 1] = T(_("Export format: %1"), fmt_desc)
+    lines[#lines + 1] = T(_("Local folder: %1"), self:getLocalDir())
+
+    -- 2. Recently exported books
+    if last_export and type(last_export.titles) == "table" and #last_export.titles > 0 then
+        lines[#lines + 1] = ""
+        lines[#lines + 1] = "── " .. _("Exported books") .. " ──"
+        for __, title in ipairs(last_export.titles) do
+            lines[#lines + 1] = "• " .. tostring(title)
+        end
+        local extra = (last_export.exported or 0) - #last_export.titles
+        if extra > 0 then
+            lines[#lines + 1] = T(_("+ %1 more"), extra)
+        end
+    end
+
+    -- 3. Cloud section (compact when disabled, full details when configured)
+    local server = self:getServer()
+    local upload_on = getSetting("upload", false) == true
+    local pending_count = 0
+    for __ in pairs(getSetting("pending_uploads", {})) do
+        pending_count = pending_count + 1
+    end
+
+    lines[#lines + 1] = ""
+    lines[#lines + 1] = "── " .. _("Cloud") .. " ──"
+    if not upload_on and not server and pending_count == 0 then
+        lines[#lines + 1] = _("Disabled")
+    else
+        lines[#lines + 1] = NetworkMgr:isConnected()
+            and _("Network: connected") or _("Network: offline")
+        if server then
+            local desc = server.name or server.url or server.type
+            if server.folder and server.folder ~= "" then
+                desc = desc .. " → " .. server.folder
+            end
+            lines[#lines + 1] = T(_("Server: %1"), desc)
+        else
+            lines[#lines + 1] = _("Server: not set")
+        end
+        local last_upload = getSetting("last_upload")
+        if last_upload and last_upload.at then
+            local u_when = render.fmtDateLiterary(os.date("%Y-%m-%d", last_upload.at))
+                .. " · " .. os.date("%H:%M", last_upload.at)
+            local u_out = T(_("%1 uploaded"), last_upload.uploaded)
+            if (last_upload.errors or 0) > 0 then
+                u_out = u_out .. " · " .. T(_("%1 errors"), last_upload.errors)
+            end
+            lines[#lines + 1] = T(_("Last upload: %1 — %2"), u_when, u_out)
+        else
+            lines[#lines + 1] = _("Last upload: never")
+        end
+        if pending_count > 0 then
+            lines[#lines + 1] = T(_("Upload pending: %1 files"), pending_count)
+        end
+    end
+
+    local viewer
+    local action_row = {
+        {
+            text = _("Export updated"),
+            callback = function()
+                UIManager:close(viewer)
+                self:runExport(self:listBookFiles(), { only_updated = true })
+            end,
+        },
+    }
+    if pending_count > 0 and upload_on then
+        action_row[#action_row + 1] = {
+            text = _("Upload now"),
+            callback = function()
+                UIManager:close(viewer)
+                self:flushPendingUploads()
+            end,
+        }
+    end
+    action_row[#action_row + 1] = {
+        text = _("Close"),
+        callback = function()
+            UIManager:close(viewer)
+        end,
+    }
+
+    viewer = TextViewer:new{
+        title = _("Last export"),
+        text = table.concat(lines, "\n"),
+        buttons_table = { action_row },
+    }
+    UIManager:show(viewer)
 end
 
 -- pending uploads: flushed when the connection comes back (NetworkConnected),

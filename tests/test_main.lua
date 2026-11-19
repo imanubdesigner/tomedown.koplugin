@@ -1943,36 +1943,30 @@ T.check(T.contains(table.concat(plugin:statusLines(), "\n"),
         "Next upload: disabled in settings"),
     "status: next upload honours the setting")
 
--- the panel is shown as an InfoMessage, in the smallest info face so
--- every entry fits on its own line without wrapping
+-- the panel is shown as a structured TextViewer card with quick action buttons
+local TextViewer = require("ui/widget/textviewer")
 local shown_before_status = #UIManager.shown
 plugin:showStatus()
 T.check(#UIManager.shown == shown_before_status + 1, "status panel shown")
-T.check(InfoMessage.last_face and InfoMessage.last_face.name == "xx_smallinfofont",
-    "status popup uses the small face: "
-        .. tostring(InfoMessage.last_face and InfoMessage.last_face.name))
-T.check(InfoMessage.last_width == math.floor(600 * 0.9),
-    "status popup widened to 90% of the screen: "
-        .. tostring(InfoMessage.last_width))
-T.check(InfoMessage.last_text
-        and InfoMessage.last_text:find(TextBoxWidget.PTF_HEADER, 1, true) == 1,
-    "styled status text opens with the PTF header")
-T.check(InfoMessage.last_text
-        and InfoMessage.last_text:find(TextBoxWidget.PTF_BOLD_START
-            .. "Network:" .. TextBoxWidget.PTF_BOLD_END, 1, true),
-    "the Network label is wrapped in bold")
-T.check(InfoMessage.last_text
-        and InfoMessage.last_text:find(TextBoxWidget.PTF_BOLD_START
-            .. "Last export:" .. TextBoxWidget.PTF_BOLD_END, 1, true),
-    "the Last export label is wrapped in bold")
+T.check(TextViewer.last ~= nil and TextViewer.last.title == "Last export",
+    "status panel uses TextViewer titled Last export")
+T.check(TextViewer.last.text
+        and T.contains(TextViewer.last.text, "── Last export ──")
+        and T.contains(TextViewer.last.text, "── Cloud ──"),
+    "status panel shows structured Export and Cloud sections")
+T.check(TextViewer.last.buttons_table
+        and TextViewer.last.buttons_table[1]
+        and TextViewer.last.buttons_table[1][1].text == "Export updated",
+    "status panel includes quick Export updated action button")
 
--- runExport records its outcome for the panel (upload off: no cloud)
+-- runExport records its outcome (including exported book titles) for the panel
 store.tomedown.upload = false
 plugin:runExport({ FILE }, {})
 UIManager:runPending()
 local recorded = store.tomedown.last_export
 T.check(recorded ~= nil and recorded.at ~= nil and recorded.exported == 1
-        and recorded.skipped == 0,
+        and recorded.skipped == 0
+        and type(recorded.titles) == "table" and #recorded.titles == 1,
     "runExport records last_export: " .. tostring(recorded and recorded.exported))
 T.check(T.contains(table.concat(plugin:statusLines(), "\n"),
         "Last export: "),

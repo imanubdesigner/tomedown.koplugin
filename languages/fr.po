@@ -1169,3 +1169,15 @@ msgstr "Obsidian"
 
 msgid "Standard"
 msgstr "Standard"
+
+msgid "Exported books"
+msgstr "Livres exportés"
+
+msgid "+ %1 more"
+msgstr "+ %1 autres"
+
+msgid "Export updated"
+msgstr "Exporter les modifiés"
+
+msgid "Upload now"
+msgstr "Envoyer maintenant"
