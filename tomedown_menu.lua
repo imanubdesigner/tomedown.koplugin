@@ -3878,6 +3878,16 @@ function M:genCurrentBookMenu()
             end,
         }
     end
+    local specials = self:bookSpecialHighlights(file)
+    if #specials > 0 then
+        rows[#rows + 1] = {
+            text = "★ " .. _("Special highlights"),
+            mandatory = tostring(#specials),
+            callback = function()
+                self:openSpecialHighlights(file)
+            end,
+        }
+    end
     rows[#rows + 1] = {
         text = _("Style & format"),
         sub_item_table_func = function()
@@ -3885,6 +3895,100 @@ function M:genCurrentBookMenu()
         end,
     }
     return rows
+end
+
+function M:bookSpecialHighlights(file)
+    local out = {}
+    local open = self:openReader(file)
+    local annots = open and open.annotation and open.annotation.annotations
+    if type(annots) ~= "table" then
+        return out
+    end
+    for __, item in ipairs(annots) do
+        if type(item) == "table" and item.tomedown_special and not item.deleted
+                and type(item.text) == "string" and item.text ~= "" then
+            out[#out + 1] = item
+        end
+    end
+    return out
+end
+
+function M:openSpecialHighlights(file)
+    local specials = self:bookSpecialHighlights(file)
+    if #specials == 0 then
+        return
+    end
+    local open = self:openReader(file)
+    local Menu = require("ui/widget/menu")
+    local Event = require("ui/event")
+    local TextViewer = require("ui/widget/textviewer")
+    local Screen = Device.screen
+
+    local function snippet(text, max)
+        local s = tostring(text or ""):gsub("%s*\n%s*", " "):gsub("^%s+", ""):gsub("%s+$", "")
+        if #s <= max then return s end
+        s = s:sub(1, max - 1)
+        while #s > 0 and s:byte(#s) >= 128 and s:byte(#s) < 192 do s = s:sub(1, -2) end
+        if #s > 0 and s:byte(#s) >= 192 then s = s:sub(1, -2) end
+        return s .. "…"
+    end
+
+    local menu
+    local items = {}
+    for __, item in ipairs(specials) do
+        local loc = {}
+        if type(item.chapter) == "string" and item.chapter ~= "" then
+            loc[#loc + 1] = item.chapter
+        end
+        if item.pageno then
+            loc[#loc + 1] = "p. " .. tostring(item.pageno)
+        end
+        items[#items + 1] = {
+            text = "★ " .. snippet(item.text, 85),
+            mandatory = #loc > 0 and table.concat(loc, " · ") or nil,
+            callback = function()
+                UIManager:close(menu)
+                if not open then return end
+                if type(item.pos0) == "string" and item.pos0:sub(1, 1) == "/" then
+                    open:handleEvent(Event:new("GotoXPointer", item.pos0))
+                elseif type(item.page) == "string" and item.page:sub(1, 1) == "/" then
+                    open:handleEvent(Event:new("GotoXPointer", item.page))
+                elseif tonumber(item.pageno or item.page) then
+                    open:handleEvent(Event:new("GotoPage", tonumber(item.pageno or item.page)))
+                end
+            end,
+            hold_callback = function()
+                local body = tostring(item.text or "")
+                if type(item.note) == "string" and item.note ~= "" then
+                    body = body .. "\n\n" .. item.note
+                end
+                UIManager:show(TextViewer:new{
+                    title = type(item.chapter) == "string" and item.chapter ~= ""
+                        and item.chapter or _("Special highlights"),
+                    text = body,
+                })
+            end,
+        }
+    end
+
+    menu = Menu:new{
+        title = "★ " .. _("Special highlights") .. " (" .. tostring(#specials) .. ")",
+        item_table = items,
+        is_borderless = true,
+        is_popout = false,
+        title_bar_fm_style = true,
+        covers_fullscreen = true,
+        width = Screen:getWidth(),
+        height = Screen:getHeight(),
+        single_line = false,
+    }
+    menu.onMenuHold = function(__, item)
+        if item and item.hold_callback then
+            item.hold_callback()
+        end
+        return true
+    end
+    UIManager:show(menu)
 end
 
 -- Per-book style and format overrides for the open book. Each option can

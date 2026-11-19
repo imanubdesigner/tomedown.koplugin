@@ -100,7 +100,7 @@ msgid "Local folder: %1"
 msgstr "Pasta local: %1"
 
 msgid "Create an index note (%1)"
-msgstr "Criar uma nota de índice (%1)"
+msgstr "Criar nota índice (%1)"
 
 msgid "Index order: %1"
 msgstr "Ordem do índice: %1"
@@ -148,7 +148,7 @@ msgid "Upload all files again"
 msgstr "Enviar todos os arquivos novamente"
 
 msgid "Bring in edits made in Obsidian"
-msgstr "Importar as edições feitas no Obsidian"
+msgstr "Importar edições Obsidian"
 
 msgid "Settings"
 msgstr "Configurações"
@@ -238,13 +238,13 @@ msgid "Include book covers"
 msgstr "Incluir capas"
 
 msgid "Treat every highlight as special"
-msgstr "Tratar cada destaque como especial"
+msgstr "Todos destaques especiais"
 
 msgid "Add link IDs to highlights"
-msgstr "Adicionar IDs de link aos destaques"
+msgstr "IDs de link nos destaques"
 
 msgid "How special highlights look: %1"
-msgstr "Aparência dos destaques especiais: %1"
+msgstr "Estilo especiais: %1"
 
 msgid "Callout ([!highlight])"
 msgstr "Callout ([!highlight])"
@@ -256,7 +256,7 @@ msgid "Highlight (==text==)"
 msgstr "Destacado (==texto==)"
 
 msgid "Highlight & Bold (==**text**==)"
-msgstr "Destacado e negrito (==**texto**==)"
+msgstr "Destaque e negrito"
 
 msgid "Star & Bold (⭐ **text**)"
 msgstr "Estrela e negrito (⭐ **texto**)"
@@ -278,10 +278,10 @@ msgid "Special mark removed"
 msgstr "Marca especial removida"
 
 msgid "Update available: v%1 → v%2"
-msgstr "Atualização disponível: v%1 → v%2"
+msgstr "Atualização: v%1 → v%2"
 
 msgid "Check for updates (v%1)"
-msgstr "Verificar atualizações (v%1)"
+msgstr "Buscar updates (v%1)"
 
 msgid "View changelog"
 msgstr "Ver changelog"
@@ -308,7 +308,7 @@ msgid "Could not fetch the changelog."
 msgstr "Não foi possível buscar o changelog."
 
 msgid "Check for updates in background"
-msgstr "Verificar atualizações em segundo plano"
+msgstr "Updates em segundo plano"
 
 msgid "Beta versions"
 msgstr "Versões beta"
@@ -494,7 +494,7 @@ msgid "Manual"
 msgstr "Manual"
 
 msgid "Keep my notes: all books"
-msgstr "Manter minhas notas: todos os livros"
+msgstr "Manter notas: todos"
 
 msgid "Keep my notes: index"
 msgstr "Manter minhas notas: índice"
@@ -512,7 +512,7 @@ msgid "Notes heading: %1"
 msgstr "Título das notas: %1"
 
 msgid "Index notes heading: %1"
-msgstr "Título das notas do índice: %1"
+msgstr "Título notas índice: %1"
 
 msgid "Notes heading"
 msgstr "Título das notas"
@@ -749,7 +749,7 @@ msgid "Status: %1"
 msgstr "Status: %1"
 
 msgid "Update book info automatically"
-msgstr "Atualizar as informações do livro automaticamente"
+msgstr "Auto-atualizar info livro"
 
 msgid "Import book info for all books"
 msgstr "Importar as informações de todos os livros"
@@ -854,7 +854,7 @@ msgid "Footnotes"
 msgstr "Notas de rodapé"
 
 msgid "Personal notes format: %1"
-msgstr "Formato das notas pessoais: %1"
+msgstr "Formato notas: %1"
 
 msgid "Reading digest"
 msgstr "Resumo de leitura"
@@ -1001,7 +1001,7 @@ msgid "Disabled"
 msgstr "Desativado"
 
 msgid "Reset to global style settings"
-msgstr "Redefinir para as configurações de estilo globais"
+msgstr "Redefinir estilo global"
 
 msgid "Book cover: %1"
 msgstr "Capa do livro: %1"
@@ -1013,7 +1013,7 @@ msgid "YAML frontmatter: %1"
 msgstr "Frontmatter YAML: %1"
 
 msgid "Show Tomedown icon in the top bar"
-msgstr "Mostrar ícone do Tomedown na barra superior"
+msgstr "Ícone Tomedown no topo"
 
 msgid "Custom fields"
 msgstr "Campos personalizados"
@@ -1022,7 +1022,7 @@ msgid "Custom frontmatter fields"
 msgstr "Campos de frontmatter personalizados"
 
 msgid "Custom frontmatter fields…"
-msgstr "Campos de frontmatter personalizados…"
+msgstr "Campos custom frontmatter…"
 
 msgid "comma-separated keys; leave empty to follow global order"
 msgstr "chaves separadas por vírgula; deixe em branco para seguir a ordem global"
@@ -1121,10 +1121,10 @@ msgid "Index tags display: %1"
 msgstr "Tags no índice: %1"
 
 msgid "Show Completed books in the index"
-msgstr "Mostrar Livros concluídos no índice"
+msgstr "Concluídos no índice"
 
 msgid "Show Library dashboard in the index"
-msgstr "Mostrar Painel da biblioteca no índice"
+msgstr "Painel no índice"
 
 msgid "Show tag cloud in the index"
 msgstr "Mostrar nuvem de tags no índice"
@@ -1151,7 +1151,7 @@ msgid "Body tags: %1"
 msgstr "Tags no corpo: %1"
 
 msgid "Special highlights showcase: %1"
-msgstr "Vitrine de destaques especiais: %1"
+msgstr "Vitrine especiais: %1"
 
 
 

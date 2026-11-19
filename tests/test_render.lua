@@ -1629,4 +1629,57 @@ do
         "completed_books renders Completed books trophy room section")
 end
 
+-- Standard Markdown (index_links = "markdown"): zero Obsidian [!callouts] and zero orphan ^hl- IDs
+do
+    local std_book = {
+        title = "The Brothers Karamazov",
+        author = "Fyodor Dostoevsky",
+        status = "reading",
+        progress = "45%",
+        rating = 5,
+        description = "A philosophical novel set in 19th-century Russia.",
+        count = 1,
+        annotations = {
+            {
+                text = "Above all, do not lie to yourself.",
+                chapter = "Book II",
+                page = 41,
+                special = true,
+                id_seed = "2026-11-19 08:00:00",
+            },
+        },
+        exported = "2026-11-19",
+    }
+    local std_md = render.buildBookMd(std_book, {
+        markers = false,
+        index_links = "markdown",
+        reading_dashboard = true,
+        book_synopsis = true,
+        special_showcase = true,
+        block_ids = true,
+    })
+    T.check(T.contains(std_md, "### Reading dashboard")
+            and not T.contains(std_md, "> [!book]"),
+        "Standard Markdown renders Reading dashboard without [!book] callout")
+    T.check(T.contains(std_md, "### Book synopsis")
+            and not T.contains(std_md, "> [!abstract]-"),
+        "Standard Markdown renders Book synopsis without [!abstract]- callout")
+    T.check(T.contains(std_md, "### ★ Special highlights (1)")
+            and not T.contains(std_md, "> [!highlight]-"),
+        "Standard Markdown renders Special highlights showcase without [!highlight]- callout")
+    T.check(not T.contains(std_md, "^hl-"),
+        "Standard Markdown omits Obsidian-only ^hl- block IDs")
+
+    local std_idx = render.buildIndexMd({
+        { title = "The Brothers Karamazov", author = "Dostoevsky", base = "karamazov",
+          count = 1, special = 1, status = "reading" },
+    }, {
+        index_links = "markdown",
+        index_dashboard = true,
+    })
+    T.check(T.contains(std_idx, "### Library dashboard")
+            and not T.contains(std_idx, "> [!summary]"),
+        "Standard Markdown renders Library dashboard without [!summary] callout")
+end
+
 T.finish("test_render")

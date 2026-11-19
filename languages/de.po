@@ -100,7 +100,7 @@ msgid "Local folder: %1"
 msgstr "Lokaler Ordner: %1"
 
 msgid "Create an index note (%1)"
-msgstr "Eine Indexnotiz erstellen (%1)"
+msgstr "Indexnotiz erstellen (%1)"
 
 msgid "Index order: %1"
 msgstr "Reihenfolge des Index: %1"
@@ -112,7 +112,7 @@ msgid "Export new and changed books"
 msgstr "Neue und geänderte Bücher exportieren"
 
 msgid "Keep my notes in this book"
-msgstr "Meine Notizen in diesem Buch behalten"
+msgstr "Notizen hier behalten"
 
 msgid "Tags for this book"
 msgstr "Tags für dieses Buch"
@@ -148,7 +148,7 @@ msgid "Upload all files again"
 msgstr "Alle Dateien erneut hochladen"
 
 msgid "Bring in edits made in Obsidian"
-msgstr "In Obsidian vorgenommene Änderungen übernehmen"
+msgstr "Obsidian-Änderungen holen"
 
 msgid "Settings"
 msgstr "Einstellungen"
@@ -238,13 +238,13 @@ msgid "Include book covers"
 msgstr "Buchcover einbeziehen"
 
 msgid "Treat every highlight as special"
-msgstr "Jede Markierung als besonders behandeln"
+msgstr "Alle Markierungen besonders"
 
 msgid "Add link IDs to highlights"
-msgstr "Link-IDs zu Markierungen hinzufügen"
+msgstr "Link-IDs an Markierungen"
 
 msgid "How special highlights look: %1"
-msgstr "Aussehen besonderer Markierungen: %1"
+msgstr "Besondere-Stil: %1"
 
 msgid "Callout ([!highlight])"
 msgstr "Callout ([!highlight])"
@@ -256,7 +256,7 @@ msgid "Highlight (==text==)"
 msgstr "Hervorgehoben (==Text==)"
 
 msgid "Highlight & Bold (==**text**==)"
-msgstr "Hervorgehoben & fett (==**Text**==)"
+msgstr "Markiert & fett (==**…**==)"
 
 msgid "Star & Bold (⭐ **text**)"
 msgstr "Stern & fett (⭐ **Text**)"
@@ -308,7 +308,7 @@ msgid "Could not fetch the changelog."
 msgstr "Changelog konnte nicht abgerufen werden."
 
 msgid "Check for updates in background"
-msgstr "Im Hintergrund nach Updates suchen"
+msgstr "Updates im Hintergrund"
 
 msgid "Beta versions"
 msgstr "Beta-Versionen"
@@ -494,7 +494,7 @@ msgid "Manual"
 msgstr "Manuell"
 
 msgid "Keep my notes: all books"
-msgstr "Meine Notizen behalten: alle Bücher"
+msgstr "Notizen behalten: alle"
 
 msgid "Keep my notes: index"
 msgstr "Meine Notizen behalten: Index"
@@ -509,10 +509,10 @@ msgid "My notes..."
 msgstr "Meine Notizen..."
 
 msgid "Notes heading: %1"
-msgstr "Überschrift der Notizen: %1"
+msgstr "Notizen-Titel: %1"
 
 msgid "Index notes heading: %1"
-msgstr "Überschrift der Indexnotizen: %1"
+msgstr "Index-Notizentitel: %1"
 
 msgid "Notes heading"
 msgstr "Überschrift der Notizen"
@@ -657,7 +657,7 @@ msgid "Reading now"
 msgstr "Aktuelle Lektüre"
 
 msgid "Show Reading now in the index"
-msgstr "„Aktuelle Lektüre“ im Index anzeigen"
+msgstr "„Aktuell“ im Index zeigen"
 
 msgid "Every exported book is hidden from the index."
 msgstr "Alle exportierten Bücher sind im Index ausgeblendet."
@@ -749,7 +749,7 @@ msgid "Status: %1"
 msgstr "Status: %1"
 
 msgid "Update book info automatically"
-msgstr "Buchinformationen automatisch aktualisieren"
+msgstr "Buchinfos auto-aktualisieren"
 
 msgid "Import book info for all books"
 msgstr "Buchinformationen aller Bücher importieren"
@@ -770,7 +770,7 @@ msgid "Dates"
 msgstr "Daten"
 
 msgid "Remove imported book info…"
-msgstr "Importierte Buchinformationen entfernen…"
+msgstr "Importierte Infos löschen…"
 
 msgid "Index layout: %1"
 msgstr "Layout des Index: %1"
@@ -854,7 +854,7 @@ msgid "Footnotes"
 msgstr "Fußnoten"
 
 msgid "Personal notes format: %1"
-msgstr "Format persönlicher Notizen: %1"
+msgstr "Notizen-Format: %1"
 
 msgid "Reading digest"
 msgstr "Lese-Digest"
@@ -908,19 +908,19 @@ msgid "Export date (exported)"
 msgstr "Exportdatum (exported)"
 
 msgid "Highlight count (highlights)"
-msgstr "Anzahl der Markierungen (highlights)"
+msgstr "Markierungen (highlights)"
 
 msgid "Special highlight count (special)"
-msgstr "Besondere Markierungen (special)"
+msgstr "Besondere (special)"
 
 msgid "Reading status (status)"
 msgstr "Lesestatus (status)"
 
 msgid "Reading progress (progress)"
-msgstr "Lesefortschritt (progress)"
+msgstr "Fortschritt (progress)"
 
 msgid "Frontmatter key order…"
-msgstr "Reihenfolge der Frontmatter-Schlüssel…"
+msgstr "Frontmatter-Reihenfolge…"
 
 msgid "Frontmatter key order"
 msgstr "Reihenfolge der Frontmatter-Schlüssel"
@@ -977,7 +977,7 @@ msgid "Chapter headings: %1"
 msgstr "Kapitelüberschriften: %1"
 
 msgid "Include highlight context"
-msgstr "Kontext der Markierungen einschließen"
+msgstr "Markierungs-Kontext"
 
 msgid "Style & format"
 msgstr "Stil und Format"
@@ -992,7 +992,7 @@ msgid "Custom"
 msgstr "Eigen"
 
 msgid "Highlight context: %1"
-msgstr "Kontext der Markierungen: %1"
+msgstr "Kontext: %1"
 
 msgid "Enabled"
 msgstr "Aktiviert"
@@ -1001,7 +1001,7 @@ msgid "Disabled"
 msgstr "Deaktiviert"
 
 msgid "Reset to global style settings"
-msgstr "Auf globale Stileinstellungen zurücksetzen"
+msgstr "Globalen Stil herstellen"
 
 msgid "Book cover: %1"
 msgstr "Buchcover: %1"
@@ -1013,7 +1013,7 @@ msgid "YAML frontmatter: %1"
 msgstr "YAML-Frontmatter: %1"
 
 msgid "Show Tomedown icon in the top bar"
-msgstr "Tomedown-Symbol in der oberen Leiste anzeigen"
+msgstr "Tomedown-Symbol oben"
 
 msgid "Custom fields"
 msgstr "Benutzerdefinierte Felder"
@@ -1022,7 +1022,7 @@ msgid "Custom frontmatter fields"
 msgstr "Benutzerdefinierte Frontmatter-Felder"
 
 msgid "Custom frontmatter fields…"
-msgstr "Benutzerdefinierte Frontmatter-Felder…"
+msgstr "Eigene Frontmatter-Felder…"
 
 msgid "comma-separated keys; leave empty to follow global order"
 msgstr "kommagetrennte Schlüssel; leer lassen für globale Reihenfolge"
@@ -1043,13 +1043,13 @@ msgid "e.g. drawings, attachments, assets"
 msgstr "z. B. drawings, attachments, assets"
 
 msgid "Include handwritten notes"
-msgstr "Handschriftliche Notizen einschließen"
+msgstr "Handschriftliche Notizen"
 
 msgid "Drawings folder: %1"
 msgstr "Zeichnungsordner: %1"
 
 msgid "Handwritten notes: %1"
-msgstr "Handschriftliche Notizen: %1"
+msgstr "Handschrift: %1"
 
 msgid "by %1"
 msgstr "von %1"
@@ -1121,10 +1121,10 @@ msgid "Index tags display: %1"
 msgstr "Tags im Index: %1"
 
 msgid "Show Completed books in the index"
-msgstr "Abgeschlossene Bücher im Index anzeigen"
+msgstr "Beendete im Index zeigen"
 
 msgid "Show Library dashboard in the index"
-msgstr "Bibliotheks-Dashboard im Index anzeigen"
+msgstr "Dashboard im Index zeigen"
 
 msgid "Show tag cloud in the index"
 msgstr "Tag-Wolke im Index anzeigen"

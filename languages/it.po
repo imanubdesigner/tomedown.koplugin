@@ -112,7 +112,7 @@ msgid "Export new and changed books"
 msgstr "Esporta i libri nuovi e modificati"
 
 msgid "Keep my notes in this book"
-msgstr "Tieni le mie note in questo libro"
+msgstr "Tieni le mie note qui"
 
 msgid "Tags for this book"
 msgstr "Tag per questo libro"
@@ -148,7 +148,7 @@ msgid "Upload all files again"
 msgstr "Carica di nuovo tutti i file"
 
 msgid "Bring in edits made in Obsidian"
-msgstr "Importa le modifiche fatte in Obsidian"
+msgstr "Importa modifiche Obsidian"
 
 msgid "Settings"
 msgstr "Impostazioni"
@@ -238,13 +238,13 @@ msgid "Include book covers"
 msgstr "Includi le copertine"
 
 msgid "Treat every highlight as special"
-msgstr "Tratta ogni evidenziazione come speciale"
+msgstr "Tutte citazioni speciali"
 
 msgid "Add link IDs to highlights"
-msgstr "Aggiungi ID di collegamento alle evidenziazioni"
+msgstr "ID link evidenziazioni"
 
 msgid "How special highlights look: %1"
-msgstr "Aspetto delle evidenziazioni speciali: %1"
+msgstr "Stile speciali: %1"
 
 msgid "Callout ([!highlight])"
 msgstr "Callout ([!highlight])"
@@ -256,7 +256,7 @@ msgid "Highlight (==text==)"
 msgstr "Evidenziato (==testo==)"
 
 msgid "Highlight & Bold (==**text**==)"
-msgstr "Evidenziato e grassetto (==**testo**==)"
+msgstr "Evidenziato + grassetto"
 
 msgid "Star & Bold (⭐ **text**)"
 msgstr "Stella e grassetto (⭐ **testo**)"
@@ -278,10 +278,10 @@ msgid "Special mark removed"
 msgstr "Marchio speciale rimosso"
 
 msgid "Update available: v%1 → v%2"
-msgstr "Aggiornamento disponibile: v%1 → v%2"
+msgstr "Aggiornamento: v%1 → v%2"
 
 msgid "Check for updates (v%1)"
-msgstr "Controlla aggiornamenti (v%1)"
+msgstr "Cerca aggiornamenti (v%1)"
 
 msgid "View changelog"
 msgstr "Vedi changelog"
@@ -308,7 +308,7 @@ msgid "Could not fetch the changelog."
 msgstr "Impossibile recuperare il changelog."
 
 msgid "Check for updates in background"
-msgstr "Controlla aggiornamenti in background"
+msgstr "Aggiornamenti in background"
 
 msgid "Beta versions"
 msgstr "Versioni beta"
@@ -509,10 +509,10 @@ msgid "My notes..."
 msgstr "Le mie note..."
 
 msgid "Notes heading: %1"
-msgstr "Intestazione delle note: %1"
+msgstr "Titolo note: %1"
 
 msgid "Index notes heading: %1"
-msgstr "Intestazione delle note dell'indice: %1"
+msgstr "Titolo note indice: %1"
 
 msgid "Notes heading"
 msgstr "Intestazione delle note"
@@ -548,7 +548,7 @@ msgid "Backup copies (%1)"
 msgstr "Copie di backup (%1)"
 
 msgid "Delete all backup copies…"
-msgstr "Elimina tutte le copie di backup…"
+msgstr "Elimina tutti i backup…"
 
 msgid "Delete all %1 backup copies (.bak)?\n\nIt cannot be undone."
 msgstr "Eliminare tutte le %1 copie di backup (.bak)?\n\nNon si può annullare."
@@ -657,7 +657,7 @@ msgid "Reading now"
 msgstr "In lettura ora"
 
 msgid "Show Reading now in the index"
-msgstr "Mostra «In lettura ora» nell'indice"
+msgstr "«In lettura» nell'indice"
 
 msgid "Every exported book is hidden from the index."
 msgstr "Tutti i libri esportati sono nascosti dall'indice."
@@ -749,7 +749,7 @@ msgid "Status: %1"
 msgstr "Stato: %1"
 
 msgid "Update book info automatically"
-msgstr "Aggiorna automaticamente le informazioni del libro"
+msgstr "Auto-aggiorna info libro"
 
 msgid "Import book info for all books"
 msgstr "Importa le informazioni di tutti i libri"
@@ -770,7 +770,7 @@ msgid "Dates"
 msgstr "Date"
 
 msgid "Remove imported book info…"
-msgstr "Rimuovi informazioni importate…"
+msgstr "Rimuovi info importate…"
 
 msgid "Index layout: %1"
 msgstr "Layout dell'indice: %1"
@@ -854,7 +854,7 @@ msgid "Footnotes"
 msgstr "Note a piè di pagina"
 
 msgid "Personal notes format: %1"
-msgstr "Formato note personali: %1"
+msgstr "Formato note: %1"
 
 msgid "Reading digest"
 msgstr "Digest di lettura"
@@ -908,19 +908,19 @@ msgid "Export date (exported)"
 msgstr "Data di esportazione (exported)"
 
 msgid "Highlight count (highlights)"
-msgstr "Numero di evidenziazioni (highlights)"
+msgstr "Conteggio (highlights)"
 
 msgid "Special highlight count (special)"
-msgstr "Evidenziazioni speciali (special)"
+msgstr "Speciali (special)"
 
 msgid "Reading status (status)"
 msgstr "Stato di lettura (status)"
 
 msgid "Reading progress (progress)"
-msgstr "Avanzamento di lettura (progress)"
+msgstr "Avanzamento (progress)"
 
 msgid "Frontmatter key order…"
-msgstr "Ordine chiavi del frontmatter…"
+msgstr "Ordine chiavi frontmatter…"
 
 msgid "Frontmatter key order"
 msgstr "Ordine chiavi del frontmatter"
@@ -977,7 +977,7 @@ msgid "Chapter headings: %1"
 msgstr "Intestazioni capitoli: %1"
 
 msgid "Include highlight context"
-msgstr "Includi contesto delle citazioni"
+msgstr "Contesto evidenziazioni"
 
 msgid "Style & format"
 msgstr "Stile e formato"
@@ -1001,7 +1001,7 @@ msgid "Disabled"
 msgstr "Disattivato"
 
 msgid "Reset to global style settings"
-msgstr "Ripristina stile e formato globali"
+msgstr "Ripristina stile globale"
 
 msgid "Book cover: %1"
 msgstr "Copertina del libro: %1"
@@ -1013,7 +1013,7 @@ msgid "YAML frontmatter: %1"
 msgstr "Frontmatter YAML: %1"
 
 msgid "Show Tomedown icon in the top bar"
-msgstr "Mostra icona Tomedown nella barra superiore"
+msgstr "Icona Tomedown in barra"
 
 msgid "Custom fields"
 msgstr "Campi personalizzati"
@@ -1022,7 +1022,7 @@ msgid "Custom frontmatter fields"
 msgstr "Campi personalizzati frontmatter"
 
 msgid "Custom frontmatter fields…"
-msgstr "Campi personalizzati frontmatter…"
+msgstr "Campi custom frontmatter…"
 
 msgid "comma-separated keys; leave empty to follow global order"
 msgstr "chiavi separate da virgola; lascia vuoto per seguire l'ordine globale"
@@ -1043,7 +1043,7 @@ msgid "e.g. drawings, attachments, assets"
 msgstr "es. drawings, attachments, assets"
 
 msgid "Include handwritten notes"
-msgstr "Includi note a mano libera"
+msgstr "Note a mano libera"
 
 msgid "Drawings folder: %1"
 msgstr "Cartella disegni: %1"
@@ -1064,7 +1064,7 @@ msgid "Books"
 msgstr "Libri"
 
 msgid "Include book title in body"
-msgstr "Includi titolo del libro nel testo"
+msgstr "Titolo libro nel corpo"
 
 msgid "Book title in body: %1"
 msgstr "Titolo nel testo: %1"
@@ -1121,25 +1121,25 @@ msgid "Index tags display: %1"
 msgstr "Tag nell'indice: %1"
 
 msgid "Show Completed books in the index"
-msgstr "Mostra Libri completati nell'indice"
+msgstr "Completati nell'indice"
 
 msgid "Show Library dashboard in the index"
-msgstr "Mostra Panoramica libreria nell'indice"
+msgstr "Panoramica nell'indice"
 
 msgid "Show tag cloud in the index"
-msgstr "Mostra mappa dei tag nell'indice"
+msgstr "Nuvola tag nell'indice"
 
 msgid "Include reading dashboard"
-msgstr "Includi scheda di lettura"
+msgstr "Dashboard di lettura"
 
 msgid "Include book synopsis"
 msgstr "Includi sinossi del libro"
 
 msgid "Include clickable tags in body"
-msgstr "Includi tag cliccabili nel testo"
+msgstr "Tag cliccabili nel corpo"
 
 msgid "Include Special highlights showcase"
-msgstr "Includi vetrina citazioni speciali"
+msgstr "Vetrina citazioni speciali"
 
 msgid "Reading dashboard: %1"
 msgstr "Scheda di lettura: %1"
@@ -1151,7 +1151,7 @@ msgid "Body tags: %1"
 msgstr "Tag nel testo: %1"
 
 msgid "Special highlights showcase: %1"
-msgstr "Vetrina citazioni speciali: %1"
+msgstr "Vetrina speciali: %1"
 
 
 

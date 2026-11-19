@@ -823,14 +823,21 @@ function render.buildBookMd(book, opts)
     end
 
     local has_card_extras = false
+    local is_std = (opts.index_links == "markdown")
     if opts.reading_dashboard == true then
         local status_labels = {
             reading = "🟡 **" .. _("Reading") .. "**",
             complete = "🟢 **" .. _("Complete") .. "**",
             abandoned = "⚪ **" .. _("Abandoned") .. "**",
         }
+        local dash_pfx = is_std and "- " or "> - "
         add("")
-        add("> [!book] " .. _("Reading dashboard"))
+        if is_std then
+            add("### " .. _("Reading dashboard"))
+            add("")
+        else
+            add("> [!book] " .. _("Reading dashboard"))
+        end
         local st_parts = {}
         if book.status and status_labels[book.status] then
             st_parts[#st_parts + 1] = status_labels[book.status]
@@ -846,11 +853,11 @@ function render.buildBookMd(book, opts)
             st_parts[#st_parts + 1] = "(" .. table.concat(detail_parts, " · ") .. ")"
         end
         if #st_parts > 0 then
-            add("> - **" .. _("Status") .. ":** " .. table.concat(st_parts, " "))
+            add(dash_pfx .. "**" .. _("Status") .. ":** " .. table.concat(st_parts, " "))
         end
         local r_stars = render.stars(book.rating)
         if r_stars then
-            add("> - **" .. _("Rating") .. ":** " .. r_stars .. " (" .. tostring(book.rating) .. "/5)")
+            add(dash_pfx .. "**" .. _("Rating") .. ":** " .. r_stars .. " (" .. tostring(book.rating) .. "/5)")
         end
         if book.date_started or book.date_finished then
             local d_parts = {}
@@ -860,10 +867,10 @@ function render.buildBookMd(book, opts)
             if book.date_finished then
                 d_parts[#d_parts + 1] = render.fmtDateLiterary(tostring(book.date_finished))
             end
-            add("> - **" .. _("Reading dates") .. ":** " .. table.concat(d_parts, " → "))
+            add(dash_pfx .. "**" .. _("Reading dates") .. ":** " .. table.concat(d_parts, " → "))
         end
         local idx_link = render.bookLink("00 - Index", "← " .. _("Book index"), opts.index_links, false)
-        add("> - **" .. _("Index") .. ":** " .. idx_link)
+        add(dash_pfx .. "**" .. _("Index") .. ":** " .. idx_link)
         has_card_extras = true
     end
 
@@ -871,7 +878,12 @@ function render.buildBookMd(book, opts)
         local syn = render.cleanSynopsis(book.description)
         if syn then
             add("")
-            add("> [!abstract]- " .. _("Book synopsis"))
+            if is_std then
+                add("### " .. _("Book synopsis"))
+                add("")
+            else
+                add("> [!abstract]- " .. _("Book synopsis"))
+            end
             for line in (syn .. "\n"):gmatch("(.-)\n") do
                 add(line == "" and ">" or ("> " .. line))
             end
@@ -947,12 +959,17 @@ function render.buildBookMd(book, opts)
 
     if opts.special_showcase == true and special_count > 0 then
         add("")
-        add("> [!highlight]- ★ " .. _("Special highlights") .. " (" .. tostring(special_count) .. ")")
+        if is_std then
+            add("### ★ " .. _("Special highlights") .. " (" .. tostring(special_count) .. ")")
+            add("")
+        else
+            add("> [!highlight]- ★ " .. _("Special highlights") .. " (" .. tostring(special_count) .. ")")
+        end
         local first_sp = true
         for __, a in ipairs(annotations) do
             if a.special then
                 if not first_sp then
-                    add(">")
+                    add(is_std and "" or ">")
                 end
                 first_sp = false
                 local stext = tostring(a.text or ""):gsub("\r\n", "\n"):gsub("\r", "\n")
@@ -1094,7 +1111,7 @@ function render.buildBookMd(book, opts)
         -- of the callout), after any closing emphasis. Checked in
         -- Obsidian: a link jumps to, and an embed shows, the whole
         -- quote, multi-paragraph and callout included.
-        if opts.block_ids and a.id then
+        if opts.block_ids and a.id and not is_std then
             out[#out] = out[#out] .. " ^" .. a.id
         end
 
@@ -1314,7 +1331,14 @@ function render.buildIndexMd(books, opts)
             .. (_("%1 special"):gsub("%%1", tostring(total_special))) .. "**"
     end
     if opts.index_dashboard == true then
-        add("> [!summary] " .. _("Library dashboard"))
+        local idx_std = (opts.index_links == "markdown")
+        local pfx = idx_std and "- " or "> "
+        if idx_std then
+            add("### " .. _("Library dashboard"))
+            add("")
+        else
+            add("> [!summary] " .. _("Library dashboard"))
+        end
         local b_line = "**" .. (books_txt:gsub("%%1", tostring(#books))) .. "**"
         if completed_count > 0 then
             b_line = b_line .. " · **🟢 " .. tostring(completed_count) .. " " .. _("Complete") .. "**"
@@ -1322,15 +1346,15 @@ function render.buildIndexMd(books, opts)
         if reading_count > 0 then
             b_line = b_line .. " · **🟡 " .. tostring(reading_count) .. " " .. _("Reading") .. "**"
         end
-        add("> " .. b_line)
+        add(pfx .. b_line)
         local h_line = "**" .. (highlights_txt:gsub("%%1", tostring(total_highlights))) .. "**"
         if total_special > 0 then
             h_line = h_line .. " · **★ "
                 .. (_("%1 special"):gsub("%%1", tostring(total_special))) .. "**"
         end
-        add("> " .. h_line)
+        add(pfx .. h_line)
         local digest_link = render.bookLink("00 - Reading Digest", _("Reading digest") .. " →", opts.index_links, false)
-        add("> " .. digest_link)
+        add(pfx .. digest_link)
         add("")
     else
         add(stats)
