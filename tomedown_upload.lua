@@ -601,11 +601,12 @@ function M:showStatus()
     local btn_gap = Screen:scaleBySize(10)
     local btn_w = math.floor((content_w - btn_gap * (#btn_specs - 1)) / #btn_specs)
     local btn_row = HorizontalGroup:new{ align = "center" }
+    local created_btns = {}
     for idx, spec in ipairs(btn_specs) do
         if idx > 1 then
             btn_row[#btn_row + 1] = HorizontalSpan:new{ width = btn_gap }
         end
-        btn_row[#btn_row + 1] = Button:new{
+        local b = Button:new{
             text = spec.text,
             width = btn_w,
             bordersize = (Size.border and Size.border.button) or 1,
@@ -614,6 +615,8 @@ function M:showStatus()
             text_font_size = 15,
             callback = spec.callback,
         }
+        created_btns[#created_btns + 1] = b
+        btn_row[#btn_row + 1] = b
     end
     column[#column + 1] = btn_row
 
@@ -624,15 +627,24 @@ function M:showStatus()
         background = Blitbuffer.COLOR_WHITE,
         column,
     }
+    local movable = MovableContainer:new{ frame }
 
     dialog = InputContainer:new{
         align = "center",
         dimen = Geom:new{ x = 0, y = 0, w = sw, h = sh },
         CenterContainer:new{
             dimen = Geom:new{ w = sw, h = sh },
-            MovableContainer:new{ frame },
+            movable,
         },
     }
+    for __, b in ipairs(created_btns) do
+        b.show_parent = dialog
+    end
+    dialog.onCloseWidget = function()
+        UIManager:setDirty(nil, function()
+            return "flashui", movable.dimen or frame.dimen
+        end)
+    end
     if Device:isTouchDevice() then
         dialog.ges_events = {
             TapClose = { GestureRange:new{

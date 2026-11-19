@@ -3342,15 +3342,21 @@ function M:showAbout()
         column,
     }
 
+    local movable = MovableContainer:new{ frame }
     local dialog
     dialog = InputContainer:new{
         align = "center",
         dimen = Geom:new{ x = 0, y = 0, w = sw, h = sh },
         CenterContainer:new{
             dimen = Geom:new{ w = sw, h = sh },
-            MovableContainer:new{ frame },
+            movable,
         },
     }
+    dialog.onCloseWidget = function()
+        UIManager:setDirty(nil, function()
+            return "flashui", movable.dimen or frame.dimen
+        end)
+    end
     if Device:isTouchDevice() then
         dialog.ges_events = {
             TapClose = { GestureRange:new{
