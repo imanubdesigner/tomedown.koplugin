@@ -4159,8 +4159,9 @@ function M:showBookSummaryCard(file)
     column[#column + 1] = VerticalSpan:new{ width = gap_m }
 
     local col_w = math.floor(content_w / 3)
-    local function kpiTile(num, caption)
-        return CenterContainer:new{
+    local dialog
+    local function kpiTile(num, caption, on_tap)
+        local tile_box = CenterContainer:new{
             dimen = Geom:new{ w = col_w, h = Screen:scaleBySize(54) },
             VerticalGroup:new{
                 align = "center",
@@ -4177,12 +4178,43 @@ function M:showBookSummaryCard(file)
                 },
             },
         }
+        if not on_tap or (num or 0) == 0 then
+            return tile_box
+        end
+        local InputContainer = require("ui/widget/container/inputcontainer")
+        local GestureRange = require("ui/gesturerange")
+        local tile = InputContainer:new{
+            dimen = Geom:new{ w = col_w, h = Screen:scaleBySize(54) },
+            tile_box,
+        }
+        if Device:isTouchDevice() then
+            tile.ges_events = {
+                TapTile = { GestureRange:new{
+                    ges = "tap",
+                    range = function() return tile.dimen end,
+                } },
+            }
+            tile.onTapTile = function()
+                if dialog then
+                    UIManager:close(dialog)
+                end
+                on_tap()
+                return true
+            end
+        end
+        return tile
     end
     column[#column + 1] = HorizontalGroup:new{
         align = "center",
-        kpiTile(hl_count, _("Highlights")),
-        kpiTile(sp_count, "★ " .. _("Special")),
-        kpiTile(note_count, _("Notes")),
+        kpiTile(hl_count, _("Highlights"), function()
+            self:openBookHighlights(file, "all")
+        end),
+        kpiTile(sp_count, "★ " .. _("Special"), function()
+            self:openBookHighlights(file, "special")
+        end),
+        kpiTile(note_count, _("Notes"), function()
+            self:openBookHighlights(file, "notes")
+        end),
     }
 
     column[#column + 1] = VerticalSpan:new{ width = gap_m }
@@ -4242,11 +4274,11 @@ function M:showBookSummaryCard(file)
             end,
         },
     }
-    local dialog = buildTomedownCard(column, btn_specs, content_w, pad)
+    dialog = buildTomedownCard(column, btn_specs, content_w, pad)
     UIManager:show(dialog)
 end
 
-function M:bookSpecialHighlights(file)
+function M:bookHighlights(file, filter)
     local out = {}
     local open = self:openReader(file)
     local annots = open and open.annotation and open.annotation.annotations
@@ -4254,17 +4286,32 @@ function M:bookSpecialHighlights(file)
         return out
     end
     for __, item in ipairs(annots) do
-        if type(item) == "table" and item.tomedown_special and not item.deleted
+        if type(item) == "table" and item.drawer ~= nil and not item.deleted
                 and type(item.text) == "string" and item.text ~= "" then
-            out[#out + 1] = item
+            if filter == "special" then
+                if item.tomedown_special then out[#out + 1] = item end
+            elseif filter == "notes" then
+                if type(item.note) == "string" and item.note ~= "" then out[#out + 1] = item end
+            else
+                out[#out + 1] = item
+            end
         end
     end
     return out
 end
 
+function M:bookSpecialHighlights(file)
+    return self:bookHighlights(file, "special")
+end
+
 function M:openSpecialHighlights(file)
-    local specials = self:bookSpecialHighlights(file)
-    if #specials == 0 then
+    return self:openBookHighlights(file, "special")
+end
+
+function M:openBookHighlights(file, filter)
+    filter = filter or "all"
+    local list = self:bookHighlights(file, filter)
+    if #list == 0 then
         return
     end
     local open = self:openReader(file)
@@ -4299,19 +4346,29 @@ function M:openSpecialHighlights(file)
         end
     end
 
+    local function menuTitle(count)
+        if filter == "special" then
+            return "★ " .. _("Special highlights") .. " (" .. tostring(count) .. ")"
+        elseif filter == "notes" then
+            return _("Notes") .. " (" .. tostring(count) .. ")"
+        end
+        return _("Highlights") .. " (" .. tostring(count) .. ")"
+    end
+
     local menu
     local buildItems
 
-    local function showQuoteCard(item)
+    local function showQuoteCard(item, row_idx)
         local sw = Screen:getWidth()
         local frame_w = math.min(math.floor(sw * 0.86), Screen:scaleBySize(460))
         local pad = Screen:scaleBySize(22)
         local content_w = frame_w - pad * 2
         local gap_m = Screen:scaleBySize(14)
 
+        local is_sp = item.tomedown_special == true
         local column = VerticalGroup:new{ align = "center" }
         column[#column + 1] = TextWidget:new{
-            text = "★ " .. _("Special Highlight"),
+            text = is_sp and ("★ " .. _("Special Highlight")) or _("Highlights"),
             face = Font:getFace("tfont", 20),
             bold = true,
         }
@@ -4367,22 +4424,19 @@ function M:openSpecialHighlights(file)
                 end,
             },
             {
-                text = _("Remove ★"),
+                text = is_sp and _("Remove ★") or ("★ " .. _("Special")),
                 callback = function(dlg)
-                    item.tomedown_special = nil
+                    item.tomedown_special = (not is_sp) or nil
                     if open and open.doc_settings and open.annotation then
                         open.doc_settings:saveSetting("annotations", open.annotation.annotations)
                     end
                     UIManager:close(dlg)
-                    local updated = self:bookSpecialHighlights(file)
+                    local updated = self:bookHighlights(file, filter)
                     if #updated == 0 then
                         UIManager:close(menu)
                     else
-                        menu:switchItemTable(
-                            "★ " .. _("Special highlights") .. " (" .. tostring(#updated) .. ")",
-                            buildItems(updated),
-                            1
-                        )
+                        local pos = math.min(row_idx or 1, #updated)
+                        menu:switchItemTable(menuTitle(#updated), buildItems(updated), pos)
                     end
                 end,
             },
@@ -4397,9 +4451,9 @@ function M:openSpecialHighlights(file)
         UIManager:show(card)
     end
 
-    buildItems = function(list)
+    buildItems = function(cur_list)
         local items = {}
-        for __, item in ipairs(list) do
+        for idx, item in ipairs(cur_list) do
             local loc = {}
             if type(item.chapter) == "string" and item.chapter ~= "" then
                 loc[#loc + 1] = item.chapter
@@ -4407,15 +4461,20 @@ function M:openSpecialHighlights(file)
             if item.pageno then
                 loc[#loc + 1] = "p. " .. tostring(item.pageno)
             end
+            local has_note = type(item.note) == "string" and item.note ~= ""
+            local prefix = item.tomedown_special and "★ " or "• "
+            if has_note then
+                prefix = prefix .. "✎ "
+            end
             items[#items + 1] = {
-                text = "★ " .. snippet(item.text, 85),
+                text = prefix .. snippet(item.text, 85),
                 mandatory = #loc > 0 and table.concat(loc, " · ") or nil,
                 callback = function()
                     UIManager:close(menu)
                     jumpToItem(item)
                 end,
                 hold_callback = function()
-                    showQuoteCard(item)
+                    showQuoteCard(item, idx)
                 end,
             }
         end
@@ -4423,8 +4482,8 @@ function M:openSpecialHighlights(file)
     end
 
     menu = Menu:new{
-        title = "★ " .. _("Special highlights") .. " (" .. tostring(#specials) .. ")",
-        item_table = buildItems(specials),
+        title = menuTitle(#list),
+        item_table = buildItems(list),
         is_borderless = true,
         is_popout = false,
         title_bar_fm_style = true,
