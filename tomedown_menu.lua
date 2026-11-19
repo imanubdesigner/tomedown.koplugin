@@ -4308,18 +4308,19 @@ function M:openSpecialHighlights(file)
     return self:openBookHighlights(file, "special")
 end
 
-function M:openBookHighlights(file, filter)
+function M:openBookHighlights(file, filter, page_num)
     filter = filter or "all"
     local list = self:bookHighlights(file, filter)
     if #list == 0 then
         return
     end
     local open = self:openReader(file)
-    local Menu = require("ui/widget/menu")
     local Event = require("ui/event")
     local Geom = require("ui/geometry")
     local Size = require("ui/size")
     local Blitbuffer = require("ffi/blitbuffer")
+    local GestureRange = require("ui/gesturerange")
+    local InputContainer = require("ui/widget/container/inputcontainer")
     local LineWidget = require("ui/widget/linewidget")
     local TextWidget = require("ui/widget/textwidget")
     local VerticalGroup = require("ui/widget/verticalgroup")
@@ -4346,7 +4347,7 @@ function M:openBookHighlights(file, filter)
         end
     end
 
-    local function menuTitle(count)
+    local function cardTitle(count)
         if filter == "special" then
             return "★ " .. _("Special highlights") .. " (" .. tostring(count) .. ")"
         elseif filter == "notes" then
@@ -4355,150 +4356,162 @@ function M:openBookHighlights(file, filter)
         return _("Highlights") .. " (" .. tostring(count) .. ")"
     end
 
-    local menu
-    local buildItems
+    local PER_PAGE = 5
+    local total_pages = math.max(1, math.ceil(#list / PER_PAGE))
+    local cur_page = math.max(1, math.min(page_num or 1, total_pages))
+    local first_idx = (cur_page - 1) * PER_PAGE + 1
+    local last_idx = math.min(#list, first_idx + PER_PAGE - 1)
 
-    local function showQuoteCard(item, row_idx)
-        local sw = Screen:getWidth()
-        local frame_w = math.min(math.floor(sw * 0.86), Screen:scaleBySize(460))
-        local pad = Screen:scaleBySize(22)
-        local content_w = frame_w - pad * 2
-        local gap_m = Screen:scaleBySize(14)
+    local sw = Screen:getWidth()
+    local frame_w = math.min(math.floor(sw * 0.88), Screen:scaleBySize(480))
+    local pad = Screen:scaleBySize(20)
+    local content_w = frame_w - pad * 2
+    local gap_s = Screen:scaleBySize(8)
+    local gap_m = Screen:scaleBySize(12)
 
-        local is_sp = item.tomedown_special == true
-        local column = VerticalGroup:new{ align = "center" }
-        column[#column + 1] = TextWidget:new{
-            text = is_sp and ("★ " .. _("Special Highlight")) or _("Highlights"),
-            face = Font:getFace("tfont", 20),
-            bold = true,
+    local function divider()
+        return LineWidget:new{
+            dimen = Geom:new{ w = content_w, h = (Size.line and Size.line.thin) or 1 },
+            background = Blitbuffer.COLOR_LIGHT_GRAY,
         }
-        local meta_parts = {}
+    end
+
+    local column = VerticalGroup:new{ align = "center" }
+    column[#column + 1] = TextWidget:new{
+        text = cardTitle(#list),
+        face = Font:getFace("tfont", 20),
+        bold = true,
+    }
+    column[#column + 1] = VerticalSpan:new{ width = Screen:scaleBySize(3) }
+    local sub_parts = {}
+    if total_pages > 1 then
+        sub_parts[#sub_parts + 1] = string.format("%d / %d", cur_page, total_pages)
+    end
+    sub_parts[#sub_parts + 1] = _("Tap to jump · Hold for ★")
+    column[#column + 1] = TextWidget:new{
+        text = table.concat(sub_parts, "  ·  "),
+        face = Font:getFace("cfont", 12),
+        fgcolor = Blitbuffer.COLOR_DARK_GRAY,
+        max_width = content_w,
+    }
+    column[#column + 1] = VerticalSpan:new{ width = gap_m }
+    column[#column + 1] = divider()
+
+    local card_dialog
+    local list_group = VerticalGroup:new{ align = "left" }
+
+    for i = first_idx, last_idx do
+        local item = list[i]
+        if i > first_idx then
+            list_group[#list_group + 1] = divider()
+        end
+
+        local has_note = type(item.note) == "string" and item.note ~= ""
+        local prefix = item.tomedown_special and "★ " or "• "
+        if has_note then
+            prefix = prefix .. "✎ "
+        end
+
+        local loc = {}
         if type(item.chapter) == "string" and item.chapter ~= "" then
-            meta_parts[#meta_parts + 1] = item.chapter
+            loc[#loc + 1] = item.chapter
         end
         if item.pageno then
-            meta_parts[#meta_parts + 1] = "p. " .. tostring(item.pageno)
+            loc[#loc + 1] = "p. " .. tostring(item.pageno)
         end
-        if #meta_parts > 0 then
-            column[#column + 1] = VerticalSpan:new{ width = Screen:scaleBySize(4) }
-            column[#column + 1] = TextWidget:new{
-                text = table.concat(meta_parts, "  ·  "),
-                face = Font:getFace("cfont", 13),
+
+        local row_content = VerticalGroup:new{ align = "left" }
+        row_content[#row_content + 1] = VerticalSpan:new{ width = gap_s }
+        row_content[#row_content + 1] = TextBoxWidget:new{
+            text = prefix .. snippet(item.text, 110),
+            face = Font:getFace("cfont", 14),
+            width = content_w,
+        }
+        if #loc > 0 then
+            row_content[#row_content + 1] = VerticalSpan:new{ width = Screen:scaleBySize(2) }
+            row_content[#row_content + 1] = TextWidget:new{
+                text = table.concat(loc, "  ·  "),
+                face = Font:getFace("cfont", 12),
                 fgcolor = Blitbuffer.COLOR_DARK_GRAY,
                 max_width = content_w,
             }
         end
+        row_content[#row_content + 1] = VerticalSpan:new{ width = gap_s }
 
-        column[#column + 1] = VerticalSpan:new{ width = gap_m }
-        column[#column + 1] = LineWidget:new{
-            dimen = Geom:new{ w = content_w, h = (Size.line and Size.line.thin) or 1 },
-            background = Blitbuffer.COLOR_LIGHT_GRAY,
+        local row_widget = InputContainer:new{
+            row_content,
         }
-        column[#column + 1] = VerticalSpan:new{ width = gap_m }
-
-        local body = VerticalGroup:new{ align = "left" }
-        body[#body + 1] = TextBoxWidget:new{
-            text = "“" .. snippet(item.text, 480) .. "”",
-            face = Font:getFace("cfont", 15),
-            width = content_w,
-        }
-        if type(item.note) == "string" and item.note ~= "" then
-            body[#body + 1] = VerticalSpan:new{ width = Screen:scaleBySize(10) }
-            body[#body + 1] = TextBoxWidget:new{
-                text = TextBoxWidget.PTF_HEADER
-                    .. TextBoxWidget.PTF_BOLD_START .. _("Note") .. ":" .. TextBoxWidget.PTF_BOLD_END
-                    .. " " .. snippet(item.note, 220),
-                face = Font:getFace("cfont", 14),
-                width = content_w,
+        if Device:isTouchDevice() then
+            row_widget.ges_events = {
+                TapRow = { GestureRange:new{
+                    ges = "tap",
+                    range = function() return row_widget.dimen end,
+                } },
+                HoldRow = { GestureRange:new{
+                    ges = "hold",
+                    range = function() return row_widget.dimen end,
+                } },
             }
+            row_widget.onTapRow = function()
+                if card_dialog then
+                    UIManager:close(card_dialog)
+                end
+                jumpToItem(item)
+                return true
+            end
+            row_widget.onHoldRow = function()
+                local marked = not item.tomedown_special
+                item.tomedown_special = marked or nil
+                if open and open.doc_settings and open.annotation then
+                    open.doc_settings:saveSetting("annotations", open.annotation.annotations)
+                end
+                UIManager:show(Notification:new{
+                    text = marked and _("Highlight marked as special")
+                        or _("Special mark removed"),
+                    timeout = 1.5,
+                })
+                if card_dialog then
+                    UIManager:close(card_dialog)
+                end
+                self:openBookHighlights(file, filter, cur_page)
+                return true
+            end
         end
-        column[#column + 1] = body
-
-        local btn_specs = {
-            {
-                text = _("Go to page"),
-                callback = function(dlg)
-                    UIManager:close(dlg)
-                    UIManager:close(menu)
-                    jumpToItem(item)
-                end,
-            },
-            {
-                text = is_sp and _("Remove ★") or ("★ " .. _("Special")),
-                callback = function(dlg)
-                    item.tomedown_special = (not is_sp) or nil
-                    if open and open.doc_settings and open.annotation then
-                        open.doc_settings:saveSetting("annotations", open.annotation.annotations)
-                    end
-                    UIManager:close(dlg)
-                    local updated = self:bookHighlights(file, filter)
-                    if #updated == 0 then
-                        UIManager:close(menu)
-                    else
-                        local pos = math.min(row_idx or 1, #updated)
-                        menu:switchItemTable(menuTitle(#updated), buildItems(updated), pos)
-                    end
-                end,
-            },
-            {
-                text = _("Close"),
-                callback = function(dlg)
-                    UIManager:close(dlg)
-                end,
-            },
-        }
-        local card = buildTomedownCard(column, btn_specs, content_w, pad)
-        UIManager:show(card)
+        list_group[#list_group + 1] = row_widget
     end
 
-    buildItems = function(cur_list)
-        local items = {}
-        for idx, item in ipairs(cur_list) do
-            local loc = {}
-            if type(item.chapter) == "string" and item.chapter ~= "" then
-                loc[#loc + 1] = item.chapter
-            end
-            if item.pageno then
-                loc[#loc + 1] = "p. " .. tostring(item.pageno)
-            end
-            local has_note = type(item.note) == "string" and item.note ~= ""
-            local prefix = item.tomedown_special and "★ " or "• "
-            if has_note then
-                prefix = prefix .. "✎ "
-            end
-            items[#items + 1] = {
-                text = prefix .. snippet(item.text, 85),
-                mandatory = #loc > 0 and table.concat(loc, " · ") or nil,
-                callback = function()
-                    UIManager:close(menu)
-                    jumpToItem(item)
-                end,
-                hold_callback = function()
-                    showQuoteCard(item, idx)
-                end,
-            }
-        end
-        return items
-    end
+    column[#column + 1] = list_group
 
-    menu = Menu:new{
-        title = menuTitle(#list),
-        item_table = buildItems(list),
-        is_borderless = true,
-        is_popout = false,
-        title_bar_fm_style = true,
-        covers_fullscreen = true,
-        width = Screen:getWidth(),
-        height = Screen:getHeight(),
-        single_line = false,
+    local btn_specs = {}
+    if total_pages > 1 then
+        btn_specs[#btn_specs + 1] = {
+            text = "◀",
+            callback = function(dlg)
+                if cur_page > 1 then
+                    UIManager:close(dlg)
+                    self:openBookHighlights(file, filter, cur_page - 1)
+                end
+            end,
+        }
+        btn_specs[#btn_specs + 1] = {
+            text = "▶",
+            callback = function(dlg)
+                if cur_page < total_pages then
+                    UIManager:close(dlg)
+                    self:openBookHighlights(file, filter, cur_page + 1)
+                end
+            end,
+        }
+    end
+    btn_specs[#btn_specs + 1] = {
+        text = _("Close"),
+        callback = function(dlg)
+            UIManager:close(dlg)
+        end,
     }
-    menu.onMenuHold = function(__, item)
-        if item and item.hold_callback then
-            item.hold_callback()
-        end
-        return true
-    end
-    UIManager:show(menu)
+
+    card_dialog = buildTomedownCard(column, btn_specs, content_w, pad)
+    UIManager:show(card_dialog)
 end
 
 -- Per-book style and format overrides for the open book. Each option can

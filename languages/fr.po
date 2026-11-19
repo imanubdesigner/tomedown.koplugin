@@ -1218,14 +1218,11 @@ msgstr "À jour"
 msgid "Updates pending"
 msgstr "Modifications en attente"
 
-msgid "Go to page"
-msgstr "Aller à la page"
 
-msgid "Remove ★"
-msgstr "Retirer ★"
 
-msgid "Note"
-msgstr "Note"
 
 msgid "Notes"
 msgstr "Notes"
+
+msgid "Tap to jump · Hold for ★"
+msgstr "Toucher : page · Maintenir : ★"

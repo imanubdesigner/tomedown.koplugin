@@ -1217,14 +1217,11 @@ msgstr "Aggiornato"
 msgid "Updates pending"
 msgstr "Modifiche da esportare"
 
-msgid "Go to page"
-msgstr "Vai alla pagina"
 
-msgid "Remove ★"
-msgstr "Rimuovi ★"
 
-msgid "Note"
-msgstr "Nota"
 
 msgid "Notes"
 msgstr "Note"
+
+msgid "Tap to jump · Hold for ★"
+msgstr "Tocca per andare · Tieni premuto per ★"
