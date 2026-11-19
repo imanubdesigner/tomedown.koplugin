@@ -640,6 +640,11 @@ function M:showStatus()
     for __, b in ipairs(created_btns) do
         b.show_parent = dialog
     end
+    dialog.onShow = function()
+        UIManager:setDirty(dialog, function()
+            return "ui", movable.dimen or frame.dimen
+        end)
+    end
     dialog.onCloseWidget = function()
         UIManager:setDirty(nil, function()
             return "flashui", movable.dimen or frame.dimen

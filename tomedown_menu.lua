@@ -3352,6 +3352,11 @@ function M:showAbout()
             movable,
         },
     }
+    dialog.onShow = function()
+        UIManager:setDirty(dialog, function()
+            return "ui", movable.dimen or frame.dimen
+        end)
+    end
     dialog.onCloseWidget = function()
         UIManager:setDirty(nil, function()
             return "flashui", movable.dimen or frame.dimen
@@ -4056,6 +4061,11 @@ local function buildTomedownCard(column, btn_specs, content_w, pad, extra_button
     for __, b in ipairs(extra_buttons or {}) do
         b.show_parent = dialog
     end
+    dialog.onShow = function()
+        UIManager:setDirty(dialog, function()
+            return "ui", movable.dimen or frame.dimen
+        end)
+    end
     dialog.onCloseWidget = function()
         UIManager:setDirty(nil, function()
             return "flashui", movable.dimen or frame.dimen
@@ -4369,7 +4379,7 @@ function M:openBookHighlights(file, filter, page_num)
 
     -- Adapt items per page to screen height so Kindle/Kobo 6" (portrait & landscape) never overflow
     local sw, sh = Screen:getWidth(), Screen:getHeight()
-    local per_page = sh >= Screen:scaleBySize(720) and 5 or 3
+    local per_page = sh >= Screen:scaleBySize(720) and 4 or 3
     local total_pages = math.max(1, math.ceil(#list / per_page))
     local cur_page = math.max(1, math.min(page_num or 1, total_pages))
     local first_idx = (cur_page - 1) * per_page + 1
