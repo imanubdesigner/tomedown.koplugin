@@ -3979,7 +3979,7 @@ end
 
 -- Shared helper to build Tomedown's rounded dashboard/quote card with clean
 -- framebuffer repaint on close (onCloseWidget) and button show_parent wiring.
-local function buildTomedownCard(column, btn_specs, content_w, pad)
+local function buildTomedownCard(column, btn_specs, content_w, pad, extra_buttons)
     local Screen = Device.screen
     local Geom = require("ui/geometry")
     local Size = require("ui/size")
@@ -4051,6 +4051,9 @@ local function buildTomedownCard(column, btn_specs, content_w, pad)
         },
     }
     for __, b in ipairs(created_btns) do
+        b.show_parent = dialog
+    end
+    for __, b in ipairs(extra_buttons or {}) do
         b.show_parent = dialog
     end
     dialog.onCloseWidget = function()
@@ -4159,18 +4162,43 @@ function M:showBookSummaryCard(file)
     column[#column + 1] = VerticalSpan:new{ width = gap_m }
 
     local col_w = math.floor(content_w / 3)
+    local Button = require("ui/widget/button")
     local dialog
+    local extra_btns = {}
     local function kpiTile(num, caption, on_tap)
-        local tile_box = CenterContainer:new{
-            dimen = Geom:new{ w = col_w, h = Screen:scaleBySize(54) },
+        local n = num or 0
+        local num_widget
+        if on_tap and n > 0 then
+            num_widget = Button:new{
+                text = tostring(n),
+                width = col_w - Screen:scaleBySize(12),
+                bordersize = (Size.line and Size.line.thin) or 1,
+                radius = (Size.radius and Size.radius.button) or 4,
+                padding_v = Screen:scaleBySize(4),
+                text_font_face = "tfont",
+                text_font_size = 22,
+                text_font_bold = true,
+                callback = function()
+                    if dialog then
+                        UIManager:close(dialog)
+                    end
+                    on_tap()
+                end,
+            }
+            extra_btns[#extra_btns + 1] = num_widget
+        else
+            num_widget = TextWidget:new{
+                text = tostring(n),
+                face = Font:getFace("tfont", 22),
+                bold = true,
+            }
+        end
+        return CenterContainer:new{
+            dimen = Geom:new{ w = col_w, h = Screen:scaleBySize(64) },
             VerticalGroup:new{
                 align = "center",
-                TextWidget:new{
-                    text = tostring(num or 0),
-                    face = Font:getFace("tfont", 24),
-                    bold = true,
-                },
-                VerticalSpan:new{ width = Screen:scaleBySize(2) },
+                num_widget,
+                VerticalSpan:new{ width = Screen:scaleBySize(4) },
                 TextWidget:new{
                     text = caption,
                     face = Font:getFace("cfont", 12),
@@ -4178,31 +4206,6 @@ function M:showBookSummaryCard(file)
                 },
             },
         }
-        if not on_tap or (num or 0) == 0 then
-            return tile_box
-        end
-        local InputContainer = require("ui/widget/container/inputcontainer")
-        local GestureRange = require("ui/gesturerange")
-        local tile = InputContainer:new{
-            dimen = Geom:new{ w = col_w, h = Screen:scaleBySize(54) },
-            tile_box,
-        }
-        if Device:isTouchDevice() then
-            tile.ges_events = {
-                TapTile = { GestureRange:new{
-                    ges = "tap",
-                    range = function() return tile.dimen end,
-                } },
-            }
-            tile.onTapTile = function()
-                if dialog then
-                    UIManager:close(dialog)
-                end
-                on_tap()
-                return true
-            end
-        end
-        return tile
     end
     column[#column + 1] = HorizontalGroup:new{
         align = "center",
@@ -4274,7 +4277,7 @@ function M:showBookSummaryCard(file)
             end,
         },
     }
-    dialog = buildTomedownCard(column, btn_specs, content_w, pad)
+    dialog = buildTomedownCard(column, btn_specs, content_w, pad, extra_btns)
     UIManager:show(dialog)
 end
 
@@ -4282,6 +4285,15 @@ function M:bookHighlights(file, filter)
     local out = {}
     local open = self:openReader(file)
     local annots = open and open.annotation and open.annotation.annotations
+    if type(annots) ~= "table" and file then
+        local ok_ds, DocSettings = pcall(require, "docsettings")
+        if ok_ds and DocSettings and type(DocSettings.open) == "function" then
+            local ok_open, ds = pcall(DocSettings.open, DocSettings, file)
+            if ok_open and ds then
+                annots = ds:readSetting("annotations")
+            end
+        end
+    end
     if type(annots) ~= "table" then
         return out
     end
@@ -4315,12 +4327,11 @@ function M:openBookHighlights(file, filter, page_num)
         return
     end
     local open = self:openReader(file)
+    local Button = require("ui/widget/button")
     local Event = require("ui/event")
     local Geom = require("ui/geometry")
     local Size = require("ui/size")
     local Blitbuffer = require("ffi/blitbuffer")
-    local GestureRange = require("ui/gesturerange")
-    local InputContainer = require("ui/widget/container/inputcontainer")
     local LineWidget = require("ui/widget/linewidget")
     local TextWidget = require("ui/widget/textwidget")
     local VerticalGroup = require("ui/widget/verticalgroup")
@@ -4356,17 +4367,18 @@ function M:openBookHighlights(file, filter, page_num)
         return _("Highlights") .. " (" .. tostring(count) .. ")"
     end
 
-    local PER_PAGE = 5
-    local total_pages = math.max(1, math.ceil(#list / PER_PAGE))
+    -- Adapt items per page to screen height so Kindle/Kobo 6" (portrait & landscape) never overflow
+    local sw, sh = Screen:getWidth(), Screen:getHeight()
+    local per_page = sh >= Screen:scaleBySize(720) and 5 or 3
+    local total_pages = math.max(1, math.ceil(#list / per_page))
     local cur_page = math.max(1, math.min(page_num or 1, total_pages))
-    local first_idx = (cur_page - 1) * PER_PAGE + 1
-    local last_idx = math.min(#list, first_idx + PER_PAGE - 1)
+    local first_idx = (cur_page - 1) * per_page + 1
+    local last_idx = math.min(#list, first_idx + per_page - 1)
 
-    local sw = Screen:getWidth()
     local frame_w = math.min(math.floor(sw * 0.88), Screen:scaleBySize(480))
     local pad = Screen:scaleBySize(20)
     local content_w = frame_w - pad * 2
-    local gap_s = Screen:scaleBySize(8)
+    local gap_s = Screen:scaleBySize(6)
     local gap_m = Screen:scaleBySize(12)
 
     local function divider()
@@ -4398,6 +4410,7 @@ function M:openBookHighlights(file, filter, page_num)
     column[#column + 1] = divider()
 
     local card_dialog
+    local row_buttons = {}
     local list_group = VerticalGroup:new{ align = "left" }
 
     for i = first_idx, last_idx do
@@ -4420,46 +4433,24 @@ function M:openBookHighlights(file, filter, page_num)
             loc[#loc + 1] = "p. " .. tostring(item.pageno)
         end
 
-        local row_content = VerticalGroup:new{ align = "left" }
-        row_content[#row_content + 1] = VerticalSpan:new{ width = gap_s }
-        row_content[#row_content + 1] = TextBoxWidget:new{
-            text = prefix .. snippet(item.text, 110),
-            face = Font:getFace("cfont", 14),
+        list_group[#list_group + 1] = VerticalSpan:new{ width = gap_s }
+        local row_btn = Button:new{
+            text = prefix .. snippet(item.text, 85),
+            align = "left",
             width = content_w,
-        }
-        if #loc > 0 then
-            row_content[#row_content + 1] = VerticalSpan:new{ width = Screen:scaleBySize(2) }
-            row_content[#row_content + 1] = TextWidget:new{
-                text = table.concat(loc, "  ·  "),
-                face = Font:getFace("cfont", 12),
-                fgcolor = Blitbuffer.COLOR_DARK_GRAY,
-                max_width = content_w,
-            }
-        end
-        row_content[#row_content + 1] = VerticalSpan:new{ width = gap_s }
-
-        local row_widget = InputContainer:new{
-            row_content,
-        }
-        if Device:isTouchDevice() then
-            row_widget.ges_events = {
-                TapRow = { GestureRange:new{
-                    ges = "tap",
-                    range = function() return row_widget.dimen end,
-                } },
-                HoldRow = { GestureRange:new{
-                    ges = "hold",
-                    range = function() return row_widget.dimen end,
-                } },
-            }
-            row_widget.onTapRow = function()
+            bordersize = 0,
+            padding_h = 0,
+            padding_v = Screen:scaleBySize(4),
+            text_font_face = "cfont",
+            text_font_size = 14,
+            text_font_bold = false,
+            callback = function()
                 if card_dialog then
                     UIManager:close(card_dialog)
                 end
                 jumpToItem(item)
-                return true
-            end
-            row_widget.onHoldRow = function()
+            end,
+            hold_callback = function()
                 local marked = not item.tomedown_special
                 item.tomedown_special = marked or nil
                 if open and open.doc_settings and open.annotation then
@@ -4474,10 +4465,19 @@ function M:openBookHighlights(file, filter, page_num)
                     UIManager:close(card_dialog)
                 end
                 self:openBookHighlights(file, filter, cur_page)
-                return true
-            end
+            end,
+        }
+        row_buttons[#row_buttons + 1] = row_btn
+        list_group[#list_group + 1] = row_btn
+        if #loc > 0 then
+            list_group[#list_group + 1] = TextWidget:new{
+                text = table.concat(loc, "  ·  "),
+                face = Font:getFace("cfont", 12),
+                fgcolor = Blitbuffer.COLOR_DARK_GRAY,
+                max_width = content_w,
+            }
         end
-        list_group[#list_group + 1] = row_widget
+        list_group[#list_group + 1] = VerticalSpan:new{ width = gap_s }
     end
 
     column[#column + 1] = list_group
@@ -4510,7 +4510,7 @@ function M:openBookHighlights(file, filter, page_num)
         end,
     }
 
-    card_dialog = buildTomedownCard(column, btn_specs, content_w, pad)
+    card_dialog = buildTomedownCard(column, btn_specs, content_w, pad, row_buttons)
     UIManager:show(card_dialog)
 end
 
