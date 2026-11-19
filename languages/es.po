@@ -1205,3 +1205,27 @@ msgstr "en línea"
 
 msgid "offline"
 msgstr "sin conexión"
+
+msgid "Book summary"
+msgstr "Resumen del libro"
+
+msgid "Not exported yet"
+msgstr "Aún no exportado"
+
+msgid "Up to date"
+msgstr "Actualizado"
+
+msgid "Updates pending"
+msgstr "Cambios pendientes"
+
+msgid "Go to page"
+msgstr "Ir a la página"
+
+msgid "Remove ★"
+msgstr "Quitar ★"
+
+msgid "Note"
+msgstr "Nota"
+
+msgid "Notes"
+msgstr "Notas"

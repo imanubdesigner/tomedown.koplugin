@@ -3952,6 +3952,12 @@ function M:genCurrentBookMenu()
             end,
         }
     end
+    rows[#rows + 1] = {
+        text = _("Book summary"),
+        callback = function()
+            self:showBookSummaryCard(file)
+        end,
+    }
     local specials = self:bookSpecialHighlights(file)
     if #specials > 0 then
         rows[#rows + 1] = {
@@ -3969,6 +3975,275 @@ function M:genCurrentBookMenu()
         end,
     }
     return rows
+end
+
+-- Shared helper to build Tomedown's rounded dashboard/quote card with clean
+-- framebuffer repaint on close (onCloseWidget) and button show_parent wiring.
+local function buildTomedownCard(column, btn_specs, content_w, pad)
+    local Screen = Device.screen
+    local Geom = require("ui/geometry")
+    local Size = require("ui/size")
+    local Blitbuffer = require("ffi/blitbuffer")
+    local Button = require("ui/widget/button")
+    local CenterContainer = require("ui/widget/container/centercontainer")
+    local FrameContainer = require("ui/widget/container/framecontainer")
+    local GestureRange = require("ui/gesturerange")
+    local HorizontalGroup = require("ui/widget/horizontalgroup")
+    local HorizontalSpan = require("ui/widget/horizontalspan")
+    local InputContainer = require("ui/widget/container/inputcontainer")
+    local LineWidget = require("ui/widget/linewidget")
+    local MovableContainer = require("ui/widget/container/movablecontainer")
+    local VerticalSpan = require("ui/widget/verticalspan")
+
+    local sw, sh = Screen:getWidth(), Screen:getHeight()
+    local gap_m = Screen:scaleBySize(14)
+
+    column[#column + 1] = VerticalSpan:new{ width = gap_m }
+    column[#column + 1] = LineWidget:new{
+        dimen = Geom:new{ w = content_w, h = (Size.line and Size.line.thin) or 1 },
+        background = Blitbuffer.COLOR_LIGHT_GRAY,
+    }
+    column[#column + 1] = VerticalSpan:new{ width = gap_m }
+
+    local dialog
+    local btn_gap = Screen:scaleBySize(10)
+    local btn_w = math.floor((content_w - btn_gap * (#btn_specs - 1)) / #btn_specs)
+    local btn_row = HorizontalGroup:new{ align = "center" }
+    local created_btns = {}
+    for idx, spec in ipairs(btn_specs) do
+        if idx > 1 then
+            btn_row[#btn_row + 1] = HorizontalSpan:new{ width = btn_gap }
+        end
+        local cb = spec.callback
+        local b = Button:new{
+            text = spec.text,
+            width = btn_w,
+            bordersize = (Size.border and Size.border.button) or 1,
+            radius = (Size.radius and Size.radius.button) or 4,
+            text_font_face = "cfont",
+            text_font_size = 15,
+            callback = function()
+                if cb then
+                    cb(dialog)
+                end
+            end,
+        }
+        created_btns[#created_btns + 1] = b
+        btn_row[#btn_row + 1] = b
+    end
+    column[#column + 1] = btn_row
+
+    local frame = FrameContainer:new{
+        radius = Size.radius.window,
+        padding = pad,
+        margin = 0,
+        background = Blitbuffer.COLOR_WHITE,
+        column,
+    }
+    local movable = MovableContainer:new{ frame }
+
+    dialog = InputContainer:new{
+        align = "center",
+        dimen = Geom:new{ x = 0, y = 0, w = sw, h = sh },
+        CenterContainer:new{
+            dimen = Geom:new{ w = sw, h = sh },
+            movable,
+        },
+    }
+    for __, b in ipairs(created_btns) do
+        b.show_parent = dialog
+    end
+    dialog.onCloseWidget = function()
+        UIManager:setDirty(nil, function()
+            return "flashui", movable.dimen or frame.dimen
+        end)
+    end
+    if Device:isTouchDevice() then
+        dialog.ges_events = {
+            TapClose = { GestureRange:new{
+                ges = "tap",
+                range = Geom:new{ x = 0, y = 0, w = sw, h = sh },
+            } },
+        }
+        dialog.onTapClose = function(self_d, _arg, ges_ev)
+            if not frame.dimen or ges_ev.pos:notIntersectWith(frame.dimen) then
+                UIManager:close(self_d)
+            end
+            return true
+        end
+    end
+    if Device:hasKeys() then
+        dialog.key_events = { Close = { { Device.input.group.Back } } }
+        dialog.onClose = function(self_d)
+            UIManager:close(self_d)
+            return true
+        end
+    end
+    return dialog
+end
+
+function M:showBookSummaryCard(file)
+    if not file then
+        return
+    end
+    local Screen = Device.screen
+    local Geom = require("ui/geometry")
+    local Size = require("ui/size")
+    local Blitbuffer = require("ffi/blitbuffer")
+    local CenterContainer = require("ui/widget/container/centercontainer")
+    local HorizontalGroup = require("ui/widget/horizontalgroup")
+    local LineWidget = require("ui/widget/linewidget")
+    local TextWidget = require("ui/widget/textwidget")
+    local VerticalGroup = require("ui/widget/verticalgroup")
+    local VerticalSpan = require("ui/widget/verticalspan")
+
+    local open = self:openReader(file)
+    local live = open and open.annotation and open.annotation.annotations
+    local ok_b, book = pcall(self.buildBook, self, file, live)
+    book = ok_b and book or nil
+
+    local props = open and open.document and open.document.getProps and open.document:getProps() or {}
+    local title = (book and book.title) or props.title or ffiUtil.basename(tostring(file))
+    local author = (book and book.author) or props.authors or ""
+    local annots = (book and book.annotations) or {}
+    local hl_count = #annots
+    local sp_count, note_count = 0, 0
+    for __, a in ipairs(annots) do
+        if a.special then sp_count = sp_count + 1 end
+        if a.note and tostring(a.note) ~= "" then note_count = note_count + 1 end
+    end
+
+    local sw = Screen:getWidth()
+    local frame_w = math.min(math.floor(sw * 0.86), Screen:scaleBySize(460))
+    local pad = Screen:scaleBySize(22)
+    local content_w = frame_w - pad * 2
+    local gap_s = Screen:scaleBySize(8)
+    local gap_m = Screen:scaleBySize(14)
+
+    local function divider()
+        return LineWidget:new{
+            dimen = Geom:new{ w = content_w, h = (Size.line and Size.line.thin) or 1 },
+            background = Blitbuffer.COLOR_LIGHT_GRAY,
+        }
+    end
+    local function ptfRow(label, value)
+        return TextBoxWidget:new{
+            text = TextBoxWidget.PTF_HEADER
+                .. TextBoxWidget.PTF_BOLD_START .. label .. TextBoxWidget.PTF_BOLD_END
+                .. " " .. tostring(value or ""),
+            face = Font:getFace("cfont", 14),
+            width = content_w,
+        }
+    end
+
+    local column = VerticalGroup:new{ align = "center" }
+    column[#column + 1] = TextBoxWidget:new{
+        text = TextBoxWidget.PTF_HEADER
+            .. TextBoxWidget.PTF_BOLD_START .. tostring(title) .. TextBoxWidget.PTF_BOLD_END,
+        face = Font:getFace("tfont", 20),
+        alignment = "center",
+        width = content_w,
+    }
+    if author and author ~= "" and author ~= "N/A" then
+        column[#column + 1] = VerticalSpan:new{ width = Screen:scaleBySize(4) }
+        column[#column + 1] = TextWidget:new{
+            text = tostring(author),
+            face = Font:getFace("cfont", 14),
+            fgcolor = Blitbuffer.COLOR_DARK_GRAY,
+            max_width = content_w,
+        }
+    end
+
+    column[#column + 1] = VerticalSpan:new{ width = gap_m }
+    column[#column + 1] = divider()
+    column[#column + 1] = VerticalSpan:new{ width = gap_m }
+
+    local col_w = math.floor(content_w / 3)
+    local function kpiTile(num, caption)
+        return CenterContainer:new{
+            dimen = Geom:new{ w = col_w, h = Screen:scaleBySize(54) },
+            VerticalGroup:new{
+                align = "center",
+                TextWidget:new{
+                    text = tostring(num or 0),
+                    face = Font:getFace("tfont", 24),
+                    bold = true,
+                },
+                VerticalSpan:new{ width = Screen:scaleBySize(2) },
+                TextWidget:new{
+                    text = caption,
+                    face = Font:getFace("cfont", 12),
+                    fgcolor = Blitbuffer.COLOR_DARK_GRAY,
+                },
+            },
+        }
+    end
+    column[#column + 1] = HorizontalGroup:new{
+        align = "center",
+        kpiTile(hl_count, _("Highlights")),
+        kpiTile(sp_count, "★ " .. _("Special")),
+        kpiTile(note_count, _("Notes")),
+    }
+
+    column[#column + 1] = VerticalSpan:new{ width = gap_m }
+    column[#column + 1] = divider()
+    column[#column + 1] = VerticalSpan:new{ width = gap_m }
+
+    local details = VerticalGroup:new{ align = "left" }
+    local fmt_labels = {
+        md = _("Markdown (.md)"),
+        txt = _("Plain text (.txt)"),
+        both = _("Both (.md and .txt)"),
+    }
+    local style_labels = {
+        obsidian = _("Obsidian"),
+        standard = _("Standard"),
+    }
+    local cur_fmt = getExportFormat(file)
+    local fmt_desc = fmt_labels[cur_fmt] or fmt_labels.md
+    if cur_fmt ~= "txt" then
+        fmt_desc = fmt_desc .. " · " .. (style_labels[shared.getMarkdownStyle(file)] or style_labels.obsidian)
+    end
+    details[#details + 1] = ptfRow(_("Format:"), fmt_desc)
+
+    local exports = getSetting("exports", {})
+    local rec = exports[file]
+    local exp_status = _("Not exported yet")
+    if rec and rec.hash then
+        exp_status = (book and book.hash == rec.hash)
+            and _("Up to date") or _("Updates pending")
+    end
+    details[#details + 1] = VerticalSpan:new{ width = gap_s }
+    details[#details + 1] = ptfRow(_("Status") .. ":", exp_status)
+
+    local btags = book and book.tags or getBookTags(file)
+    if type(btags) == "table" and #btags > 0 then
+        local tag_pills = {}
+        for __, tg in ipairs(btags) do
+            tag_pills[#tag_pills + 1] = "#" .. tostring(tg)
+        end
+        details[#details + 1] = VerticalSpan:new{ width = gap_s }
+        details[#details + 1] = ptfRow(_("Tags") .. ":", table.concat(tag_pills, " "))
+    end
+    column[#column + 1] = details
+
+    local btn_specs = {
+        {
+            text = _("Export this book"),
+            callback = function(dlg)
+                UIManager:close(dlg)
+                self:runExport({ file }, { force = true })
+            end,
+        },
+        {
+            text = _("Close"),
+            callback = function(dlg)
+                UIManager:close(dlg)
+            end,
+        },
+    }
+    local dialog = buildTomedownCard(column, btn_specs, content_w, pad)
+    UIManager:show(dialog)
 end
 
 function M:bookSpecialHighlights(file)
@@ -3995,7 +4270,13 @@ function M:openSpecialHighlights(file)
     local open = self:openReader(file)
     local Menu = require("ui/widget/menu")
     local Event = require("ui/event")
-    local TextViewer = require("ui/widget/textviewer")
+    local Geom = require("ui/geometry")
+    local Size = require("ui/size")
+    local Blitbuffer = require("ffi/blitbuffer")
+    local LineWidget = require("ui/widget/linewidget")
+    local TextWidget = require("ui/widget/textwidget")
+    local VerticalGroup = require("ui/widget/verticalgroup")
+    local VerticalSpan = require("ui/widget/verticalspan")
     local Screen = Device.screen
 
     local function snippet(text, max)
@@ -4007,47 +4288,143 @@ function M:openSpecialHighlights(file)
         return s .. "…"
     end
 
+    local function jumpToItem(item)
+        if not open or not item then return end
+        if type(item.pos0) == "string" and item.pos0:sub(1, 1) == "/" then
+            open:handleEvent(Event:new("GotoXPointer", item.pos0))
+        elseif type(item.page) == "string" and item.page:sub(1, 1) == "/" then
+            open:handleEvent(Event:new("GotoXPointer", item.page))
+        elseif tonumber(item.pageno or item.page) then
+            open:handleEvent(Event:new("GotoPage", tonumber(item.pageno or item.page)))
+        end
+    end
+
     local menu
-    local items = {}
-    for __, item in ipairs(specials) do
-        local loc = {}
+    local buildItems
+
+    local function showQuoteCard(item)
+        local sw = Screen:getWidth()
+        local frame_w = math.min(math.floor(sw * 0.86), Screen:scaleBySize(460))
+        local pad = Screen:scaleBySize(22)
+        local content_w = frame_w - pad * 2
+        local gap_m = Screen:scaleBySize(14)
+
+        local column = VerticalGroup:new{ align = "center" }
+        column[#column + 1] = TextWidget:new{
+            text = "★ " .. _("Special Highlight"),
+            face = Font:getFace("tfont", 20),
+            bold = true,
+        }
+        local meta_parts = {}
         if type(item.chapter) == "string" and item.chapter ~= "" then
-            loc[#loc + 1] = item.chapter
+            meta_parts[#meta_parts + 1] = item.chapter
         end
         if item.pageno then
-            loc[#loc + 1] = "p. " .. tostring(item.pageno)
+            meta_parts[#meta_parts + 1] = "p. " .. tostring(item.pageno)
         end
-        items[#items + 1] = {
-            text = "★ " .. snippet(item.text, 85),
-            mandatory = #loc > 0 and table.concat(loc, " · ") or nil,
-            callback = function()
-                UIManager:close(menu)
-                if not open then return end
-                if type(item.pos0) == "string" and item.pos0:sub(1, 1) == "/" then
-                    open:handleEvent(Event:new("GotoXPointer", item.pos0))
-                elseif type(item.page) == "string" and item.page:sub(1, 1) == "/" then
-                    open:handleEvent(Event:new("GotoXPointer", item.page))
-                elseif tonumber(item.pageno or item.page) then
-                    open:handleEvent(Event:new("GotoPage", tonumber(item.pageno or item.page)))
-                end
-            end,
-            hold_callback = function()
-                local body = tostring(item.text or "")
-                if type(item.note) == "string" and item.note ~= "" then
-                    body = body .. "\n\n" .. item.note
-                end
-                UIManager:show(TextViewer:new{
-                    title = type(item.chapter) == "string" and item.chapter ~= ""
-                        and item.chapter or _("Special highlights"),
-                    text = body,
-                })
-            end,
+        if #meta_parts > 0 then
+            column[#column + 1] = VerticalSpan:new{ width = Screen:scaleBySize(4) }
+            column[#column + 1] = TextWidget:new{
+                text = table.concat(meta_parts, "  ·  "),
+                face = Font:getFace("cfont", 13),
+                fgcolor = Blitbuffer.COLOR_DARK_GRAY,
+                max_width = content_w,
+            }
+        end
+
+        column[#column + 1] = VerticalSpan:new{ width = gap_m }
+        column[#column + 1] = LineWidget:new{
+            dimen = Geom:new{ w = content_w, h = (Size.line and Size.line.thin) or 1 },
+            background = Blitbuffer.COLOR_LIGHT_GRAY,
         }
+        column[#column + 1] = VerticalSpan:new{ width = gap_m }
+
+        local body = VerticalGroup:new{ align = "left" }
+        body[#body + 1] = TextBoxWidget:new{
+            text = "“" .. snippet(item.text, 480) .. "”",
+            face = Font:getFace("cfont", 15),
+            width = content_w,
+        }
+        if type(item.note) == "string" and item.note ~= "" then
+            body[#body + 1] = VerticalSpan:new{ width = Screen:scaleBySize(10) }
+            body[#body + 1] = TextBoxWidget:new{
+                text = TextBoxWidget.PTF_HEADER
+                    .. TextBoxWidget.PTF_BOLD_START .. _("Note") .. ":" .. TextBoxWidget.PTF_BOLD_END
+                    .. " " .. snippet(item.note, 220),
+                face = Font:getFace("cfont", 14),
+                width = content_w,
+            }
+        end
+        column[#column + 1] = body
+
+        local btn_specs = {
+            {
+                text = _("Go to page"),
+                callback = function(dlg)
+                    UIManager:close(dlg)
+                    UIManager:close(menu)
+                    jumpToItem(item)
+                end,
+            },
+            {
+                text = _("Remove ★"),
+                callback = function(dlg)
+                    item.tomedown_special = nil
+                    if open and open.doc_settings and open.annotation then
+                        open.doc_settings:saveSetting("annotations", open.annotation.annotations)
+                    end
+                    UIManager:close(dlg)
+                    local updated = self:bookSpecialHighlights(file)
+                    if #updated == 0 then
+                        UIManager:close(menu)
+                    else
+                        menu:switchItemTable(
+                            "★ " .. _("Special highlights") .. " (" .. tostring(#updated) .. ")",
+                            buildItems(updated),
+                            1
+                        )
+                    end
+                end,
+            },
+            {
+                text = _("Close"),
+                callback = function(dlg)
+                    UIManager:close(dlg)
+                end,
+            },
+        }
+        local card = buildTomedownCard(column, btn_specs, content_w, pad)
+        UIManager:show(card)
+    end
+
+    buildItems = function(list)
+        local items = {}
+        for __, item in ipairs(list) do
+            local loc = {}
+            if type(item.chapter) == "string" and item.chapter ~= "" then
+                loc[#loc + 1] = item.chapter
+            end
+            if item.pageno then
+                loc[#loc + 1] = "p. " .. tostring(item.pageno)
+            end
+            items[#items + 1] = {
+                text = "★ " .. snippet(item.text, 85),
+                mandatory = #loc > 0 and table.concat(loc, " · ") or nil,
+                callback = function()
+                    UIManager:close(menu)
+                    jumpToItem(item)
+                end,
+                hold_callback = function()
+                    showQuoteCard(item)
+                end,
+            }
+        end
+        return items
     end
 
     menu = Menu:new{
         title = "★ " .. _("Special highlights") .. " (" .. tostring(#specials) .. ")",
-        item_table = items,
+        item_table = buildItems(specials),
         is_borderless = true,
         is_popout = false,
         title_bar_fm_style = true,

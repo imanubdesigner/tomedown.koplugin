@@ -577,8 +577,15 @@ do
     store.tomedown.index_layout = "tags_column"
     ui.document = { file = FILE }
     local current_book = plugin:genCurrentBookMenu()
-    T.check(#current_book == 4,
-        "the open book has keep, book info, visibility and style rows: " .. #current_book)
+    T.check(#current_book == 5,
+        "the open book has keep, book info, visibility, summary and style rows: " .. #current_book)
+    T.check(current_book[4].text == "Book summary",
+        "Book summary row sits above Style & format in Current book")
+    local before_summary = #UIManager.shown
+    plugin:showBookSummaryCard(FILE)
+    T.check(#UIManager.shown == before_summary + 1
+            and UIManager.shown[#UIManager.shown].__widget == "InputContainer",
+        "showBookSummaryCard renders custom rounded card")
     T.check(current_book[2].text == "Book info",
         "the Book info submenu sits second in Current book")
     local book_info = current_book[2].sub_item_table_func()
@@ -1043,7 +1050,7 @@ T.check(sub[3].enabled_func() == true, "export all books enabled")
 do
     ui.document = { file = FILE }
     local current = sub[6].sub_item_table_func()
-    T.check(#current == 4, "Current book starts with keep, Book info, visibility and style: "
+    T.check(#current == 5, "Current book starts with keep, Book info, visibility, summary and style: "
         .. #current)
     T.check(current[1].text == "Keep my notes in this book",
         "the per book keep row")
@@ -3043,7 +3050,7 @@ do
     -- zone gets its own heading row, right under the switch that keeps
     -- it, and the copies left by the sections above sit under that
     current_book = sub[6].sub_item_table_func()
-    T.check(#current_book == 6,
+    T.check(#current_book == 7,
         "15b: the heading and the copies join the submenu: "
             .. #current_book)
     T.check(current_book[4].text_func()
@@ -3097,7 +3104,7 @@ do
     behaviour[2].callback()
     T.check(store.tomedown.preserve == false, "15b: and off again")
     current_book = sub[6].sub_item_table_func()
-    T.check(#current_book == 6,
+    T.check(#current_book == 7,
         "15b: the heading is back with the switch off: " .. #current_book)
     plugin:runExport({ FILE }, {})
     UIManager:runPending()
