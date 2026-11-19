@@ -1653,6 +1653,8 @@ do
     local std_md = render.buildBookMd(std_book, {
         markers = false,
         index_links = "markdown",
+        markdown_style = "standard",
+        overview_style = "callout",
         reading_dashboard = true,
         book_synopsis = true,
         special_showcase = true,
@@ -1664,6 +1666,8 @@ do
     T.check(T.contains(std_md, "### Book synopsis")
             and not T.contains(std_md, "> [!abstract]-"),
         "Standard Markdown renders Book synopsis without [!abstract]- callout")
+    T.check(not T.contains(std_md, "> [!summary]"),
+        "Standard Markdown falls back Overview callout to clean blockquote")
     T.check(T.contains(std_md, "### ★ Special highlights (1)")
             and not T.contains(std_md, "> [!highlight]-"),
         "Standard Markdown renders Special highlights showcase without [!highlight]- callout")
@@ -1675,6 +1679,7 @@ do
           count = 1, special = 1, status = "reading" },
     }, {
         index_links = "markdown",
+        markdown_style = "standard",
         index_dashboard = true,
     })
     T.check(T.contains(std_idx, "### Library dashboard")

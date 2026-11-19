@@ -2114,9 +2114,13 @@ function M:genSettingsMenu()
                     wikilink = _("Obsidian wikilink"),
                     markdown = _("Standard Markdown"),
                 }
-                local current = getIndexLinks()
+                local current = shared.getMarkdownStyle() == "standard"
+                    and "markdown" or getIndexLinks()
                 return T(_("Index links: %1"),
                     labels[current] or labels.wikilink)
+            end,
+            enabled_func = function()
+                return shared.getMarkdownStyle() ~= "standard"
             end,
             sub_item_table = {
                 {
@@ -2298,20 +2302,27 @@ function M:genSettingsMenu()
                     star_bold = _("Star & Bold (⭐ **text**)"),
                     bold = _("Bold (**text**)"),
                 }
+                local cur = getSetting("special_marker", "callout")
+                if shared.getMarkdownStyle() == "standard" and cur == "callout" then
+                    cur = "bold"
+                end
                 return T(_("How special highlights look: %1"),
-                    labels[getSetting("special_marker", "callout")]
-                        or labels.callout)
+                    labels[cur] or labels.callout)
             end,
             enabled_func = function()
-                return not getSetting("callout", false)
+                return shared.getMarkdownStyle() == "standard" or not getSetting("callout", false)
             end,
             keep_menu_open = true,
             sub_item_table = {
                 {
                     text = _("Callout ([!highlight])"),
                     radio = true,
+                    enabled_func = function()
+                        return shared.getMarkdownStyle() ~= "standard"
+                    end,
                     checked_func = function()
-                        return getSetting("special_marker", "callout") == "callout"
+                        return shared.getMarkdownStyle() ~= "standard"
+                            and getSetting("special_marker", "callout") == "callout"
                     end,
                     keep_menu_open = true,
                     callback = function()
@@ -2371,7 +2382,9 @@ function M:genSettingsMenu()
                     text = _("Bold (**text**)"),
                     radio = true,
                     checked_func = function()
-                        return getSetting("special_marker", "callout") == "bold"
+                        local cur = getSetting("special_marker", "callout")
+                        return cur == "bold"
+                            or (shared.getMarkdownStyle() == "standard" and cur == "callout")
                     end,
                     keep_menu_open = true,
                     callback = function()
@@ -2383,8 +2396,11 @@ function M:genSettingsMenu()
         },
         {
             text = _("Treat every highlight as special"),
+            enabled_func = function()
+                return shared.getMarkdownStyle() ~= "standard"
+            end,
             checked_func = function()
-                return getSetting("callout", false)
+                return shared.getMarkdownStyle() ~= "standard" and getSetting("callout", false)
             end,
             keep_menu_open = true,
             callback = function()
@@ -2394,8 +2410,11 @@ function M:genSettingsMenu()
         },
         {
             text = _("Add link IDs to highlights"),
+            enabled_func = function()
+                return shared.getMarkdownStyle() ~= "standard"
+            end,
             checked_func = function()
-                return getSetting("block_ids", false)
+                return shared.getMarkdownStyle() ~= "standard" and getSetting("block_ids", false)
             end,
             keep_menu_open = true,
             callback = function()
@@ -2641,6 +2660,9 @@ function M:genSettingsMenu()
                     table = _("Table"),
                 }
                 local current = shared.getOverviewStyle()
+                if shared.getMarkdownStyle() == "standard" and current == "callout" then
+                    current = "blockquote"
+                end
                 return T(_("Overview style: %1"),
                     labels[current] or labels.inline)
             end,
@@ -2664,7 +2686,9 @@ function M:genSettingsMenu()
                     radio = true,
                     keep_menu_open = true,
                     checked_func = function()
-                        return shared.getOverviewStyle() == "blockquote"
+                        local cur = shared.getOverviewStyle()
+                        return cur == "blockquote"
+                            or (shared.getMarkdownStyle() == "standard" and cur == "callout")
                     end,
                     callback = function()
                         if shared.getOverviewStyle() ~= "blockquote" then
@@ -2677,8 +2701,12 @@ function M:genSettingsMenu()
                     text = _("Callout ([!summary])"),
                     radio = true,
                     keep_menu_open = true,
+                    enabled_func = function()
+                        return shared.getMarkdownStyle() ~= "standard"
+                    end,
                     checked_func = function()
-                        return shared.getOverviewStyle() == "callout"
+                        return shared.getMarkdownStyle() ~= "standard"
+                            and shared.getOverviewStyle() == "callout"
                     end,
                     callback = function()
                         if shared.getOverviewStyle() ~= "callout" then

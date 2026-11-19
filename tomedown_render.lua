@@ -823,7 +823,7 @@ function render.buildBookMd(book, opts)
     end
 
     local has_card_extras = false
-    local is_std = (opts.index_links == "markdown")
+    local is_std = (opts.markdown_style == "standard")
     if opts.reading_dashboard == true then
         local status_labels = {
             reading = "🟡 **" .. _("Reading") .. "**",
@@ -936,8 +936,12 @@ function render.buildBookMd(book, opts)
         if ostyle == "blockquote" then
             add("> **" .. headline .. "**")
         elseif ostyle == "callout" then
-            add("> [!summary] " .. _("Overview"))
-            add("> **" .. headline .. "**")
+            if is_std then
+                add("> **" .. headline .. "**")
+            else
+                add("> [!summary] " .. _("Overview"))
+                add("> **" .. headline .. "**")
+            end
         elseif ostyle == "table" then
             if special_count > 0 then
                 add("| " .. _("Highlights") .. " | " .. _("Special") .. " |")
@@ -1331,7 +1335,7 @@ function render.buildIndexMd(books, opts)
             .. (_("%1 special"):gsub("%%1", tostring(total_special))) .. "**"
     end
     if opts.index_dashboard == true then
-        local idx_std = (opts.index_links == "markdown")
+        local idx_std = (opts.markdown_style == "standard")
         local pfx = idx_std and "- " or "> "
         if idx_std then
             add("### " .. _("Library dashboard"))
@@ -1937,12 +1941,17 @@ function render.buildDigestMd(books, opts)
         stats = stats .. " · **★ "
             .. (_("%1 special"):gsub("%%1", tostring(total_special))) .. "**"
     end
+    local digest_std = (opts.markdown_style == "standard")
     local ostyle = opts.overview_style or "inline"
     if ostyle == "blockquote" then
         add("> " .. stats)
     elseif ostyle == "callout" then
-        add("> [!summary] " .. _("Overview"))
-        add("> " .. stats)
+        if digest_std then
+            add("> " .. stats)
+        else
+            add("> [!summary] " .. _("Overview"))
+            add("> " .. stats)
+        end
     elseif ostyle == "table" then
         if total_special > 0 then
             add("| " .. _("Books") .. " | " .. _("Highlights") .. " | " .. _("Special") .. " |")
@@ -1969,6 +1978,10 @@ function render.buildDigestMd(books, opts)
     if not valid_markers[marker_global] then
         marker_global = "callout"
     end
+    if digest_std and marker_global == "callout" then
+        marker_global = "bold"
+    end
+    local digest_callout = not digest_std and opts.callout or false
     local use_footnotes = opts.note_style == "footnote"
     local footnotes = {}
 
@@ -2005,8 +2018,8 @@ function render.buildDigestMd(books, opts)
 
         add("")
         local marker = marker_global
-        local is_special = item.special and not opts.callout
-        local as_callout = opts.callout or (is_special and marker == "callout")
+        local is_special = item.special and not digest_callout
+        local as_callout = digest_callout or (is_special and marker == "callout")
         local as_alert = is_special and marker == "alert"
         if item.handwritten then
             if item.drawing and tostring(item.drawing) ~= "" then

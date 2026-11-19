@@ -966,6 +966,7 @@ function M:exportDigest(touchmenu)
         title = _("Reading digest"),
         exported = os.date("%Y-%m-%d"),
         index_links = effectiveIndexLinks(),
+        markdown_style = getMarkdownStyle(),
         callout = getSetting("callout", false),
         special_marker = getSetting("special_marker", "callout"),
         note_style = getNoteStyle(),
@@ -1209,6 +1210,7 @@ function M:runExport(files, opts)
                         body_tags = getBodyTags(file),
                         special_showcase = getSpecialShowcase(file),
                         index_links = effectiveIndexLinks(file),
+                        markdown_style = getMarkdownStyle(file),
                     }
                     local md = render.buildBookMd(book, render_opts)
                     -- fold the file on disk into the render: the reader's
@@ -1445,6 +1447,7 @@ function M:runExport(files, opts)
                 index_order = getSetting("index_order", "author"),
                 index_layout = getSetting("index_layout", "tags_below"),
                 index_links = effectiveIndexLinks(),
+        markdown_style = getMarkdownStyle(),
                 index_tags_mode = getIndexTagsMode(),
                 hidden_books = hidden,
                 reading_now = getSetting("reading_now", true),
@@ -1558,6 +1561,7 @@ function M:runExport(files, opts)
                 title = _("Reading digest"),
                 exported = os.date("%Y-%m-%d"),
                 index_links = effectiveIndexLinks(),
+        markdown_style = getMarkdownStyle(),
                 callout = getSetting("callout", false),
                 special_marker = getSetting("special_marker", "callout"),
                 note_style = getNoteStyle(),
