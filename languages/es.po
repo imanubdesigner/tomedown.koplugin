@@ -1160,3 +1160,12 @@ msgstr "Vitrina especiales: %1"
 
 
 
+
+msgid "Markdown style: %1"
+msgstr "Estilo Markdown: %1"
+
+msgid "Obsidian"
+msgstr "Obsidian"
+
+msgid "Standard"
+msgstr "Estándar"

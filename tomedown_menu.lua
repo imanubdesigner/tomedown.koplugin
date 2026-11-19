@@ -1886,6 +1886,46 @@ function M:genSettingsMenu()
                     end,
                 },
             },
+        },
+        {
+            text_func = function()
+                local labels = {
+                    obsidian = _("Obsidian"),
+                    standard = _("Standard"),
+                }
+                local current = shared.getMarkdownStyle()
+                return T(_("Markdown style: %1"), labels[current] or labels.obsidian)
+            end,
+            sub_item_table = {
+                {
+                    text = _("Obsidian"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return shared.getMarkdownStyle() == "obsidian"
+                    end,
+                    callback = function()
+                        if shared.getMarkdownStyle() ~= "obsidian" then
+                            shared.setMarkdownStyle("obsidian")
+                            self:invalidateExportHashes()
+                        end
+                    end,
+                },
+                {
+                    text = _("Standard"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return shared.getMarkdownStyle() == "standard"
+                    end,
+                    callback = function()
+                        if shared.getMarkdownStyle() ~= "standard" then
+                            shared.setMarkdownStyle("standard")
+                            self:invalidateExportHashes()
+                        end
+                    end,
+                },
+            },
             separator = true,
         },
         {
@@ -4068,6 +4108,20 @@ function M:genBookStyleMenu(file)
             { val = "md",   text = _("Markdown (.md)") },
             { val = "txt",  text = _("Plain text (.txt)") },
             { val = "both", text = _("Both (.md and .txt)") },
+        }
+    )
+
+    rows[#rows + 1] = choiceRow(
+        _("Markdown style: %1"),
+        "markdown_style",
+        shared.getMarkdownStyle,
+        {
+            obsidian = _("Obsidian"),
+            standard = _("Standard"),
+        },
+        {
+            { val = "obsidian", text = _("Obsidian") },
+            { val = "standard", text = _("Standard") },
         }
     )
 

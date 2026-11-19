@@ -1188,7 +1188,7 @@ T.check(cloud[2].text_func() == "Server and folder: not set", "server not set")
 T.check(T.contains(cloud[3].text_func(), "Remote folder: not set"), "remote folder not set")
 -- Files: six static rows
 local files = settings[1].sub_item_table
-T.check(#files == 9, "files rows: " .. #files)
+T.check(#files == 10, "files rows: " .. #files)
 T.check(T.contains(files[1].text_func(), "clipboard/tomedown"), "default local folder")
 T.check(files[2].text_func() == "File name template: Author - Title", "filename template entry")
 T.check(files[3].text_func() == "Folder organization: Single folder", "folder organization entry")
@@ -5242,27 +5242,29 @@ do
     T.check(style_row and style_row.text == "Style & format",
         "28: Style & format is the last row in Current book menu")
     local bstyle = style_row.sub_item_table_func()
-    T.check(#bstyle == 17, "28: 15 per-book style choices + 1 frontmatter fields + 1 reset row")
-    T.check(bstyle[4].mandatory_func() == "Global",
+    T.check(#bstyle == 18, "28: 16 per-book style choices + 1 frontmatter fields + 1 reset row")
+    T.check(bstyle[2].mandatory_func() == "Global",
+        "28: markdown_style starts on Global")
+    T.check(bstyle[5].mandatory_func() == "Global",
         "28: chapter_headings starts on Global")
-    T.check(bstyle[16].text == "Frontmatter fields" and bstyle[16].mandatory_func() == "Global",
+    T.check(bstyle[17].text == "Frontmatter fields" and bstyle[17].mandatory_func() == "Global",
         "28: Frontmatter fields row is present and starts on Global")
-    T.check(bstyle[17].enabled_func() == false,
+    T.check(bstyle[18].enabled_func() == false,
         "28: Reset to global style settings disabled when no overrides exist")
 
     -- Pin FILE to chapter_headings = "none", highlight_details = "none", include_bookmarks = true via submenu callbacks
+    bstyle[5].sub_item_table[5].callback() -- "none"
     bstyle[4].sub_item_table[5].callback() -- "none"
-    bstyle[3].sub_item_table[5].callback() -- "none"
-    bstyle[7].sub_item_table[2].callback() -- include_bookmarks = true
+    bstyle[8].sub_item_table[2].callback() -- include_bookmarks = true
     -- Pin FILE to hide progress in frontmatter via Frontmatter fields
-    bstyle[16].sub_item_table[10].callback() -- progress toggled off
+    bstyle[17].sub_item_table[10].callback() -- progress toggled off
     T.check(shared.isFrontmatterKeyEnabled("progress", FILE) == false
             and shared.isFrontmatterKeyEnabled("progress") == true,
         "28: progress hidden for FILE only, global still enabled")
-    T.check(bstyle[4].mandatory_func() == "Custom"
-            and bstyle[7].mandatory_func() == "Custom"
-            and bstyle[16].mandatory_func() == "Custom"
-            and bstyle[17].enabled_func() == true,
+    T.check(bstyle[5].mandatory_func() == "Custom"
+            and bstyle[8].mandatory_func() == "Custom"
+            and bstyle[17].mandatory_func() == "Custom"
+            and bstyle[18].enabled_func() == true,
         "28: mandatory shows Custom and Reset is enabled after setting per-book override")
 
     plugin:runExport({ FILE, FILE2 }, { force = true })
@@ -5281,18 +5283,18 @@ do
             .. tostring(file2_base) .. " md=" .. tostring(file2_md))
 
     -- If YAML frontmatter is set to Disabled, Frontmatter fields row disappears
-    bstyle[15].sub_item_table[3].callback() -- fm_enabled = false
+    bstyle[16].sub_item_table[3].callback() -- fm_enabled = false
     local bstyle_disabled = style_row.sub_item_table_func()
-    T.check(#bstyle_disabled == 16 and bstyle_disabled[16].key == "reset_book_style",
+    T.check(#bstyle_disabled == 17 and bstyle_disabled[17].key == "reset_book_style",
         "28: Frontmatter fields row disappears when YAML frontmatter is disabled")
-    bstyle[15].sub_item_table[1].callback() -- reset to global (enabled)
+    bstyle[16].sub_item_table[1].callback() -- reset to global (enabled)
 
     -- Reset FILE back to global settings
-    bstyle[17].callback()
-    T.check(bstyle[4].mandatory_func() == "Global"
-            and bstyle[7].mandatory_func() == "Global"
-            and bstyle[16].mandatory_func() == "Global"
-            and bstyle[17].enabled_func() == false,
+    bstyle[18].callback()
+    T.check(bstyle[5].mandatory_func() == "Global"
+            and bstyle[8].mandatory_func() == "Global"
+            and bstyle[17].mandatory_func() == "Global"
+            and bstyle[18].enabled_func() == false,
         "28: Reset to global style settings clears all overrides for FILE")
 
     do
@@ -5316,7 +5318,7 @@ do
             "28: saving global custom fields adds individual checkboxes in Global menu")
 
         -- Open Current book -> Style & format -> Frontmatter fields: global custom keys appear as checkboxes
-        local book_fm_rows = plugin:genBookStyleMenu(FILE)[16].sub_item_table
+        local book_fm_rows = plugin:genBookStyleMenu(FILE)[17].sub_item_table
         T.check(book_fm_rows[11].key == "genre" and book_fm_rows[11].checked_func() == true
                 and book_fm_rows[12].key == "project" and book_fm_rows[12].checked_func() == true,
             "28: global custom keys appear as checkboxes in Current book -> Frontmatter fields")
@@ -5339,7 +5341,7 @@ do
         T.check(book_fm_rows[14].key == "doi" and book_fm_rows[14].checked_func() == true,
             "28: book-specific custom key appears as checkbox in Current book")
         -- Verify 'doi' does NOT appear in Global or FILE2
-        local file2_fm_rows = plugin:genBookStyleMenu(FILE2)[16].sub_item_table
+        local file2_fm_rows = plugin:genBookStyleMenu(FILE2)[17].sub_item_table
         for __, r in ipairs(file2_fm_rows) do
             T.check(r.key ~= "doi", "28: book-only custom key doi does not leak to FILE2")
         end
