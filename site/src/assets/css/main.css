@@ -2339,6 +2339,218 @@ mark { background: var(--hl); color: var(--hl-ink); padding: 0 0.15em; }
     grid-template-columns: 1fr;
   }
 }
+
+/* ==========================================================================
+   Interactive Image Comparison Slider (Obsidian vs Standard Markdown)
+   ========================================================================== */
+
+.doc-compare {
+  margin: 32px 0 40px;
+}
+
+.doc-compare-window {
+  background: var(--paper-2);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 24px 54px -26px rgba(26, 25, 22, 0.38);
+}
+
+.doc-compare-window .window-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+}
+
+.doc-compare-window .window-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--ink);
+  font-weight: 500;
+  min-width: 0;
+}
+
+.doc-compare-window .window-env {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--hl);
+  white-space: nowrap;
+}
+
+.doc-compare-viewport {
+  position: relative;
+  overflow: hidden;
+  background: #1e1e1e;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: pan-y;
+  cursor: ew-resize;
+  --compare-pos: 50%;
+}
+
+.doc-compare-viewport.is-dragging {
+  cursor: ew-resize;
+}
+
+.docs .prose .doc-compare-viewport img {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  pointer-events: none;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+.doc-compare-underlay {
+  display: block;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+}
+
+.doc-compare-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  clip-path: inset(0 calc(100% - var(--compare-pos, 50%)) 0 0);
+  -webkit-clip-path: inset(0 calc(100% - var(--compare-pos, 50%)) 0 0);
+  will-change: clip-path;
+  pointer-events: none;
+}
+
+.doc-compare-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--compare-pos, 50%);
+  width: 40px;
+  margin-left: -20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: ew-resize;
+  z-index: 10;
+  touch-action: none;
+  outline: none;
+}
+
+.doc-compare-handle::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  margin-left: -1px;
+  background: #ffffff;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.7), 0 0 2px rgba(0, 0, 0, 0.9);
+  pointer-events: none;
+}
+
+.doc-compare-handle-btn {
+  position: relative;
+  z-index: 2;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid var(--hl);
+  color: #1a1916;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.doc-compare-viewport:hover .doc-compare-handle-btn,
+.doc-compare-viewport.is-dragging .doc-compare-handle-btn,
+.doc-compare-handle:focus-visible .doc-compare-handle-btn {
+  transform: scale(1.12);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55);
+}
+
+.doc-compare-handle:focus-visible .doc-compare-handle-btn {
+  outline: 3px solid var(--hl);
+  outline-offset: 3px;
+}
+
+.doc-compare figcaption {
+  display: block;
+  text-align: center;
+  margin: 14px auto 0;
+  padding: 0 14px;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--ink-2);
+  max-width: 680px;
+}
+
+.doc-compare figcaption strong {
+  color: var(--ink);
+}
+
+@media (max-width: 640px) {
+  .doc-compare {
+    margin: 20px 0 28px;
+  }
+  .doc-compare-window {
+    border-radius: 12px;
+  }
+  .doc-compare-window .window-header {
+    padding: 8px 12px;
+  }
+  .doc-compare-window .window-env {
+    display: none;
+  }
+  .doc-compare-window .window-title {
+    font-size: 0.72rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .doc-compare-handle {
+    width: 48px;
+    margin-left: -24px;
+  }
+  .doc-compare-handle-btn {
+    width: 32px;
+    height: 32px;
+  }
+  .doc-compare-handle-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+  .doc-compare figcaption {
+    font-size: 0.82rem;
+    line-height: 1.5;
+    padding: 0 8px;
+    margin-top: 10px;
+  }
+}
+
+@media (max-width: 400px) {
+  .doc-compare-window .window-dots {
+    display: none;
+  }
+}
+
 /* Editorial Documentation Hub (/docs/) */
 .hub-container {
   max-width: 1020px;

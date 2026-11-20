@@ -220,10 +220,36 @@ If you read your notes in **MarkText, Typora, VS Code, Zettlr, or GitHub**, swit
 - **Special highlights** fall back from `[!highlight]` callouts to `**bold**` (or any compatible marker such as `⭐ **text**` or `==text==`).
 - **Obsidian-only `^hl-` block IDs** are omitted so quotes stay clean outside Obsidian.
 
-<div style="border: 2px dashed #9ca3af; border-radius: 12px; padding: 20px 24px; margin: 18px 0; background: #f9fafb; text-align: center; color: #4b5563;">
-  <strong>📷 SCREENSHOT PLACEHOLDER — Standard Markdown output</strong><br />
-  <em>Screenshot di una nota libro esportata con «Markdown style: Standard» aperta in MarkText o Typora (senza callout [!...] né ^hl-, con Reading dashboard, Synopsis e Special highlights puliti).</em>
-</div>
+<figure class="doc-compare" id="compare-markdown-styles">
+  <div class="doc-compare-window">
+    <div class="window-header">
+      <div class="window-dots"><span></span><span></span><span></span></div>
+      <div class="window-title">Jerome K. Jerome — Three Men in a Boat.md</div>
+      <div class="window-env">Obsidian ⟷ Standard</div>
+    </div>
+    <div class="doc-compare-viewport" style="--compare-pos: 50%;">
+      <!-- Underlay: Standard Markdown -->
+      <div class="doc-compare-underlay">
+        <img src="../assets/obsidian/standard-markdown.webp" alt="Standard Markdown export with clean headings" />
+      </div>
+      <!-- Overlay: Obsidian Markdown -->
+      <div class="doc-compare-overlay">
+        <img src="../assets/obsidian/obsidian-markdown.webp" alt="Obsidian Markdown export with callouts and wikilinks" />
+      </div>
+      <!-- Draggable divider handle with keyboard & touch support -->
+      <div class="doc-compare-handle" tabindex="0" role="slider" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" aria-label="Comparison slider: drag to reveal Obsidian or Standard Markdown format">
+        <div class="doc-compare-handle-btn" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="8 7 3 12 8 17"/>
+            <polyline points="16 7 21 12 16 17"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <figcaption>Comparing <strong>Jerome K. Jerome — Three Men in a Boat</strong>: <strong>Obsidian</strong> style with callouts (left) vs. pure <strong>Standard</strong> Markdown with headings (right). Drag the slider to compare.</figcaption>
+</figure>
 
 ## Covers
 
