@@ -1886,6 +1886,46 @@ function M:genSettingsMenu()
                     end,
                 },
             },
+        },
+        {
+            text_func = function()
+                local labels = {
+                    obsidian = _("Obsidian"),
+                    standard = _("Standard"),
+                }
+                local current = shared.getMarkdownStyle()
+                return T(_("Markdown style: %1"), labels[current] or labels.obsidian)
+            end,
+            sub_item_table = {
+                {
+                    text = _("Obsidian"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return shared.getMarkdownStyle() == "obsidian"
+                    end,
+                    callback = function()
+                        if shared.getMarkdownStyle() ~= "obsidian" then
+                            shared.setMarkdownStyle("obsidian")
+                            self:invalidateExportHashes()
+                        end
+                    end,
+                },
+                {
+                    text = _("Standard"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return shared.getMarkdownStyle() == "standard"
+                    end,
+                    callback = function()
+                        if shared.getMarkdownStyle() ~= "standard" then
+                            shared.setMarkdownStyle("standard")
+                            self:invalidateExportHashes()
+                        end
+                    end,
+                },
+            },
             separator = true,
         },
         {
@@ -2074,9 +2114,13 @@ function M:genSettingsMenu()
                     wikilink = _("Obsidian wikilink"),
                     markdown = _("Standard Markdown"),
                 }
-                local current = getIndexLinks()
+                local current = shared.getMarkdownStyle() == "standard"
+                    and "markdown" or getIndexLinks()
                 return T(_("Index links: %1"),
                     labels[current] or labels.wikilink)
+            end,
+            enabled_func = function()
+                return shared.getMarkdownStyle() ~= "standard"
             end,
             sub_item_table = {
                 {
@@ -2258,20 +2302,27 @@ function M:genSettingsMenu()
                     star_bold = _("Star & Bold (⭐ **text**)"),
                     bold = _("Bold (**text**)"),
                 }
+                local cur = getSetting("special_marker", "callout")
+                if shared.getMarkdownStyle() == "standard" and cur == "callout" then
+                    cur = "bold"
+                end
                 return T(_("How special highlights look: %1"),
-                    labels[getSetting("special_marker", "callout")]
-                        or labels.callout)
+                    labels[cur] or labels.callout)
             end,
             enabled_func = function()
-                return not getSetting("callout", false)
+                return shared.getMarkdownStyle() == "standard" or not getSetting("callout", false)
             end,
             keep_menu_open = true,
             sub_item_table = {
                 {
                     text = _("Callout ([!highlight])"),
                     radio = true,
+                    enabled_func = function()
+                        return shared.getMarkdownStyle() ~= "standard"
+                    end,
                     checked_func = function()
-                        return getSetting("special_marker", "callout") == "callout"
+                        return shared.getMarkdownStyle() ~= "standard"
+                            and getSetting("special_marker", "callout") == "callout"
                     end,
                     keep_menu_open = true,
                     callback = function()
@@ -2331,7 +2382,9 @@ function M:genSettingsMenu()
                     text = _("Bold (**text**)"),
                     radio = true,
                     checked_func = function()
-                        return getSetting("special_marker", "callout") == "bold"
+                        local cur = getSetting("special_marker", "callout")
+                        return cur == "bold"
+                            or (shared.getMarkdownStyle() == "standard" and cur == "callout")
                     end,
                     keep_menu_open = true,
                     callback = function()
@@ -2343,8 +2396,11 @@ function M:genSettingsMenu()
         },
         {
             text = _("Treat every highlight as special"),
+            enabled_func = function()
+                return shared.getMarkdownStyle() ~= "standard"
+            end,
             checked_func = function()
-                return getSetting("callout", false)
+                return shared.getMarkdownStyle() ~= "standard" and getSetting("callout", false)
             end,
             keep_menu_open = true,
             callback = function()
@@ -2354,8 +2410,11 @@ function M:genSettingsMenu()
         },
         {
             text = _("Add link IDs to highlights"),
+            enabled_func = function()
+                return shared.getMarkdownStyle() ~= "standard"
+            end,
             checked_func = function()
-                return getSetting("block_ids", false)
+                return shared.getMarkdownStyle() ~= "standard" and getSetting("block_ids", false)
             end,
             keep_menu_open = true,
             callback = function()
@@ -2601,6 +2660,9 @@ function M:genSettingsMenu()
                     table = _("Table"),
                 }
                 local current = shared.getOverviewStyle()
+                if shared.getMarkdownStyle() == "standard" and current == "callout" then
+                    current = "blockquote"
+                end
                 return T(_("Overview style: %1"),
                     labels[current] or labels.inline)
             end,
@@ -2624,7 +2686,9 @@ function M:genSettingsMenu()
                     radio = true,
                     keep_menu_open = true,
                     checked_func = function()
-                        return shared.getOverviewStyle() == "blockquote"
+                        local cur = shared.getOverviewStyle()
+                        return cur == "blockquote"
+                            or (shared.getMarkdownStyle() == "standard" and cur == "callout")
                     end,
                     callback = function()
                         if shared.getOverviewStyle() ~= "blockquote" then
@@ -2637,8 +2701,12 @@ function M:genSettingsMenu()
                     text = _("Callout ([!summary])"),
                     radio = true,
                     keep_menu_open = true,
+                    enabled_func = function()
+                        return shared.getMarkdownStyle() ~= "standard"
+                    end,
                     checked_func = function()
-                        return shared.getOverviewStyle() == "callout"
+                        return shared.getMarkdownStyle() ~= "standard"
+                            and shared.getOverviewStyle() == "callout"
                     end,
                     callback = function()
                         if shared.getOverviewStyle() ~= "callout" then
@@ -3274,15 +3342,26 @@ function M:showAbout()
         column,
     }
 
+    local movable = MovableContainer:new{ frame }
     local dialog
     dialog = InputContainer:new{
         align = "center",
         dimen = Geom:new{ x = 0, y = 0, w = sw, h = sh },
         CenterContainer:new{
             dimen = Geom:new{ w = sw, h = sh },
-            MovableContainer:new{ frame },
+            movable,
         },
     }
+    dialog.onShow = function()
+        UIManager:setDirty(dialog, function()
+            return "ui", movable.dimen or frame.dimen
+        end)
+    end
+    dialog.onCloseWidget = function()
+        UIManager:setDirty(nil, function()
+            return "flashui", movable.dimen or frame.dimen
+        end)
+    end
     if Device:isTouchDevice() then
         dialog.ges_events = {
             TapClose = { GestureRange:new{
@@ -3879,12 +3958,622 @@ function M:genCurrentBookMenu()
         }
     end
     rows[#rows + 1] = {
+        text = _("Book summary"),
+        callback = function()
+            self:showBookSummaryCard(file)
+        end,
+    }
+    local specials = self:bookSpecialHighlights(file)
+    if #specials > 0 then
+        rows[#rows + 1] = {
+            text = "★ " .. _("Special highlights"),
+            mandatory = tostring(#specials),
+            callback = function()
+                self:openSpecialHighlights(file)
+            end,
+        }
+    end
+    rows[#rows + 1] = {
         text = _("Style & format"),
         sub_item_table_func = function()
             return self:genBookStyleMenu(file)
         end,
     }
     return rows
+end
+
+-- Shared helper to build Tomedown's rounded dashboard/quote card with clean
+-- framebuffer repaint on close (onCloseWidget) and button show_parent wiring.
+local function buildTomedownCard(column, btn_specs, content_w, pad, extra_buttons)
+    local Screen = Device.screen
+    local Geom = require("ui/geometry")
+    local Size = require("ui/size")
+    local Blitbuffer = require("ffi/blitbuffer")
+    local Button = require("ui/widget/button")
+    local CenterContainer = require("ui/widget/container/centercontainer")
+    local FrameContainer = require("ui/widget/container/framecontainer")
+    local GestureRange = require("ui/gesturerange")
+    local HorizontalGroup = require("ui/widget/horizontalgroup")
+    local HorizontalSpan = require("ui/widget/horizontalspan")
+    local InputContainer = require("ui/widget/container/inputcontainer")
+    local LineWidget = require("ui/widget/linewidget")
+    local MovableContainer = require("ui/widget/container/movablecontainer")
+    local VerticalSpan = require("ui/widget/verticalspan")
+
+    local sw, sh = Screen:getWidth(), Screen:getHeight()
+    local gap_m = Screen:scaleBySize(14)
+
+    column[#column + 1] = VerticalSpan:new{ width = gap_m }
+    column[#column + 1] = LineWidget:new{
+        dimen = Geom:new{ w = content_w, h = (Size.line and Size.line.thin) or 1 },
+        background = Blitbuffer.COLOR_LIGHT_GRAY,
+    }
+    column[#column + 1] = VerticalSpan:new{ width = gap_m }
+
+    local dialog
+    local btn_gap = Screen:scaleBySize(10)
+    local btn_w = math.floor((content_w - btn_gap * (#btn_specs - 1)) / #btn_specs)
+    local btn_row = HorizontalGroup:new{ align = "center" }
+    local created_btns = {}
+    for idx, spec in ipairs(btn_specs) do
+        if idx > 1 then
+            btn_row[#btn_row + 1] = HorizontalSpan:new{ width = btn_gap }
+        end
+        local cb = spec.callback
+        local b = Button:new{
+            text = spec.text,
+            width = btn_w,
+            bordersize = (Size.border and Size.border.button) or 1,
+            radius = (Size.radius and Size.radius.button) or 4,
+            text_font_face = "cfont",
+            text_font_size = 15,
+            callback = function()
+                if cb then
+                    cb(dialog)
+                end
+            end,
+        }
+        created_btns[#created_btns + 1] = b
+        btn_row[#btn_row + 1] = b
+    end
+    column[#column + 1] = btn_row
+
+    local frame = FrameContainer:new{
+        radius = Size.radius.window,
+        padding = pad,
+        margin = 0,
+        background = Blitbuffer.COLOR_WHITE,
+        column,
+    }
+    local movable = MovableContainer:new{ frame }
+
+    dialog = InputContainer:new{
+        align = "center",
+        dimen = Geom:new{ x = 0, y = 0, w = sw, h = sh },
+        CenterContainer:new{
+            dimen = Geom:new{ w = sw, h = sh },
+            movable,
+        },
+    }
+    for __, b in ipairs(created_btns) do
+        b.show_parent = dialog
+    end
+    for __, b in ipairs(extra_buttons or {}) do
+        b.show_parent = dialog
+    end
+    dialog.onShow = function()
+        UIManager:setDirty(dialog, function()
+            return "ui", movable.dimen or frame.dimen
+        end)
+    end
+    dialog.onCloseWidget = function()
+        UIManager:setDirty(nil, function()
+            return "flashui", movable.dimen or frame.dimen
+        end)
+    end
+    if Device:isTouchDevice() then
+        dialog.ges_events = {
+            TapClose = { GestureRange:new{
+                ges = "tap",
+                range = Geom:new{ x = 0, y = 0, w = sw, h = sh },
+            } },
+        }
+        dialog.onTapClose = function(self_d, _arg, ges_ev)
+            if not frame.dimen or ges_ev.pos:notIntersectWith(frame.dimen) then
+                UIManager:close(self_d)
+            end
+            return true
+        end
+    end
+    if Device:hasKeys() then
+        dialog.key_events = { Close = { { Device.input.group.Back } } }
+        dialog.onClose = function(self_d)
+            UIManager:close(self_d)
+            return true
+        end
+    end
+    return dialog
+end
+
+function M:showBookSummaryCard(file)
+    if not file then
+        return
+    end
+    local Screen = Device.screen
+    local Geom = require("ui/geometry")
+    local Size = require("ui/size")
+    local Blitbuffer = require("ffi/blitbuffer")
+    local CenterContainer = require("ui/widget/container/centercontainer")
+    local HorizontalGroup = require("ui/widget/horizontalgroup")
+    local LineWidget = require("ui/widget/linewidget")
+    local TextWidget = require("ui/widget/textwidget")
+    local VerticalGroup = require("ui/widget/verticalgroup")
+    local VerticalSpan = require("ui/widget/verticalspan")
+
+    local open = self:openReader(file)
+    local live = open and open.annotation and open.annotation.annotations
+    local ok_b, book = pcall(self.buildBook, self, file, live)
+    book = ok_b and book or nil
+
+    local props = open and open.document and open.document.getProps and open.document:getProps() or {}
+    local title = (book and book.title) or props.title or ffiUtil.basename(tostring(file))
+    local author = (book and book.author) or props.authors or ""
+    local annots = (book and book.annotations) or {}
+    local hl_count = #annots
+    local sp_count, note_count = 0, 0
+    for __, a in ipairs(annots) do
+        if a.special then sp_count = sp_count + 1 end
+        if a.note and tostring(a.note) ~= "" then note_count = note_count + 1 end
+    end
+
+    local sw = Screen:getWidth()
+    local frame_w = math.min(math.floor(sw * 0.86), Screen:scaleBySize(460))
+    local pad = Screen:scaleBySize(22)
+    local content_w = frame_w - pad * 2
+    local gap_s = Screen:scaleBySize(8)
+    local gap_m = Screen:scaleBySize(14)
+
+    local function divider()
+        return LineWidget:new{
+            dimen = Geom:new{ w = content_w, h = (Size.line and Size.line.thin) or 1 },
+            background = Blitbuffer.COLOR_LIGHT_GRAY,
+        }
+    end
+    local function ptfRow(label, value)
+        return TextBoxWidget:new{
+            text = TextBoxWidget.PTF_HEADER
+                .. TextBoxWidget.PTF_BOLD_START .. label .. TextBoxWidget.PTF_BOLD_END
+                .. " " .. tostring(value or ""),
+            face = Font:getFace("cfont", 14),
+            width = content_w,
+        }
+    end
+
+    local column = VerticalGroup:new{ align = "center" }
+    column[#column + 1] = TextBoxWidget:new{
+        text = TextBoxWidget.PTF_HEADER
+            .. TextBoxWidget.PTF_BOLD_START .. tostring(title) .. TextBoxWidget.PTF_BOLD_END,
+        face = Font:getFace("tfont", 20),
+        alignment = "center",
+        width = content_w,
+    }
+    if author and author ~= "" and author ~= "N/A" then
+        column[#column + 1] = VerticalSpan:new{ width = Screen:scaleBySize(4) }
+        column[#column + 1] = TextWidget:new{
+            text = tostring(author),
+            face = Font:getFace("cfont", 14),
+            fgcolor = Blitbuffer.COLOR_DARK_GRAY,
+            max_width = content_w,
+        }
+    end
+
+    column[#column + 1] = VerticalSpan:new{ width = gap_m }
+    column[#column + 1] = divider()
+    column[#column + 1] = VerticalSpan:new{ width = gap_m }
+
+    local col_w = math.floor(content_w / 3)
+    local Button = require("ui/widget/button")
+    local dialog
+    local extra_btns = {}
+    local function kpiTile(num, caption, on_tap)
+        local n = num or 0
+        local num_widget
+        if on_tap and n > 0 then
+            num_widget = Button:new{
+                text = tostring(n),
+                width = col_w - Screen:scaleBySize(12),
+                bordersize = (Size.line and Size.line.thin) or 1,
+                radius = (Size.radius and Size.radius.button) or 4,
+                padding_v = Screen:scaleBySize(4),
+                text_font_face = "tfont",
+                text_font_size = 22,
+                text_font_bold = true,
+                callback = function()
+                    if dialog then
+                        UIManager:close(dialog)
+                    end
+                    on_tap()
+                end,
+            }
+            extra_btns[#extra_btns + 1] = num_widget
+        else
+            num_widget = TextWidget:new{
+                text = tostring(n),
+                face = Font:getFace("tfont", 22),
+                bold = true,
+            }
+        end
+        return CenterContainer:new{
+            dimen = Geom:new{ w = col_w, h = Screen:scaleBySize(64) },
+            VerticalGroup:new{
+                align = "center",
+                num_widget,
+                VerticalSpan:new{ width = Screen:scaleBySize(4) },
+                TextWidget:new{
+                    text = caption,
+                    face = Font:getFace("cfont", 12),
+                    fgcolor = Blitbuffer.COLOR_DARK_GRAY,
+                },
+            },
+        }
+    end
+    column[#column + 1] = HorizontalGroup:new{
+        align = "center",
+        kpiTile(hl_count, _("Highlights"), function()
+            self:openBookHighlights(file, "all")
+        end),
+        kpiTile(sp_count, "★ " .. _("Special"), function()
+            self:openBookHighlights(file, "special")
+        end),
+        kpiTile(note_count, _("Notes"), function()
+            self:openBookHighlights(file, "notes")
+        end),
+    }
+
+    column[#column + 1] = VerticalSpan:new{ width = gap_m }
+    column[#column + 1] = divider()
+    column[#column + 1] = VerticalSpan:new{ width = gap_m }
+
+    local details = VerticalGroup:new{ align = "left" }
+    local fmt_labels = {
+        md = _("Markdown (.md)"),
+        txt = _("Plain text (.txt)"),
+        both = _("Both (.md and .txt)"),
+    }
+    local style_labels = {
+        obsidian = _("Obsidian"),
+        standard = _("Standard"),
+    }
+    local cur_fmt = getExportFormat(file)
+    local fmt_desc = fmt_labels[cur_fmt] or fmt_labels.md
+    if cur_fmt ~= "txt" then
+        fmt_desc = fmt_desc .. " · " .. (style_labels[shared.getMarkdownStyle(file)] or style_labels.obsidian)
+    end
+    details[#details + 1] = ptfRow(_("Format:"), fmt_desc)
+
+    local exports = getSetting("exports", {})
+    local rec = exports[file]
+    local exp_status = _("Not exported yet")
+    if rec and rec.hash then
+        exp_status = (book and book.hash == rec.hash)
+            and _("Up to date") or _("Updates pending")
+    end
+    details[#details + 1] = VerticalSpan:new{ width = gap_s }
+    details[#details + 1] = ptfRow(_("Status") .. ":", exp_status)
+
+    local btags = book and book.tags or getBookTags(file)
+    if type(btags) == "table" and #btags > 0 then
+        local tag_pills = {}
+        for __, tg in ipairs(btags) do
+            tag_pills[#tag_pills + 1] = "#" .. tostring(tg)
+        end
+        details[#details + 1] = VerticalSpan:new{ width = gap_s }
+        details[#details + 1] = ptfRow(_("Tags") .. ":", table.concat(tag_pills, " "))
+    end
+    column[#column + 1] = details
+
+    local btn_specs = {
+        {
+            text = _("Export this book"),
+            callback = function(dlg)
+                UIManager:close(dlg)
+                self:runExport({ file }, { force = true })
+            end,
+        },
+        {
+            text = _("Close"),
+            callback = function(dlg)
+                UIManager:close(dlg)
+            end,
+        },
+    }
+    dialog = buildTomedownCard(column, btn_specs, content_w, pad, extra_btns)
+    UIManager:show(dialog)
+end
+
+function M:bookHighlights(file, filter)
+    local out = {}
+    local open = self:openReader(file)
+    local annots = open and open.annotation and open.annotation.annotations
+    if type(annots) ~= "table" and file then
+        local ok_ds, DocSettings = pcall(require, "docsettings")
+        if ok_ds and DocSettings and type(DocSettings.open) == "function" then
+            local ok_open, ds = pcall(DocSettings.open, DocSettings, file)
+            if ok_open and ds then
+                annots = ds:readSetting("annotations")
+            end
+        end
+    end
+    if type(annots) ~= "table" then
+        return out
+    end
+    for __, item in ipairs(annots) do
+        if type(item) == "table" and item.drawer ~= nil and not item.deleted
+                and type(item.text) == "string" and item.text ~= "" then
+            if filter == "special" then
+                if item.tomedown_special then out[#out + 1] = item end
+            elseif filter == "notes" then
+                if type(item.note) == "string" and item.note ~= "" then out[#out + 1] = item end
+            else
+                out[#out + 1] = item
+            end
+        end
+    end
+    return out
+end
+
+function M:bookSpecialHighlights(file)
+    return self:bookHighlights(file, "special")
+end
+
+function M:openSpecialHighlights(file)
+    return self:openBookHighlights(file, "special")
+end
+
+function M:openBookHighlights(file, filter, page_num)
+    filter = filter or "all"
+    local list = self:bookHighlights(file, filter)
+    if #list == 0 then
+        return
+    end
+    local open = self:openReader(file)
+    local Button = require("ui/widget/button")
+    local Event = require("ui/event")
+    local Geom = require("ui/geometry")
+    local Size = require("ui/size")
+    local Blitbuffer = require("ffi/blitbuffer")
+    local LineWidget = require("ui/widget/linewidget")
+    local TextWidget = require("ui/widget/textwidget")
+    local VerticalGroup = require("ui/widget/verticalgroup")
+    local VerticalSpan = require("ui/widget/verticalspan")
+    local Screen = Device.screen
+
+    local function snippet(text, max)
+        local s = tostring(text or ""):gsub("%s*\n%s*", " "):gsub("^%s+", ""):gsub("%s+$", "")
+        if #s <= max then return s end
+        s = s:sub(1, max - 1)
+        while #s > 0 and s:byte(#s) >= 128 and s:byte(#s) < 192 do s = s:sub(1, -2) end
+        if #s > 0 and s:byte(#s) >= 192 then s = s:sub(1, -2) end
+        return s .. "…"
+    end
+
+    local function jumpToItem(item)
+        if not open or not item then return end
+        if type(item.pos0) == "string" and item.pos0:sub(1, 1) == "/" then
+            open:handleEvent(Event:new("GotoXPointer", item.pos0))
+        elseif type(item.page) == "string" and item.page:sub(1, 1) == "/" then
+            open:handleEvent(Event:new("GotoXPointer", item.page))
+        elseif tonumber(item.pageno or item.page) then
+            open:handleEvent(Event:new("GotoPage", tonumber(item.pageno or item.page)))
+        end
+    end
+
+    local function cardTitle(count)
+        if filter == "special" then
+            return "★ " .. _("Special highlights") .. " (" .. tostring(count) .. ")"
+        elseif filter == "notes" then
+            return _("Notes") .. " (" .. tostring(count) .. ")"
+        end
+        return _("Highlights") .. " (" .. tostring(count) .. ")"
+    end
+
+    -- Adapt items per page to screen height so Kindle/Kobo 6" (portrait & landscape) never overflow
+    local sw, sh = Screen:getWidth(), Screen:getHeight()
+    local per_page = sh >= Screen:scaleBySize(720) and 4 or 3
+    local total_pages = math.max(1, math.ceil(#list / per_page))
+    local cur_page = math.max(1, math.min(page_num or 1, total_pages))
+    local first_idx = (cur_page - 1) * per_page + 1
+    local last_idx = math.min(#list, first_idx + per_page - 1)
+
+    local frame_w = math.min(math.floor(sw * 0.88), Screen:scaleBySize(480))
+    local pad = Screen:scaleBySize(20)
+    local content_w = frame_w - pad * 2
+    local gap_s = Screen:scaleBySize(6)
+    local gap_m = Screen:scaleBySize(12)
+
+    local function divider()
+        return LineWidget:new{
+            dimen = Geom:new{ w = content_w, h = (Size.line and Size.line.thin) or 1 },
+            background = Blitbuffer.COLOR_LIGHT_GRAY,
+        }
+    end
+
+    local is_notes = (filter == "notes")
+    local column = VerticalGroup:new{ align = "center" }
+    column[#column + 1] = TextWidget:new{
+        text = cardTitle(#list),
+        face = Font:getFace("tfont", 20),
+        bold = true,
+    }
+    column[#column + 1] = VerticalSpan:new{ width = Screen:scaleBySize(3) }
+    local sub_parts = {}
+    if total_pages > 1 then
+        sub_parts[#sub_parts + 1] = string.format("%d / %d", cur_page, total_pages)
+    end
+    sub_parts[#sub_parts + 1] = is_notes
+        and _("Tap to jump · Hold to edit")
+        or _("Tap to jump · Hold for ★")
+    column[#column + 1] = TextWidget:new{
+        text = table.concat(sub_parts, "  ·  "),
+        face = Font:getFace("cfont", 12),
+        fgcolor = Blitbuffer.COLOR_DARK_GRAY,
+        max_width = content_w,
+    }
+    column[#column + 1] = VerticalSpan:new{ width = gap_m }
+    column[#column + 1] = divider()
+
+    local card_dialog
+    local row_buttons = {}
+    local list_group = VerticalGroup:new{ align = "left" }
+
+    for i = first_idx, last_idx do
+        local item = list[i]
+        if i > first_idx then
+            list_group[#list_group + 1] = divider()
+        end
+
+        local has_note = type(item.note) == "string" and item.note ~= ""
+        local prefix = item.tomedown_special and "★ " or "• "
+        if has_note then
+            prefix = prefix .. "✎ "
+        end
+
+        local loc = {}
+        if type(item.chapter) == "string" and item.chapter ~= "" then
+            loc[#loc + 1] = item.chapter
+        end
+        if item.pageno then
+            loc[#loc + 1] = "p. " .. tostring(item.pageno)
+        end
+        if is_notes and type(item.text) == "string" and item.text ~= "" then
+            loc[#loc + 1] = "“" .. snippet(item.text, 40) .. "”"
+        end
+
+        local row_label = is_notes
+            and ("✎ " .. snippet(item.note, 90))
+            or (prefix .. snippet(item.text, 85))
+
+        list_group[#list_group + 1] = VerticalSpan:new{ width = gap_s }
+        local row_btn = Button:new{
+            text = row_label,
+            align = "left",
+            width = content_w,
+            bordersize = 0,
+            padding_h = 0,
+            padding_v = Screen:scaleBySize(4),
+            text_font_face = "cfont",
+            text_font_size = 14,
+            text_font_bold = false,
+            callback = function()
+                if card_dialog then
+                    UIManager:close(card_dialog)
+                end
+                jumpToItem(item)
+            end,
+            hold_callback = function()
+                if is_notes then
+                    local edit_dlg
+                    edit_dlg = InputDialog:new{
+                        title = _("Edit note"),
+                        input = tostring(item.note or ""),
+                        allow_newline = true,
+                        buttons = {
+                            {
+                                {
+                                    text = _("Cancel"),
+                                    callback = function()
+                                        UIManager:close(edit_dlg)
+                                    end,
+                                },
+                                {
+                                    text = _("Save"),
+                                    is_enter_default = true,
+                                    callback = function()
+                                        local raw = tostring(edit_dlg:getInputText() or "")
+                                        local clean = raw:gsub("^%s+", ""):gsub("%s+$", "")
+                                        item.note = (clean ~= "") and clean or nil
+                                        item.datetime_updated = os.date("%Y-%m-%d %H:%M:%S")
+                                        if open and open.doc_settings and open.annotation then
+                                            open.doc_settings:saveSetting("annotations", open.annotation.annotations)
+                                            if type(open.doc_settings.flush) == "function" then
+                                                open.doc_settings:flush()
+                                            end
+                                        end
+                                        UIManager:close(edit_dlg)
+                                        if card_dialog then
+                                            UIManager:close(card_dialog)
+                                        end
+                                        self:openBookHighlights(file, filter, cur_page)
+                                    end,
+                                },
+                            },
+                        },
+                    }
+                    UIManager:show(edit_dlg)
+                    edit_dlg:onShowKeyboard()
+                    return
+                end
+                local marked = not item.tomedown_special
+                item.tomedown_special = marked or nil
+                if open and open.doc_settings and open.annotation then
+                    open.doc_settings:saveSetting("annotations", open.annotation.annotations)
+                end
+                UIManager:show(Notification:new{
+                    text = marked and _("Highlight marked as special")
+                        or _("Special mark removed"),
+                    timeout = 1.5,
+                })
+                if card_dialog then
+                    UIManager:close(card_dialog)
+                end
+                self:openBookHighlights(file, filter, cur_page)
+            end,
+        }
+        row_buttons[#row_buttons + 1] = row_btn
+        list_group[#list_group + 1] = row_btn
+        if #loc > 0 then
+            list_group[#list_group + 1] = TextWidget:new{
+                text = table.concat(loc, "  ·  "),
+                face = Font:getFace("cfont", 12),
+                fgcolor = Blitbuffer.COLOR_DARK_GRAY,
+                max_width = content_w,
+            }
+        end
+        list_group[#list_group + 1] = VerticalSpan:new{ width = gap_s }
+    end
+
+    column[#column + 1] = list_group
+
+    local btn_specs = {}
+    if total_pages > 1 then
+        btn_specs[#btn_specs + 1] = {
+            text = "◀",
+            callback = function(dlg)
+                if cur_page > 1 then
+                    UIManager:close(dlg)
+                    self:openBookHighlights(file, filter, cur_page - 1)
+                end
+            end,
+        }
+        btn_specs[#btn_specs + 1] = {
+            text = "▶",
+            callback = function(dlg)
+                if cur_page < total_pages then
+                    UIManager:close(dlg)
+                    self:openBookHighlights(file, filter, cur_page + 1)
+                end
+            end,
+        }
+    end
+    btn_specs[#btn_specs + 1] = {
+        text = _("Close"),
+        callback = function(dlg)
+            UIManager:close(dlg)
+        end,
+    }
+
+    card_dialog = buildTomedownCard(column, btn_specs, content_w, pad, row_buttons)
+    UIManager:show(card_dialog)
 end
 
 -- Per-book style and format overrides for the open book. Each option can
@@ -3964,6 +4653,20 @@ function M:genBookStyleMenu(file)
             { val = "md",   text = _("Markdown (.md)") },
             { val = "txt",  text = _("Plain text (.txt)") },
             { val = "both", text = _("Both (.md and .txt)") },
+        }
+    )
+
+    rows[#rows + 1] = choiceRow(
+        _("Markdown style: %1"),
+        "markdown_style",
+        shared.getMarkdownStyle,
+        {
+            obsidian = _("Obsidian"),
+            standard = _("Standard"),
+        },
+        {
+            { val = "obsidian", text = _("Obsidian") },
+            { val = "standard", text = _("Standard") },
         }
     )
 

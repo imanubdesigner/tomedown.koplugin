@@ -329,6 +329,99 @@
     });
   }
 
+  // Interactive Before/After Image Comparison Slider
+  document.querySelectorAll(".doc-compare").forEach(function (cmp) {
+    var viewport = cmp.querySelector(".doc-compare-viewport");
+    var handle = cmp.querySelector(".doc-compare-handle");
+    if (!viewport || !handle) return;
+
+    var currentPos = 50;
+
+    function setPos(pct) {
+      currentPos = Math.max(0, Math.min(100, Number(pct)));
+      viewport.style.setProperty("--compare-pos", currentPos + "%");
+      handle.setAttribute("aria-valuenow", Math.round(currentPos));
+    }
+
+    function updateFromClientX(clientX) {
+      var rect = viewport.getBoundingClientRect();
+      if (!rect.width) return;
+      var pct = ((clientX - rect.left) / rect.width) * 100;
+      setPos(pct);
+    }
+
+    var isDragging = false;
+
+    // Pointer events handle Mouse, Touch and Stylus uniformly
+    viewport.addEventListener("pointerdown", function (e) {
+      if (e.button !== undefined && e.button !== 0) return;
+      isDragging = true;
+      viewport.classList.add("is-dragging");
+      try {
+        viewport.setPointerCapture(e.pointerId);
+      } catch (_) {}
+      updateFromClientX(e.clientX);
+    });
+
+    viewport.addEventListener("pointermove", function (e) {
+      if (!isDragging) return;
+      updateFromClientX(e.clientX);
+    });
+
+    function endDrag(e) {
+      if (!isDragging) return;
+      isDragging = false;
+      viewport.classList.remove("is-dragging");
+      if (e && e.pointerId) {
+        try {
+          viewport.releasePointerCapture(e.pointerId);
+        } catch (_) {}
+      }
+    }
+
+    viewport.addEventListener("pointerup", endDrag);
+    viewport.addEventListener("pointercancel", endDrag);
+
+    // Keyboard navigation (Arrow keys on handle)
+    handle.addEventListener("keydown", function (e) {
+      var step = e.shiftKey ? 10 : 2;
+      if (e.key === "ArrowLeft" || e.key === "ArrowDown") {
+        e.preventDefault();
+        setPos(currentPos - step);
+      } else if (e.key === "ArrowRight" || e.key === "ArrowUp") {
+        e.preventDefault();
+        setPos(currentPos + step);
+      } else if (e.key === "Home") {
+        e.preventDefault();
+        setPos(0);
+      } else if (e.key === "End") {
+        e.preventDefault();
+        setPos(100);
+      }
+    });
+
+    // Fallback touch handlers for legacy environments
+    viewport.addEventListener("touchstart", function (e) {
+      if (e.touches && e.touches.length === 1) {
+        isDragging = true;
+        updateFromClientX(e.touches[0].clientX);
+      }
+    }, { passive: true });
+
+    viewport.addEventListener("touchmove", function (e) {
+      if (isDragging && e.touches && e.touches.length === 1) {
+        updateFromClientX(e.touches[0].clientX);
+      }
+    }, { passive: true });
+
+    viewport.addEventListener("touchend", function () {
+      isDragging = false;
+      viewport.classList.remove("is-dragging");
+    });
+
+    // Initial position
+    setPos(50);
+  });
 
   // Documentation Hub Live Filter & Command Palette (Ctrl+K / Cmd+K)
   var searchInput = document.getElementById("hub-search-input");

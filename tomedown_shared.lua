@@ -1153,6 +1153,23 @@ local function setExportFormat(fmt)
     end
 end
 
+local function getMarkdownStyle(file)
+    local override = file and getBookStyleOverride(file, "markdown_style")
+    local style = override or getSetting("markdown_style", "obsidian")
+    if style == "standard" then
+        return "standard"
+    end
+    return "obsidian"
+end
+
+local function setMarkdownStyle(style)
+    if style == "standard" then
+        setSetting("markdown_style", "standard")
+    else
+        setSetting("markdown_style", nil)
+    end
+end
+
 local function getTopbarIcon()
     return getSetting("topbar_icon", false) == true
 end
@@ -1445,6 +1462,8 @@ return {
     setHighlightContext = setHighlightContext,
     getExportFormat = getExportFormat,
     setExportFormat = setExportFormat,
+    getMarkdownStyle = getMarkdownStyle,
+    setMarkdownStyle = setMarkdownStyle,
     getTopbarIcon = getTopbarIcon,
     setTopbarIcon = setTopbarIcon,
     getBookStyleOverride = getBookStyleOverride,

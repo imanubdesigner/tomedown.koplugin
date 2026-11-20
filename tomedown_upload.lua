@@ -23,6 +23,7 @@ local lfs = require("libs/libkoreader-lfs")
 local T = ffiUtil.template
 local _ = require("tomedown_i18n")
 local merge = require("tomedown_merge")
+local render = require("tomedown_render")
 local shared = require("tomedown_shared")
 
 local INDEX_FILENAME = shared.INDEX_FILENAME
@@ -389,33 +390,289 @@ function M:statusLines()
 end
 
 function M:showStatus()
-    -- KOReader's own inline styling, "Poor Text Formatting": the header
-    -- char must open the text and the two private-use chars wrap what
-    -- gets the bold face. Applied to the already translated lines, so
-    -- the msgids stay plain.
-    local styled = TextBoxWidget.PTF_HEADER
-    for i, line in ipairs(self:statusLines()) do
-        -- every line is "Label: value"; bold the label, up to the first
-        -- colon (values may well contain colons: times, paths)
-        local label, rest = line:match("^(.-:)(.*)$")
-        if label then
-            line = TextBoxWidget.PTF_BOLD_START .. label
-                .. TextBoxWidget.PTF_BOLD_END .. rest
-        end
-        if i > 1 then
-            styled = styled .. "\n"
-        end
-        styled = styled .. line
+    local Screen = Device.screen
+    local Geom = require("ui/geometry")
+    local Size = require("ui/size")
+    local Blitbuffer = require("ffi/blitbuffer")
+    local Button = require("ui/widget/button")
+    local CenterContainer = require("ui/widget/container/centercontainer")
+    local FrameContainer = require("ui/widget/container/framecontainer")
+    local GestureRange = require("ui/gesturerange")
+    local HorizontalGroup = require("ui/widget/horizontalgroup")
+    local HorizontalSpan = require("ui/widget/horizontalspan")
+    local InputContainer = require("ui/widget/container/inputcontainer")
+    local LineWidget = require("ui/widget/linewidget")
+    local MovableContainer = require("ui/widget/container/movablecontainer")
+    local TextWidget = require("ui/widget/textwidget")
+    local VerticalGroup = require("ui/widget/verticalgroup")
+    local VerticalSpan = require("ui/widget/verticalspan")
+
+    local sw, sh = Screen:getWidth(), Screen:getHeight()
+    local frame_w = math.min(math.floor(sw * 0.86), Screen:scaleBySize(460))
+    local pad = Screen:scaleBySize(22)
+    local content_w = frame_w - pad * 2
+    local gap_s = Screen:scaleBySize(8)
+    local gap_m = Screen:scaleBySize(14)
+
+    local function divider()
+        return LineWidget:new{
+            dimen = Geom:new{ w = content_w, h = (Size.line and Size.line.thin) or 1 },
+            background = Blitbuffer.COLOR_LIGHT_GRAY,
+        }
     end
-    UIManager:show(InfoMessage:new{
-        -- the smallest info face (18pt vs the default 24): every entry
-        -- stays on a single line instead of wrapping into a wall of text
-        face = Font:getFace("xx_smallinfofont"),
-        -- 90% of the screen (the default is 2/3): bold labels plus long
-        -- dates and outcomes still fit on one line
-        width = math.floor(Device.screen:getWidth() * 0.9),
-        text = styled,
-    })
+
+    local function ptfRow(label, value)
+        return TextBoxWidget:new{
+            text = TextBoxWidget.PTF_HEADER
+                .. TextBoxWidget.PTF_BOLD_START .. label .. TextBoxWidget.PTF_BOLD_END
+                .. " " .. tostring(value or ""),
+            face = Font:getFace("cfont", 14),
+            width = content_w,
+        }
+    end
+
+    local last_export = getSetting("last_export")
+    local column = VerticalGroup:new{ align = "center" }
+
+    -- 1. Header: Title + timestamp
+    column[#column + 1] = TextWidget:new{
+        text = _("Last export"),
+        face = Font:getFace("tfont", 22),
+        bold = true,
+    }
+    column[#column + 1] = VerticalSpan:new{ width = Screen:scaleBySize(4) }
+    local subtitle = _("Last export: never")
+    if last_export and last_export.at then
+        subtitle = render.fmtDateLiterary(os.date("%Y-%m-%d", last_export.at))
+            .. "  ·  " .. os.date("%H:%M", last_export.at)
+    end
+    column[#column + 1] = TextWidget:new{
+        text = subtitle,
+        face = Font:getFace("cfont", 14),
+        fgcolor = Blitbuffer.COLOR_DARK_GRAY,
+    }
+
+    -- 2. 3-column KPI stat bar (Exported | Skipped | Errors or Backups)
+    if last_export and last_export.at then
+        column[#column + 1] = VerticalSpan:new{ width = gap_m }
+        column[#column + 1] = divider()
+        column[#column + 1] = VerticalSpan:new{ width = gap_m }
+
+        local col_w = math.floor(content_w / 3)
+        local function kpiTile(num, caption)
+            return CenterContainer:new{
+                dimen = Geom:new{ w = col_w, h = Screen:scaleBySize(54) },
+                VerticalGroup:new{
+                    align = "center",
+                    TextWidget:new{
+                        text = tostring(num or 0),
+                        face = Font:getFace("tfont", 24),
+                        bold = true,
+                    },
+                    VerticalSpan:new{ width = Screen:scaleBySize(2) },
+                    TextWidget:new{
+                        text = caption,
+                        face = Font:getFace("cfont", 12),
+                        fgcolor = Blitbuffer.COLOR_DARK_GRAY,
+                    },
+                },
+            }
+        end
+
+        local third_num = last_export.errors or 0
+        local third_lbl = _("Errors")
+        if third_num == 0 and (last_export.backups or 0) > 0 then
+            third_num = last_export.backups
+            third_lbl = _("Backups")
+        end
+
+        column[#column + 1] = HorizontalGroup:new{
+            align = "center",
+            kpiTile(last_export.exported or 0, _("Exported")),
+            kpiTile(last_export.skipped or 0, _("Skipped")),
+            kpiTile(third_num, third_lbl),
+        }
+    end
+
+    column[#column + 1] = VerticalSpan:new{ width = gap_m }
+    column[#column + 1] = divider()
+    column[#column + 1] = VerticalSpan:new{ width = gap_m }
+
+    -- 3. Details block (left-aligned)
+    local details = VerticalGroup:new{ align = "left" }
+    local fmt_labels = {
+        md = _("Markdown (.md)"),
+        txt = _("Plain text (.txt)"),
+        both = _("Both (.md and .txt)"),
+    }
+    local style_labels = {
+        obsidian = _("Obsidian"),
+        standard = _("Standard"),
+    }
+    local cur_fmt = shared.getExportFormat()
+    local fmt_desc = fmt_labels[cur_fmt] or fmt_labels.md
+    if cur_fmt ~= "txt" then
+        fmt_desc = fmt_desc .. " · " .. (style_labels[shared.getMarkdownStyle()] or style_labels.obsidian)
+    end
+    details[#details + 1] = ptfRow(_("Format:"), fmt_desc)
+    details[#details + 1] = VerticalSpan:new{ width = gap_s }
+    details[#details + 1] = ptfRow(_("Folder:"), self:getLocalDir())
+
+    -- Cloud summary
+    local server = self:getServer()
+    local upload_on = getSetting("upload", false) == true
+    local pending_count = 0
+    for __ in pairs(getSetting("pending_uploads", {})) do
+        pending_count = pending_count + 1
+    end
+    details[#details + 1] = VerticalSpan:new{ width = gap_s }
+    if not upload_on and not server and pending_count == 0 then
+        details[#details + 1] = ptfRow(_("Cloud") .. ":", _("Disabled"))
+    else
+        local cloud_parts = {}
+        cloud_parts[#cloud_parts + 1] = NetworkMgr:isConnected() and _("online") or _("offline")
+        if server then
+            cloud_parts[#cloud_parts + 1] = server.name or server.url or server.type
+        end
+        if pending_count > 0 then
+            cloud_parts[#cloud_parts + 1] = T(_("Upload pending: %1 files"), pending_count)
+        end
+        details[#details + 1] = ptfRow(_("Cloud") .. ":", table.concat(cloud_parts, " · "))
+    end
+
+    -- 4. Recently exported books (up to 5 titles so the card stays crisp on 6" e-readers)
+    if last_export and type(last_export.titles) == "table" and #last_export.titles > 0 then
+        details[#details + 1] = VerticalSpan:new{ width = gap_m }
+        details[#details + 1] = TextBoxWidget:new{
+            text = TextBoxWidget.PTF_HEADER
+                .. TextBoxWidget.PTF_BOLD_START .. _("Exported books") .. TextBoxWidget.PTF_BOLD_END,
+            face = Font:getFace("cfont", 14),
+            width = content_w,
+        }
+        details[#details + 1] = VerticalSpan:new{ width = Screen:scaleBySize(4) }
+        local shown_n = math.min(#last_export.titles, 5)
+        local book_lines = {}
+        for i = 1, shown_n do
+            book_lines[#book_lines + 1] = "• " .. tostring(last_export.titles[i])
+        end
+        local extra = (last_export.exported or 0) - shown_n
+        if extra > 0 then
+            book_lines[#book_lines + 1] = T(_("+ %1 more"), extra)
+        end
+        details[#details + 1] = TextBoxWidget:new{
+            text = table.concat(book_lines, "\n"),
+            face = Font:getFace("cfont", 13),
+            width = content_w,
+        }
+    end
+
+    column[#column + 1] = details
+    column[#column + 1] = VerticalSpan:new{ width = gap_m }
+    column[#column + 1] = divider()
+    column[#column + 1] = VerticalSpan:new{ width = gap_m }
+
+    -- 5. Action buttons
+    local dialog
+    local btn_specs = {
+        {
+            text = _("Export updated"),
+            callback = function()
+                UIManager:close(dialog)
+                self:runExport(self:listBookFiles(), { only_updated = true })
+            end,
+        },
+    }
+    if pending_count > 0 and upload_on then
+        btn_specs[#btn_specs + 1] = {
+            text = _("Upload now"),
+            callback = function()
+                UIManager:close(dialog)
+                self:flushPendingUploads()
+            end,
+        }
+    end
+    btn_specs[#btn_specs + 1] = {
+        text = _("Close"),
+        callback = function()
+            UIManager:close(dialog)
+        end,
+    }
+
+    local btn_gap = Screen:scaleBySize(10)
+    local btn_w = math.floor((content_w - btn_gap * (#btn_specs - 1)) / #btn_specs)
+    local btn_row = HorizontalGroup:new{ align = "center" }
+    local created_btns = {}
+    for idx, spec in ipairs(btn_specs) do
+        if idx > 1 then
+            btn_row[#btn_row + 1] = HorizontalSpan:new{ width = btn_gap }
+        end
+        local b = Button:new{
+            text = spec.text,
+            width = btn_w,
+            bordersize = (Size.border and Size.border.button) or 1,
+            radius = (Size.radius and Size.radius.button) or 4,
+            text_font_face = "cfont",
+            text_font_size = 15,
+            callback = spec.callback,
+        }
+        created_btns[#created_btns + 1] = b
+        btn_row[#btn_row + 1] = b
+    end
+    column[#column + 1] = btn_row
+
+    local frame = FrameContainer:new{
+        radius = Size.radius.window,
+        padding = pad,
+        margin = 0,
+        background = Blitbuffer.COLOR_WHITE,
+        column,
+    }
+    local movable = MovableContainer:new{ frame }
+
+    dialog = InputContainer:new{
+        align = "center",
+        dimen = Geom:new{ x = 0, y = 0, w = sw, h = sh },
+        CenterContainer:new{
+            dimen = Geom:new{ w = sw, h = sh },
+            movable,
+        },
+    }
+    for __, b in ipairs(created_btns) do
+        b.show_parent = dialog
+    end
+    dialog.onShow = function()
+        UIManager:setDirty(dialog, function()
+            return "ui", movable.dimen or frame.dimen
+        end)
+    end
+    dialog.onCloseWidget = function()
+        UIManager:setDirty(nil, function()
+            return "flashui", movable.dimen or frame.dimen
+        end)
+    end
+    if Device:isTouchDevice() then
+        dialog.ges_events = {
+            TapClose = { GestureRange:new{
+                ges = "tap",
+                range = Geom:new{ x = 0, y = 0, w = sw, h = sh },
+            } },
+        }
+        dialog.onTapClose = function(self_d, _arg, ges_ev)
+            if not frame.dimen or ges_ev.pos:notIntersectWith(frame.dimen) then
+                UIManager:close(self_d)
+            end
+            return true
+        end
+    end
+    if Device:hasKeys() then
+        dialog.key_events = { Close = { { Device.input.group.Back } } }
+        dialog.onClose = function(self_d)
+            UIManager:close(self_d)
+            return true
+        end
+    end
+
+    UIManager:show(dialog)
 end
 
 -- pending uploads: flushed when the connection comes back (NetworkConnected),

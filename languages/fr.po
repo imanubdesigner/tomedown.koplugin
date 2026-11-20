@@ -100,7 +100,7 @@ msgid "Local folder: %1"
 msgstr "Dossier local : %1"
 
 msgid "Create an index note (%1)"
-msgstr "Créer une note d'index (%1)"
+msgstr "Créer note d'index (%1)"
 
 msgid "Index order: %1"
 msgstr "Ordre de l'index : %1"
@@ -112,7 +112,7 @@ msgid "Export new and changed books"
 msgstr "Exporter les livres nouveaux et modifiés"
 
 msgid "Keep my notes in this book"
-msgstr "Conserver mes notes dans ce livre"
+msgstr "Garder mes notes ici"
 
 msgid "Tags for this book"
 msgstr "Tags pour ce livre"
@@ -148,7 +148,7 @@ msgid "Upload all files again"
 msgstr "Envoyer à nouveau tous les fichiers"
 
 msgid "Bring in edits made in Obsidian"
-msgstr "Importer les modifications faites dans Obsidian"
+msgstr "Importer modifs Obsidian"
 
 msgid "Settings"
 msgstr "Réglages"
@@ -238,13 +238,13 @@ msgid "Include book covers"
 msgstr "Inclure les couvertures"
 
 msgid "Treat every highlight as special"
-msgstr "Traiter chaque surlignage comme spécial"
+msgstr "Tout surlignage spécial"
 
 msgid "Add link IDs to highlights"
-msgstr "Ajouter des ID de lien aux surlignages"
+msgstr "ID de lien sur surlignages"
 
 msgid "How special highlights look: %1"
-msgstr "Apparence des surlignages spéciaux : %1"
+msgstr "Style spéciaux : %1"
 
 msgid "Callout ([!highlight])"
 msgstr "Callout ([!highlight])"
@@ -278,10 +278,10 @@ msgid "Special mark removed"
 msgstr "Marque spéciale retirée"
 
 msgid "Update available: v%1 → v%2"
-msgstr "Mise à jour disponible : v%1 → v%2"
+msgstr "MàJ dispo : v%1 → v%2"
 
 msgid "Check for updates (v%1)"
-msgstr "Rechercher des mises à jour (v%1)"
+msgstr "Vérifier MàJ (v%1)"
 
 msgid "View changelog"
 msgstr "Voir le changelog"
@@ -308,7 +308,7 @@ msgid "Could not fetch the changelog."
 msgstr "Impossible de récupérer le changelog."
 
 msgid "Check for updates in background"
-msgstr "Rechercher les mises à jour en arrière-plan"
+msgstr "Vérifier MàJ en fond"
 
 msgid "Beta versions"
 msgstr "Versions bêta"
@@ -494,7 +494,7 @@ msgid "Manual"
 msgstr "Manuel"
 
 msgid "Keep my notes: all books"
-msgstr "Conserver mes notes : tous les livres"
+msgstr "Garder notes : tous"
 
 msgid "Keep my notes: index"
 msgstr "Conserver mes notes : index"
@@ -512,7 +512,7 @@ msgid "Notes heading: %1"
 msgstr "Titre des notes : %1"
 
 msgid "Index notes heading: %1"
-msgstr "Titre des notes d'index : %1"
+msgstr "Titre notes index : %1"
 
 msgid "Notes heading"
 msgstr "Titre des notes"
@@ -548,7 +548,7 @@ msgid "Backup copies (%1)"
 msgstr "Copies de sauvegarde (%1)"
 
 msgid "Delete all backup copies…"
-msgstr "Supprimer toutes les copies de sauvegarde…"
+msgstr "Supprimer les backups…"
 
 msgid "Delete all %1 backup copies (.bak)?\n\nIt cannot be undone."
 msgstr "Supprimer les %1 copies de sauvegarde (.bak) ?\n\nCette action est irréversible."
@@ -657,7 +657,7 @@ msgid "Reading now"
 msgstr "Lectures en cours"
 
 msgid "Show Reading now in the index"
-msgstr "Afficher « Lectures en cours » dans l'index"
+msgstr "« En cours » dans l'index"
 
 msgid "Every exported book is hidden from the index."
 msgstr "Tous les livres exportés sont masqués de l'index."
@@ -749,7 +749,7 @@ msgid "Status: %1"
 msgstr "Statut : %1"
 
 msgid "Update book info automatically"
-msgstr "Mettre à jour les informations du livre automatiquement"
+msgstr "MàJ auto infos du livre"
 
 msgid "Import book info for all books"
 msgstr "Importer les informations de tous les livres"
@@ -764,16 +764,16 @@ msgid "Book info"
 msgstr "Informations du livre"
 
 msgid "Import book info"
-msgstr "Importer les informations du livre"
+msgstr "Importer infos du livre"
 
 msgid "Dates"
 msgstr "Dates"
 
 msgid "Remove imported book info…"
-msgstr "Supprimer les informations importées…"
+msgstr "Retirer infos importées…"
 
 msgid "Index layout: %1"
-msgstr "Disposition de l'index : %1"
+msgstr "Style d'index : %1"
 
 msgid "Tags under the title"
 msgstr "Tags sous le titre"
@@ -854,7 +854,7 @@ msgid "Footnotes"
 msgstr "Notes de bas de page"
 
 msgid "Personal notes format: %1"
-msgstr "Format des notes personnelles : %1"
+msgstr "Format notes : %1"
 
 msgid "Reading digest"
 msgstr "Digest de lecture"
@@ -881,7 +881,7 @@ msgid "Welcome to the quiet space where authors' thoughts linger, and your own r
 msgstr "Bienvenue dans l'espace paisible où s'attardent les pensées des auteurs et où prennent forme vos réflexions."
 
 msgid "Covers folder: %1"
-msgstr "Dossier des couvertures : %1"
+msgstr "Dossier couvertures : %1"
 
 msgid "Covers folder name"
 msgstr "Nom du dossier des couvertures"
@@ -908,7 +908,7 @@ msgid "Export date (exported)"
 msgstr "Date d'exportation (exported)"
 
 msgid "Highlight count (highlights)"
-msgstr "Nombre de surlignages (highlights)"
+msgstr "Surlignages (highlights)"
 
 msgid "Special highlight count (special)"
 msgstr "Surlignages spéciaux (special)"
@@ -917,7 +917,7 @@ msgid "Reading status (status)"
 msgstr "Statut de lecture (status)"
 
 msgid "Reading progress (progress)"
-msgstr "Progression de lecture (progress)"
+msgstr "Progression (progress)"
 
 msgid "Frontmatter key order…"
 msgstr "Ordre des clés du frontmatter…"
@@ -977,7 +977,7 @@ msgid "Chapter headings: %1"
 msgstr "Titres des chapitres : %1"
 
 msgid "Include highlight context"
-msgstr "Inclure le contexte des surlignages"
+msgstr "Contexte des surlignages"
 
 msgid "Style & format"
 msgstr "Style et format"
@@ -992,7 +992,7 @@ msgid "Custom"
 msgstr "Personnalisé"
 
 msgid "Highlight context: %1"
-msgstr "Contexte des surlignages : %1"
+msgstr "Contexte : %1"
 
 msgid "Enabled"
 msgstr "Activé"
@@ -1001,7 +1001,7 @@ msgid "Disabled"
 msgstr "Désactivé"
 
 msgid "Reset to global style settings"
-msgstr "Rétablir les réglages de style globaux"
+msgstr "Rétablir le style global"
 
 msgid "Book cover: %1"
 msgstr "Couverture du livre : %1"
@@ -1013,7 +1013,7 @@ msgid "YAML frontmatter: %1"
 msgstr "Frontmatter YAML : %1"
 
 msgid "Show Tomedown icon in the top bar"
-msgstr "Afficher l'icône Tomedown dans la barre supérieure"
+msgstr "Icône Tomedown en haut"
 
 msgid "Custom fields"
 msgstr "Champs personnalisés"
@@ -1022,7 +1022,7 @@ msgid "Custom frontmatter fields"
 msgstr "Champs de frontmatter personnalisés"
 
 msgid "Custom frontmatter fields…"
-msgstr "Champs de frontmatter personnalisés…"
+msgstr "Champs custom frontmatter…"
 
 msgid "comma-separated keys; leave empty to follow global order"
 msgstr "clés séparées par des virgules ; laisser vide pour suivre l'ordre global"
@@ -1121,13 +1121,13 @@ msgid "Index tags display: %1"
 msgstr "Tags dans l'index : %1"
 
 msgid "Show Completed books in the index"
-msgstr "Afficher les livres terminés dans l'index"
+msgstr "Terminés dans l'index"
 
 msgid "Show Library dashboard in the index"
-msgstr "Afficher le tableau de la bibliothèque dans l'index"
+msgstr "Tableau dans l'index"
 
 msgid "Show tag cloud in the index"
-msgstr "Afficher le nuage de tags dans l'index"
+msgstr "Nuage de tags (index)"
 
 msgid "Include reading dashboard"
 msgstr "Inclure le tableau de lecture"
@@ -1151,7 +1151,7 @@ msgid "Body tags: %1"
 msgstr "Tags dans le texte : %1"
 
 msgid "Special highlights showcase: %1"
-msgstr "Vitrine des extraits spéciaux : %1"
+msgstr "Vitrine spéciaux : %1"
 
 
 
@@ -1160,3 +1160,75 @@ msgstr "Vitrine des extraits spéciaux : %1"
 
 
 
+
+msgid "Markdown style: %1"
+msgstr "Style Markdown : %1"
+
+msgid "Obsidian"
+msgstr "Obsidian"
+
+msgid "Standard"
+msgstr "Standard"
+
+msgid "Exported books"
+msgstr "Livres exportés"
+
+msgid "+ %1 more"
+msgstr "+ %1 autres"
+
+msgid "Export updated"
+msgstr "Exporter les modifiés"
+
+msgid "Upload now"
+msgstr "Envoyer maintenant"
+
+msgid "Exported"
+msgstr "Exportés"
+
+msgid "Skipped"
+msgstr "Ignorés"
+
+msgid "Errors"
+msgstr "Erreurs"
+
+msgid "Backups"
+msgstr "Sauvegardes"
+
+msgid "Format:"
+msgstr "Format :"
+
+msgid "Folder:"
+msgstr "Dossier :"
+
+msgid "online"
+msgstr "en ligne"
+
+msgid "offline"
+msgstr "hors ligne"
+
+msgid "Book summary"
+msgstr "Résumé du livre"
+
+msgid "Not exported yet"
+msgstr "Pas encore exporté"
+
+msgid "Up to date"
+msgstr "À jour"
+
+msgid "Updates pending"
+msgstr "Modifications en attente"
+
+
+
+
+msgid "Notes"
+msgstr "Notes"
+
+msgid "Tap to jump · Hold for ★"
+msgstr "Toucher : page · Maintenir : ★"
+
+msgid "Tap to jump · Hold to edit"
+msgstr "Toucher : page · Maintenir : modifier"
+
+msgid "Edit note"
+msgstr "Modifier la note"

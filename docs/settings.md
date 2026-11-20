@@ -22,6 +22,7 @@ book's own menu: see [Keep my notes](keep-my-notes.md) and
 | *Create a reading digest (00 - Reading Digest.md)* | off by default: creates a consolidated chronological digest (`00 - Reading Digest.md`) grouping highlights across all books by day, with literary dates (`16 Nov 2026`) and clean quote times (`09:41`) |
 | *Export when I close a book* | off by default: exports the book when you close it, and again (silently, no network) before the device suspends |
 | *Export format: %1* | defaults to **Markdown (.md)**; can be switched to **Plain text (.txt)** or **Both (.md and .txt)** to generate a clean, human-readable `.txt` file per book without YAML or HTML |
+| *Markdown style: %1* | defaults to **Obsidian** (wikilinks, `[!...]` callouts, and `^hl-` block IDs); switch to **Standard** for pure, universal Markdown (MarkText, Typora, VS Code, GitHub) with standard `[Title](file.md)` links, clean headings instead of callouts, and no orphan `^hl-` IDs. When **Standard** is selected, Obsidian-only style options are automatically disabled |
 | *Backup copies (%1)* | opens the backups submenu listing existing backup copies with transparent labels and real file dates (`Saved notes · 16 Nov 26`, `Latest snapshot · 14 Nov 26`). Includes **Delete all backup copies…** to clean stale copies across your library with a single confirmation |
 | *Export settings to file* | exports all Tomedown configuration options deterministically to `tomedown_settings_backup.lua` inside your local export folder |
 | *Restore settings from backup…* | safely restores your Tomedown configuration from `tomedown_settings_backup.lua` with a confirmation dialog |
@@ -88,7 +89,36 @@ All style rows rewrite every already exported file on the next export:
 none of them is part of the book's hash, so flipping one invalidates the
 stored hashes, the way *Include book covers* does above.
 
-You can also override **Export format**, **Personal notes format**, **Highlight details**, **Chapter headings**, **Highlight context**, **Book cover**, **Page bookmarks**, and **YAML frontmatter** for a single book without changing the global settings via **Tomedown → Current book → Style & format** (*Reset to global style settings* restores the global defaults for that book).
+You can also override **Export format**, **Markdown style**, **Personal notes format**, **Highlight details**, **Chapter headings**, **Highlight context**, **Book cover**, **Page bookmarks**, and **YAML frontmatter** for a single book without changing the global settings via **Tomedown → Current book → Style & format** (*Reset to global style settings* restores the global defaults for that book). See [Current book](current-book.md#style--format-overrides) for complete details.
+
+![Per-book Markdown style selection](../assets/menu/current-book/current_book_markdown_style.svg)
+
+## In-device cards (v2.1.1)
+
+Tomedown ships rounded, e-ink-friendly dashboard cards so you can inspect your reading session and manage highlights directly on KOReader without leaving the book. For a complete guide to in-reader cards, gestures, and note editing, see the dedicated [Current book](current-book.md) chapter.
+
+### Book summary (`Current book → Book summary`)
+
+Displays the open book's title, author, an interactive 3-column KPI bar (**Highlights**, **★ Special**, **Notes**), effective export format and Markdown style, sync status (`Up to date`, `Updates pending`, or `Not exported yet`), tags, and a one-tap **Export this book** button.
+
+![Book summary rounded dashboard card](../assets/menu/current-book/current_book_summary.svg)
+
+### Highlights, ★ Special, and Notes card browser
+
+Tapping any KPI counter in **Book summary** (or opening **Current book → ★ Special highlights**) opens a paginated card adapted to 6-inch Kindle and Kobo screens:
+
+- **Highlights / ★ Special**: **tap** a row to jump directly to that passage in the book (`GotoXPointer` / `GotoPage`); **long-press** to toggle `★ Special` in place and save immediately to `.sdr`.
+- **Notes**: displays your note text with chapter, page, and a compact excerpt of the underlying highlight. **Tap** to jump to the passage; **long-press** to open KOReader's `InputDialog` and edit or clear the note directly.
+
+![Highlights card browser](../assets/menu/current-book/current_book_highlights.svg)
+
+For a complete breakdown of cards and gestures, see [Current book](current-book.md#highlights--special--notes-card-browser).
+
+### Last export dashboard (`Tomedown → Last export`)
+
+Shows the timestamp of the last export, a 3-column KPI bar (**Exported**, **Skipped**, **Errors** or **Backups**), active format/style, local folder, a list of the most recently exported book titles, cloud status, and quick **Export updated** / **Upload now** action buttons.
+
+![Last export dashboard card](../assets/menu/settings/last_export_card.svg)
 
 ## Book info
 

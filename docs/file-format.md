@@ -209,6 +209,48 @@ With *Settings → Style → Add link IDs to highlights* enabled, every highligh
 - **Jump to quote**: `[[Book title#^hl-4f2a9c31]]`
 - **Embed quote live**: `![[Book title#^hl-4f2a9c31]]`
 
+## Standard Markdown vs Obsidian style (v2.1.1)
+
+By default, Tomedown uses **Obsidian** Markdown style (`Settings → Files → Markdown style → Obsidian`), enabling Obsidian wikilinks (`[[Book]]`), collapsible callouts (`> [!book]`, `> [!abstract]-`, `> [!highlight]-`, `> [!summary]`), and `^hl-` block IDs.
+
+If you read your notes in **MarkText, Typora, VS Code, Zettlr, or GitHub**, switch **Markdown style** to **Standard** (globally or per book in *Current book → Style & format*):
+
+- **Book notes, index, and reading digest** use pure Markdown headings (`### Reading dashboard`, `### Book synopsis`, `### ★ Special highlights`, `### Library dashboard`) instead of `[!...]` callouts.
+- **Links** automatically use standard Markdown syntax (`[Title](Book.md)`).
+- **Special highlights** fall back from `[!highlight]` callouts to `**bold**` (or any compatible marker such as `⭐ **text**` or `==text==`).
+- **Obsidian-only `^hl-` block IDs** are omitted so quotes stay clean outside Obsidian.
+
+<figure class="doc-compare" id="compare-markdown-styles">
+  <div class="doc-compare-window">
+    <div class="window-header">
+      <div class="window-dots"><span></span><span></span><span></span></div>
+      <div class="window-title">Jerome K. Jerome — Three Men in a Boat.md</div>
+      <div class="window-env">Obsidian ⟷ Standard</div>
+    </div>
+    <div class="doc-compare-viewport" style="--compare-pos: 50%;">
+      <!-- Underlay: Standard Markdown -->
+      <div class="doc-compare-underlay">
+        <img src="../assets/obsidian/standard-markdown.webp" alt="Standard Markdown export with clean headings" />
+      </div>
+      <!-- Overlay: Obsidian Markdown -->
+      <div class="doc-compare-overlay">
+        <img src="../assets/obsidian/obsidian-markdown.webp" alt="Obsidian Markdown export with callouts and wikilinks" />
+      </div>
+      <!-- Draggable divider handle with keyboard & touch support -->
+      <div class="doc-compare-handle" tabindex="0" role="slider" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" aria-label="Comparison slider: drag to reveal Obsidian or Standard Markdown format">
+        <div class="doc-compare-handle-btn" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="8 7 3 12 8 17"/>
+            <polyline points="16 7 21 12 16 17"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <figcaption>Comparing <strong>Jerome K. Jerome — Three Men in a Boat</strong>: <strong>Obsidian</strong> style with callouts (left) vs. pure <strong>Standard</strong> Markdown with headings (right). Drag the slider to compare.</figcaption>
+</figure>
+
 ## Covers
 
 With *Include book covers* enabled, Tomedown extracts the cover image into your vault (`covers/` by default) as an 800×1200 JPEG:

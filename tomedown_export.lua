@@ -68,6 +68,14 @@ local getHighlightDetails = shared.getHighlightDetails
 local getChapterHeadings = shared.getChapterHeadings
 local getHighlightContext = shared.getHighlightContext
 local getExportFormat = shared.getExportFormat
+local getMarkdownStyle = shared.getMarkdownStyle
+
+local function effectiveIndexLinks(file)
+    if getMarkdownStyle(file) == "standard" then
+        return "markdown"
+    end
+    return getIndexLinks()
+end
 local readIfExists = shared.readIfExists
 local ownCopy = shared.ownCopy
 local isZoned = shared.isZoned
@@ -957,7 +965,8 @@ function M:exportDigest(touchmenu)
     local digest_md = render.buildDigestMd(digest_books, {
         title = _("Reading digest"),
         exported = os.date("%Y-%m-%d"),
-        index_links = getIndexLinks(),
+        index_links = effectiveIndexLinks(),
+        markdown_style = getMarkdownStyle(),
         callout = getSetting("callout", false),
         special_marker = getSetting("special_marker", "callout"),
         note_style = getNoteStyle(),
@@ -1135,6 +1144,7 @@ function M:runExport(files, opts)
         return remote, true
     end
 
+    local exported_titles = {}
     for __, file in ipairs(files) do
         local open = self:openReader(file)
         local live = open and open.annotation and open.annotation.annotations
@@ -1176,12 +1186,14 @@ function M:runExport(files, opts)
                     end
                     local hw_written = (write_md and getIncludeHandwritten(file))
                         and Handwritten.ensureDrawings(book, dir, current_drawings) or {}
+                    local is_std_book = (getMarkdownStyle(file) == "standard")
+                    local raw_marker = getSetting("special_marker", "callout")
                     local render_opts = {
                         no_chapter_label = _("No chapter"),
                         cover = book_cover,
-                        callout = getSetting("callout", false),
-                        block_ids = getSetting("block_ids", false),
-                        special_marker = getSetting("special_marker", "callout"),
+                        callout = not is_std_book and getSetting("callout", false) or false,
+                        block_ids = not is_std_book and getSetting("block_ids", false) or false,
+                        special_marker = (is_std_book and raw_marker == "callout") and "bold" or raw_marker,
                         note_style = getNoteStyle(file),
                         notes_title = getNotesTitle(file),
                         markers = preserve,
@@ -1198,7 +1210,8 @@ function M:runExport(files, opts)
                         book_synopsis = getBookSynopsis(file),
                         body_tags = getBodyTags(file),
                         special_showcase = getSpecialShowcase(file),
-                        index_links = getIndexLinks(),
+                        index_links = effectiveIndexLinks(file),
+                        markdown_style = getMarkdownStyle(file),
                     }
                     local md = render.buildBookMd(book, render_opts)
                     -- fold the file on disk into the render: the reader's
@@ -1369,6 +1382,9 @@ function M:runExport(files, opts)
                     end
                     if written_ok then
                         exported = exported + 1
+                        if #exported_titles < 10 and book.title and tostring(book.title) ~= "" then
+                            exported_titles[#exported_titles + 1] = tostring(book.title)
+                        end
                         if write_md then
                             written[#written + 1] = md_path
                         end
@@ -1434,7 +1450,8 @@ function M:runExport(files, opts)
                 markers = index_preserve,
                 index_order = getSetting("index_order", "author"),
                 index_layout = getSetting("index_layout", "tags_below"),
-                index_links = getIndexLinks(),
+                index_links = effectiveIndexLinks(),
+        markdown_style = getMarkdownStyle(),
                 index_tags_mode = getIndexTagsMode(),
                 hidden_books = hidden,
                 reading_now = getSetting("reading_now", true),
@@ -1547,7 +1564,8 @@ function M:runExport(files, opts)
             local digest_md = render.buildDigestMd(digest_books, {
                 title = _("Reading digest"),
                 exported = os.date("%Y-%m-%d"),
-                index_links = getIndexLinks(),
+                index_links = effectiveIndexLinks(),
+        markdown_style = getMarkdownStyle(),
                 callout = getSetting("callout", false),
                 special_marker = getSetting("special_marker", "callout"),
                 note_style = getNoteStyle(),
@@ -1573,6 +1591,7 @@ function M:runExport(files, opts)
         skipped = skipped,
         errors = #errors,
         backups = backups,
+        titles = exported_titles,
     })
     if info then
         UIManager:close(info)
