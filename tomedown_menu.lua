@@ -4398,6 +4398,7 @@ function M:openBookHighlights(file, filter, page_num)
         }
     end
 
+    local is_notes = (filter == "notes")
     local column = VerticalGroup:new{ align = "center" }
     column[#column + 1] = TextWidget:new{
         text = cardTitle(#list),
@@ -4409,7 +4410,9 @@ function M:openBookHighlights(file, filter, page_num)
     if total_pages > 1 then
         sub_parts[#sub_parts + 1] = string.format("%d / %d", cur_page, total_pages)
     end
-    sub_parts[#sub_parts + 1] = _("Tap to jump · Hold for ★")
+    sub_parts[#sub_parts + 1] = is_notes
+        and _("Tap to jump · Hold to edit")
+        or _("Tap to jump · Hold for ★")
     column[#column + 1] = TextWidget:new{
         text = table.concat(sub_parts, "  ·  "),
         face = Font:getFace("cfont", 12),
@@ -4442,10 +4445,17 @@ function M:openBookHighlights(file, filter, page_num)
         if item.pageno then
             loc[#loc + 1] = "p. " .. tostring(item.pageno)
         end
+        if is_notes and type(item.text) == "string" and item.text ~= "" then
+            loc[#loc + 1] = "“" .. snippet(item.text, 40) .. "”"
+        end
+
+        local row_label = is_notes
+            and ("✎ " .. snippet(item.note, 90))
+            or (prefix .. snippet(item.text, 85))
 
         list_group[#list_group + 1] = VerticalSpan:new{ width = gap_s }
         local row_btn = Button:new{
-            text = prefix .. snippet(item.text, 85),
+            text = row_label,
             align = "left",
             width = content_w,
             bordersize = 0,
@@ -4461,6 +4471,48 @@ function M:openBookHighlights(file, filter, page_num)
                 jumpToItem(item)
             end,
             hold_callback = function()
+                if is_notes then
+                    local edit_dlg
+                    edit_dlg = InputDialog:new{
+                        title = _("Edit note"),
+                        input = tostring(item.note or ""),
+                        allow_newline = true,
+                        buttons = {
+                            {
+                                {
+                                    text = _("Cancel"),
+                                    callback = function()
+                                        UIManager:close(edit_dlg)
+                                    end,
+                                },
+                                {
+                                    text = _("Save"),
+                                    is_enter_default = true,
+                                    callback = function()
+                                        local raw = tostring(edit_dlg:getInputText() or "")
+                                        local clean = raw:gsub("^%s+", ""):gsub("%s+$", "")
+                                        item.note = (clean ~= "") and clean or nil
+                                        item.datetime_updated = os.date("%Y-%m-%d %H:%M:%S")
+                                        if open and open.doc_settings and open.annotation then
+                                            open.doc_settings:saveSetting("annotations", open.annotation.annotations)
+                                            if type(open.doc_settings.flush) == "function" then
+                                                open.doc_settings:flush()
+                                            end
+                                        end
+                                        UIManager:close(edit_dlg)
+                                        if card_dialog then
+                                            UIManager:close(card_dialog)
+                                        end
+                                        self:openBookHighlights(file, filter, cur_page)
+                                    end,
+                                },
+                            },
+                        },
+                    }
+                    UIManager:show(edit_dlg)
+                    edit_dlg:onShowKeyboard()
+                    return
+                end
                 local marked = not item.tomedown_special
                 item.tomedown_special = marked or nil
                 if open and open.doc_settings and open.annotation then

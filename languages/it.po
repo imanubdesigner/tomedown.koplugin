@@ -1225,3 +1225,9 @@ msgstr "Note"
 
 msgid "Tap to jump · Hold for ★"
 msgstr "Tocca per andare · Tieni premuto per ★"
+
+msgid "Tap to jump · Hold to edit"
+msgstr "Tocca per andare · Tieni premuto per modificare"
+
+msgid "Edit note"
+msgstr "Modifica nota"
