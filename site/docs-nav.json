@@ -14,6 +14,7 @@
     ]},
     {"title": "Using Tomedown", "items": [
       {"slug": "settings", "src": "docs/settings.md", "title": "Menu & Settings", "description": "Every menu entry in Files, Book info, Cloud, My notes, Style and Updates."},
+      {"slug": "current-book", "src": "docs/current-book.md", "title": "Current book", "description": "In-reader controls: Book summary, highlights & notes cards, per-book format overrides, and book info."},
       {"slug": "keep-my-notes", "src": "docs/keep-my-notes.md", "title": "Keep my notes", "description": "Write in the file; the next export folds highlights in without erasing your notes."}
     ]},
     {"title": "Cloud & Obsidian (Optional)", "items": [

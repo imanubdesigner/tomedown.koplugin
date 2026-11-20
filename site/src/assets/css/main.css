@@ -1592,9 +1592,9 @@ mark { background: var(--hl); color: var(--hl-ink); padding: 0 0.15em; }
 .prose th { background: var(--paper-2); }
 .prose blockquote { margin: 1.2em 0; padding-left: 1em; border-left: 3px solid var(--hl); color: var(--ink-2); }
 .prose img { border: 1px solid var(--line); border-radius: 10px; }
-.docs .prose figure:not(.doc-shot):not(.doc-device-figure):not(.spotlight-slide) > img:not([src$=".svg"]):not([src*="obsidian-guide"]),
-.docs .prose > p > img:not([src$=".svg"]):not([src*="obsidian-guide"]),
-.docs .prose > img:not([src$=".svg"]):not([src*="obsidian-guide"]) {
+.docs .prose figure:not(.doc-shot):not(.doc-device-figure):not(.spotlight-slide) > img:not([src$=".svg"]):not([src*="obsidian-guide"]):not([src*="current-book"]),
+.docs .prose > p > img:not([src$=".svg"]):not([src*="obsidian-guide"]):not([src*="current-book"]),
+.docs .prose > img:not([src$=".svg"]):not([src*="obsidian-guide"]):not([src*="current-book"]) {
   display: block;
   max-width: 100%;
   margin: 28px auto;
@@ -1749,7 +1749,8 @@ mark { background: var(--hl); color: var(--hl-ink); padding: 0 0.15em; }
   margin: 32px auto;
 }
 .doc-device-figure img,
-.docs .prose img[src$=".svg"] {
+.docs .prose img[src$=".svg"],
+.docs .prose img[src*="current-book"] {
   display: block;
   width: 100%;
   max-width: 440px;
@@ -1757,12 +1758,16 @@ mark { background: var(--hl); color: var(--hl-ink); padding: 0 0.15em; }
   height: auto;
   border: 0 !important;
   border-radius: 0 !important;
+  box-shadow: none !important;
 }
 .docs .prose img[src$="/keep_my_notes_menu.svg"],
 .docs .prose img[src$="/updates_menu.svg"],
 .docs .prose img[src$="/style_menu.svg"],
 .docs .prose img[src$="/confirm_delete_backups.svg"],
-.docs .prose .doc-device-frame-wide img[src$=".svg"] {
+.docs .prose img[src*="current_book_menu"],
+.docs .prose img[src*="current_book_style_format"],
+.docs .prose img[src*="current_book_notes_card"],
+.docs .prose .doc-device-frame-wide img {
   max-width: 760px;
 }
 .docs .prose img[src*="obsidian-guide"] {
@@ -2940,6 +2945,9 @@ mark { background: var(--hl); color: var(--hl-ink); padding: 0 0.15em; }
   .docs .prose img[src$="/updates_menu.svg"],
   .docs .prose img[src$="/style_menu.svg"],
   .docs .prose img[src$="/confirm_delete_backups.svg"],
+  .docs .prose img[src*="current_book_menu"],
+  .docs .prose img[src*="current_book_style_format"],
+  .docs .prose img[src*="current_book_notes_card"],
   .docs .prose .doc-device-frame-wide img[src$=".svg"] {
     width: 100% !important;
     max-width: 100% !important;
