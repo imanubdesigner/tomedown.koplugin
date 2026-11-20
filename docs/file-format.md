@@ -209,6 +209,22 @@ With *Settings → Style → Add link IDs to highlights* enabled, every highligh
 - **Jump to quote**: `[[Book title#^hl-4f2a9c31]]`
 - **Embed quote live**: `![[Book title#^hl-4f2a9c31]]`
 
+## Standard Markdown vs Obsidian style (v2.1.1)
+
+By default, Tomedown uses **Obsidian** Markdown style (`Settings → Files → Markdown style → Obsidian`), enabling Obsidian wikilinks (`[[Book]]`), collapsible callouts (`> [!book]`, `> [!abstract]-`, `> [!highlight]-`, `> [!summary]`), and `^hl-` block IDs.
+
+If you read your notes in **MarkText, Typora, VS Code, Zettlr, or GitHub**, switch **Markdown style** to **Standard** (globally or per book in *Current book → Style & format*):
+
+- **Book notes, index, and reading digest** use pure Markdown headings (`### Reading dashboard`, `### Book synopsis`, `### ★ Special highlights`, `### Library dashboard`) instead of `[!...]` callouts.
+- **Links** automatically use standard Markdown syntax (`[Title](Book.md)`).
+- **Special highlights** fall back from `[!highlight]` callouts to `**bold**` (or any compatible marker such as `⭐ **text**` or `==text==`).
+- **Obsidian-only `^hl-` block IDs** are omitted so quotes stay clean outside Obsidian.
+
+<div style="border: 2px dashed #9ca3af; border-radius: 12px; padding: 20px 24px; margin: 18px 0; background: #f9fafb; text-align: center; color: #4b5563;">
+  <strong>📷 SCREENSHOT PLACEHOLDER — Standard Markdown output</strong><br />
+  <em>Screenshot di una nota libro esportata con «Markdown style: Standard» aperta in MarkText o Typora (senza callout [!...] né ^hl-, con Reading dashboard, Synopsis e Special highlights puliti).</em>
+</div>
+
 ## Covers
 
 With *Include book covers* enabled, Tomedown extracts the cover image into your vault (`covers/` by default) as an 800×1200 JPEG:

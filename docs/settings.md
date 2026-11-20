@@ -22,6 +22,7 @@ book's own menu: see [Keep my notes](keep-my-notes.md) and
 | *Create a reading digest (00 - Reading Digest.md)* | off by default: creates a consolidated chronological digest (`00 - Reading Digest.md`) grouping highlights across all books by day, with literary dates (`16 Nov 2026`) and clean quote times (`09:41`) |
 | *Export when I close a book* | off by default: exports the book when you close it, and again (silently, no network) before the device suspends |
 | *Export format: %1* | defaults to **Markdown (.md)**; can be switched to **Plain text (.txt)** or **Both (.md and .txt)** to generate a clean, human-readable `.txt` file per book without YAML or HTML |
+| *Markdown style: %1* | defaults to **Obsidian** (wikilinks, `[!...]` callouts, and `^hl-` block IDs); switch to **Standard** for pure, universal Markdown (MarkText, Typora, VS Code, GitHub) with standard `[Title](file.md)` links, clean headings instead of callouts, and no orphan `^hl-` IDs. When **Standard** is selected, Obsidian-only style options are automatically disabled |
 | *Backup copies (%1)* | opens the backups submenu listing existing backup copies with transparent labels and real file dates (`Saved notes · 16 Nov 26`, `Latest snapshot · 14 Nov 26`). Includes **Delete all backup copies…** to clean stale copies across your library with a single confirmation |
 | *Export settings to file* | exports all Tomedown configuration options deterministically to `tomedown_settings_backup.lua` inside your local export folder |
 | *Restore settings from backup…* | safely restores your Tomedown configuration from `tomedown_settings_backup.lua` with a confirmation dialog |
@@ -88,7 +89,46 @@ All style rows rewrite every already exported file on the next export:
 none of them is part of the book's hash, so flipping one invalidates the
 stored hashes, the way *Include book covers* does above.
 
-You can also override **Export format**, **Personal notes format**, **Highlight details**, **Chapter headings**, **Highlight context**, **Book cover**, **Page bookmarks**, and **YAML frontmatter** for a single book without changing the global settings via **Tomedown → Current book → Style & format** (*Reset to global style settings* restores the global defaults for that book).
+You can also override **Export format**, **Markdown style**, **Personal notes format**, **Highlight details**, **Chapter headings**, **Highlight context**, **Book cover**, **Page bookmarks**, and **YAML frontmatter** for a single book without changing the global settings via **Tomedown → Current book → Style & format** (*Reset to global style settings* restores the global defaults for that book).
+
+<div style="border: 2px dashed #9ca3af; border-radius: 12px; padding: 20px 24px; margin: 18px 0; background: #f9fafb; text-align: center; color: #4b5563;">
+  <strong>📷 SCREENSHOT PLACEHOLDER — Markdown style menu</strong><br />
+  <em>Screenshot di Settings → Files → Markdown style (Obsidian / Standard) e/o Current book → Style &amp; format con Markdown style visibile.</em>
+</div>
+
+## In-device cards (v2.1.1)
+
+Tomedown ships rounded, e-ink-friendly dashboard cards so you can inspect your reading session and manage highlights directly on KOReader without leaving the book.
+
+### Book summary (`Current book → Book summary`)
+
+Displays the open book's title, author, an interactive 3-column KPI bar (**Highlights**, **★ Special**, **Notes**), effective export format and Markdown style, sync status (`Up to date`, `Updates pending`, or `Not exported yet`), tags, and a one-tap **Export this book** button.
+
+<div style="border: 2px dashed #9ca3af; border-radius: 12px; padding: 20px 24px; margin: 18px 0; background: #f9fafb; text-align: center; color: #4b5563;">
+  <strong>📷 SCREENSHOT PLACEHOLDER — Book summary card</strong><br />
+  <em>Screenshot della card arrotondata «Book summary» (es. Povera gente) con i 3 pulsanti KPI cliccabili (Highlights, ★ Special, Notes), Format, Status e pulsanti Export this book / Close.</em>
+</div>
+
+### Highlights, ★ Special, and Notes card browser
+
+Tapping any KPI counter in **Book summary** (or opening **Current book → ★ Special highlights**) opens a paginated card adapted to 6-inch Kindle and Kobo screens:
+
+- **Highlights / ★ Special**: **tap** a row to jump directly to that passage in the book (`GotoXPointer` / `GotoPage`); **long-press** to toggle `★ Special` in place and save immediately to `.sdr`.
+- **Notes**: displays your note text with chapter, page, and a compact excerpt of the underlying highlight. **Tap** to jump to the passage; **long-press** to open KOReader's `InputDialog` and edit or clear the note directly.
+
+<div style="border: 2px dashed #9ca3af; border-radius: 12px; padding: 20px 24px; margin: 18px 0; background: #f9fafb; text-align: center; color: #4b5563;">
+  <strong>📷 SCREENSHOT PLACEHOLDER — Highlights &amp; Notes cards</strong><br />
+  <em>Screenshot della card «Highlights (N)» (con stelle ★, paginazione ◀ ▶ e sottotitolo «Tap to jump · Hold for ★») e della card «Notes (N)» (con il testo della nota ✎ e «Tap to jump · Hold to edit»).</em>
+</div>
+
+### Last export dashboard (`Tomedown → Last export`)
+
+Shows the timestamp of the last export, a 3-column KPI bar (**Exported**, **Skipped**, **Errors** or **Backups**), active format/style, local folder, a list of the most recently exported book titles, cloud status, and quick **Export updated** / **Upload now** action buttons.
+
+<div style="border: 2px dashed #9ca3af; border-radius: 12px; padding: 20px 24px; margin: 18px 0; background: #f9fafb; text-align: center; color: #4b5563;">
+  <strong>📷 SCREENSHOT PLACEHOLDER — Last export card</strong><br />
+  <em>Screenshot della card arrotondata «Last export» con i 3 numeri KPI, Format, Folder, Cloud, elenco Exported books e pulsanti Export updated / Close.</em>
+</div>
 
 ## Book info
 
