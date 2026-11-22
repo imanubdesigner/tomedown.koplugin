@@ -10,8 +10,6 @@ In-reader controls, dashboard cards, highlight navigation, per-book format overr
 
 While [Menu & Settings](settings.md) configures global defaults applied across your entire library, **Current book** controls the volume currently open on your screen. Here you can inspect your reading session, jump across quotes, override export formats, manage book info, and edit notes directly inside KOReader.
 
----
-
 ## Current book menu reference
 
 | Entry | What it does |
@@ -24,8 +22,6 @@ While [Menu & Settings](settings.md) configures global defaults applied across y
 | *Book summary* | Opens the rounded e-ink dashboard card showing book metrics, 3 KPI counters, format, and sync status (see [Book summary](#book-summary-dashboard-card)) |
 | *★ Special highlights (%1)* | Displayed when starred highlights exist in the book: opens the in-device card browser to review standout passages |
 | *Style & format* | Overrides global style settings (Markdown style, export format, headings, context, covers) specifically for this book (see [Style & format overrides](#style--format-overrides)) |
-
----
 
 ## Book summary dashboard card
 
@@ -49,17 +45,19 @@ Under **Tomedown → Current book → Book summary**, Tomedown opens a rounded d
   - **Export this book**: Immediately exports the open book, extracts covers or drawings if enabled, and uploads the note if cloud sync is configured.
   - **Close**: Closes the card and returns smoothly to your reading session with full screen repaint.
 
----
-
 ## Highlights, ★ Special & Notes card browser
 
-Tapping any of the three KPI buttons in **Book summary** (or opening **Current book → ★ Special highlights**) launches the paginated card browser:
+Tapping any of the three KPI buttons in **Book summary** (or selecting **Current book → ★ Special highlights**) opens the paginated card browser for your annotations:
 
-![Highlights card browser with navigation arrows and Close button](../assets/menu/current-book/current_book_highlights.svg)
+- **Highlights KPI**: Browses all extracted quotes and passages from the book.
+- **Notes KPI**: Displays only passages that contain personal annotations.
+- **★ Special KPI**: Displays all passages you have marked as favorites.
 
-The card browser allows you to review your annotations without leaving the book. It is adapted to 6-inch e-ink screens with pagination controls (`◀` / `▶`) displaying 3 to 4 items per page.
+![Highlights card browser showing book excerpts with navigation arrows](../assets/menu/current-book/current_book_highlights.svg)
 
-![Notes and Special highlights cards side by side](../assets/menu/current-book/current_book_notes_card.svg)
+The card browser allows you to review and manage your annotations without leaving your reading session. Designed for 6-inch e-ink screens, it features pagination controls (`◀` / `▶`) showing 3 to 4 items per page.
+
+![Notes card and ★ Special highlights card shown side by side](../assets/menu/current-book/current_book_notes_card.svg)
 
 ### Gestures & Shortcuts
 
@@ -67,8 +65,6 @@ The card browser allows you to review your annotations without leaving the book.
 |---|---|---|
 | **Short tap** | **Jump to passage**: Instantly navigates to the highlighted location in the book (`GotoXPointer` on reflowable EPUBs, `GotoPage` on PDFs) | **Jump to passage**: Navigates directly to the page and sentence where the note was recorded |
 | **Long-press** | **Toggle ★ Special**: Star or unstar the passage in place without leaving the card. The change is persisted immediately to KOReader's `.sdr` file | **Edit note**: Opens KOReader's `InputDialog` showing your existing note. You can edit the text, append thoughts, or clear it completely |
-
----
 
 ## Style & format overrides
 
@@ -99,8 +95,6 @@ When you select **Standard** for a book, Tomedown automatically adapts the gener
 - Obsidian-only block IDs (`^hl-xxxxxxxx`) are omitted.
 - Obsidian-specific style options (such as *Treat every highlight as special*) are disabled for that volume.
 
----
-
 ## Book info & Metadata
 
 Under **Current book → Book info**, you can enrich your book note with extended metadata tracked by KOReader:
@@ -110,8 +104,6 @@ Under **Current book → Book info**, you can enrich your book note with extende
 - **Delete tags…**: Delete obsolete tags across your library and clean up the suggestion cache.
 
 To automate metadata imports across all your books, see [Settings → Book info → Update book info automatically](settings.md#book-info).
-
----
 
 ## Book visibility & Keep my notes
 

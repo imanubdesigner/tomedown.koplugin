@@ -91,34 +91,27 @@ stored hashes, the way *Include book covers* does above.
 
 You can also override **Export format**, **Markdown style**, **Personal notes format**, **Highlight details**, **Chapter headings**, **Highlight context**, **Book cover**, **Page bookmarks**, and **YAML frontmatter** for a single book without changing the global settings via **Tomedown → Current book → Style & format** (*Reset to global style settings* restores the global defaults for that book). See [Current book](current-book.md#style--format-overrides) for complete details.
 
-![Per-book Markdown style selection](../assets/menu/current-book/current_book_markdown_style.svg)
+## Last export dashboard (`Tomedown → Last export`)
 
-## In-device cards (v2.1.1)
-
-Tomedown ships rounded, e-ink-friendly dashboard cards so you can inspect your reading session and manage highlights directly on KOReader without leaving the book. For a complete guide to in-reader cards, gestures, and note editing, see the dedicated [Current book](current-book.md) chapter.
-
-### Book summary (`Current book → Book summary`)
-
-Displays the open book's title, author, an interactive 3-column KPI bar (**Highlights**, **★ Special**, **Notes**), effective export format and Markdown style, sync status (`Up to date`, `Updates pending`, or `Not exported yet`), tags, and a one-tap **Export this book** button.
-
-![Book summary rounded dashboard card](../assets/menu/current-book/current_book_summary.svg)
-
-### Highlights, ★ Special, and Notes card browser
-
-Tapping any KPI counter in **Book summary** (or opening **Current book → ★ Special highlights**) opens a paginated card adapted to 6-inch Kindle and Kobo screens:
-
-- **Highlights / ★ Special**: **tap** a row to jump directly to that passage in the book (`GotoXPointer` / `GotoPage`); **long-press** to toggle `★ Special` in place and save immediately to `.sdr`.
-- **Notes**: displays your note text with chapter, page, and a compact excerpt of the underlying highlight. **Tap** to jump to the passage; **long-press** to open KOReader's `InputDialog` and edit or clear the note directly.
-
-![Highlights card browser](../assets/menu/current-book/current_book_highlights.svg)
-
-For a complete breakdown of cards and gestures, see [Current book](current-book.md#highlights--special--notes-card-browser).
-
-### Last export dashboard (`Tomedown → Last export`)
-
-Shows the timestamp of the last export, a 3-column KPI bar (**Exported**, **Skipped**, **Errors** or **Backups**), active format/style, local folder, a list of the most recently exported book titles, cloud status, and quick **Export updated** / **Upload now** action buttons.
+Tapping **Last export** in the main Tomedown menu opens a rounded e-ink dashboard card summarizing your library sync status:
 
 ![Last export dashboard card](../assets/menu/settings/last_export_card.svg)
+
+The card displays:
+- **Timestamp**: The date and time of the last export run.
+- **3-Column KPI Bar**:
+  - **Exported**: Number of book files written or updated during the last run.
+  - **Skipped**: Files that were identical on disk and did not need rewrites.
+  - **Errors / Backups**: Count of sync errors or safety snapshots created.
+- **Active configuration**: Shows the active export format and Markdown style, plus the local destination folder.
+- **Recent titles**: A preview list of the most recently exported books.
+- **Cloud status**: Shows whether WebDAV, Dropbox, or Nextcloud sync is connected and idle.
+- **Action Buttons**:
+  - **Export updated**: Scans your reading history and exports only changed books.
+  - **Upload now**: Triggers an immediate cloud synchronization pass.
+  - **Close**: Closes the dashboard and returns to KOReader.
+
+> For in-reader cards, highlight navigation, gestures, and per-book format overrides, see [Current book](current-book.md).
 
 ## Book info
 

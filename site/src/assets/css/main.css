@@ -2222,6 +2222,7 @@ mark { background: var(--hl); color: var(--hl-ink); padding: 0 0.15em; }
   display: flex;
   gap: 7px;
   align-items: center;
+  padding-right: 60px;
 }
 .window-dots span {
   width: 10px;

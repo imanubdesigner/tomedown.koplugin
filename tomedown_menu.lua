@@ -1679,7 +1679,25 @@ end
 
 function M:genSettingsMenu()
     -- Files: filesystem storage, naming templates and folder layouts.
-    local files = {
+    local files_table
+    local buildFilesRows
+    local function rebuildFilesRows(touchmenu)
+        if not files_table then
+            return
+        end
+        local fresh = buildFilesRows()
+        for i = #files_table, 1, -1 do
+            files_table[i] = nil
+        end
+        for _, item in ipairs(fresh) do
+            files_table[#files_table + 1] = item
+        end
+        if touchmenu and touchmenu.item_table == files_table and touchmenu.updateItems then
+            touchmenu:updateItems()
+        end
+    end
+    buildFilesRows = function()
+        local rows = {
         {
             text_func = function()
                 return T(_("Local folder: %1"), self:getLocalDir())
@@ -1850,10 +1868,11 @@ function M:genSettingsMenu()
                     checked_func = function()
                         return getExportFormat() == "md"
                     end,
-                    callback = function()
+                    callback = function(touchmenu)
                         if getExportFormat() ~= "md" then
                             setExportFormat("md")
                             self:invalidateExportHashes()
+                            rebuildFilesRows(touchmenu)
                         end
                     end,
                 },
@@ -1864,10 +1883,11 @@ function M:genSettingsMenu()
                     checked_func = function()
                         return getExportFormat() == "txt"
                     end,
-                    callback = function()
+                    callback = function(touchmenu)
                         if getExportFormat() ~= "txt" then
                             setExportFormat("txt")
                             self:invalidateExportHashes()
+                            rebuildFilesRows(touchmenu)
                         end
                     end,
                 },
@@ -1878,55 +1898,16 @@ function M:genSettingsMenu()
                     checked_func = function()
                         return getExportFormat() == "both"
                     end,
-                    callback = function()
+                    callback = function(touchmenu)
                         if getExportFormat() ~= "both" then
                             setExportFormat("both")
                             self:invalidateExportHashes()
+                            rebuildFilesRows(touchmenu)
                         end
                     end,
                 },
             },
-        },
-        {
-            text_func = function()
-                local labels = {
-                    obsidian = _("Obsidian"),
-                    standard = _("Standard"),
-                }
-                local current = shared.getMarkdownStyle()
-                return T(_("Markdown style: %1"), labels[current] or labels.obsidian)
-            end,
-            sub_item_table = {
-                {
-                    text = _("Obsidian"),
-                    radio = true,
-                    keep_menu_open = true,
-                    checked_func = function()
-                        return shared.getMarkdownStyle() == "obsidian"
-                    end,
-                    callback = function()
-                        if shared.getMarkdownStyle() ~= "obsidian" then
-                            shared.setMarkdownStyle("obsidian")
-                            self:invalidateExportHashes()
-                        end
-                    end,
-                },
-                {
-                    text = _("Standard"),
-                    radio = true,
-                    keep_menu_open = true,
-                    checked_func = function()
-                        return shared.getMarkdownStyle() == "standard"
-                    end,
-                    callback = function()
-                        if shared.getMarkdownStyle() ~= "standard" then
-                            shared.setMarkdownStyle("standard")
-                            self:invalidateExportHashes()
-                        end
-                    end,
-                },
-            },
-            separator = true,
+            separator = getExportFormat() == "txt",
         },
         {
             text_func = function()
@@ -1989,6 +1970,52 @@ function M:genSettingsMenu()
             end,
         },
     }
+    if getExportFormat() ~= "txt" then
+        table.insert(rows, 7, {
+            text_func = function()
+                local labels = {
+                    obsidian = _("Obsidian"),
+                    standard = _("Standard"),
+                }
+                local current = shared.getMarkdownStyle()
+                return T(_("Markdown style: %1"), labels[current] or labels.obsidian)
+            end,
+            sub_item_table = {
+                {
+                    text = _("Obsidian"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return shared.getMarkdownStyle() == "obsidian"
+                    end,
+                    callback = function()
+                        if shared.getMarkdownStyle() ~= "obsidian" then
+                            shared.setMarkdownStyle("obsidian")
+                            self:invalidateExportHashes()
+                        end
+                    end,
+                },
+                {
+                    text = _("Standard"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return shared.getMarkdownStyle() == "standard"
+                    end,
+                    callback = function()
+                        if shared.getMarkdownStyle() ~= "standard" then
+                            shared.setMarkdownStyle("standard")
+                            self:invalidateExportHashes()
+                        end
+                    end,
+                },
+            },
+            separator = true,
+        })
+    end
+    return rows
+    end
+    files_table = buildFilesRows()
 
     -- Index: all settings for 00 - Index.md.
     local index = {
@@ -2013,6 +2040,9 @@ function M:genSettingsMenu()
                 local current = getSetting("index_order", "author")
                 return T(_("Index order: %1"),
                     labels[current] or labels.author)
+            end,
+            enabled_func = function()
+                return getSetting("with_index", true)
             end,
             sub_item_table = {
                 {
@@ -2072,6 +2102,9 @@ function M:genSettingsMenu()
                 return T(_("Index layout: %1"),
                     labels[current] or labels.tags_below)
             end,
+            enabled_func = function()
+                return getSetting("with_index", true)
+            end,
             sub_item_table = {
                 {
                     text = _("Tags under the title"),
@@ -2120,7 +2153,7 @@ function M:genSettingsMenu()
                     labels[current] or labels.wikilink)
             end,
             enabled_func = function()
-                return shared.getMarkdownStyle() ~= "standard"
+                return getSetting("with_index", true) and shared.getMarkdownStyle() ~= "standard"
             end,
             sub_item_table = {
                 {
@@ -2149,6 +2182,9 @@ function M:genSettingsMenu()
         },
         {
             text = _("Show Reading now in the index"),
+            enabled_func = function()
+                return getSetting("with_index", true)
+            end,
             checked_func = function()
                 return getSetting("reading_now", true)
             end,
@@ -2168,6 +2204,9 @@ function M:genSettingsMenu()
                 local current = shared.getIndexTagsMode()
                 return T(_("Index tags display: %1"),
                     labels[current] or labels.all)
+            end,
+            enabled_func = function()
+                return getSetting("with_index", true)
             end,
             sub_item_table = {
                 {
@@ -2216,6 +2255,9 @@ function M:genSettingsMenu()
         },
         {
             text = _("Show Completed books in the index"),
+            enabled_func = function()
+                return getSetting("with_index", true)
+            end,
             checked_func = function()
                 return shared.getCompletedBooks()
             end,
@@ -2227,6 +2269,9 @@ function M:genSettingsMenu()
         },
         {
             text = _("Show Library dashboard in the index"),
+            enabled_func = function()
+                return getSetting("with_index", true)
+            end,
             checked_func = function()
                 return shared.getIndexDashboard()
             end,
@@ -2238,6 +2283,9 @@ function M:genSettingsMenu()
         },
         {
             text = _("Show tag cloud in the index"),
+            enabled_func = function()
+                return getSetting("with_index", true)
+            end,
             checked_func = function()
                 return shared.getIndexTagCloud()
             end,
@@ -3127,7 +3175,11 @@ function M:genSettingsMenu()
 
     return {
         { text = withIcon("\xEF\x83\xB6", _("Files")), -- file-text
-            sub_item_table = files },
+            sub_item_table = files_table,
+            sub_item_table_func = function()
+                files_table = buildFilesRows()
+                return files_table
+            end },
         { text = withIcon("\xEE\xBC\xB4", _("Index")), -- table-of-contents
             sub_item_table = index },
         { text = withIcon("\xEE\x9F\xA2", _("Style")), -- brush
@@ -4578,8 +4630,11 @@ end
 
 -- Per-book style and format overrides for the open book. Each option can
 -- either follow the global setting or be pinned for this book alone.
-function M:genBookStyleMenu(file)
-    local rows = {}
+function M:genBookStyleMenu(file, target_table)
+    local rows = target_table or {}
+    for i = #rows, 1, -1 do
+        rows[i] = nil
+    end
     if not file then
         return rows
     end
@@ -4653,22 +4708,28 @@ function M:genBookStyleMenu(file)
             { val = "md",   text = _("Markdown (.md)") },
             { val = "txt",  text = _("Plain text (.txt)") },
             { val = "both", text = _("Both (.md and .txt)") },
-        }
+        },
+        false,
+        function(touchmenu)
+            self:refreshBookStyleMenu(touchmenu, file, rows)
+        end
     )
 
-    rows[#rows + 1] = choiceRow(
-        _("Markdown style: %1"),
-        "markdown_style",
-        shared.getMarkdownStyle,
-        {
-            obsidian = _("Obsidian"),
-            standard = _("Standard"),
-        },
-        {
-            { val = "obsidian", text = _("Obsidian") },
-            { val = "standard", text = _("Standard") },
-        }
-    )
+    if getExportFormat(file) ~= "txt" then
+        rows[#rows + 1] = choiceRow(
+            _("Markdown style: %1"),
+            "markdown_style",
+            shared.getMarkdownStyle,
+            {
+                obsidian = _("Obsidian"),
+                standard = _("Standard"),
+            },
+            {
+                { val = "obsidian", text = _("Obsidian") },
+                { val = "standard", text = _("Standard") },
+            }
+        )
+    end
 
     rows[#rows + 1] = choiceRow(
         _("Personal notes format: %1"),
@@ -4878,7 +4939,7 @@ function M:genBookStyleMenu(file)
         },
         getFrontmatterEnabled(file) == false,
         function(touchmenu)
-            self:refreshBookStyleMenu(touchmenu, file)
+            self:refreshBookStyleMenu(touchmenu, file, rows)
         end
     )
 
@@ -5075,19 +5136,13 @@ function M:refreshBookInfoMenu(touchmenu, file)
     end
 end
 
-function M:refreshBookStyleMenu(touchmenu, file)
-    if not touchmenu or not touchmenu.item_table then
+function M:refreshBookStyleMenu(touchmenu, file, target_table)
+    local live = target_table or (touchmenu and touchmenu.item_table)
+    if not live then
         return
     end
-    local live = touchmenu.item_table
-    local fresh = self:genBookStyleMenu(file or self:getCurrentFile())
-    for i = #live, 1, -1 do
-        live[i] = nil
-    end
-    for _, item in ipairs(fresh) do
-        live[#live + 1] = item
-    end
-    if touchmenu.updateItems then
+    self:genBookStyleMenu(file or self:getCurrentFile(), live)
+    if touchmenu and touchmenu.item_table == live and touchmenu.updateItems then
         touchmenu:updateItems()
     end
 end

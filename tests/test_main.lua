@@ -5291,6 +5291,29 @@ do
         "28: Reset to global style settings clears all overrides for FILE")
 
     do
+        -- Markdown style row is hidden whenever Export format is 'txt' (global and per-book), visible for 'md' and 'both'
+        local g_files = plugin:genSettingsMenu()[1].sub_item_table_func()
+        T.check(#g_files == 10 and g_files[7].text_func():find("Markdown style", 1, true),
+            "28: Global Files menu shows Markdown style when export_format is md")
+        g_files[6].sub_item_table[2].callback() -- txt
+        T.check(#g_files == 9 and not g_files[7].text_func():find("Markdown style", 1, true),
+            "28: Global Files menu hides Markdown style in place when export_format switches to txt")
+        g_files[6].sub_item_table[3].callback() -- both
+        T.check(#g_files == 10 and g_files[7].text_func():find("Markdown style", 1, true),
+            "28: Global Files menu restores Markdown style when export_format switches to both")
+        g_files[6].sub_item_table[1].callback() -- back to md
+
+        -- Per-book: export_format = txt hides markdown_style; 'both' shows it again
+        bstyle[1].sub_item_table[3].callback() -- txt
+        T.check(#bstyle == 17 and bstyle[2].key ~= "markdown_style",
+            "28: Per-book Style & format hides markdown_style when export_format is txt")
+        bstyle[1].sub_item_table[4].callback() -- both
+        T.check(#bstyle == 18 and bstyle[2].key == "markdown_style",
+            "28: Per-book Style & format shows markdown_style when export_format is both")
+        bstyle[18].callback() -- reset FILE overrides
+    end
+
+    do
         -- Test Custom Frontmatter fields: progressive disclosure, global -> per-book checkboxes, and book-only custom fields
         local global_fm_rows = plugin:genSettingsMenu()[3].sub_item_table[8].sub_item_table
         T.check(#global_fm_rows == 12 and global_fm_rows[11].key == "custom"
@@ -5369,6 +5392,7 @@ do
     end
 
     -- Top bar icon toggle (Settings -> Style -> Show Tomedown icon in the top bar)
+    do
     T.check(shared.getTopbarIcon() == false,
         "28: topbar_icon is off by default")
     local mock_reader_order = {
@@ -5451,6 +5475,7 @@ do
     package.loaded["ui/elements/reader_menu_order"] = nil
     package.loaded["ui/elements/filemanager_menu_order"] = nil
     ui.menu.tab_item_table = nil
+    end
 
     -- Pillars 7 & 8: C3 backup labels, global backup cleanup (including Index .bak),
     -- and Export / Restore settings to file
@@ -5504,6 +5529,19 @@ do
                 and shared.getCompletedBooks() == true,
             "29: restoreSettingsFromFile restores all saved settings")
         os.remove(backup_file)
+
+        -- 30: Index menu options enabled_func respects with_index toggle
+        shared.setSetting("with_index", true)
+        for i = 2, #plugin:genSettingsMenu()[2].sub_item_table do
+            T.check(plugin:genSettingsMenu()[2].sub_item_table[i].enabled_func() == true,
+                "30: Index item " .. i .. " is enabled when with_index is true")
+        end
+        shared.setSetting("with_index", false)
+        for i = 2, #plugin:genSettingsMenu()[2].sub_item_table do
+            T.check(plugin:genSettingsMenu()[2].sub_item_table[i].enabled_func() == false,
+                "30: Index item " .. i .. " is disabled when with_index is false")
+        end
+        shared.setSetting("with_index", true)
     end
 end
 
