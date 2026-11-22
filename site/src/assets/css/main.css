@@ -3273,7 +3273,7 @@ mark { background: var(--hl); color: var(--hl-ink); padding: 0 0.15em; }
   grid-template-columns: 1.4fr 1fr;
   gap: 48px;
   align-items: start;
-  padding-bottom: 64px;
+  padding-bottom: 72px;
   border-bottom: 1px solid var(--line);
 }
 .about-letter .eyebrow,
@@ -3424,7 +3424,7 @@ mark { background: var(--hl); color: var(--hl-ink); padding: 0 0.15em; }
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 24px;
-  padding: 64px 0;
+  padding: 72px 0;
   border-bottom: 1px solid var(--line);
 }
 .contrast-box {
@@ -3676,8 +3676,8 @@ mark { background: var(--hl); color: var(--hl-ink); padding: 0 0.15em; }
 
 /* About Brand Identity & Swatches */
 .about-brand {
-  padding: 80px 0 32px;
-  border-top: 1px solid var(--line);
+  padding: 72px 0;
+  border-bottom: 1px solid var(--line);
 }
 .brand-head {
   max-width: 680px;
@@ -3849,17 +3849,24 @@ mark { background: var(--hl); color: var(--hl-ink); padding: 0 0.15em; }
 }
 
 .about-signoff {
-  padding: 80px 0 32px;
+  margin-top: 48px;
+  padding: 48px 40px;
+  background: var(--paper-2);
+  border: 1px solid var(--line);
+  border-radius: 20px;
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
+  align-items: center;
   gap: 32px;
   flex-wrap: wrap;
+}
+.about-signoff h2 {
+  margin: 6px 0 10px;
 }
 .about-signoff p {
   margin: 0;
   color: var(--ink-2);
-  font-size: 18px;
+  font-size: 1.05rem;
 }
 .about-links {
   display: flex;
@@ -3871,6 +3878,10 @@ mark { background: var(--hl); color: var(--hl-ink); padding: 0 0.15em; }
   .about-contrast {
     grid-template-columns: 1fr;
     gap: 28px;
+  }
+  .about-signoff {
+    padding: 32px 24px;
+    align-items: flex-start;
   }
 }
 
