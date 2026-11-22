@@ -82,7 +82,7 @@ if ! command -v luac5.1 >/dev/null 2>&1; then
     exit 1
 fi
 
-out_dir="${TOMEDOWN_RELEASE_DIR:-$HOME/Documents/Tomedown-Bidirectional}"
+out_dir="${TOMEDOWN_RELEASE_DIR:-$HOME/Documents/TomedownBrain}"
 out="$out_dir/tomedown.koplugin-v${version}.zip"
 mkdir -p "$out_dir"
 

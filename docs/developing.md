@@ -65,7 +65,7 @@ tools/release-zip.sh 1.2.0      # a branch, tag or commit
 ```
 
 It refuses a dirty working tree, reads the version from `_meta.lua` at that
-ref and writes `~/Documents/Tomedown-Bidirectional/tomedown.koplugin-v<version>.zip`
+ref and writes `~/Documents/TomedownBrain/tomedown.koplugin-v<version>.zip`
 (set `TOMEDOWN_RELEASE_DIR` to change the folder). The archive may contain
 only `LICENSE`, `_meta.lua`, `assets/logo.png`, `main.lua`, the
 `tomedown_*.lua` modules and `languages/*.po`: never `docs/`, the tests, the
