@@ -3683,6 +3683,7 @@ do
     plugin.book_cache = nil
 
     -- ------------- 17. the cloud copy edited elsewhere (v1.0)
+    do
     -- The reader edits an exported file in Obsidian, synced back through
     -- the same cloud folder: the next export has to fold that text in,
     -- instead of overwriting the cloud copy with a merge made against the
@@ -3780,8 +3781,10 @@ do
         "the same destination keeps the hashes")
     T.check(plugin:cloudBase({ name = "Other", type = "webdav",
             url = "/Other/Folder" }) == nil, "another folder starts clean")
+    end
 
     -- ------------- 18. pending uploads folded at the flush (v1.0)
+    do
     -- The reader exports with no connection: the new highlights land in the
     -- local file, the copy in the cloud still holds whatever was typed in
     -- Obsidian. When the connection comes back the flush must not push the
@@ -3979,6 +3982,7 @@ do
             .. tostring(seen_rescheduled))
     T.check(next(store.tomedown.pending_uploads or {}) == nil,
         "18b: the flush still pushes what it reconciled")
+    end
 end
 
 -- --------------------------------- 19. "Upload everything" reconciles
