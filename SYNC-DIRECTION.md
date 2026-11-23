@@ -42,7 +42,7 @@ The labels are Remotely Save's own wording:
   files (based on time and size) are synced regardless any option"* —
   picking a direction never makes it re-copy a whole folder.
 - **Abort Sync If Modification Above Percentage → `100`.** Tomedown
-  re-exports in bulk (first export, toggling *Include book covers*,
+  re-exports in bulk (first export, toggling *Book cover*,
   migrations), which trips the default `50` guard; the vault is
   regenerated from KOReader at any time, so disabling the protection is
   safe. Configured in step 2 of

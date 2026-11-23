@@ -6,7 +6,23 @@ In-reader controls, dashboard cards, highlight navigation, per-book format overr
 
 ☰ menu → **Tomedown** → **Current book**, available whenever a book is open:
 
-![The Current book menu with Book summary, Special highlights, Keep my notes, and Style & format](../assets/menu/current-book/current_book_menu.svg)
+<div class="screenshot-placeholder" role="region" aria-label="Screenshot placeholder: docs-20-current-book-menu.svg">
+  <div class="sp-top">
+    <div class="sp-meta">
+      <span class="sp-badge">KOReader E-Reader</span>
+      <code class="sp-filename">docs-20-current-book-menu.svg</code>
+    </div>
+    <button type="button" class="placeholder-copy-btn" data-copy-filename="docs-20-current-book-menu.svg" aria-label="Copy filename docs-20-current-book-menu.svg">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      <span>Copy filename</span>
+    </button>
+  </div>
+  <div class="sp-screen">
+    <p class="sp-title">Tomedown → Current book menu in KOReader</p>
+    <p class="sp-desc">Inquadra il sottomenu <strong>Tomedown → Current book</strong> con il nuovo ordine gerarchico: <strong>Book summary</strong> in cima, seguito da <strong>★ Special highlights</strong>, separatore, <strong>Book info ▸</strong>, <strong>Book visibility: Normal ▸</strong>, separatore, <strong>Keep my notes in this book</strong>, <strong>Notes heading</strong>, <strong>Backup copies ▸</strong> e <strong>Format &amp; layout ▸</strong>.</p>
+    <span class="sp-hint">Formato: SVG (preset vettoriale) · Schermo e-ink KOReader (3:4)</span>
+  </div>
+</div>
 
 While [Menu & Settings](settings.md) configures global defaults applied across your entire library, **Current book** controls the volume currently open on your screen. Here you can inspect your reading session, jump across quotes, override export formats, manage book info, and edit notes directly inside KOReader.
 
@@ -14,20 +30,36 @@ While [Menu & Settings](settings.md) configures global defaults applied across y
 
 | Entry | What it does |
 |---|---|
+| *Book summary* | First entry in the menu: opens the rounded e-ink dashboard card showing book metrics, 3 interactive KPI counters, effective format, tags, and export status (see [Book summary](#book-summary-dashboard-card)) |
+| *★ Special highlights* | Displayed when starred highlights exist in the book (with the count on the right): opens the in-device card browser to review standout passages |
+| *Book info ▸* | Opens the book info submenu to import KOReader ratings, reviews, reading dates, collections, or manage per-book tags (see [Book info](#book-info--metadata)) |
+| *Book visibility: %1 ▸* | Opens a 3-option radio submenu: **Export and show in the index** (*Normal*), **Export, but hide from the index** (*Hidden from index*), or **Do not export** (*Not exported*) |
 | *Keep my notes in this book* | Enables [Keep my notes](keep-my-notes.md) specifically for this volume without turning it on for all books. If turned off later, Tomedown asks first and preserves an automatic `.bak` copy before reverting to plain exports |
-| *Book info* | Opens the book info submenu to import KOReader ratings, reviews, reading dates, collections, or manage per-book tags (see [Book info](#book-info--metadata)) |
-| *Book visibility: %1* | Toggles between **Normal** (the book is exported and listed in `00 - Index.md`) and **Do not export** (the book is skipped during library exports and omitted from the index) |
 | *Notes heading: %1* | Displayed when *Keep my notes* is active for this book: tap to set a custom Markdown heading (e.g. `## My thoughts`) above the generated body |
-| *Backup copies (%1)* | Displayed when `.bak` snapshots exist for this book: opens a submenu to view real file dates and safely delete stale backup files |
-| *Book summary* | Opens the rounded e-ink dashboard card showing book metrics, 3 KPI counters, format, and sync status (see [Book summary](#book-summary-dashboard-card)) |
-| *★ Special highlights (%1)* | Displayed when starred highlights exist in the book: opens the in-device card browser to review standout passages |
-| *Style & format* | Overrides global style settings (Markdown style, export format, headings, context, covers) specifically for this book (see [Style & format overrides](#style--format-overrides)) |
+| *Backup copies ▸* | Displayed when `.bak` snapshots exist for this book: opens a submenu to view real file dates and safely delete stale backup files |
+| *Format & layout ▸* | Overrides global style and layout settings (export format, Markdown style, notes format, details, headings, context, covers, bookmarks, handwritten notes, and **Book page** modules) specifically for this book (see [Format & layout overrides](#format--layout-overrides)) |
 
 ## Book summary dashboard card
 
 Under **Tomedown → Current book → Book summary**, Tomedown opens a rounded dashboard card built specifically for e-ink displays:
 
-![Book summary card showing 3-column KPI buttons, format, and status](../assets/menu/current-book/current_book_summary.svg)
+<div class="screenshot-placeholder" role="region" aria-label="Screenshot placeholder: docs-21-book-summary-card.svg">
+  <div class="sp-top">
+    <div class="sp-meta">
+      <span class="sp-badge">KOReader E-Reader</span>
+      <code class="sp-filename">docs-21-book-summary-card.svg</code>
+    </div>
+    <button type="button" class="placeholder-copy-btn" data-copy-filename="docs-21-book-summary-card.svg" aria-label="Copy filename docs-21-book-summary-card.svg">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      <span>Copy filename</span>
+    </button>
+  </div>
+  <div class="sp-screen">
+    <p class="sp-title">Current book → Book summary dashboard card</p>
+    <p class="sp-desc">Inquadra la card arrotondata <strong>Book summary</strong> su KOReader: titolo e autore in alto, i 3 pulsanti KPI cliccabili (<em>Highlights</em>, <em>★ Special</em>, <em>Notes</em>), i dettagli <em>Format</em>, <em>Status</em>, <em>Tags</em> e i pulsanti <strong>Export this book</strong> e <strong>Close</strong>.</p>
+    <span class="sp-hint">Formato: SVG (preset vettoriale) · Schermo e-ink KOReader (3:4)</span>
+  </div>
+</div>
 
 ### What the card displays
 
@@ -53,11 +85,25 @@ Tapping any of the three KPI buttons in **Book summary** (or selecting **Current
 - **Notes KPI**: Displays only passages that contain personal annotations.
 - **★ Special KPI**: Displays all passages you have marked as favorites.
 
-![Highlights card browser showing book excerpts with navigation arrows](../assets/menu/current-book/current_book_highlights.svg)
+<div class="screenshot-placeholder" role="region" aria-label="Screenshot placeholder: docs-22-highlights-notes-cards.svg">
+  <div class="sp-top">
+    <div class="sp-meta">
+      <span class="sp-badge">KOReader E-Reader</span>
+      <code class="sp-filename">docs-22-highlights-notes-cards.svg</code>
+    </div>
+    <button type="button" class="placeholder-copy-btn" data-copy-filename="docs-22-highlights-notes-cards.svg" aria-label="Copy filename docs-22-highlights-notes-cards.svg">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      <span>Copy filename</span>
+    </button>
+  </div>
+  <div class="sp-screen">
+    <p class="sp-title">Paginated Highlights / ★ Special / Notes card browser</p>
+    <p class="sp-desc">Inquadra la card paginata delle evidenziazioni o delle note su KOReader (con sottotitolo <em>Tap to jump · Hold for ★</em> oppure <em>Tap to jump · Hold to edit</em>, elenco citazioni con capitolo/pagina e frecce di paginazione <code>◀</code> / <code>▶</code>).</p>
+    <span class="sp-hint">Formato: SVG (preset vettoriale) · Schermo e-ink KOReader (3:4)</span>
+  </div>
+</div>
 
 The card browser allows you to review and manage your annotations without leaving your reading session. Designed for 6-inch e-ink screens, it features pagination controls (`◀` / `▶`) showing 3 to 4 items per page.
-
-![Notes card and ★ Special highlights card shown side by side](../assets/menu/current-book/current_book_notes_card.svg)
 
 ### Gestures & Shortcuts
 
@@ -66,34 +112,49 @@ The card browser allows you to review and manage your annotations without leavin
 | **Short tap** | **Jump to passage**: Instantly navigates to the highlighted location in the book (`GotoXPointer` on reflowable EPUBs, `GotoPage` on PDFs) | **Jump to passage**: Navigates directly to the page and sentence where the note was recorded |
 | **Long-press** | **Toggle ★ Special**: Star or unstar the passage in place without leaving the card. The change is persisted immediately to KOReader's `.sdr` file | **Edit note**: Opens KOReader's `InputDialog` showing your existing note. You can edit the text, append thoughts, or clear it completely |
 
-## Style & format overrides
+<a id="style--format-overrides"></a>
+## Format & layout overrides
 
-By default, every book follows your library-wide defaults configured in [Settings → Style](settings.md#style) and [Settings → Files](settings.md#files). Under **Current book → Style & format**, you can customize settings for a single volume without affecting the rest of your library:
+By default, every book follows your library-wide defaults configured in [Settings → Notes & highlights](settings.md#notes--highlights) and [Settings → Export](settings.md#export). Under **Current book → Format & layout**, you can customize settings for a single volume without affecting the rest of your library:
 
-![Style and format menu showing two pages of per-book overrides](../assets/menu/current-book/current_book_style_format.svg)
+<div class="screenshot-placeholder" role="region" aria-label="Screenshot placeholder: docs-23-current-book-format-layout.svg">
+  <div class="sp-top">
+    <div class="sp-meta">
+      <span class="sp-badge">KOReader E-Reader</span>
+      <code class="sp-filename">docs-23-current-book-format-layout.svg</code>
+    </div>
+    <button type="button" class="placeholder-copy-btn" data-copy-filename="docs-23-current-book-format-layout.svg" aria-label="Copy filename docs-23-current-book-format-layout.svg">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      <span>Copy filename</span>
+    </button>
+  </div>
+  <div class="sp-screen">
+    <p class="sp-title">Current book → Format &amp; layout submenu</p>
+    <p class="sp-desc">Inquadra il sottomenu <strong>Current book → Format &amp; layout</strong> su KOReader con indicatori <code>Global</code> / <code>Custom</code> a destra: mostra <em>Export format</em>, <em>Markdown style</em>, <em>Personal notes format</em>, <em>Highlight details</em>, <em>Chapter headings</em>, <em>Highlight context</em>, <em>Book cover</em>, <em>Page bookmarks</em>, <em>Handwritten notes</em>, <em>Book page ▸</em> e <em>Reset to global style settings</em>.</p>
+    <span class="sp-hint">Formato: SVG (preset vettoriale) · Schermo e-ink KOReader (3:4)</span>
+  </div>
+</div>
 
 ### Available overrides
 
 1. **Export format**: Choose between **Follow global setting**, **Markdown (.md)**, **Plain text (.txt)**, or **Both (.md and .txt)**.
-2. **Markdown style**: Select **Follow global setting**, **Obsidian** (wikilinks, `[!...]` callouts, `^hl-` block IDs), or **Standard** (universal markdown headings, `[Title](file.md)` links, no orphan block IDs).
+2. **Markdown style**: Select **Follow global setting**, **Obsidian** (wikilinks, `[!...]` callouts, `^hl-` block IDs), or **Standard** (universal Markdown headings, `[Title](file.md)` links, no orphan block IDs).
 3. **Personal notes format**: Override between **Inline** (indented right under the quote) or **Footnotes** (`[^1]` at the end of the file).
 4. **Highlight details**: Switch between **Page and date**, **Page only**, **Date only**, or **None**.
 5. **Chapter headings**: Override heading level (**Heading 1**, **Heading 2**, **Heading 3**, or **None**).
 6. **Highlight context**: Enable or disable sentence surrounding extraction for this book.
 7. **Book cover**: Override cover image extraction for this volume.
 8. **Page bookmarks & Handwritten notes**: Enable or disable bookmarks and stylus vector drawing extraction.
-9. **YAML frontmatter**: Enable or disable frontmatter generation for this title.
+9. **Book page ▸**: Override header layout, **Overview style**, **Reading dashboard**, **Book synopsis**, **Tags in body**, **Special highlights showcase**, **Section styles ▸** (*Harmonize book style* or per-section styles), and **YAML frontmatter** (**Frontmatter fields ▸**) for this title.
 10. **Reset to global style settings**: Removes all per-book overrides and restores global defaults with a single tap.
 
 ### Selecting Markdown style for a book
-
-![Markdown style per-book selection popup](../assets/menu/current-book/current_book_markdown_style.svg)
 
 When you select **Standard** for a book, Tomedown automatically adapts the generated note:
 - Callouts (`[!book]`, `[!abstract]-`, `[!highlight]`) become clean Markdown headings (`### Reading dashboard`, `### Book synopsis`, `### ★ Special highlights`).
 - Obsidian wikilinks switch to standard `[Title](file.md)`.
 - Obsidian-only block IDs (`^hl-xxxxxxxx`) are omitted.
-- Obsidian-specific style options (such as *Treat every highlight as special*) are disabled for that volume.
+- Obsidian-specific style options (such as *Obsidian Callout* in Section styles) are disabled for that volume.
 
 ## Book info & Metadata
 
@@ -107,11 +168,31 @@ To automate metadata imports across all your books, see [Settings → Book info 
 
 ## Book visibility & Keep my notes
 
-### Hiding books from export
+### Book visibility radio submenu
 
-Setting **Current book → Book visibility** to **Do not export** instructs Tomedown to ignore this volume during library-wide exports. The book will not generate a `.md` file and will be excluded from `00 - Index.md` and `00 - Reading Digest.md`.
+Under **Current book → Book visibility**, choose one of three radio options:
 
-![Book visibility: Do not export option](../assets/menu/current-book/hide_book_form_export.svg)
+- **Export and show in the index** (*Normal*): the book is exported and listed in `00 - Index.md` and `00 - Reading Digest.md`.
+- **Export, but hide from the index** (*Hidden from index*): the book note is exported to disk, but omitted from `00 - Index.md`.
+- **Do not export** (*Not exported*): instructs Tomedown to ignore this volume during library-wide exports and omit it from both `00 - Index.md` and `00 - Reading Digest.md`.
+
+<div class="screenshot-placeholder" role="region" aria-label="Screenshot placeholder: docs-24-book-visibility-radio.svg">
+  <div class="sp-top">
+    <div class="sp-meta">
+      <span class="sp-badge">KOReader E-Reader</span>
+      <code class="sp-filename">docs-24-book-visibility-radio.svg</code>
+    </div>
+    <button type="button" class="placeholder-copy-btn" data-copy-filename="docs-24-book-visibility-radio.svg" aria-label="Copy filename docs-24-book-visibility-radio.svg">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      <span>Copy filename</span>
+    </button>
+  </div>
+  <div class="sp-screen">
+    <p class="sp-title">Current book → Book visibility radio submenu</p>
+    <p class="sp-desc">Inquadra il sottomenu radio <strong>Current book → Book visibility</strong> su KOReader con le tre opzioni: <em>Export and show in the index</em>, <em>Export, but hide from the index</em> e <em>Do not export</em>.</p>
+    <span class="sp-hint">Formato: SVG (preset vettoriale) · Schermo e-ink KOReader (3:4)</span>
+  </div>
+</div>
 
 ### Per-book Keep my notes
 

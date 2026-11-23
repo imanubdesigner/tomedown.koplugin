@@ -1170,6 +1170,129 @@ local function setMarkdownStyle(style)
     end
 end
 
+local function getIndexStyle()
+    local style = getSetting("index_style", "minimal")
+    if style == "emoji" or style == "badges" or style == "editorial" then
+        return style
+    end
+    return "minimal"
+end
+
+local function setIndexStyle(style)
+    if style == "emoji" or style == "badges" or style == "editorial" then
+        setSetting("index_style", style)
+    else
+        setSetting("index_style", nil)
+    end
+end
+
+local function validVisualStyle(style)
+    if style == "emoji" or style == "badges" or style == "editorial" then
+        return style
+    end
+    return "minimal"
+end
+
+local function getHarmonizeBookStyle(file)
+    if file then
+        local override = getBookStyleOverride(file, "harmonize_book_style")
+        if override ~= nil then
+            return override == true
+        end
+    end
+    return getSetting("harmonize_book_style", true) ~= false
+end
+
+local function setHarmonizeBookStyle(enabled)
+    if enabled == false then
+        setSetting("harmonize_book_style", false)
+    else
+        setSetting("harmonize_book_style", nil)
+    end
+end
+
+local function getBookVisualStyle(file)
+    local override = file and getBookStyleOverride(file, "book_visual_style")
+    return validVisualStyle(override or getSetting("book_visual_style", "minimal"))
+end
+
+local function setBookVisualStyle(style)
+    if style == "emoji" or style == "badges" or style == "editorial" then
+        setSetting("book_visual_style", style)
+    else
+        setSetting("book_visual_style", nil)
+    end
+end
+
+local function getDashboardStyle(file)
+    local override = file and getBookStyleOverride(file, "dashboard_style")
+    return validVisualStyle(override or getSetting("dashboard_style", "minimal"))
+end
+
+local function setDashboardStyle(style)
+    if style == "emoji" or style == "badges" or style == "editorial" then
+        setSetting("dashboard_style", style)
+    else
+        setSetting("dashboard_style", nil)
+    end
+end
+
+local function getSynopsisStyle(file)
+    local override = file and getBookStyleOverride(file, "synopsis_style")
+    return validVisualStyle(override or getSetting("synopsis_style", "minimal"))
+end
+
+local function setSynopsisStyle(style)
+    if style == "emoji" or style == "badges" or style == "editorial" then
+        setSetting("synopsis_style", style)
+    else
+        setSetting("synopsis_style", nil)
+    end
+end
+
+local function getBodyTagsStyle(file)
+    local override = file and getBookStyleOverride(file, "body_tags_style")
+    return validVisualStyle(override or getSetting("body_tags_style", "minimal"))
+end
+
+local function setBodyTagsStyle(style)
+    if style == "emoji" or style == "badges" or style == "editorial" then
+        setSetting("body_tags_style", style)
+    else
+        setSetting("body_tags_style", nil)
+    end
+end
+
+local function getShowcaseStyle(file)
+    local override = file and getBookStyleOverride(file, "showcase_style")
+    return validVisualStyle(override or getSetting("showcase_style", "minimal"))
+end
+
+local function setShowcaseStyle(style)
+    if style == "emoji" or style == "badges" or style == "editorial" then
+        setSetting("showcase_style", style)
+    else
+        setSetting("showcase_style", nil)
+    end
+end
+
+local function getSynopsisMode(file)
+    local override = file and getBookStyleOverride(file, "synopsis_mode")
+    local mode = override or getSetting("synopsis_mode", "collapsed")
+    if mode == "short" or mode == "collapsed_short" or mode == "expanded" then
+        return mode
+    end
+    return "collapsed"
+end
+
+local function setSynopsisMode(mode)
+    if mode == "short" or mode == "collapsed_short" or mode == "expanded" then
+        setSetting("synopsis_mode", mode)
+    else
+        setSetting("synopsis_mode", nil)
+    end
+end
+
 local function getTopbarIcon()
     return getSetting("topbar_icon", false) == true
 end
@@ -1464,6 +1587,22 @@ return {
     setExportFormat = setExportFormat,
     getMarkdownStyle = getMarkdownStyle,
     setMarkdownStyle = setMarkdownStyle,
+    getIndexStyle = getIndexStyle,
+    setIndexStyle = setIndexStyle,
+    getHarmonizeBookStyle = getHarmonizeBookStyle,
+    setHarmonizeBookStyle = setHarmonizeBookStyle,
+    getBookVisualStyle = getBookVisualStyle,
+    setBookVisualStyle = setBookVisualStyle,
+    getDashboardStyle = getDashboardStyle,
+    setDashboardStyle = setDashboardStyle,
+    getSynopsisStyle = getSynopsisStyle,
+    setSynopsisStyle = setSynopsisStyle,
+    getBodyTagsStyle = getBodyTagsStyle,
+    setBodyTagsStyle = setBodyTagsStyle,
+    getShowcaseStyle = getShowcaseStyle,
+    setShowcaseStyle = setShowcaseStyle,
+    getSynopsisMode = getSynopsisMode,
+    setSynopsisMode = setSynopsisMode,
     getTopbarIcon = getTopbarIcon,
     setTopbarIcon = setTopbarIcon,
     getBookStyleOverride = getBookStyleOverride,

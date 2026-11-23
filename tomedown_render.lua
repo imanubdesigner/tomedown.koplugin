@@ -545,9 +545,14 @@ function render.buildBookMd(book, opts)
         star_bold = true,
         bold = true,
     }
+    local is_std = (opts.markdown_style == "standard")
     local marker_global = opts.special_marker
     if not valid_markers[marker_global] then
         marker_global = "callout"
+    end
+    if is_std and (marker_global == "callout" or marker_global == "alert"
+            or marker_global == "highlight" or marker_global == "highlight_bold") then
+        marker_global = "bold"
     end
     local function add(s)
         out[#out + 1] = s
@@ -793,7 +798,12 @@ function render.buildBookMd(book, opts)
 
     if opts.cover then
         add("")
-        add('<p align="center">' .. render.coverImg(opts.cover, 400, 533) .. "</p>")
+        if is_std then
+            local csrc = tostring(opts.cover):gsub('"', "&quot;")
+            add('<p align="center"><img src="' .. csrc .. '" alt="" width="240"></p>')
+        else
+            add('<p align="center">' .. render.coverImg(opts.cover, 400, 533) .. "</p>")
+        end
         -- second rule frames the cover above the count
         add("")
         add("---")
@@ -822,13 +832,24 @@ function render.buildBookMd(book, opts)
         add("---")
     end
 
+    local function validBookStyle(s)
+        if s == "emoji" or s == "badges" or s == "editorial" then
+            return s
+        end
+        return "minimal"
+    end
+    local base_book_style = validBookStyle(opts.book_visual_style)
+    local dash_style = opts.dashboard_style and validBookStyle(opts.dashboard_style) or base_book_style
+    local syn_style = opts.synopsis_style and validBookStyle(opts.synopsis_style) or base_book_style
+    local btags_style = opts.body_tags_style and validBookStyle(opts.body_tags_style) or base_book_style
+    local show_style = opts.showcase_style and validBookStyle(opts.showcase_style) or base_book_style
+
     local has_card_extras = false
-    local is_std = (opts.markdown_style == "standard")
     if opts.reading_dashboard == true then
-        local status_labels = {
-            reading = "🟡 **" .. _("Reading") .. "**",
-            complete = "🟢 **" .. _("Complete") .. "**",
-            abandoned = "⚪ **" .. _("Abandoned") .. "**",
+        local status_words = {
+            reading = _("Reading"),
+            complete = _("Complete"),
+            abandoned = _("Abandoned"),
         }
         local dash_pfx = is_std and "- " or "> - "
         add("")
@@ -838,22 +859,43 @@ function render.buildBookMd(book, opts)
         else
             add("> [!book] " .. _("Reading dashboard"))
         end
-        local st_parts = {}
-        if book.status and status_labels[book.status] then
-            st_parts[#st_parts + 1] = status_labels[book.status]
-        end
         local detail_parts = {}
-        if book.progress and tostring(book.progress) ~= "" then
+        if book.progress and tostring(book.progress) ~= ""
+                and (book.status ~= "complete" or render.progressPct(book.progress) == "100%") then
             detail_parts[#detail_parts + 1] = tostring(book.progress)
         end
         if book.pages and tonumber(book.pages) and tonumber(book.pages) > 0 then
             detail_parts[#detail_parts + 1] = tostring(book.pages) .. " " .. _("pages")
         end
-        if #detail_parts > 0 then
-            st_parts[#st_parts + 1] = "(" .. table.concat(detail_parts, " · ") .. ")"
-        end
-        if #st_parts > 0 then
-            add(dash_pfx .. "**" .. _("Status") .. ":** " .. table.concat(st_parts, " "))
+        local st_parts = {}
+        if dash_style == "badges" then
+            if book.status and status_words[book.status] then
+                st_parts[#st_parts + 1] = "`" .. status_words[book.status]:upper() .. "`"
+            end
+            for __, dp in ipairs(detail_parts) do
+                st_parts[#st_parts + 1] = "`" .. dp:upper() .. "`"
+            end
+            if #st_parts > 0 then
+                add(dash_pfx .. "**" .. _("Status") .. ":** " .. table.concat(st_parts, " · "))
+            end
+        else
+            if book.status and status_words[book.status] then
+                local ico = ""
+                if dash_style == "emoji" then
+                    ico = book.status == "reading" and "🟡 "
+                        or (book.status == "complete" and "🟢 " or "⚪ ")
+                elseif dash_style == "minimal" then
+                    ico = book.status == "reading" and "◐ "
+                        or (book.status == "complete" and "● " or "○ ")
+                end
+                st_parts[#st_parts + 1] = ico .. "**" .. status_words[book.status] .. "**"
+            end
+            if #detail_parts > 0 then
+                st_parts[#st_parts + 1] = "(" .. table.concat(detail_parts, " · ") .. ")"
+            end
+            if #st_parts > 0 then
+                add(dash_pfx .. "**" .. _("Status") .. ":** " .. table.concat(st_parts, " "))
+            end
         end
         local r_stars = render.stars(book.rating)
         if r_stars then
@@ -869,7 +911,8 @@ function render.buildBookMd(book, opts)
             end
             add(dash_pfx .. "**" .. _("Reading dates") .. ":** " .. table.concat(d_parts, " → "))
         end
-        local idx_link = render.bookLink("00 - Index", "← " .. _("Book index"), opts.index_links, false)
+        local idx_link = render.bookLink("00 - Index", "← " .. _("Book index"),
+            is_std and "markdown" or opts.index_links, false)
         add(dash_pfx .. "**" .. _("Index") .. ":** " .. idx_link)
         has_card_extras = true
     end
@@ -877,15 +920,68 @@ function render.buildBookMd(book, opts)
     if opts.book_synopsis == true then
         local syn = render.cleanSynopsis(book.description)
         if syn then
+            local syn_mode = opts.synopsis_mode
+            if syn_mode ~= "short" and syn_mode ~= "collapsed_short" and syn_mode ~= "expanded" then
+                syn_mode = "collapsed"
+            end
+            if syn_mode == "short" or syn_mode == "collapsed_short" then
+                local flat = syn:gsub("%s*\n+%s*", " "):gsub("%s+", " ")
+                if #flat > 300 then
+                    local head = flat:sub(1, 300)
+                    local sent_end = head:match("^(.+[%.%!%?])%s")
+                    if sent_end and #sent_end >= 120 then
+                        syn = sent_end .. " …"
+                    else
+                        local word_cut = head:match("^(.+)%s+%S*$") or head
+                        word_cut = word_cut:gsub("[,;:%-%s]+$", "")
+                        syn = word_cut .. "…"
+                    end
+                else
+                    syn = flat
+                end
+            end
+            local is_folded = (syn_mode == "collapsed" or syn_mode == "collapsed_short")
+            local syn_title = _("Book synopsis")
+            local syn_heading
+            if syn_style == "emoji" then
+                syn_heading = "📖 " .. syn_title
+            elseif syn_style == "badges" then
+                syn_heading = "`" .. syn_title:upper() .. "`"
+            elseif syn_style == "editorial" then
+                syn_heading = syn_title
+            else
+                syn_heading = "§ " .. syn_title
+            end
             add("")
             if is_std then
-                add("### " .. _("Book synopsis"))
-                add("")
+                if is_folded then
+                    local sum_html = syn_style == "badges"
+                        and ("<code>" .. syn_title:upper() .. "</code>")
+                        or ("<b>" .. syn_heading .. "</b>")
+                    local p_list = {}
+                    for line in (syn .. "\n"):gmatch("(.-)\n") do
+                        if line ~= "" then
+                            local esc = line:gsub("&", "&amp;"):gsub("<", "&lt;"):gsub(">", "&gt;")
+                            p_list[#p_list + 1] = "<p>" .. esc .. "</p>"
+                        end
+                    end
+                    add("<details>")
+                    add("<summary>" .. sum_html .. "</summary>")
+                    add("<blockquote>" .. table.concat(p_list, "") .. "</blockquote>")
+                    add("</details>")
+                else
+                    add("### " .. syn_heading)
+                    add("")
+                    for line in (syn .. "\n"):gmatch("(.-)\n") do
+                        add(line == "" and ">" or ("> " .. line))
+                    end
+                end
             else
-                add("> [!abstract]- " .. _("Book synopsis"))
-            end
-            for line in (syn .. "\n"):gmatch("(.-)\n") do
-                add(line == "" and ">" or ("> " .. line))
+                local fold_sign = is_folded and "-" or "+"
+                add("> [!abstract]" .. fold_sign .. " " .. syn_heading)
+                for line in (syn .. "\n"):gmatch("(.-)\n") do
+                    add(line == "" and ">" or ("> " .. line))
+                end
             end
             has_card_extras = true
         end
@@ -910,7 +1006,15 @@ function render.buildBookMd(book, opts)
         end
         if #btags > 0 then
             add("")
-            add(table.concat(btags, " "))
+            if btags_style == "badges" then
+                add("`" .. table.concat(btags, "` `") .. "`")
+            elseif btags_style == "editorial" then
+                add("*" .. _("Tags") .. ":* " .. table.concat(btags, " · "))
+            elseif btags_style == "emoji" then
+                add("🏷️ " .. table.concat(btags, " · "))
+            else
+                add("▪ *" .. table.concat(btags, "* · *") .. "*")
+            end
             has_card_extras = true
         end
     end
@@ -962,12 +1066,22 @@ function render.buildBookMd(book, opts)
     end
 
     if opts.special_showcase == true and special_count > 0 then
+        local show_heading
+        if show_style == "emoji" then
+            show_heading = "⭐ " .. _("Special highlights") .. " (" .. tostring(special_count) .. ")"
+        elseif show_style == "badges" then
+            show_heading = _("Special highlights") .. " `(" .. tostring(special_count) .. ")`"
+        elseif show_style == "editorial" then
+            show_heading = _("Special highlights") .. " (" .. tostring(special_count) .. ")"
+        else
+            show_heading = "★ " .. _("Special highlights") .. " (" .. tostring(special_count) .. ")"
+        end
         add("")
         if is_std then
-            add("### ★ " .. _("Special highlights") .. " (" .. tostring(special_count) .. ")")
+            add("### " .. show_heading)
             add("")
         else
-            add("> [!highlight]- ★ " .. _("Special highlights") .. " (" .. tostring(special_count) .. ")")
+            add("> [!highlight]- " .. show_heading)
         end
         local first_sp = true
         for __, a in ipairs(annotations) do
@@ -1059,8 +1173,8 @@ function render.buildBookMd(book, opts)
         -- the global setting turns every highlight into a callout.
         local marker = marker_global
         local is_special = a.special and not opts.callout
-        local as_callout = opts.callout or (is_special and marker == "callout")
-        local as_alert = is_special and marker == "alert"
+        local as_callout = not is_std and (opts.callout or (is_special and marker == "callout"))
+        local as_alert = not is_std and (is_special and marker == "alert")
         if a.handwritten then
             if a.drawing and tostring(a.drawing) ~= "" then
                 local alt = _("Handwritten note")
@@ -1334,8 +1448,12 @@ function render.buildIndexMd(books, opts)
         stats = stats .. " · **★ "
             .. (_("%1 special"):gsub("%%1", tostring(total_special))) .. "**"
     end
+    local idx_std = (opts.markdown_style == "standard")
+    local idx_style = opts.index_style
+    if idx_style ~= "emoji" and idx_style ~= "badges" and idx_style ~= "editorial" then
+        idx_style = "minimal"
+    end
     if opts.index_dashboard == true then
-        local idx_std = (opts.markdown_style == "standard")
         local pfx = idx_std and "- " or "> "
         if idx_std then
             add("### " .. _("Library dashboard"))
@@ -1343,21 +1461,53 @@ function render.buildIndexMd(books, opts)
         else
             add("> [!summary] " .. _("Library dashboard"))
         end
-        local b_line = "**" .. (books_txt:gsub("%%1", tostring(#books))) .. "**"
-        if completed_count > 0 then
-            b_line = b_line .. " · **🟢 " .. tostring(completed_count) .. " " .. _("Complete") .. "**"
-        end
-        if reading_count > 0 then
-            b_line = b_line .. " · **🟡 " .. tostring(reading_count) .. " " .. _("Reading") .. "**"
+        local b_line, h_line
+        if idx_style == "badges" then
+            b_line = "`" .. (books_txt:gsub("%%1", tostring(#books))):upper() .. "`"
+            if completed_count > 0 then
+                b_line = b_line .. " · `" .. tostring(completed_count) .. " " .. _("Complete"):upper() .. "`"
+            end
+            if reading_count > 0 then
+                b_line = b_line .. " · `" .. tostring(reading_count) .. " " .. _("Reading"):upper() .. "`"
+            end
+            h_line = "`" .. (highlights_txt:gsub("%%1", tostring(total_highlights))):upper() .. "`"
+            if total_special > 0 then
+                h_line = h_line .. " · `★ "
+                    .. (_("%1 special"):gsub("%%1", tostring(total_special))):upper() .. "`"
+            end
+        elseif idx_style == "editorial" then
+            b_line = "**" .. (books_txt:gsub("%%1", tostring(#books))) .. "**"
+            if completed_count > 0 then
+                b_line = b_line .. " · **" .. tostring(completed_count) .. " " .. _("Complete") .. "**"
+            end
+            if reading_count > 0 then
+                b_line = b_line .. " · **" .. tostring(reading_count) .. " " .. _("Reading") .. "**"
+            end
+            h_line = "**" .. (highlights_txt:gsub("%%1", tostring(total_highlights))) .. "**"
+            if total_special > 0 then
+                h_line = h_line .. " · **"
+                    .. (_("%1 special"):gsub("%%1", tostring(total_special))) .. "**"
+            end
+        else
+            local c_ico = idx_style == "minimal" and "● " or "🟢 "
+            local r_ico = idx_style == "minimal" and "◐ " or "🟡 "
+            b_line = "**" .. (books_txt:gsub("%%1", tostring(#books))) .. "**"
+            if completed_count > 0 then
+                b_line = b_line .. " · **" .. c_ico .. tostring(completed_count) .. " " .. _("Complete") .. "**"
+            end
+            if reading_count > 0 then
+                b_line = b_line .. " · **" .. r_ico .. tostring(reading_count) .. " " .. _("Reading") .. "**"
+            end
+            h_line = "**" .. (highlights_txt:gsub("%%1", tostring(total_highlights))) .. "**"
+            if total_special > 0 then
+                h_line = h_line .. " · **★ "
+                    .. (_("%1 special"):gsub("%%1", tostring(total_special))) .. "**"
+            end
         end
         add(pfx .. b_line)
-        local h_line = "**" .. (highlights_txt:gsub("%%1", tostring(total_highlights))) .. "**"
-        if total_special > 0 then
-            h_line = h_line .. " · **★ "
-                .. (_("%1 special"):gsub("%%1", tostring(total_special))) .. "**"
-        end
         add(pfx .. h_line)
-        local digest_link = render.bookLink("00 - Reading Digest", _("Reading digest") .. " →", opts.index_links, false)
+        local digest_link = render.bookLink("00 - Reading Digest", _("Reading digest") .. " →",
+            idx_std and "markdown" or opts.index_links, false)
         add(pfx .. digest_link)
         add("")
     else
@@ -1394,10 +1544,34 @@ function render.buildIndexMd(books, opts)
         end)
         if #sorted_tags > 0 then
             local cloud_parts = {}
-            for __, item in ipairs(sorted_tags) do
-                cloud_parts[#cloud_parts + 1] = "#" .. item.name .. " (" .. tostring(item.count) .. ")"
+            if idx_std then
+                if idx_style == "badges" then
+                    for __, item in ipairs(sorted_tags) do
+                        cloud_parts[#cloud_parts + 1] = "`" .. item.name .. " (" .. tostring(item.count) .. ")`"
+                    end
+                    add("> " .. table.concat(cloud_parts, " "))
+                elseif idx_style == "editorial" then
+                    for __, item in ipairs(sorted_tags) do
+                        cloud_parts[#cloud_parts + 1] = "#" .. item.name .. " *(" .. tostring(item.count) .. ")*"
+                    end
+                    add("> *" .. _("Tags") .. ":* " .. table.concat(cloud_parts, " · "))
+                elseif idx_style == "emoji" then
+                    for __, item in ipairs(sorted_tags) do
+                        cloud_parts[#cloud_parts + 1] = "#" .. item.name .. " (" .. tostring(item.count) .. ")"
+                    end
+                    add("> 🏷️ " .. table.concat(cloud_parts, " · "))
+                else
+                    for __, item in ipairs(sorted_tags) do
+                        cloud_parts[#cloud_parts + 1] = "*#" .. item.name .. "* (" .. tostring(item.count) .. ")"
+                    end
+                    add("> ▪ " .. table.concat(cloud_parts, " · "))
+                end
+            else
+                for __, item in ipairs(sorted_tags) do
+                    cloud_parts[#cloud_parts + 1] = "#" .. item.name .. " (" .. tostring(item.count) .. ")"
+                end
+                add("🏷️ " .. table.concat(cloud_parts, " · "))
             end
-            add("🏷️ " .. table.concat(cloud_parts, " · "))
             add("")
         end
     end
@@ -1530,13 +1704,25 @@ function render.buildIndexMd(books, opts)
                     local key = tag:lower()
                     if not seen[key] then
                         seen[key] = true
-                        pills[#pills + 1] = '<span style="white-space:nowrap">#' .. tag .. '</span>'
+                        if idx_std then
+                            pills[#pills + 1] = "#" .. tag
+                        else
+                            pills[#pills + 1] = '<span style="white-space:nowrap">#' .. tag .. '</span>'
+                        end
                     end
                 end
             end
         end
         if #pills == 0 then
             return ""
+        end
+        if idx_std then
+            if (mode == "first_3" or mode == "collapsible") and #pills > 3 then
+                local head = { pills[1], pills[2], pills[3] }
+                local extra = #pills - 3
+                return "*" .. table.concat(head, " ") .. " +" .. tostring(extra) .. "*"
+            end
+            return "*" .. table.concat(pills, " ") .. "*"
         end
         if mode == "first_3" and #pills > 3 then
             local head = { pills[1], pills[2], pills[3] }
@@ -1560,12 +1746,152 @@ function render.buildIndexMd(books, opts)
             .. table.concat(pills, " ") .. '</span>'
     end
     render.tagsPillsHtml = tagsPillsHtml
-    -- A thin rule with room above and below, used when the tags sit
-    -- under the title instead of in a column of their own.
-    local tag_separator = '<hr style="margin:12px 0 10px 0;border:0;'
-        .. 'border-top:1px solid rgba(128,128,128,0.45)">'
+    -- A thin rule with room above and below in Obsidian; a clean <br> in
+    -- Standard Markdown so GFM editors like MarkText don't show raw <hr> HTML.
+    local tag_separator = idx_std and "<br>"
+        or ('<hr style="margin:12px 0 10px 0;border:0;'
+            .. 'border-top:1px solid rgba(128,128,128,0.45)">')
+
+    local function formatStatus(status)
+        if not status or not status_labels[status] then
+            return nil
+        end
+        if idx_style == "badges" then
+            return "`" .. status_labels[status]:upper() .. "`"
+        elseif idx_style == "editorial" then
+            return "**" .. status_labels[status] .. "**"
+        elseif idx_style == "emoji" then
+            local ico = status == "reading" and "🟡 "
+                or (status == "complete" and "🟢 " or "⚪ ")
+            return ico .. status_labels[status]
+        else
+            local ico = status == "reading" and "◐ "
+                or (status == "complete" and "● " or "○ ")
+            return ico .. status_labels[status]
+        end
+    end
+
+    local function formatProgress(progress)
+        local bar = render.progressBar(progress)
+        local pct = render.progressPct(progress)
+        if idx_style == "badges" then
+            return pct and ("`" .. pct .. "`") or nil
+        elseif idx_style == "editorial" then
+            return pct
+        end
+        if bar and pct then
+            return bar .. "&nbsp;" .. pct
+        end
+        return bar or pct
+    end
 
     local function addTable(list, with_series)
+        if idx_std then
+            local has_covers = with_covers and any_filled(list, "cover")
+            if has_covers then
+                add("| | |")
+                add("|:---|:---|")
+            end
+            for i, b in ipairs(list) do
+                local link = render.bookLink(b.link, b.title, "markdown", false)
+                local head = "**" .. link .. "**"
+                local head_meta = {}
+                if filled(b.author) then
+                    local a = tostring(b.author):gsub("[\r\n]+", " ")
+                    if has_covers then
+                        a = a:gsub("|", "\\|")
+                    end
+                    head_meta[#head_meta + 1] = "*" .. a .. "*"
+                end
+                if filled(b.series) then
+                    local series = tostring(b.series):gsub("[\r\n]+", " ")
+                    if filled(b.series_index) then
+                        series = series .. " #" .. tostring(b.series_index)
+                    end
+                    if has_covers then
+                        series = series:gsub("|", "\\|")
+                    end
+                    head_meta[#head_meta + 1] = "*" .. series .. "*"
+                end
+                if #head_meta > 0 then
+                    head = head .. " — " .. table.concat(head_meta, " · ")
+                end
+
+                local meta = {}
+                local pct = render.progressPct(b.progress)
+                -- A book marked Complete in KOReader can still carry an older
+                -- partial percent_finished (e.g. 18%); omit partial progress
+                -- so Complete cards never contradict themselves.
+                local show_prog = not (b.status == "complete" and pct ~= "100%")
+                local st_txt = formatStatus(b.status)
+                local prog_txt = show_prog and formatProgress(b.progress) or nil
+                if idx_style == "editorial" then
+                    if st_txt and prog_txt then
+                        meta[#meta + 1] = st_txt .. " (" .. prog_txt .. ")"
+                    elseif st_txt then
+                        meta[#meta + 1] = st_txt
+                    elseif prog_txt then
+                        meta[#meta + 1] = prog_txt
+                    end
+                else
+                    if st_txt then
+                        meta[#meta + 1] = st_txt
+                    end
+                    if prog_txt then
+                        meta[#meta + 1] = prog_txt
+                    end
+                end
+                local rating_stars = render.stars(b.rating)
+                if rating_stars then
+                    meta[#meta + 1] = rating_stars
+                end
+                local date_text = filled(b.last_read)
+                    and render.fmtDate(tostring(b.last_read)) or nil
+                if date_text then
+                    meta[#meta + 1] = _("Last read") .. ": " .. date_text
+                end
+                local cnt = tonumber(b.count) or 0
+                local hl_txt = (cnt == 1 and _("%1 highlight") or _("%1 highlights"))
+                    :gsub("%%1", tostring(cnt))
+                meta[#meta + 1] = "**" .. hl_txt .. "**"
+                local special = tonumber(b.special) or 0
+                if special > 0 then
+                    meta[#meta + 1] = "★" .. tostring(special)
+                end
+
+                local body_parts = {}
+                if #meta > 0 then
+                    body_parts[#body_parts + 1] = table.concat(meta, " · ")
+                end
+                local tag_md = tagsPillsHtml(b.tags)
+                if tag_md ~= "" then
+                    body_parts[#body_parts + 1] = tag_md
+                end
+
+                if has_covers then
+                    local cover_cell = filled(b.cover)
+                        and string.format('<img src="%s" alt="" width="120">',
+                            tostring(b.cover):gsub('"', "&quot;"))
+                        or ""
+                    local right_cell = #body_parts > 0
+                        and (head .. "<br><br>" .. table.concat(body_parts, "<br>"))
+                        or head
+                    add("| " .. cover_cell .. " | " .. right_cell .. " |")
+                else
+                    if i > 1 then
+                        add("")
+                        add("---")
+                        add("")
+                    end
+                    add("- " .. head)
+                    if #body_parts > 0 then
+                        add("  " .. table.concat(body_parts, "<br>"))
+                    end
+                end
+            end
+            return
+        end
+
         local has_author = any_filled(list, "author")
         -- the status cell keeps the word over the bar and the percentage
         -- glued to it; the date is a column of its own, so nothing stacks
@@ -1658,8 +1984,9 @@ function render.buildIndexMd(books, opts)
             local status_cell = "—"
             if one_date_column then
                 local parts = {}
-                if b.status and status_labels[b.status] then
-                    parts[#parts + 1] = status_labels[b.status]
+                local st_txt = formatStatus(b.status)
+                if st_txt then
+                    parts[#parts + 1] = st_txt
                 end
                 if date_text then
                     if #parts > 0 then
@@ -1668,14 +1995,9 @@ function render.buildIndexMd(books, opts)
                         parts[1] = date_text
                     end
                 end
-                local bar = render.progressBar(b.progress)
-                local pct = render.progressPct(b.progress)
-                if bar and pct then
-                    parts[#parts + 1] = bar .. "&nbsp;" .. pct
-                elseif bar then
-                    parts[#parts + 1] = bar
-                elseif pct then
-                    parts[#parts + 1] = pct
+                local prog_txt = formatProgress(b.progress)
+                if prog_txt then
+                    parts[#parts + 1] = prog_txt
                 end
                 if rating_stars then
                     parts[#parts + 1] = rating_stars
@@ -1685,17 +2007,13 @@ function render.buildIndexMd(books, opts)
                 end
             elseif has_status then
                 local parts = {}
-                if b.status and status_labels[b.status] then
-                    parts[#parts + 1] = status_labels[b.status]
+                local st_txt = formatStatus(b.status)
+                if st_txt then
+                    parts[#parts + 1] = st_txt
                 end
-                local bar = render.progressBar(b.progress)
-                local pct = render.progressPct(b.progress)
-                if bar and pct then
-                    parts[#parts + 1] = bar .. "&nbsp;" .. pct
-                elseif bar then
-                    parts[#parts + 1] = bar
-                elseif pct then
-                    parts[#parts + 1] = pct
+                local prog_txt = formatProgress(b.progress)
+                if prog_txt then
+                    parts[#parts + 1] = prog_txt
                 end
                 if rating_stars then
                     parts[#parts + 1] = rating_stars
@@ -1734,6 +2052,25 @@ function render.buildIndexMd(books, opts)
         end
     end
 
+    local function addSectionHeading(emoji_icon, min_icon, title, count)
+        local h_pfx = idx_std and "## " or "### "
+        if idx_std then
+            add("---")
+            add("")
+        end
+        if idx_style == "badges" then
+            add(h_pfx .. title .. " `(" .. tostring(count) .. ")`")
+        elseif idx_style == "editorial" then
+            add(h_pfx .. title .. " (" .. tostring(count) .. ")")
+        elseif idx_style == "emoji" then
+            add(h_pfx .. emoji_icon .. " " .. title .. " (" .. tostring(count) .. ")")
+        else
+            local prefix = min_icon ~= "" and (min_icon .. " ") or ""
+            add(h_pfx .. prefix .. title .. " (" .. tostring(count) .. ")")
+        end
+        add("")
+    end
+
     if opts.completed_books == true then
         local completed = {}
         for __, b in ipairs(books) do
@@ -1750,8 +2087,7 @@ function render.buildIndexMd(books, opts)
             return byAuthor(a, b)
         end)
         if #completed > 0 then
-            add("### " .. _("Completed books"))
-            add("")
+            addSectionHeading("🟢", "✓", _("Completed books"), #completed)
             addTable(completed, any_filled(completed, "series"))
             add("")
         end
@@ -1776,8 +2112,7 @@ function render.buildIndexMd(books, opts)
             return byAuthor(a, b)
         end)
         if #reading > 0 then
-            add("### " .. _("Reading now"))
-            add("")
+            addSectionHeading("🟡", "▸", _("Reading now"), #reading)
             addTable(reading, any_filled(reading, "series"))
             add("")
         end
@@ -1787,14 +2122,12 @@ function render.buildIndexMd(books, opts)
     -- table used to arrive with no title at all, which looked like a
     -- duplicate of the one above.
     if #series_books > 0 then
-        add("### " .. _("Series books"))
-        add("")
+        addSectionHeading("📚", "§", _("Series books"), #series_books)
         addTable(series_books, true)
         add("")
     end
     if #plain_books > 0 then
-        add("### " .. _("My books"))
-        add("")
+        addSectionHeading("📖", "▪", _("My books"), #plain_books)
         addTable(plain_books, false)
     end
 
@@ -1974,11 +2307,13 @@ function render.buildDigestMd(books, opts)
         star_bold = true,
         bold = true,
     }
+    local is_std = (opts.markdown_style == "standard")
     local marker_global = opts.special_marker
     if not valid_markers[marker_global] then
         marker_global = "callout"
     end
-    if digest_std and marker_global == "callout" then
+    if is_std and (marker_global == "callout" or marker_global == "alert"
+            or marker_global == "highlight" or marker_global == "highlight_bold") then
         marker_global = "bold"
     end
     local digest_callout = not digest_std and opts.callout or false
@@ -2007,7 +2342,8 @@ function render.buildDigestMd(books, opts)
                 add("---")
             end
             add("")
-            local link = render.bookLink(item.book_link, item.book_title, opts.index_links, false)
+            local link = render.bookLink(item.book_link, item.book_title,
+                digest_std and "markdown" or opts.index_links, false)
             if item.book_author and tostring(item.book_author) ~= "" then
                 add("### " .. link .. " — *" .. tostring(item.book_author) .. "*")
             else
@@ -2019,8 +2355,8 @@ function render.buildDigestMd(books, opts)
         add("")
         local marker = marker_global
         local is_special = item.special and not digest_callout
-        local as_callout = digest_callout or (is_special and marker == "callout")
-        local as_alert = is_special and marker == "alert"
+        local as_callout = not digest_std and (digest_callout or (is_special and marker == "callout"))
+        local as_alert = not digest_std and (is_special and marker == "alert")
         if item.handwritten then
             if item.drawing and tostring(item.drawing) ~= "" then
                 local alt = _("Handwritten note")

@@ -1,22 +1,22 @@
-<!-- title: Tomedown · Your KOReader highlights, one Markdown file per book | description: A KOReader plugin that turns every volume you read into its own Markdown file with frontmatter, covers, and an automatic library index. No middleman. -->
+<!-- title: Tomedown — Your KOReader highlights, one Markdown file per book | description: A KOReader plugin that turns every volume you read into its own Markdown file with frontmatter, covers, and an automatic library index. No middleman. -->
       <section class="hero">
         <div class="hero-inner">
-          <span class="eyebrow">KOReader plugin · Markdown exports</span>
-          <h1>Your highlights, one <em>Book</em> at a time</h1>
+          <span class="editorial-kicker">KOREADER TO MARKDOWN · LOCAL-FIRST</span>
+          <h1>Your <mark class="editorial-highlight">highlights</mark>, one book at a time</h1>
           <p class="lead">
-            Turns every volume you read in KOReader into an independent, beautifully formatted Markdown note, complete with YAML frontmatter, cover art, and an automatic library index.
+            Turns every volume you read in KOReader into an independent, formatted Markdown note with YAML frontmatter, cover art, and an automatic library index.
           </p>
           <p class="muted">
             Direct from your e-reader to your notes vault. No servers, no tracking, no locked gates.
           </p>
           <div class="actions">
-            <a id="install" href="{{base}}/download/" class="btn btn-primary">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              <span>Download plugin</span>
-            </a>
-            <a href="{{base}}/docs/" class="btn btn-ghost">
+            <a href="{{base}}/docs/" class="btn btn-primary">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-              <span>Explore the docs</span>
+              <span>Read the Docs</span>
+            </a>
+            <a id="install" href="{{base}}/download/" class="btn btn-ghost">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <span>Download</span>
             </a>
           </div>
         </div>
@@ -29,27 +29,29 @@
               <figcaption class="margin-quote">
                 Every book gets its own <mark>permanent</mark> note.
               </figcaption>
-              <svg class="margin-arrow" viewBox="0 0 144 80" fill="none" aria-hidden="true">
-                <path class="arrow-shaft" pathLength="1" d="M 16 12 C 45 18, 92 40, 126 66" />
-                <path class="arrow-head" pathLength="1" d="M 108 64 L 126 66 L 122 48" />
+              <svg class="margin-arrow" viewBox="0 0 150 84" fill="none" aria-hidden="true">
+                <path class="arrow-shaft" pathLength="1" d="M 18 10 C 32 54, 82 68, 134 62" />
+                <path class="arrow-head" pathLength="1" d="M 120 48 L 136 62 L 120 75" />
               </svg>
             </figure>
 
             <img
               class="showcase-img"
-              src="{{base}}/assets/img/hero-showcase.webp"
-              alt="Obsidian book note alongside KOReader on Tomereader showing the Special Highlight menu"
+              src="{{base}}/assets/img/home-01-hero-overview.webp"
+              alt="KOReader on e-reader next to exported Book Note in Obsidian"
               width="2000"
-              height="1105"
+              height="1125"
+              loading="eager"
+              decoding="async"
             />
 
             <figure class="showcase-note showcase-note-right" data-reveal>
               <figcaption class="margin-quote">
                 Make any highlight <mark>Special</mark>, anytime.
               </figcaption>
-              <svg class="margin-arrow" viewBox="0 0 130 70" fill="none" aria-hidden="true">
-                <path class="arrow-shaft" pathLength="1" d="M 112 12 C 106 44, 60 58, 14 46" />
-                <path class="arrow-head" pathLength="1" d="M 28 34 L 12 46 L 27 58" />
+              <svg class="margin-arrow" viewBox="0 0 120 76" fill="none" aria-hidden="true">
+                <path class="arrow-shaft" pathLength="1" d="M 98 6 C 106 42, 74 64, 16 62" />
+                <path class="arrow-head" pathLength="1" d="M 30 48 L 14 62 L 30 73" />
               </svg>
             </figure>
           </div>
@@ -61,19 +63,22 @@
       <section id="features" class="section">
         <div class="container">
           <div class="section-head" data-reveal>
-            <span class="eyebrow">Principles &amp; Capabilities</span>
-            <h2>Crafted for permanence, clarity, and control.</h2>
-            <p class="muted" style="max-width: 640px; margin: 12px auto 0;">Standard tools treat annotations as volatile logs. Tomedown gives every volume the dignity of an enduring literary document.</p>
+            <span class="editorial-kicker">01 · ARCHITECTURE &amp; FORMAT</span>
+            <h2>Crafted for <mark class="editorial-highlight">permanence</mark>, clarity, and control.</h2>
+            <p class="muted">Standard tools treat annotations as volatile logs. Tomedown gives every volume the dignity of an enduring literary document.</p>
           </div>
           <div class="bento-grid">
             <article class="bento-card bento-span-7" data-reveal>
+              <div class="feature-eyebrow">
+                <span class="feature-num">01</span>
+                <span class="editorial-icon-seal is-sm" aria-hidden="true">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                </span>
+              </div>
               <h3>Autonomous book notes</h3>
               <p>Each read volume produces its own standalone document formatted with YAML frontmatter, reading dashboard, tags, and reading stats. Ready for Obsidian, Logseq, or any plaintext environment.</p>
               <div class="bento-window" aria-hidden="true">
                 <div class="bento-window-head">
-                  <div class="window-dots">
-                    <span></span><span></span><span></span>
-                  </div>
                   <div class="bento-window-title">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                     <span>Arthur Machen - The Three Impostors.md</span>
@@ -81,44 +86,57 @@
                   <span class="bento-window-env">vault/books</span>
                 </div>
                 <div class="bento-window-body">
-                  <div class="bento-callout-mock" style="background: rgba(240, 176, 10, 0.08); border-left: 3px solid var(--accent); padding: 5px 8px; border-radius: 4px; margin-bottom: 8px; font-size: 0.78rem;">
-                    <div style="font-weight: 600; color: var(--accent); display: flex; align-items: center; gap: 5px;">
+                  <div class="bento-callout-mock">
+                    <div class="bento-callout-title">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-                      [!book] Reading Dashboard
+                      <span>[!book] Reading Dashboard</span>
                     </div>
-                    <div style="color: var(--muted); margin-top: 2px;"><strong>Reading:</strong> ★★★★★ · 10 Nov 2026 → 16 Nov 2026</div>
+                    <div class="bento-callout-sub">
+                      <span><strong>Reading:</strong> ★★★★★</span>
+                      <span>10 Nov 2026 to 16 Nov 2026</span>
+                    </div>
                   </div>
                   <div><span class="bento-code-dim">---</span></div>
-                  <div><span class="bento-code-key">author:</span> <span class="bento-code-val">Arthur Machen</span> <span class="bento-pill bento-pill-hl" style="margin-left: 8px;">YAML</span></div>
-                  <div><span class="bento-code-key">progress:</span> <span class="bento-code-val">[■■■■□] 82%</span> · <span class="bento-code-dim">9 highlights</span></div>
+                  <div><span class="bento-code-key">author:</span> <span class="bento-code-val">Arthur Machen</span> <span class="bento-pill bento-pill-hl">YAML</span></div>
+                  <div><span class="bento-code-key">progress:</span> <span class="bento-code-val">[■■■■□] 82%</span> <span class="bento-code-dim">(9 highlights)</span></div>
                   <div><span class="bento-code-dim">---</span></div>
-                  <div class="bento-quote-row">- **p. 3** · 16 Nov 2026 | 09:29: “There are mysteries which are better left unexamined…” ^hl-a91b2c</div>
+                  <div class="bento-quote-row">- **p. 3** — 16 Nov 2026 | 09:29: “There are mysteries which are better left unexamined…” ^hl-a91b2c</div>
                 </div>
               </div>
             </article>
 
             <article class="bento-card bento-span-5" data-reveal>
-              <h3>Visual library catalog &amp; trophies</h3>
+              <div class="feature-eyebrow">
+                <span class="feature-num">02</span>
+                <span class="editorial-icon-seal is-sm" aria-hidden="true">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                </span>
+              </div>
+              <h3>Visual library catalog</h3>
               <p><code>00 - Index.md</code> creates an interactive bookshelf with 90×120 covers, completed books showcase, global library dashboard, and dynamic tag cloud.</p>
               <div class="bento-visual bento-index" aria-hidden="true">
-                <div class="bento-callout-mock" style="background: rgba(240, 176, 10, 0.08); border-left: 3px solid var(--accent); padding: 5px 8px; border-radius: 4px; font-size: 0.78rem;">
-                  <div style="font-weight: 600; color: var(--accent); display: flex; align-items: center; gap: 5px;">
+                <div class="bento-callout-mock">
+                  <div class="bento-callout-title">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-                    [!library] Library Dashboard
+                    <span>[!library] Library Dashboard</span>
                   </div>
-                  <div style="color: var(--muted); margin-top: 2px;"><strong>Vault:</strong> 42 books · 12 completed · 3 reading</div>
+                  <div class="bento-callout-sub">
+                    <span><strong>Vault:</strong> 42 books</span>
+                    <span>12 completed</span>
+                    <span>3 reading</span>
+                  </div>
                 </div>
-                <div class="index-trophy-mock" style="display: flex; align-items: center; justify-content: space-between; font-size: 0.78rem; padding: 5px 10px; background: var(--paper-2); border: 1px solid var(--line); border-radius: 6px;">
-                  <span style="font-weight: 600; display: flex; align-items: center; gap: 4px;">
+                <div class="index-trophy-mock">
+                  <span class="index-trophy-label">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
-                    Completed books (12)
+                    <span>Completed books (12)</span>
                   </span>
-                  <span class="bento-pill bento-pill-hl">🏆 Trophy Room</span>
+                  <span class="bento-pill bento-pill-hl">Trophy Room</span>
                 </div>
                 <div class="index-bar">
                   <span class="index-book-tag">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-                    Arthur Machen
+                    <span>Arthur Machen</span>
                   </span>
                   <code>[■■■■■] 100%</code>
                 </div>
@@ -129,26 +147,38 @@
             </article>
 
             <article class="bento-card bento-span-5" data-reveal>
+              <div class="feature-eyebrow">
+                <span class="feature-num">03</span>
+                <span class="editorial-icon-seal is-sm" aria-hidden="true">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </span>
+              </div>
               <h3>Chronological reading timeline</h3>
-              <p><code>00 - Reading Digest.md</code> unifies every quote across your entire library by date, forming a seamless journal of your intellectual journey.</p>
+              <p><code>00 - Reading Digest.md</code> unifies every quote across your entire library by date, forming a chronological journal of your reading history.</p>
               <div class="bento-visual bento-timeline" aria-hidden="true">
                 <div class="tl-item">
                   <span class="tl-date">16 Nov 2026</span>
                   <span class="tl-book">[[The Three Impostors]]</span>
-                  <span class="bento-pill">· 09:41</span>
+                  <span class="bento-pill">09:41</span>
                 </div>
                 <div class="tl-divider"></div>
                 <div class="tl-item">
                   <span class="tl-date">16 Nov 2026</span>
                   <span class="tl-book">[[The Great God Pan]]</span>
-                  <span class="bento-pill">· 11:20</span>
+                  <span class="bento-pill">11:20</span>
                 </div>
               </div>
             </article>
 
             <article class="bento-card bento-span-7" data-reveal>
-              <h3>Expressive highlight styles</h3>
-              <p>Choose from 6 special highlight styles—Obsidian callouts, GitHub alerts, highlighted text, star badges, or bold typography—with surrounding sentence context and granular block IDs.</p>
+              <div class="feature-eyebrow">
+                <span class="feature-num">04</span>
+                <span class="editorial-icon-seal is-sm" aria-hidden="true">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m18 2-3 3-9 9-4 1 1-4 9-9 3-3a2.12 2.12 0 0 1 3 3z"/><path d="M9 15l-5 5"/></svg>
+                </span>
+              </div>
+              <h3>Expressive highlight &amp; section styles</h3>
+              <p>Choose from 6 special highlight styles and harmonize your book header sections (Obsidian callouts, Markdown tables, blockquotes, or minimalist lists) with granular block IDs.</p>
               <div class="bento-visual bento-styles" aria-hidden="true">
                 <code class="b-style-hl"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 2-3 3-9 9-4 1 1-4 9-9 3-3a2.12 2.12 0 0 1 3 3z"/></svg> [!highlight]</code>
                 <code><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> [!IMPORTANT]</code>
@@ -160,6 +190,12 @@
             </article>
 
             <article class="bento-card bento-span-6" data-reveal>
+              <div class="feature-eyebrow">
+                <span class="feature-num">05</span>
+                <span class="editorial-icon-seal is-sm" aria-hidden="true">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                </span>
+              </div>
               <h3>Two-way resilient merge</h3>
               <p>Write your permanent notes directly inside book files in your vault. When new highlights arrive from your e-reader, Tomedown merges them safely around your reflections.</p>
               <div class="bento-visual bento-merge" aria-hidden="true">
@@ -170,12 +206,18 @@
             </article>
 
             <article class="bento-card bento-span-6" data-reveal>
+              <div class="feature-eyebrow">
+                <span class="feature-num">06</span>
+                <span class="editorial-icon-seal is-sm" aria-hidden="true">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                </span>
+              </div>
               <h3>Adaptive folder hierarchies</h3>
-              <p>Structure your vault by author, series, or reading status. Use dynamic template tokens and export clean <code>.md</code>, <code>.txt</code>, or both simultaneously.</p>
+              <p>Structure your vault by author, series, or reading status in <strong>Settings → Export → File names &amp; folders</strong>. Export clean <code>.md</code>, <code>.txt</code>, or both simultaneously.</p>
               <div class="bento-visual bento-tokens" aria-hidden="true">
-                <code><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> {author}</code>
-                <code><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> {title}</code>
-                <code><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> {series}</code>
+                <code><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> %A author</code>
+                <code><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> %T title</code>
+                <code><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> %S series</code>
                 <span class="bento-pill bento-pill-hl">.md / .txt</span>
               </div>
             </article>
@@ -183,149 +225,89 @@
         </div>
       </section>
 
-      <!-- Visual Showcase: Interactive Spotlight -->
-      <section class="section section-alt">
+      <!-- Visual Previews Placeholders / How it works -->
+      <section id="how-it-works" class="section section-alt">
         <div class="container">
           <div class="section-head" data-reveal>
-            <span class="eyebrow">Visual Guides</span>
-            <h2>How it looks in practice.</h2>
+            <span class="editorial-kicker">02 · HOW IT WORKS</span>
+            <h2>How it looks in <mark class="editorial-highlight">practice</mark>.</h2>
+            <p class="muted">Clean tables, chronological journals, and in-device summary cards built for e-ink and desktop reading.</p>
           </div>
 
-          <div class="spotlight" data-reveal>
-            <div class="spotlight-tabs" role="tablist" aria-label="Obsidian views">
-              <button type="button" class="spotlight-tab is-active" role="tab" aria-selected="true" data-slide="0">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-                <code>00 - Index.md</code>
-                <span>Library catalog</span>
-              </button>
-              <button type="button" class="spotlight-tab" role="tab" aria-selected="false" data-slide="1">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                <code>00 - Reading Digest.md</code>
-                <span>Daily journal</span>
-              </button>
-              <button type="button" class="spotlight-tab" role="tab" aria-selected="false" data-slide="2">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-                <code>Book Note.md</code>
-                <span>Single book</span>
-              </button>
+          <div class="install-grid" data-reveal>
+            <div class="screenshot-placeholder" role="region" aria-label="Screenshot placeholder: home-02-koreader-cards.webp">
+              <div class="sp-top">
+                <div class="sp-meta">
+                  <span class="sp-badge">KOReader E-Reader</span>
+                  <code class="sp-filename">home-02-koreader-cards.webp</code>
+                </div>
+                <button type="button" class="placeholder-copy-btn" data-copy-filename="home-02-koreader-cards.webp" aria-label="Copy filename home-02-koreader-cards.webp">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  <span>Copy filename</span>
+                </button>
+              </div>
+              <div class="sp-screen">
+                <p class="sp-title">In-reader Book summary &amp; Last export cards on KOReader</p>
+                <p class="sp-desc">Inquadra su KOReader la card <strong>Current book → Book summary</strong> (con i 3 contatori KPI cliccabili <em>Highlights</em>, <em>★ Special</em>, <em>Notes</em>) affiancata alla card <strong>Last export</strong> o al menu ristrutturato.</p>
+                <span class="sp-hint">Formato: WebP (q90–q95) · Composizione card + menu KOReader</span>
+              </div>
             </div>
 
-            <div class="spotlight-stage">
-              <figure class="spotlight-slide is-active" data-slide="0">
-                <div class="spotlight-frame">
-                  <img src="{{base}}/assets/img/showcase-index.webp" alt="00 - Index.md in Obsidian showing book covers, progress bars, and stacked tag pills" loading="lazy" />
+            <div class="screenshot-placeholder" role="region" aria-label="Screenshot placeholder: home-03-obsidian-vault-views.webp">
+              <div class="sp-top">
+                <div class="sp-meta">
+                  <span class="sp-badge">Obsidian Vault</span>
+                  <code class="sp-filename">home-03-obsidian-vault-views.webp</code>
                 </div>
-                <figcaption>
-                  <strong>00 - Index.md</strong>: 90×120 covers, 5-cell progress bars, and stacked <code>#tag</code> pills generated automatically.
-                </figcaption>
-              </figure>
-
-              <figure class="spotlight-slide" data-slide="1">
-                <div class="spotlight-frame">
-                  <img src="{{base}}/assets/img/showcase-digest.webp" alt="00 - Reading Digest.md in Obsidian showing chronological highlights grouped by day and book" loading="lazy" />
-                </div>
-                <figcaption>
-                  <strong>00 - Reading Digest.md</strong>: every highlight across your library gathered chronologically by day and book.
-                </figcaption>
-              </figure>
-
-              <figure class="spotlight-slide" data-slide="2">
-                <div class="spotlight-frame">
-                  <img src="{{base}}/assets/img/showcase-book.webp" alt="Single book Markdown note in Obsidian with cover art, chapter headings, highlights, and personal note" loading="lazy" />
-                </div>
-                <figcaption>
-                  <strong>Single book note</strong>: full-color cover, chapter headings, highlights, and your own personal notes preserved safely.
-                </figcaption>
-              </figure>
+                <button type="button" class="placeholder-copy-btn" data-copy-filename="home-03-obsidian-vault-views.webp" aria-label="Copy filename home-03-obsidian-vault-views.webp">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  <span>Copy filename</span>
+                </button>
+              </div>
+              <div class="sp-screen">
+                <p class="sp-title">00 - Index.md &amp; 00 - Reading Digest.md inside Obsidian</p>
+                <p class="sp-desc">Inquadra la libreria generata in Obsidian con <code>00 - Index.md</code> (copertine 90×120, barre di avanzamento a 5 celle, Trophy Room e Tag cloud) e il diario cronologico <code>00 - Reading Digest.md</code>.</p>
+                <span class="sp-hint">Formato: WebP (q90–q95) · Proporzioni: 16:10 (finestra desktop Obsidian / MarkText)</span>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section id="how-it-works" class="section section-pipeline">
+      <!-- Quick Installation Block -->
+      <section id="quick-install" class="section">
         <div class="container">
           <div class="section-head" data-reveal>
-            <span class="eyebrow">The Reading Workflow</span>
-            <h2>From your e-reader to your vault. Zero friction.</h2>
-            <p class="muted" style="max-width: 640px; margin: 12px auto 0;">Read peacefully in bed. Close your book. Find every highlight, cover, and stat neatly waiting in your vault—without accounts, clouds, or lost reflections.</p>
+            <span class="editorial-kicker">03 · TWO-MINUTE SETUP</span>
+            <h2>Quick <mark class="editorial-highlight">installation</mark>.</h2>
+            <p class="muted">Up and running in two minutes. Offline by default, wireless sync whenever you want it.</p>
           </div>
 
-          <div class="pipeline-grid">
-            <!-- Stage 1: The Reader -->
-            <div class="pipeline-card" data-reveal>
-              <div class="pipeline-num">01</div>
-              <div class="pipeline-badge">On Your E-Reader</div>
-              <div class="pipeline-visual">
-                <div class="pv-device">
-                  <div class="pv-device-top"><span>KOReader</span><span>E-ink Screen</span></div>
-                  <div class="pv-quote">
-                    <span class="pv-star"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Special Highlight</span>
-                    <p>“The world is full of obvious things…”</p>
-                    <span class="pv-meta">p. 42 · Chapter IV</span>
-                  </div>
-                </div>
-              </div>
-              <div class="pipeline-body">
-                <h3>Read &amp; mark freely</h3>
-                <p>Highlight passages and star standout quotes with <strong>Special Highlight</strong>. Tomedown extracts chapters, page numbers, and surrounding context without altering your reading flow.</p>
-              </div>
+          <div class="install-grid" data-reveal>
+            <div class="install-card">
+              <h3>1. Install via USB or Storefront</h3>
+              <p>Search <strong>Tomedown</strong> directly in KOReader’s wireless <strong>Storefront</strong> / <strong>AppStore</strong>, or unpack the release archive into your device’s <code>koreader/plugins/</code> directory:</p>
+              <pre><code>unzip tomedown.koplugin-v{{version}}.zip -d /path/to/koreader/plugins/</code></pre>
+              <ol class="install-steps">
+                <li>Restart KOReader after copying the <code>tomedown.koplugin/</code> folder.</li>
+                <li>Open <strong>☰ → Tomedown</strong> (or tap the Tomedown icon in the top bar).</li>
+                <li>Tap <strong>Export this book</strong> or <strong>All books → Export changed books</strong>.</li>
+              </ol>
             </div>
 
-            <div class="pipeline-connector" aria-hidden="true">
-              <svg viewBox="0 0 40 40" fill="none"><path d="M10 20h20m-6-6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </div>
-
-            <!-- Stage 2: The Exporter -->
-            <div class="pipeline-card pipeline-card-hl" data-reveal>
-              <div class="pipeline-num">02</div>
-              <div class="pipeline-badge pipeline-badge-hl">Silent Automation · Zero Cloud</div>
-              <div class="pipeline-visual">
-                <div class="pv-engine">
-                  <div class="pv-chip"><code>tomedown.koplugin</code></div>
-                  <div class="pv-flow">
-                    <span class="pv-tag pv-tag-hl"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg> New highlights folded in</span>
-                    <span class="pv-tag"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg> Personal Obsidian notes safe</span>
-                    <span class="pv-tag"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Automatic .bak safety copy</span>
-                  </div>
-                </div>
-              </div>
-              <div class="pipeline-body">
-                <h3>Smart export &amp; note merge</h3>
-                <p>The moment you close your book, pure Markdown files are generated locally. If you already wrote personal thoughts in Obsidian, Tomedown weaves new highlights in without ever touching your writing.</p>
+            <div class="install-card">
+              <h3>2. Find your exported notes</h3>
+              <p>Your standalone book notes and library index are written immediately to local storage on your e-reader:</p>
+              <pre><code>koreader/clipboard/tomedown/
+├── 00 - Index.md
+├── 00 - Reading Digest.md
+└── Arthur Machen - The Three Impostors.md</code></pre>
+              <p>Want automatic wireless delivery to Obsidian? Configure your WebDAV, Koofr, Nextcloud, or Dropbox target in <strong>Settings → Cloud upload → Destination</strong>.</p>
+              <div class="actions">
+                <a href="{{base}}/download/" class="btn btn-primary">Download latest release</a>
+                <a href="{{base}}/docs/quickstart/" class="btn btn-ghost">Quickstart guide</a>
               </div>
             </div>
-
-            <div class="pipeline-connector" aria-hidden="true">
-              <svg viewBox="0 0 40 40" fill="none"><path d="M10 20h20m-6-6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </div>
-
-            <!-- Stage 3: The Vault -->
-            <div class="pipeline-card" data-reveal>
-              <div class="pipeline-num">03</div>
-              <div class="pipeline-badge">Your Permanent Vault</div>
-              <div class="pipeline-visual">
-                <div class="pv-vault">
-                  <div class="pv-vault-header">
-                    <span class="pv-dot"></span><span>Obsidian / Logseq / Plain Text</span>
-                  </div>
-                  <div class="pv-vault-files">
-                    <div><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg> <code>00 - Index.md</code></div>
-                    <div><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> <code>00 - Reading Digest.md</code></div>
-                    <div><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> <code>Arthur Machen.md</code></div>
-                  </div>
-                </div>
-              </div>
-              <div class="pipeline-body">
-                <h3>A library that belongs to you</h3>
-                <p>Browse your bookshelf in <code>00 - Index.md</code>, review daily quotes in your <code>Reading Digest</code>, and connect ideas with stable block IDs. Forever yours, completely offline.</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="pipeline-bridge" data-reveal>
-            <div class="bridge-tag">The Seamless Bridge</div>
-            <p><strong>Offline USB</strong> by default, or automatic wireless sync via <strong>WebDAV, Koofr, Nextcloud, Dropbox, or FTP</strong> whenever your e-reader connects to Wi-Fi.</p>
-            <a href="{{base}}/docs/quickstart/" class="btn btn-ghost">Get started in 2 minutes →</a>
           </div>
         </div>
       </section>
@@ -334,17 +316,17 @@
         <div class="container">
           <div class="faq-split">
             <div class="faq-intro" data-reveal>
-              <span class="eyebrow">Frequently Asked</span>
-              <h2>Clear answers.</h2>
+              <span class="editorial-kicker">04 · FREQUENTLY ASKED QUESTIONS</span>
+              <h2><mark class="editorial-highlight">Clear</mark> answers.</h2>
               <p class="muted">Quick answers before you install. Deep dives and troubleshooting live in the documentation.</p>
-              <a href="{{base}}/docs/faq/" class="btn btn-ghost">Browse all FAQs →</a>
+              <a href="{{base}}/docs/faq/" class="btn btn-ghost">Browse all FAQs</a>
             </div>
             <div class="faq-list">
-              <details data-reveal><summary>Do I need an account or cloud server?</summary><p>No. Tomedown exports directly to local storage on your e-reader. Cloud syncing (WebDAV, Dropbox, FTP) is completely optional.</p></details>
+              <details data-reveal><summary>Do I need an account or cloud server?</summary><p>No. Tomedown exports directly to local storage on your e-reader. Cloud syncing (WebDAV, Dropbox, FTP) in <strong>Settings → Cloud upload</strong> is completely optional.</p></details>
               <details data-reveal><summary>Which hardware and readers are supported?</summary><p>Any device capable of running KOReader (Kindle, Kobo, Android, PocketBook). The plugin is written in pure Lua and does not access proprietary hardware APIs.</p></details>
-              <details data-reveal><summary>Where do the exported files go?</summary><p>By default into <code>clipboard/tomedown</code> inside KOReader's data folder (one Markdown or <code>.txt</code> file per book, plus <code>00 - Index.md</code>). You can change the folder in <a href="{{base}}/docs/settings/">Settings</a>.</p></details>
+              <details data-reveal><summary>Where do the exported files go?</summary><p>By default into <code>clipboard/tomedown</code> inside KOReader’s data folder (one Markdown or <code>.txt</code> file per book, plus <code>00 - Index.md</code>). You can change the folder in <a href="{{base}}/docs/settings/">Settings → Export → Local folder</a>.</p></details>
               <details data-reveal><summary>Will re-exporting erase my notes written in Obsidian?</summary><p>No. With <em>Keep my notes</em> active, Tomedown parses existing notes, preserves personal commentary outside the highlight blocks, and maintains backup copies (<code>.bak</code>).</p></details>
-              <details data-reveal><summary>Can I customize how notes and files are named?</summary><p>Yes. Tomedown supports custom filename templates (e.g., <code>{author} - {title}</code>) and folder categorization (by author, series, or status).</p></details>
+              <details data-reveal><summary>Can I customize how notes and files are named?</summary><p>Yes. In <strong>Settings → Export → File names &amp; folders</strong>, Tomedown supports custom filename templates (<code>%A - %T</code>) and folder organization (by author, series, or reading status).</p></details>
               <details data-reveal><summary>Is Tomedown open source?</summary><p>Yes, licensed under the GNU AGPLv3. No telemetry, no proprietary lock-in.</p></details>
             </div>
           </div>
@@ -353,11 +335,12 @@
 
       <section class="cta">
         <div class="container center" data-reveal>
-          <h2>Your books, your thoughts, your files.</h2>
+          <span class="editorial-kicker">LOCAL-FIRST · OPEN SOURCE</span>
+          <h2>Your books, your thoughts, <mark class="editorial-highlight">your files</mark>.</h2>
           <p>Free, open source, and built to last twenty years.</p>
           <div class="actions">
-            <a href="{{base}}/download/" class="btn btn-primary">Download plugin</a>
-            <a href="{{base}}/docs/" class="btn btn-ghost">Read documentation</a>
+            <a href="{{base}}/docs/" class="btn btn-primary">Read the Docs</a>
+            <a href="{{base}}/download/" class="btn btn-ghost">Download plugin</a>
           </div>
         </div>
       </section>

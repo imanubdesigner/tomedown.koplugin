@@ -69,6 +69,7 @@ local getChapterHeadings = shared.getChapterHeadings
 local getHighlightContext = shared.getHighlightContext
 local getExportFormat = shared.getExportFormat
 local getMarkdownStyle = shared.getMarkdownStyle
+local getIndexStyle = shared.getIndexStyle
 
 local function effectiveIndexLinks(file)
     if getMarkdownStyle(file) == "standard" then
@@ -1193,7 +1194,9 @@ function M:runExport(files, opts)
                         cover = book_cover,
                         callout = not is_std_book and getSetting("callout", false) or false,
                         block_ids = not is_std_book and getSetting("block_ids", false) or false,
-                        special_marker = (is_std_book and raw_marker == "callout") and "bold" or raw_marker,
+                        special_marker = (is_std_book and (raw_marker == "callout"
+                            or raw_marker == "alert" or raw_marker == "highlight"
+                            or raw_marker == "highlight_bold")) and "bold" or raw_marker,
                         note_style = getNoteStyle(file),
                         notes_title = getNotesTitle(file),
                         markers = preserve,
@@ -1207,6 +1210,16 @@ function M:runExport(files, opts)
                         book_heading = getBookHeading(file),
                         overview_style = getOverviewStyle(file),
                         reading_dashboard = getReadingDashboard(file),
+                        book_visual_style = shared.getBookVisualStyle(file),
+                        dashboard_style = shared.getHarmonizeBookStyle(file)
+                            and shared.getBookVisualStyle(file) or shared.getDashboardStyle(file),
+                        synopsis_style = shared.getHarmonizeBookStyle(file)
+                            and shared.getBookVisualStyle(file) or shared.getSynopsisStyle(file),
+                        body_tags_style = shared.getHarmonizeBookStyle(file)
+                            and shared.getBookVisualStyle(file) or shared.getBodyTagsStyle(file),
+                        showcase_style = shared.getHarmonizeBookStyle(file)
+                            and shared.getBookVisualStyle(file) or shared.getShowcaseStyle(file),
+                        synopsis_mode = shared.getSynopsisMode(file),
                         book_synopsis = getBookSynopsis(file),
                         body_tags = getBodyTags(file),
                         special_showcase = getSpecialShowcase(file),
@@ -1451,7 +1464,8 @@ function M:runExport(files, opts)
                 index_order = getSetting("index_order", "author"),
                 index_layout = getSetting("index_layout", "tags_below"),
                 index_links = effectiveIndexLinks(),
-        markdown_style = getMarkdownStyle(),
+                markdown_style = getMarkdownStyle(),
+                index_style = getIndexStyle(),
                 index_tags_mode = getIndexTagsMode(),
                 hidden_books = hidden,
                 reading_now = getSetting("reading_now", true),

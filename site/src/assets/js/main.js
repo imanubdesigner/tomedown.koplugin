@@ -1,6 +1,6 @@
 (function () {
-  // reveal on scroll
-  var items = document.querySelectorAll("[data-reveal]");
+  // reveal on scroll + editorial-highlight animation trigger
+  var items = document.querySelectorAll("[data-reveal], mark.editorial-highlight");
   if ("IntersectionObserver" in window) {
     var io = new IntersectionObserver(function (entries) {
       entries.forEach(function (e) {
@@ -613,7 +613,23 @@
 
     if (siteMenuDrawer) {
       siteMenuDrawer.querySelectorAll("a").forEach(function (link) {
-        link.addEventListener("click", closeSiteMenu);
+        link.addEventListener("click", function (e) {
+          var href = link.getAttribute("href") || "";
+          closeSiteMenu();
+          var hashIdx = href.indexOf("#");
+          if (hashIdx !== -1) {
+            var hash = href.slice(hashIdx + 1);
+            var target = hash ? document.getElementById(hash) : null;
+            if (target) {
+              e.preventDefault();
+              var prefersReduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+              setTimeout(function () {
+                target.scrollIntoView({ behavior: prefersReduced ? "auto" : "smooth", block: "start" });
+                try { history.pushState(null, "", "#" + hash); } catch (_) {}
+              }, 30);
+            }
+          }
+        });
       });
     }
 
@@ -669,6 +685,76 @@
       var next = current === "dark" ? "light" : "dark";
       root.dataset.theme = next;
       try { localStorage.setItem("tomedown-theme", next); } catch (e) {}
+    });
+  });
+
+  // Helper to copy text to clipboard with fallback
+  function copyTextToClipboard(text, onDone) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(onDone).catch(function () {
+        fallbackCopy(text, onDone);
+      });
+    } else {
+      fallbackCopy(text, onDone);
+    }
+  }
+  function fallbackCopy(text, onDone) {
+    try {
+      var ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      if (onDone) onDone();
+    } catch (e) {}
+  }
+
+  // Screenshot Placeholder Copy Filename Button
+  document.addEventListener("click", function (e) {
+    var btn = e.target.closest(".placeholder-copy-btn");
+    if (!btn) return;
+    var fname = btn.getAttribute("data-copy-filename") || "";
+    if (!fname) return;
+    var label = btn.querySelector("span") || btn;
+    var orig = btn.getAttribute("data-orig-label") || label.textContent;
+    btn.setAttribute("data-orig-label", orig);
+    copyTextToClipboard(fname, function () {
+      btn.classList.add("is-copied");
+      label.textContent = "Copied!";
+      setTimeout(function () {
+        btn.classList.remove("is-copied");
+        label.textContent = orig;
+      }, 1800);
+    });
+  });
+
+  // Code Block Copy Button in /docs and Quick Install
+  document.querySelectorAll(".prose pre, .install-card pre").forEach(function (pre) {
+    if (pre.parentElement && pre.parentElement.classList.contains("code-block-wrapper")) return;
+    var wrapper = document.createElement("div");
+    wrapper.className = "code-block-wrapper";
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "code-copy-btn";
+    btn.setAttribute("aria-label", "Copy code to clipboard");
+    btn.textContent = "Copy";
+    pre.parentNode.insertBefore(wrapper, pre);
+    wrapper.appendChild(pre);
+    wrapper.appendChild(btn);
+    btn.addEventListener("click", function () {
+      var codeEl = pre.querySelector("code") || pre;
+      var text = (codeEl.textContent || "").trim();
+      copyTextToClipboard(text, function () {
+        btn.classList.add("is-copied");
+        btn.textContent = "Copied!";
+        setTimeout(function () {
+          btn.classList.remove("is-copied");
+          btn.textContent = "Copy";
+        }, 1800);
+      });
     });
   });
 })();

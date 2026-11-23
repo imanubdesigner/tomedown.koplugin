@@ -17,15 +17,15 @@ Anywhere KOReader runs (Kindle, Kobo, Android, PocketBook…). The plugin is pla
 
 ### Does Tomedown support stylus and handwritten notes?
 
-Yes! Starting in **v2.1.0**, on devices supporting a pen or stylus (Kindle Scribe, Kobo Sage/Elipsa, Android e-ink, or via KOReader's `pencil.koplugin`), Tomedown extracts pen drawings from `.sdr` folders, renders vector point sequences into scalable SVG images, and embeds them directly in your notes inside the `drawings/` folder.
+Yes. On devices supporting a pen or stylus (Kindle Scribe, Kobo Sage/Elipsa, Android e-ink, or via KOReader's `pencil.koplugin`), Tomedown extracts pen drawings from `.sdr` folders, renders vector point sequences into scalable SVG images, and embeds them directly in your notes inside the `drawings/` folder (configured in **Settings → Export → File names & folders → Drawings folder**).
 
 ### Can I backup and restore my Tomedown configuration?
 
-Yes. In **Settings → Files**, tap **Export settings to file** to save a snapshot of all your settings to `tomedown_settings_backup.lua`. You can restore your configuration at any time using **Restore settings from backup…**.
+Yes. In **Settings → Export**, tap **Export settings to file** to save a snapshot of all your settings to `tomedown_settings_backup.lua`. You can restore your configuration at any time using **Restore settings from backup…**.
 
 ### Can I delete stale backup copies across my entire library?
 
-Yes. In **Settings → Files → Backup copies**, tap **Delete all backups…** to scan your library and clean all `.bak` copies across every book with a single confirmation. Original exported notes are never touched.
+Yes. In **Settings → Export → Backup copies**, tap **Delete all backup copies…** to scan your library and clean all `.bak` copies across every book with a single confirmation. Original exported notes are never touched.
 
 ### Is it free and open source?
 
@@ -35,11 +35,11 @@ Yes. Tomedown is free software licensed under the GNU AGPL-3.0, with no telemetr
 
 ### Where do the files go?
 
-By default into `clipboard/tomedown` inside KOReader's data folder: one file per book, plus `00 - Index.md` (and `00 - Reading Digest.md` when exported). You can change the folder in [Menu & Settings](settings.md).
+By default into `clipboard/tomedown` inside KOReader's data folder: one file per book, plus `00 - Index.md` (and `00 - Reading Digest.md` when exported). You can change the folder in **Settings → Export → Local folder** (see [Menu & Settings](settings.md)).
 
 ### What happens if I switch between `.md` and `.txt`?
 
-In **Settings → Files → Export format**, you can pick **Markdown (.md)**, **Plain text (.txt)**, or **Both**. When you switch formats, Tomedown automatically manages and cleans up the files on the next export so you do not end up with stale duplicates.
+In **Settings → Export → Export format**, you can pick **Markdown (.md)**, **Plain text (.txt)**, or **Both (.md and .txt)**. When you switch formats, Tomedown automatically manages and cleans up the files on the next export so you do not end up with stale duplicates.
 
 ### Why do my EPUB tags look cleaner in `00 - Index.md`?
 
@@ -47,21 +47,21 @@ Tomedown automatically splits Calibre/EPUB subject facets (like `Fiction -- Myst
 
 ### Can I customize highlight styles or frontmatter for just one book?
 
-Yes. Open the book, go to **Tomedown → Current book → Style & format**, and override export format, personal notes format, highlight details, chapter headings, context, covers, page bookmarks, or YAML frontmatter for that book alone.
+Yes. Open the book, go to **Tomedown → Current book → Format & layout**, and override export format, Markdown style, personal notes format, highlight details, chapter headings, context, book cover, page bookmarks, handwritten notes, or **Book page** sections (including **Section styles** and **Frontmatter fields**) for that book alone.
 
 ### Can I export only certain selected books?
 
-Yes. Tap **Tomedown → Choose books…** to open an interactive checklist of all books in your library. You can select or deselect individual books, check the total count, and tap **Export selected** to export only those volumes.
+Yes. Tap **Tomedown → All books → Select books…** to open an interactive checklist of all books in your library. You can select or deselect individual books, check the total count, and tap **Export selected** to export only those volumes.
 
-### What is Repair all files?
+### What is Export all books again?
 
-**Repair all files** in the main Tomedown menu regenerates every book note from scratch using KOReader's stored reading history. It is the easiest way to restore notes if a file was deleted by mistake on your computer or if a vault sync went wrong.
+**Export all books again…** inside **Tomedown → All books** regenerates every book note from scratch using KOReader's stored reading history. It is the easiest way to restore notes if a file was deleted by mistake on your computer or if a vault sync went wrong.
 
 ## Notes & sync
 
 ### Will an export overwrite what I wrote in a note?
 
-Not if **Keep my notes** is turned on (for all books, or per book). The next export folds new highlights into the existing file, preserves your personal notes and inline comments below quotes, and keeps rotating backup copies (`.bak`, `.bak.1`–`.bak.3`). See [Keep my notes](keep-my-notes.md).
+Not if **Keep my notes** is turned on (for all books in **Settings → My notes → Keep my notes for all books**, or per book in **Current book → Keep my notes in this book**). The next export folds new highlights into the existing file, preserves your personal notes and inline comments below quotes, and keeps rotating backup copies (`.bak`, `.bak.1`–`.bak.3`). See [Keep my notes](keep-my-notes.md).
 
 ### How does Tomedown protect my notes with backup copies?
 
@@ -75,13 +75,13 @@ Inside any book, tap **Tomedown → Current book → Backup copies** to view tim
 Current book
 └── Backup copies
     ├── Saved notes      → file .bak   (preserved personal notes)
-    ├── Safety copy      → file .bak.1 (latest emergency snapshot)
-    └── Safety copy      → file .bak.2 (previous snapshot in rotation)
+    ├── Latest snapshot  → file .bak.1 (latest emergency snapshot)
+    └── Snapshot 2       → file .bak.2 (previous snapshot in rotation)
 ```
 
-### What does Upload all files again do?
+### What does Re-upload all files do?
 
-If you configure cloud upload (WebDAV, Koofr, Dropbox, FTP), **Upload all files again** re-examines every local note and uploads any missing or newer files to your cloud server without needing to trigger a full re-export.
+If you configure cloud upload (WebDAV, Koofr, Dropbox, FTP), **Settings → Cloud upload → Re-upload all files…** re-examines every local note and uploads any missing or newer files to your cloud server without needing to trigger a full re-export.
 
 ### Can I delete obsolete tags across my entire library?
 
@@ -103,7 +103,7 @@ No. Tomedown inherits your configured cloud server from KOReader's *Cloud storag
 
 ### How do I update the plugin?
 
-Open **Tomedown → Settings → Updates → Check for updates** right inside KOReader. You can also opt into beta releases or install manually from [GitHub Releases](https://github.com/imanubdesigner/tomedown.koplugin/releases).
+Open **Tomedown → Settings → App & updates → Check for updates** right inside KOReader. You can also switch **Release channel** to **Beta** or install manually from [GitHub Releases](https://github.com/imanubdesigner/tomedown.koplugin/releases).
 
 ### Something does not work
 

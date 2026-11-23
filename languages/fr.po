@@ -81,35 +81,14 @@ msgstr "Tout désélectionner"
 msgid "Upload to cloud"
 msgstr "Envoyer vers le cloud"
 
-msgid "Server and folder: not set"
-msgstr "Serveur et dossier : non définis"
-
-msgid "Server and folder: %1 → %2"
-msgstr "Serveur et dossier : %1 → %2"
-
-msgid "Server and folder: %1"
-msgstr "Serveur et dossier : %1"
-
-msgid "Remote folder: not set"
-msgstr "Dossier distant : non défini"
-
-msgid "Remote folder: %1"
-msgstr "Dossier distant : %1"
-
 msgid "Local folder: %1"
 msgstr "Dossier local : %1"
-
-msgid "Create an index note (%1)"
-msgstr "Créer note d'index (%1)"
 
 msgid "Index order: %1"
 msgstr "Ordre de l'index : %1"
 
 msgid "Export this book"
 msgstr "Exporter ce livre"
-
-msgid "Export new and changed books"
-msgstr "Exporter les livres nouveaux et modifiés"
 
 msgid "Keep my notes in this book"
 msgstr "Garder mes notes ici"
@@ -137,15 +116,6 @@ msgstr "Désactiver"
 
 msgid "Keep it on"
 msgstr "Laisser activé"
-
-msgid "Choose books…"
-msgstr "Choisir des livres…"
-
-msgid "Repair all files"
-msgstr "Réparer tous les fichiers"
-
-msgid "Upload all files again"
-msgstr "Envoyer à nouveau tous les fichiers"
 
 msgid "Bring in edits made in Obsidian"
 msgstr "Importer modifs Obsidian"
@@ -234,18 +204,6 @@ msgid "Abandoned"
 msgstr "Abandonné"
 
 # settings: covers and callout (v0.8.0)
-msgid "Include book covers"
-msgstr "Inclure les couvertures"
-
-msgid "Treat every highlight as special"
-msgstr "Tout surlignage spécial"
-
-msgid "Add link IDs to highlights"
-msgstr "ID de lien sur surlignages"
-
-msgid "How special highlights look: %1"
-msgstr "Style spéciaux : %1"
-
 msgid "Callout ([!highlight])"
 msgstr "Callout ([!highlight])"
 
@@ -310,14 +268,8 @@ msgstr "Impossible de récupérer le changelog."
 msgid "Check for updates in background"
 msgstr "Vérifier MàJ en fond"
 
-msgid "Beta versions"
-msgstr "Versions bêta"
-
 msgid "Check for beta updates"
 msgstr "Rechercher les mises à jour bêta"
-
-msgid "Go back to the stable version"
-msgstr "Revenir à la version stable"
 
 msgid "This will install the latest stable release of Tomedown, then restart KOReader. Continue?"
 msgstr "Cela installera la dernière version stable de Tomedown, puis redémarrera KOReader. Continuer ?"
@@ -342,12 +294,6 @@ msgstr "Stable"
 
 msgid "Cloud"
 msgstr "Cloud"
-
-msgid "Files"
-msgstr "Fichiers"
-
-msgid "Updates"
-msgstr "Mises à jour"
 
 msgid "About"
 msgstr "À propos"
@@ -424,17 +370,11 @@ msgstr "Ouvrir"
 msgid "Tomedown update available: v%1"
 msgstr "Mise à jour de Tomedown disponible : v%1"
 
-msgid "Include page bookmarks"
-msgstr "Inclure les signets de page"
-
 msgid "Export when I close a book"
 msgstr "Exporter quand je ferme un livre"
 
 msgid "Page bookmarks"
 msgstr "Signets de page"
-
-msgid "Receive beta versions"
-msgstr "Recevoir les versions bêta"
 
 msgid "Status"
 msgstr "État"
@@ -492,12 +432,6 @@ msgstr "Fermeture"
 
 msgid "Manual"
 msgstr "Manuel"
-
-msgid "Keep my notes: all books"
-msgstr "Garder notes : tous"
-
-msgid "Keep my notes: index"
-msgstr "Conserver mes notes : index"
 
 msgid "%1 files backed up (.bak)"
 msgstr "%1 fichiers sauvegardés (.bak)"
@@ -632,15 +566,6 @@ msgstr "Visibilité du livre"
 msgid "Book visibility…"
 msgstr "Visibilité du livre…"
 
-msgid "Book visibility: normal"
-msgstr "Visibilité du livre : normale"
-
-msgid "Book visibility: hidden from the index"
-msgstr "Visibilité du livre : masqué de l'index"
-
-msgid "Book visibility: not exported"
-msgstr "Visibilité du livre : non exporté"
-
 msgid "Export and show in the index"
 msgstr "Exporter et afficher dans l'index"
 
@@ -655,9 +580,6 @@ msgstr "%1 fichiers exclus de l'export"
 
 msgid "Reading now"
 msgstr "Lectures en cours"
-
-msgid "Show Reading now in the index"
-msgstr "« En cours » dans l'index"
 
 msgid "Every exported book is hidden from the index."
 msgstr "Tous les livres exportés sont masqués de l'index."
@@ -750,9 +672,6 @@ msgstr "Statut : %1"
 
 msgid "Update book info automatically"
 msgstr "MàJ auto infos du livre"
-
-msgid "Import book info for all books"
-msgstr "Importer les informations de tous les livres"
 
 msgid "Import rating, review, dates and collections for all %1 books? Their notes are rewritten, your own notes stay."
 msgstr "Importer la note, la critique, les dates et les collections des %1 livres ? Leurs notes seront réécrites, vos notes restent."
@@ -865,17 +784,11 @@ msgstr "digest"
 msgid "Undated"
 msgstr "Sans date"
 
-msgid "Create a reading digest (%1)"
-msgstr "Créer un digest de lecture (%1)"
-
 msgid "Export reading digest"
 msgstr "Exporter le digest de lecture"
 
 msgid "Index"
 msgstr "Index"
-
-msgid "Style"
-msgstr "Style"
 
 msgid "Welcome to the quiet space where authors' thoughts linger, and your own reflections take shape."
 msgstr "Bienvenue dans l'espace paisible où s'attardent les pensées des auteurs et où prennent forme vos réflexions."
@@ -976,12 +889,6 @@ msgstr "Aucun (liste continue)"
 msgid "Chapter headings: %1"
 msgstr "Titres des chapitres : %1"
 
-msgid "Include highlight context"
-msgstr "Contexte des surlignages"
-
-msgid "Style & format"
-msgstr "Style et format"
-
 msgid "Follow global setting"
 msgstr "Suivre le réglage global"
 
@@ -1012,9 +919,6 @@ msgstr "Signets de page : %1"
 msgid "YAML frontmatter: %1"
 msgstr "Frontmatter YAML : %1"
 
-msgid "Show Tomedown icon in the top bar"
-msgstr "Icône Tomedown en haut"
-
 msgid "Custom fields"
 msgstr "Champs personnalisés"
 
@@ -1042,9 +946,6 @@ msgstr "Nom du dossier des dessins"
 msgid "e.g. drawings, attachments, assets"
 msgstr "p. ex. drawings, attachments, assets"
 
-msgid "Include handwritten notes"
-msgstr "Inclure les notes manuscrites"
-
 msgid "Drawings folder: %1"
 msgstr "Dossier des dessins : %1"
 
@@ -1062,9 +963,6 @@ msgstr "Spéciaux"
 
 msgid "Books"
 msgstr "Livres"
-
-msgid "Include book title in body"
-msgstr "Inclure le titre du livre dans le texte"
 
 msgid "Book title in body: %1"
 msgstr "Titre dans le texte : %1"
@@ -1117,38 +1015,11 @@ msgstr "3 premiers (+N)"
 msgid "Collapsible (<details>)"
 msgstr "Repliable (<details>)"
 
-msgid "Index tags display: %1"
-msgstr "Tags dans l'index : %1"
-
-msgid "Show Completed books in the index"
-msgstr "Terminés dans l'index"
-
-msgid "Show Library dashboard in the index"
-msgstr "Tableau dans l'index"
-
-msgid "Show tag cloud in the index"
-msgstr "Nuage de tags (index)"
-
-msgid "Include reading dashboard"
-msgstr "Inclure le tableau de lecture"
-
-msgid "Include book synopsis"
-msgstr "Inclure le synopsis du livre"
-
-msgid "Include clickable tags in body"
-msgstr "Inclure les tags cliquables dans le texte"
-
-msgid "Include Special highlights showcase"
-msgstr "Inclure la vitrine des extraits spéciaux"
-
 msgid "Reading dashboard: %1"
 msgstr "Tableau de lecture : %1"
 
 msgid "Book synopsis: %1"
 msgstr "Synopsis du livre : %1"
-
-msgid "Body tags: %1"
-msgstr "Tags dans le texte : %1"
 
 msgid "Special highlights showcase: %1"
 msgstr "Vitrine spéciaux : %1"
@@ -1232,3 +1103,198 @@ msgstr "Toucher : page · Maintenir : modifier"
 
 msgid "Edit note"
 msgstr "Modifier la note"
+
+msgid "Index style: %1"
+msgstr "Style d’index : %1"
+
+msgid "Dashboard style: %1"
+msgstr "Style du tableau de bord : %1"
+
+msgid "Harmonize book styles"
+msgstr "Harmoniser les styles du livre"
+
+msgid "Harmonize book styles: %1"
+msgstr "Harmoniser les styles du livre : %1"
+
+msgid "Book style: %1"
+msgstr "Style du livre : %1"
+
+msgid "Synopsis style: %1"
+msgstr "Style du synopsis : %1"
+
+msgid "Showcase style: %1"
+msgstr "Style de la vitrine de citations : %1"
+
+msgid "Synopsis display: %1"
+msgstr "Affichage du synopsis : %1"
+
+msgid "Collapsed (foldable)"
+msgstr "Replié"
+
+msgid "Short preview (~300 chars)"
+msgstr "Aperçu court (~300 car.)"
+
+msgid "Collapsed + Short preview"
+msgstr "Replié + Aperçu court"
+
+msgid "Expanded (full text)"
+msgstr "Déplié (texte complet)"
+
+msgid "Minimal symbols (● / ◐)"
+msgstr "Symboles sobres (● / ◐)"
+
+msgid "Emoji (🟢 / 🟡)"
+msgstr "Emoji (🟢 / 🟡)"
+
+msgid "Code badges (`READING`)"
+msgstr "Badges code (`READING`)"
+
+msgid "Editorial (Reading)"
+msgstr "Éditorial (Reading)"
+
+msgid "All books"
+msgstr "Tous les livres"
+
+msgid "Export changed books"
+msgstr "Exporter les livres modifiés"
+
+msgid "Export all books again…"
+msgstr "Exporter à nouveau tous les livres…"
+
+msgid "Select books…"
+msgstr "Sélectionner des livres…"
+
+msgid "Book visibility: %1"
+msgstr "Visibilité du livre : %1"
+
+msgid "Normal"
+msgstr "Normale"
+
+msgid "Hidden from index"
+msgstr "Masqué de l'index"
+
+msgid "Not exported"
+msgstr "Non exporté"
+
+msgid "Format & layout"
+msgstr "Format et mise en page"
+
+msgid "Index & library"
+msgstr "Index et bibliothèque"
+
+msgid "Notes & highlights"
+msgstr "Notes et surlignages"
+
+msgid "Cloud upload"
+msgstr "Envoi vers le cloud"
+
+msgid "App & updates"
+msgstr "Application et mises à jour"
+
+msgid "Not used with .txt"
+msgstr "Non utilisé avec .txt"
+
+msgid "File names & folders"
+msgstr "Noms de fichiers et dossiers"
+
+msgid "Reading digest (%1)"
+msgstr "Condensé de lecture (%1)"
+
+msgid "Index note (%1)"
+msgstr "Note d'index (%1)"
+
+msgid "Tags display: %1"
+msgstr "Affichage des tags : %1"
+
+msgid "Reading now section"
+msgstr "Section En cours de lecture"
+
+msgid "Tag cloud"
+msgstr "Nuage de tags"
+
+msgid "Special highlight style: %1"
+msgstr "Style des surlignages spéciaux : %1"
+
+msgid "Highlight context"
+msgstr "Contexte des surlignages"
+
+msgid "Link IDs on highlights"
+msgstr "ID de lien sur les surlignages"
+
+msgid "Every highlight is special"
+msgstr "Chaque surlignage est spécial"
+
+msgid "Handwritten notes"
+msgstr "Notes manuscrites"
+
+msgid "Book page"
+msgstr "Page du livre"
+
+msgid "Book title in body"
+msgstr "Titre du livre dans le corps"
+
+msgid "Book cover image"
+msgstr "Image de couverture"
+
+msgid "Tags in body"
+msgstr "Tags dans le corps"
+
+msgid "Tags in body: %1"
+msgstr "Tags dans le corps : %1"
+
+msgid "Special highlights showcase"
+msgstr "Vitrine des surlignages spéciaux"
+
+msgid "Section styles"
+msgstr "Styles des sections"
+
+msgid "Tags style: %1"
+msgstr "Style des tags : %1"
+
+msgid "Import book info for all books…"
+msgstr "Importer les infos pour tous les livres…"
+
+msgid "Destination: Not set"
+msgstr "Destination : Non définie"
+
+msgid "Destination: %1 → %2"
+msgstr "Destination : %1 → %2"
+
+msgid "Destination: %1"
+msgstr "Destination : %1"
+
+msgid "Choose in cloud storage…"
+msgstr "Choisir dans le stockage cloud…"
+
+msgid "Enter remote path…"
+msgstr "Saisir le chemin distant…"
+
+msgid "Clear remote path…"
+msgstr "Effacer le chemin distant…"
+
+msgid "Clear the custom remote path and use the folder chosen in cloud storage?"
+msgstr "Effacer le chemin distant personnalisé et utiliser le dossier choisi dans le stockage cloud ?"
+
+msgid "Clear"
+msgstr "Effacer"
+
+msgid "Re-upload all files…"
+msgstr "Renvoyer tous les fichiers…"
+
+msgid "Keep my notes for all books"
+msgstr "Conserver mes notes pour tous les livres"
+
+msgid "Keep my notes in the index"
+msgstr "Conserver mes notes dans l'index"
+
+msgid "Top bar icon"
+msgstr "Icône dans la barre supérieure"
+
+msgid "Release channel: %1"
+msgstr "Canal de publication : %1"
+
+msgid "Stable"
+msgstr "Stable"
+
+msgid "Go back to the stable version…"
+msgstr "Revenir à la version stable…"

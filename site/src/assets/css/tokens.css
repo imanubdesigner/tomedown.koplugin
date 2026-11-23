@@ -1,0 +1,63 @@
+/* Tomedown shared tokens. Brand values are carried over from main.css:
+   amber highlighter (#f0b00a), warm paper, Instrument Serif / Instrument Sans /
+   JetBrains Mono. Every colour and font on the site goes through these names. */
+:root {
+  --space-3xs: 2px; --space-2xs: 4px; --space-xs: 8px; --space-sm: 12px; --space-md: 16px; --space-lg: 24px; --space-xl: 40px; --space-2xl: 64px; --space-3xl: 96px; --space-4xl: 144px;
+  --text-xs: 0.8125rem; --text-sm: 0.875rem; --text-md: 1rem; --text-prose: 1.0625rem; --text-lg: 1.25rem; --text-xl: 1.5625rem; --text-2xl: 1.953rem; --text-3xl: 2.441rem;
+  --text-display: clamp(2.6rem, 1rem + 3.6vw, 4.4rem); --text-section: clamp(2rem, 1.25rem + 2vw, 3.1rem);
+  --text-title: clamp(1.25rem, 0.75vw + 0.9rem, 1.5rem); --text-lead: clamp(1.125rem, 0.35vw + 1rem, 1.3rem);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-micro: 120ms; --dur-short: 220ms;
+  --container: 1360px; --gutter: 48px; --gap-columns: 32px; --section-gap: 120px;
+  --z-sticky: 200; --z-sticky-nav: 300; --z-drawer: 400;
+  --radius-card: 8px; --radius-ctl: 8px; --radius-pill: 999px; --rule-hair: 1px;
+  --font-display: "Instrument Serif", Georgia, "Times New Roman", serif;
+  --font-body: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font-hand: "Caveat", "Instrument Serif", cursive;
+  --display-weight: 400;
+  --tracking-display: -0.015em;
+
+  /* brand palette (as documented in About) */
+  --swatch-paper: #faf6ee;
+  --swatch-amber: #f0b00a;
+  --swatch-charcoal: #1e1e1e;
+  --swatch-ink: #2c2823;
+  --swatch-warm-page: #f4ecd8;
+  --swatch-ribbon: #f8c82e;
+  --swatch-page-edge: #b8aa85;
+
+  /* light theme */
+  --color-paper: #faf6ee; --color-paper-2: #f4ecd8; --color-paper-3: #ede5d3;
+  --color-ink: #1e1e1e; --color-ink-2: #524d45; --color-muted: #6e6759;
+  --color-rule: #e6decb; --color-rule-strong: #d4cab4;
+  --color-accent: #f0b00a; --color-accent-ink: #1e1e1e; --color-accent-text: #bc8a0a;
+  --color-focus: #bc8a0a;
+  --color-callout-blue: #2563eb; --color-callout-purple: #7c3aed;
+  --color-scrim: rgba(30, 30, 30, 0.45);
+}
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-paper: #1e1e1e; --color-paper-2: #252422; --color-paper-3: #2c2b28;
+  --color-ink: #faf6ee; --color-ink-2: #cfc7b8; --color-muted: #9e978b;
+  --color-rule: #34322e; --color-rule-strong: #4a4740;
+  --color-accent: #f0b00a; --color-accent-ink: #1e1e1e; --color-accent-text: #bc8a0a;
+  --color-focus: #bc8a0a;
+  --color-callout-blue: #60a5fa; --color-callout-purple: #c084fc;
+  --color-scrim: rgba(30, 30, 30, 0.72);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --color-paper: #1e1e1e; --color-paper-2: #252422; --color-paper-3: #2c2b28;
+    --color-ink: #faf6ee; --color-ink-2: #cfc7b8; --color-muted: #9e978b;
+    --color-rule: #34322e; --color-rule-strong: #4a4740;
+    --color-accent: #f0b00a; --color-accent-ink: #1e1e1e; --color-accent-text: #bc8a0a;
+    --color-focus: #bc8a0a;
+    --color-callout-blue: #60a5fa; --color-callout-purple: #c084fc;
+    --color-scrim: rgba(30, 30, 30, 0.72);
+  }
+}
+@media (max-width: 60rem) { :root { --gutter: 24px; --section-gap: 88px; } }
+@media (max-width: 40rem) { :root { --gutter: 16px; --section-gap: 64px; --gap-columns: 16px; } }

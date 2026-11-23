@@ -567,14 +567,14 @@ T.check(T.contains(rows, "| A \\| B | 0 |"), "pipes escaped, count zero")
 local order = rows:find("[[Arthur Machen - The Three Impostors\\|The Three Impostors]]", 1, true)
 local order2 = rows:find("[[Altro Autore - Altro\\|Altro]]", 1, true)
 T.check(order2 < order, "author order is the default for My books")
-T.check(T.contains(rows, "### My books"),
+T.check(T.contains(rows, "### ▪ My books (2)"),
     "the plain group keeps its heading even when it is alone")
-T.check(not T.contains(rows, "### Series books"),
+T.check(not T.contains(rows, "Series books"),
     "no series heading without series books")
 local plain_rows = (rows:gsub(" hash=%w+", ""))
 T.check(T.contains(plain_rows,
     "---\n\n\n" .. render.beginMarker("index")
-    .. "\n\n---\n\n**2 books** · **2 highlights**\n\n### My books\n\n| Book |"),
+    .. "\n\n---\n\n**2 books** · **2 highlights**\n\n### ▪ My books (2)\n\n| Book |"),
     "the stats line, the heading and then the table")
 
 local single = render.buildIndexMd({
@@ -626,12 +626,12 @@ T.check(T.contains(covered,
     '<img src="covers/Autore - Titolo.jpg" alt="" style="object-fit:contain;width:90px;height:120px">'),
     "cover cell in the index row")
 T.check(T.contains(covered, "| Saga #2 |"), "series cell with the series index")
-T.check(T.contains(covered, "| Reading | 3 |"), "status cell translated to English")
-T.check(T.contains(covered, "### Reading now"),
+T.check(T.contains(covered, "| ◐ Reading | 3 |"), "status cell translated to English")
+T.check(T.contains(covered, "### ▸ Reading now (1)"),
     "a book being read gets the short section above the index")
-T.check(T.contains(covered, "### Series books"),
+T.check(T.contains(covered, "### § Series books (1)"),
     "a lone series group keeps its heading")
-T.check(not T.contains(covered, "### My books"),
+T.check(not T.contains(covered, "My books"),
     "no plain heading without plain books")
 -- a book without a series/status/cover drops those columns, no dash
 local sparse = render.buildIndexMd({
@@ -652,24 +652,24 @@ local readingIndex = render.buildIndexMd({
     { link = "Altro - Finito", title = "Finito", author = "Altro",
         status = "complete", count = 3, series = "Saga" },
 })
-local readingSection = readingIndex:match("### Reading now(.-)###")
+local readingSection = readingIndex:match("### ▸ Reading now %(2%)(.-)###")
 T.check(readingSection ~= nil, "the Reading now section is there")
 local firstReading = readingSection and readingSection:find("\\|Primo]]", 1, true)
 local secondReading = readingSection and readingSection:find("\\|Secondo]]", 1, true)
 T.check(firstReading and secondReading and secondReading < firstReading,
     "Reading now sorts by the latest opening")
-T.check(readingSection and T.contains(readingSection, "Reading<br>")
+T.check(readingSection and T.contains(readingSection, "◐ Reading<br>")
         and T.contains(readingSection, "▰▱▱▱▱&nbsp;20%"),
     "Reading now keeps the status and the progress bar")
-T.check(readingIndex:find("### Reading now", 1, true)
-        < readingIndex:find("### Series books", 1, true),
+T.check(readingIndex:find("### ▸ Reading now (2)", 1, true)
+        < readingIndex:find("### § Series books (1)", 1, true),
     "Reading now sits above the series and My books tables")
 T.check(not T.contains(render.buildIndexMd({
     { link = "B", title = "B", author = "Au", status = "complete", count = 1 },
-}, {}), "### Reading now"), "no section when nothing is being read")
+}, {}), "Reading now"), "no section when nothing is being read")
 T.check(not T.contains(render.buildIndexMd({
     { link = "B", title = "B", author = "Au", status = "reading", count = 1 },
-}, { reading_now = false }), "### Reading now"),
+}, { reading_now = false }), "Reading now"),
     "the setting removes the section")
 local hiddenEmpty = render.buildIndexMd({}, { hidden_books = 2 })
 T.check(T.contains(hiddenEmpty, "_Every exported book is hidden from the index._"),
@@ -758,9 +758,9 @@ local compactIndex = render.buildIndexMd({
 T.check(T.contains(compactIndex, "| Status · Last read | Highlights |"),
     "the compact layout has one status and date column")
 T.check(T.contains(compactIndex,
-        "| Reading · 01/10/2026<br>▰▱▱▱▱&nbsp;6% | 2 |"),
+        "| ◐ Reading · 01/10/2026<br>▰▱▱▱▱&nbsp;6% | 2 |"),
     "the date joins the status word, the bar keeps its own line")
-T.check(T.contains(compactIndex, "| Complete | 1 |"),
+T.check(T.contains(compactIndex, "| ● Complete | 1 |"),
     "a book with no date shows the status alone in the merged column")
 local compactSingle = render.buildIndexMd({
     { link = "B", title = "B", author = "A", count = 1,
@@ -774,7 +774,7 @@ local bogusLayout = render.buildIndexMd({
     { link = "B", title = "B", author = "A", count = 1,
         tags = { "Horror" } },
 }, { index_layout = "bogus" })
-T.check(T.contains(bogusLayout, "### My books")
+T.check(T.contains(bogusLayout, "### ▪ My books (1)")
         and not T.contains(bogusLayout, "| Tags |"),
     "an unknown layout falls back to tags under the title")
 
@@ -790,7 +790,7 @@ local ratedIndex = render.buildIndexMd({
         status = "complete", progress = "100%", rating = 4, count = 3,
     },
 }, {})
-T.check(T.contains(ratedIndex, "Complete<br>▰▰▰▰▰&nbsp;100%<br>★★★★☆"),
+T.check(T.contains(ratedIndex, "● Complete<br>▰▰▰▰▰&nbsp;100%<br>★★★★☆"),
     "an imported rating appears under the status and progress bar")
 
 -- index v3: two groups, each with its own columns and a heading
@@ -801,8 +801,8 @@ local split = render.buildIndexMd({
     },
     { link = "A - Solo", title = "Solo", author = "Al", count = 4 },
 }, {})
-T.check(T.contains(split, "### Series books"), "heading for the series group")
-T.check(T.contains(split, "### My books"), "heading for the plain group")
+T.check(T.contains(split, "### § Series books (1)"), "heading for the series group")
+T.check(T.contains(split, "### ▪ My books (1)"), "heading for the plain group")
 T.check(T.contains(split, "| Book | Author | Series | Highlights |"),
     "the series table keeps the Series column")
 T.check(T.contains(split, "| Book | Author | Highlights |"),
@@ -894,7 +894,7 @@ T.check(T.contains(rich,
 T.check(T.contains(rich, "| Book | Author | Status | Last read | Highlights |"),
     "the percent rides with the bar, the date gets a column of its own")
 T.check(T.contains(rich,
-    "| Reading<br>▰▱▱▱▱&nbsp;6% | 01/10/2026 |"),
+    "| ◐ Reading<br>▰▱▱▱▱&nbsp;6% | 01/10/2026 |"),
     "the status word over the bar, the percent stuck to it with a nbsp")
 T.check(T.contains(rich, "| 5 · ★2 |"),
     "special count in the highlights cell")
@@ -1572,17 +1572,74 @@ do
         special_showcase = true,
     })
     T.check(T.contains(full_card_md, "> [!book] Reading dashboard")
-            and T.contains(full_card_md, "🟢 **Complete** (100% · 212 pages)")
+            and T.contains(full_card_md, "● **Complete** (100% · 212 pages)")
             and T.contains(full_card_md, "★★★★☆ (4/5)")
             and T.contains(full_card_md, "5 Nov 2026 → 14 Nov 2026")
             and T.contains(full_card_md, "[[00 - Index|← Book index]]"),
-        "reading_dashboard renders status, pages, rating, literary dates and index link")
-    T.check(T.contains(full_card_md, "> [!abstract]- Book synopsis\n> Having recently been pardoned, the Just Men continue their mission.\n>\n> Second paragraph."),
-        "book_synopsis strips HTML and renders collapsible [!abstract]- callout")
-    T.check(T.contains(full_card_md, "\n#Detective #Mystery-stories #English\n"),
-        "body_tags renders clickable hashtags in book body")
+        "reading_dashboard renders status (default minimal), pages, rating, literary dates and index link")
+    T.check(T.contains(render.buildBookMd(card_book, {
+            reading_dashboard = true, dashboard_style = "emoji",
+        }), "🟢 **Complete** (100% · 212 pages)"),
+        "dashboard_style = emoji renders color emoji in book reading dashboard")
+    T.check(T.contains(render.buildBookMd(card_book, {
+            reading_dashboard = true, dashboard_style = "badges",
+        }), "**Status:** `COMPLETE` · `100%` · `212 PAGES`"),
+        "dashboard_style = badges renders inline code badges in book reading dashboard")
+    T.check(T.contains(render.buildBookMd(card_book, {
+            reading_dashboard = true, dashboard_style = "editorial",
+        }), "**Status:** **Complete** (100% · 212 pages)"),
+        "dashboard_style = editorial renders clean typography without symbols in book reading dashboard")
+    T.check(T.contains(full_card_md, "> [!abstract]- § Book synopsis\n> Having recently been pardoned, the Just Men continue their mission.\n>\n> Second paragraph."),
+        "book_synopsis strips HTML and renders collapsible [!abstract]- callout with default minimal § symbol")
+    T.check(T.contains(full_card_md, "\n▪ *#Detective* · *#Mystery-stories* · *#English*\n"),
+        "body_tags renders default minimal styled hashtags in book body")
     T.check(T.contains(full_card_md, "> [!highlight]- ★ Special highlights (1)\n> “Six million people rose from their beds.”\n> — *Chapter I · p. 4*"),
         "special_showcase renders collapsible ★ Special highlights callout before chapters")
+
+    -- Harmonized book_visual_style vs diversified section styles + synopsis_mode
+    local badges_card_md = render.buildBookMd(card_book, {
+        book_visual_style = "badges",
+        reading_dashboard = true,
+        book_synopsis = true,
+        body_tags = true,
+        special_showcase = true,
+    })
+    T.check(T.contains(badges_card_md, "**Status:** `COMPLETE` · `100%` · `212 PAGES`")
+            and T.contains(badges_card_md, "> [!abstract]- `BOOK SYNOPSIS`")
+            and T.contains(badges_card_md, "\n`#Detective` `#Mystery-stories` `#English`\n")
+            and T.contains(badges_card_md, "> [!highlight]- Special highlights `(1)`"),
+        "book_visual_style = badges harmonizes dashboard, synopsis, body tags and showcase")
+
+    local editorial_card_md = render.buildBookMd(card_book, {
+        book_visual_style = "editorial",
+        reading_dashboard = true,
+        book_synopsis = true,
+        synopsis_mode = "expanded",
+        body_tags = true,
+        special_showcase = true,
+    })
+    T.check(T.contains(editorial_card_md, "**Status:** **Complete** (100% · 212 pages)")
+            and T.contains(editorial_card_md, "> [!abstract]+ Book synopsis")
+            and T.contains(editorial_card_md, "\n*Tags:* #Detective · #Mystery-stories · #English\n")
+            and T.contains(editorial_card_md, "> [!highlight]- Special highlights (1)"),
+        "book_visual_style = editorial with synopsis_mode = expanded renders clean typography and open callout")
+
+    local long_syn_book = {
+        title = "Long Book",
+        author = "Author",
+        description = string.rep("A very long literary sentence about a detective investigating a dark gothic mystery in London. ", 6),
+        annotations = { { text = "Quote", page = "1" } },
+    }
+    local std_short_syn = render.buildBookMd(long_syn_book, {
+        markdown_style = "standard",
+        book_synopsis = true,
+        synopsis_mode = "collapsed_short",
+    })
+    T.check(T.contains(std_short_syn, "<details>\n<summary><b>§ Book synopsis</b></summary>\n<blockquote><p>")
+            and T.contains(std_short_syn, "…</p></blockquote>\n</details>")
+            and not T.contains(std_short_syn, "</summary>\n\n")
+            and #std_short_syn < 750,
+        "Standard Markdown synopsis_mode = collapsed_short wraps truncated ~300-char synopsis in contiguous <details> HTML block without blank lines")
 
     -- Pillar 6: Index Trophy Room (completed_books), Library Dashboard (index_dashboard), and Tag Cloud (index_tag_cloud)
     local lib_books = {
@@ -1618,15 +1675,49 @@ do
         index_tag_cloud = true,
     })
     T.check(T.contains(full_idx_md, "> [!summary] Library dashboard")
-            and T.contains(full_idx_md, "🟢 1 Complete")
-            and T.contains(full_idx_md, "🟡 1 Reading")
+            and T.contains(full_idx_md, "● 1 Complete")
+            and T.contains(full_idx_md, "◐ 1 Reading")
             and T.contains(full_idx_md, "[[00 - Reading Digest|Reading digest →]]"),
         "index_dashboard renders Library dashboard callout with status breakdown and digest link")
     T.check(T.contains(full_idx_md, "🏷️ #Detective (2) · #Gothic (1) · #Mystery (1)"),
         "index_tag_cloud aggregates and sorts tags by frequency")
-    T.check(T.contains(full_idx_md, "### Completed books\n")
-            and T.contains(full_idx_md, "### Reading now\n"),
+    T.check(T.contains(full_idx_md, "### ✓ Completed books (1)\n")
+            and T.contains(full_idx_md, "### ▸ Reading now (1)\n"),
         "completed_books renders Completed books trophy room section")
+
+    local obs_emoji = render.buildIndexMd(lib_books, {
+        index_style = "emoji",
+        completed_books = true,
+        index_dashboard = true,
+    })
+    T.check(T.contains(obs_emoji, "> [!summary] Library dashboard")
+            and T.contains(obs_emoji, "**🟢 1 Complete** · **🟡 1 Reading**")
+            and T.contains(obs_emoji, "### 🟢 Completed books (1)\n")
+            and T.contains(obs_emoji, "### 🟡 Reading now (1)\n")
+            and T.contains(obs_emoji, "| 🟡 Reading<br>▰▱▱▱▱&nbsp;23% |"),
+        "Obsidian mode supports index_style = emoji")
+
+    local obs_badges = render.buildIndexMd(lib_books, {
+        index_style = "badges",
+        completed_books = true,
+        index_dashboard = true,
+    })
+    T.check(T.contains(obs_badges, "> `2 BOOKS` · `1 COMPLETE` · `1 READING`")
+            and T.contains(obs_badges, "### Completed books `(1)`\n")
+            and T.contains(obs_badges, "### Reading now `(1)`\n")
+            and T.contains(obs_badges, "| `READING`<br>`23%` |"),
+        "Obsidian mode supports index_style = badges")
+
+    local obs_editorial = render.buildIndexMd(lib_books, {
+        index_style = "editorial",
+        completed_books = true,
+        index_dashboard = true,
+    })
+    T.check(T.contains(obs_editorial, "> **2 books** · **1 Complete** · **1 Reading**")
+            and T.contains(obs_editorial, "### Completed books (1)\n")
+            and T.contains(obs_editorial, "### Reading now (1)\n")
+            and T.contains(obs_editorial, "| **Reading**<br>23% |"),
+        "Obsidian mode supports index_style = editorial")
 end
 
 -- Standard Markdown (index_links = "markdown"): zero Obsidian [!callouts] and zero orphan ^hl- IDs
@@ -1655,19 +1746,39 @@ do
         index_links = "markdown",
         markdown_style = "standard",
         overview_style = "callout",
+        special_marker = "callout",
+        callout = true,
         reading_dashboard = true,
         book_synopsis = true,
         special_showcase = true,
         block_ids = true,
     })
+    T.check(not T.contains(std_md, "[!"),
+        "Standard Markdown has zero Obsidian callouts across whole book file")
+    T.check(not T.contains(std_md, "[["),
+        "Standard Markdown has zero Obsidian wikilinks across whole book file")
     T.check(T.contains(std_md, "### Reading dashboard")
             and not T.contains(std_md, "> [!book]"),
         "Standard Markdown renders Reading dashboard without [!book] callout")
-    T.check(T.contains(std_md, "### Book synopsis")
+    T.check(T.contains(std_md, "<details>\n<summary><b>§ Book synopsis</b></summary>\n<blockquote><p>A philosophical novel set in 19th-century Russia.</p></blockquote>\n</details>")
             and not T.contains(std_md, "> [!abstract]-"),
-        "Standard Markdown renders Book synopsis without [!abstract]- callout")
+        "Standard Markdown renders Book synopsis in a contiguous foldable <details> drawer by default without [!abstract]- callout")
     T.check(not T.contains(std_md, "> [!summary]"),
         "Standard Markdown falls back Overview callout to clean blockquote")
+    local std_hl_md = render.buildBookMd(std_book, {
+        markdown_style = "standard",
+        special_marker = "highlight",
+    })
+    local std_hlb_md = render.buildBookMd(std_book, {
+        markdown_style = "standard",
+        special_marker = "highlight_bold",
+        reading_dashboard = true,
+    })
+    T.check(not T.contains(std_hl_md, "==") and T.contains(std_hl_md, "> **Above all, do not lie to yourself.**")
+            and not T.contains(std_hlb_md, "==") and T.contains(std_hlb_md, "> **Above all, do not lie to yourself.**")
+            and T.contains(std_hlb_md, "[← Book index](00%20-%20Index.md)")
+            and not T.contains(std_hlb_md, "[["),
+        "Standard Markdown falls back ==text== and ==**text**== to bold and forces standard markdown links even when index_links is omitted")
     T.check(T.contains(std_md, "### ★ Special highlights (1)")
             and not T.contains(std_md, "> [!highlight]-"),
         "Standard Markdown renders Special highlights showcase without [!highlight]- callout")
@@ -1675,16 +1786,192 @@ do
         "Standard Markdown omits Obsidian-only ^hl- block IDs")
 
     local std_idx = render.buildIndexMd({
-        { title = "The Brothers Karamazov", author = "Dostoevsky", base = "karamazov",
+        { title = "The Brothers Karamazov", author = "Dostoevsky",
+          link = "Fyodor Dostoevsky - The Brothers Karamazov",
+          series = "Russian Classics", series_index = 1,
+          cover = "covers/karamazov.jpg",
+          progress = 45, rating = 5, last_read = "2026-11-19",
+          tags = { "Russian", "Philosophy", "Classic", "19th-Century" },
           count = 1, special = 1, status = "reading" },
+        { title = "Notes from Underground", author = "Dostoevsky",
+          link = "Fyodor Dostoevsky - Notes from Underground",
+          progress = "18%",
+          count = 3, status = "complete" },
     }, {
         index_links = "markdown",
         markdown_style = "standard",
+        show_covers = true,
         index_dashboard = true,
+        completed_books = true,
     })
+    T.check(not T.contains(std_idx, "[!"),
+        "Standard Markdown has zero callouts in 00 - Index.md")
+    T.check(not T.contains(std_idx, "[["),
+        "Standard Markdown has zero wikilinks in 00 - Index.md")
+    T.check(not T.contains(std_idx, "<hr") and not T.contains(std_idx, "<span"),
+        "Standard Markdown omits raw <hr> and <span> HTML tags in 00 - Index.md")
+    T.check(not T.contains(std_idx, "| Book |"),
+        "Standard Markdown replaces multi-column Obsidian table with 2-column cover/info table")
+    T.check(T.contains(std_idx, "| | |\n|:---|:---|"),
+        "Standard Markdown with covers uses clean 2-column borderless-header table")
+    T.check(T.contains(std_idx, "## ✓ Completed books (1)")
+            and T.contains(std_idx, "## ▸ Reading now (1)")
+            and T.contains(std_idx, "## § Series books (1)")
+            and T.contains(std_idx, "## ▪ My books (1)"),
+        "Standard Markdown default (minimal) uses monochrome typographic section headings")
+    T.check(T.contains(std_idx, "- **2 books** · **● 1 Complete** · **◐ 1 Reading**"),
+        "Standard Markdown default (minimal) uses monochrome symbols in Library dashboard")
+    T.check(T.contains(std_idx, '| <img src="covers/karamazov.jpg" alt="" width="120"> | **[The Brothers Karamazov](Fyodor%20Dostoevsky%20-%20The%20Brothers%20Karamazov.md)** — *Dostoevsky* · *Russian Classics #1*<br><br>◐ Reading · '),
+        "Standard Markdown puts width=120 cover on left and bold encoded title, author, series and minimal status on right")
+    T.check(T.contains(std_idx, "Last read: 19/11/2026 · **1 highlight** · ★1<br>*#Russian #Philosophy #Classic #19th-Century* |"),
+        "Standard Markdown card formats metadata, highlights, special count and italic tags")
+    T.check(T.contains(std_idx, "- **[Notes from Underground](Fyodor%20Dostoevsky%20-%20Notes%20from%20Underground.md)** — *Dostoevsky*\n  ● Complete · **3 highlights**")
+            and not T.contains(std_idx, "18%"),
+        "Completed book without cover falls back to clean card list and omits contradictory partial progress (18%)")
     T.check(T.contains(std_idx, "### Library dashboard")
             and not T.contains(std_idx, "> [!summary]"),
         "Standard Markdown renders Library dashboard without [!summary] callout")
+
+    local std_sample_books = {
+        { title = "The Brothers Karamazov", author = "Dostoevsky",
+          link = "Fyodor Dostoevsky - The Brothers Karamazov",
+          series = "Russian Classics", series_index = 1,
+          cover = "covers/karamazov.jpg",
+          progress = 24, rating = 5, last_read = "2026-11-19",
+          tags = { "Russian", "Philosophy" },
+          count = 13, special = 4, status = "reading" },
+        { title = "Wieland", author = "Charles Brockden Brown",
+          link = "Charles Brockden Brown - Wieland",
+          cover = "covers/wieland.jpg",
+          progress = 18, last_read = "2026-11-18",
+          count = 5, special = 1, status = "complete" },
+    }
+    local std_emoji = render.buildIndexMd(std_sample_books, {
+        markdown_style = "standard",
+        index_style = "emoji",
+        show_covers = true,
+        index_dashboard = true,
+        completed_books = true,
+    })
+    T.check(T.contains(std_emoji, "**🟢 1 Complete** · **🟡 1 Reading**")
+            and T.contains(std_emoji, "## 🟢 Completed books (1)")
+            and T.contains(std_emoji, "## 🟡 Reading now (1)")
+            and T.contains(std_emoji, "<br><br>🟡 Reading · ▰▱▱▱▱&nbsp;24%"),
+        "index_style = emoji renders color emoji and progress bar")
+
+    local std_badges = render.buildIndexMd(std_sample_books, {
+        markdown_style = "standard",
+        index_style = "badges",
+        show_covers = true,
+        index_dashboard = true,
+        completed_books = true,
+    })
+    T.check(T.contains(std_badges, "- `2 BOOKS` · `1 COMPLETE` · `1 READING`")
+            and T.contains(std_badges, "- `18 HIGHLIGHTS` · `★ 5 SPECIAL`")
+            and T.contains(std_badges, "## Completed books `(1)`")
+            and T.contains(std_badges, "## Reading now `(1)`")
+            and T.contains(std_badges, "<br><br>`READING` · `24%` · ")
+            and T.contains(std_badges, "<br><br>`COMPLETE` · Last read:"),
+        "index_style = badges renders inline code badges without progress bar")
+
+    local std_editorial = render.buildIndexMd(std_sample_books, {
+        markdown_style = "standard",
+        index_style = "editorial",
+        show_covers = true,
+        index_dashboard = true,
+        completed_books = true,
+    })
+    T.check(T.contains(std_editorial, "- **2 books** · **1 Complete** · **1 Reading**")
+            and T.contains(std_editorial, "- **18 highlights** · **5 special**")
+            and T.contains(std_editorial, "## Completed books (1)")
+            and T.contains(std_editorial, "## Reading now (1)")
+            and T.contains(std_editorial, "<br><br>**Reading** (24%) · ")
+            and T.contains(std_editorial, "<br><br>**Complete** · Last read:"),
+        "index_style = editorial renders clean typography without icons or progress bar")
+
+    local std_idx_first3 = render.buildIndexMd({
+        { title = "The Brothers Karamazov", author = "Dostoevsky",
+          link = "Fyodor Dostoevsky - The Brothers Karamazov",
+          tags = { "Russian", "Philosophy", "Classic", "19th-Century" },
+          count = 1, special = 1, status = "reading" },
+        { title = "Crime and Punishment", author = "Dostoevsky",
+          link = "Fyodor Dostoevsky - Crime and Punishment",
+          count = 2, status = "reading" },
+    }, {
+        index_links = "markdown",
+        markdown_style = "standard",
+        index_tags_mode = "first_3",
+    })
+    T.check(not T.contains(std_idx_first3, "<span")
+            and T.contains(std_idx_first3, "<br>*#Russian #Philosophy #Classic +1*"),
+        "Standard Markdown first_3 tags mode renders cleanly without <span> HTML")
+    T.check(T.contains(std_idx_first3, "**2 highlights**\n\n---\n\n- **[The Brothers Karamazov]"),
+        "Standard Markdown card list places a horizontal rule separator between book cards")
+
+    local std_idx_collapsible = render.buildIndexMd({
+        { title = "The Brothers Karamazov", author = "Dostoevsky",
+          link = "Fyodor Dostoevsky - The Brothers Karamazov",
+          tags = { "Russian", "Philosophy", "Classic", "19th-Century" },
+          count = 1, status = "reading" },
+    }, {
+        markdown_style = "standard",
+        index_tags_mode = "collapsible",
+    })
+    T.check(T.contains(std_idx_collapsible, "<br>*#Russian #Philosophy #Classic +1*")
+            and not T.contains(std_idx_collapsible, "<details"),
+        "Standard Markdown falls back collapsible tags mode to first_3 (+N) without <details>")
+
+    local cloud_books = {
+        { title = "Book A", author = "Auth A", link = "Auth A - Book A",
+          tags = { "Detective", "Gothic" }, count = 2, status = "reading" },
+        { title = "Book B", author = "Auth B", link = "Auth B - Book B",
+          tags = { "Detective", "Mystery" }, count = 1, status = "complete" },
+    }
+    T.check(T.contains(render.buildIndexMd(cloud_books, {
+            markdown_style = "standard", index_style = "minimal", index_tag_cloud = true,
+        }), "> ▪ *#Detective* (2) · *#Gothic* (1) · *#Mystery* (1)"),
+        "Standard Markdown tag cloud in minimal style uses monochrome symbol and italic tags")
+    T.check(T.contains(render.buildIndexMd(cloud_books, {
+            markdown_style = "standard", index_style = "badges", index_tag_cloud = true,
+        }), "> `Detective (2)` `Gothic (1)` `Mystery (1)`"),
+        "Standard Markdown tag cloud in badges style uses inline code pills")
+    T.check(T.contains(render.buildIndexMd(cloud_books, {
+            markdown_style = "standard", index_style = "editorial", index_tag_cloud = true,
+        }), "> *Tags:* #Detective *(2)* · #Gothic *(1)* · #Mystery *(1)*"),
+        "Standard Markdown tag cloud in editorial style uses clean typography")
+    T.check(T.contains(render.buildIndexMd(cloud_books, {
+            markdown_style = "standard", index_style = "emoji", index_tag_cloud = true,
+        }), "> 🏷️ #Detective (2) · #Gothic (1) · #Mystery (1)"),
+        "Standard Markdown tag cloud in emoji style frames the emoji line as blockquote")
+
+    local std_digest = render.buildDigestMd({
+        {
+            link = "Fyodor Dostoevsky - The Brothers Karamazov",
+            title = "The Brothers Karamazov",
+            author = "Fyodor Dostoevsky",
+            annotations = {
+                {
+                    text = "Above all, do not lie to yourself.",
+                    chapter = "Book II",
+                    page = 41,
+                    special = true,
+                    time = "2026-11-19 08:00:00",
+                },
+            },
+        },
+    }, {
+        index_links = "markdown",
+        markdown_style = "standard",
+        callout = true,
+        special_marker = "callout",
+        overview_style = "callout",
+    })
+    T.check(not T.contains(std_digest, "[!"),
+        "Standard Markdown has zero callouts in 00 - Reading Digest.md")
+    T.check(not T.contains(std_digest, "[["),
+        "Standard Markdown has zero wikilinks in 00 - Reading Digest.md")
+    T.check(T.contains(std_digest, "### [The Brothers Karamazov](Fyodor%20Dostoevsky%20-%20The%20Brothers%20Karamazov.md) — *Fyodor Dostoevsky*"),
+        "Standard Markdown renders CommonMark relative link with encoded target")
 end
 
 T.finish("test_render")

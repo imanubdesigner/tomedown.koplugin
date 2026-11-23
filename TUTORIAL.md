@@ -30,7 +30,7 @@ them all.
 
 Koofr's WebDAV address (used in the next steps):
 
-```
+```text
 https://app.koofr.net/dav/Koofr
 ```
 
@@ -39,10 +39,10 @@ password everywhere below instead.
 
 ## Step 2 — KOReader: point Tomedown at your cloud
 
-☰ menu → **Tomedown** → **Settings**:
+☰ menu → **Tomedown** → **Settings** → **Cloud upload**:
 
-1. ***Upload to cloud*** — leave it ticked (it is by default).
-2. ***Server and folder…*** — opens KOReader's Cloud storage browser:
+1. ***Upload to cloud*** — tick it to enable automatic cloud upload.
+2. ***Destination ▸*** → ***Choose in cloud storage…*** — opens KOReader's Cloud storage browser:
 
    - add a **WebDAV** server if you don't have one yet:
      for Koofr, address `https://app.koofr.net/dav/Koofr`, username = your
@@ -52,24 +52,24 @@ password everywhere below instead.
 
 Already using **AnnotationSync** (or KOReader's Cloud storage)? Then
 there's nothing to configure: Tomedown inherits that server
-automatically, and *Server and folder…* already shows it. Only set
-***Remote folder…*** if your `.md` files should land somewhere else than
-the JSONs.
+automatically, and *Destination* already shows it. Only tap
+***Destination → Enter remote path…*** if your `.md` files should land
+somewhere else than the JSONs.
 
 More options (index, page bookmarks, local folder…) are described in the
-[Settings](docs/settings.md) page. Two more toggles there are worth knowing
+[Settings](docs/settings.md) page. Two more toggles in **Settings → Notes & highlights** are worth knowing
 about (both off by default):
 
-- ***Include book covers*** — exports every book's cover into `covers/`
+- ***Book page → Book cover*** — exports every book's cover into `covers/`
   and embeds it in the book note and in the index. The cover is removed
   from the device once its upload succeeded (the cloud copy is the master
   one). **Obsidian 1.8.1 or newer is required to display them** — older
   versions show a broken image; update Obsidian from its own settings if
   you are behind.
-- ***Treat every highlight as special*** — every highlight becomes an
-  `> [!highlight]` callout in the exported note. With it off, only the
+- ***Every highlight is special*** — every highlight uses your chosen special highlight style (such as an
+  `> [!highlight]` callout) in the exported note. With it off, only the
   highlights you mark as **Special Highlight** (day to day, below) get
-  the callout.
+  the special marker.
 
 ## Step 3 — First export
 
@@ -77,7 +77,7 @@ about (both off by default):
 
 - On a **fresh install**, the first time you open the menu Tomedown offers
   to export your whole reading history in one tap (*Export* / *Not now*).
-- Later: **Export this book** for the open one, **Export new and changed
+- Later: **Export this book** for the open one, or **All books → Export changed
   books** for whatever changed (it also takes the books you never exported).
 
 The files appear in KOReader's local folder first, then the upload
@@ -121,7 +121,7 @@ Save picks up whatever new export you make.
    tap the highlight and use the row at the bottom of its menu: it reads
    **Special Highlight** or **Remove Special Highlight**.
 
-Updates of the plugin itself: **Settings → Updates → Check for updates**
+Updates of the plugin itself: **Settings → App & updates → Check for updates**
 (notes are shown formatted, with *Update and restart* right in the window).
 
 ## Troubleshooting
@@ -129,15 +129,15 @@ Updates of the plugin itself: **Settings → Updates → Check for updates**
 - **"Nothing to upload, export something first."** — the local folder is
   empty: run an export first.
 - **Upload fails** — the uploader retries 3 times on its own; if it still
-  fails, check the server/folder in *Settings → Cloud → Server and folder…*,
-  then use **Upload all files again**.
+  fails, check the server/folder in *Settings → Cloud upload → Destination*,
+  then use **Re-upload all files…**.
 - **Notes don't appear in Obsidian** — in Remotely Save run *Test* /
   *Sync now*, check the address is the one of **your** server (with
   Koofr: `https://app.koofr.net/dav/Koofr`, not the plain `/dav/` root,
   which is not writable), and that the same folder is selected on both
   sides.
 - **The first-run export offer doesn't show** — it appears only when
-  nothing has ever been exported; use **Export new and changed books**
+  nothing has ever been exported; use **All books → Export changed books**
   from the menu instead.
 - **`.json` files cluttering the vault** — add `*.json` to Remotely
   Save's ignore list (see step 4).
