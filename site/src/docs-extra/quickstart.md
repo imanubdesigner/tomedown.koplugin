@@ -30,21 +30,9 @@ You do **not** need a cloud account or Obsidian to use Tomedown. Everything work
 3. Unzip it **into** your KOReader `plugins/` folder (for example `/mnt/us/koreader/plugins/` on Kindle). The zip already contains the `tomedown.koplugin/` folder.
 4. Eject and restart KOReader (or enable *Tomedown* in **☰ → Plugin management**).
 
-<div class="screenshot-placeholder" role="region" aria-label="Screenshot placeholder: docs-01-main-menu.svg">
-  <div class="sp-top">
-    <div class="sp-meta">
-      <span class="sp-badge">KOReader E-Reader</span>
-      <code class="sp-filename">docs-01-main-menu.svg</code>
-    </div>
-    <button type="button" class="placeholder-copy-btn" data-copy-filename="docs-01-main-menu.svg" aria-label="Copy filename docs-01-main-menu.svg">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-      <span>Copy filename</span>
-    </button>
-  </div>
-  <div class="sp-screen">
-    <p class="sp-title">Main Tomedown menu in KOReader (Reader view)</p>
-    <p class="sp-desc">Inquadra il menu principale di Tomedown aperto da un libro in KOReader: mostra le voci <strong>Export this book</strong>, <strong>All books ▸</strong>, <strong>Current book ▸</strong>, <strong>Last export</strong>, <strong>Settings ▸</strong> e <strong>About</strong>.</p>
-    <span class="sp-hint">Formato: SVG (preset vettoriale) · Schermo e-ink KOReader (3:4)</span>
+<div class="doc-device-figure">
+  <div class="doc-device-frame">
+    <img src="{{base}}/assets/img/docs-01-main-menu.svg" alt="Tomedown main menu in KOReader" width="463" height="647" loading="lazy" decoding="async" />
   </div>
 </div>
 
@@ -57,21 +45,9 @@ You do **not** need a cloud account or Obsidian to use Tomedown. Everything work
    - **Select books…**: opens an interactive multi-selection checklist to tick which books you want to export.
    - **Export reading digest**: compiles `00 - Reading Digest.md` across your library.
 
-<div class="screenshot-placeholder" role="region" aria-label="Screenshot placeholder: docs-02-all-books-menu.svg">
-  <div class="sp-top">
-    <div class="sp-meta">
-      <span class="sp-badge">KOReader E-Reader</span>
-      <code class="sp-filename">docs-02-all-books-menu.svg</code>
-    </div>
-    <button type="button" class="placeholder-copy-btn" data-copy-filename="docs-02-all-books-menu.svg" aria-label="Copy filename docs-02-all-books-menu.svg">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-      <span>Copy filename</span>
-    </button>
-  </div>
-  <div class="sp-screen">
-    <p class="sp-title">Tomedown → All books submenu &amp; Select books checklist</p>
-    <p class="sp-desc">Inquadra il sottomenu <strong>Tomedown → All books</strong> (con <em>Export changed books</em>, <em>Export all books again…</em>, <em>Select books…</em>, <em>Export reading digest</em>) oppure la schermata checklist di <strong>Select books…</strong>.</p>
-    <span class="sp-hint">Formato: SVG (preset vettoriale) · Schermo e-ink KOReader (3:4)</span>
+<div class="doc-device-figure">
+  <div class="doc-device-frame">
+    <img src="{{base}}/assets/img/docs-02-all-books-menu.svg" alt="Tomedown All books submenu in KOReader" width="463" height="647" loading="lazy" decoding="async" />
   </div>
 </div>
 

@@ -15,23 +15,20 @@ Flag standout quotes with **Special Highlight** when selecting text in KOReader.
 
 Enable **Every highlight is special** in **Settings → Notes & highlights** if you want *all* highlights to use your chosen style automatically.
 
-<div class="screenshot-placeholder" role="region" aria-label="Screenshot placeholder: docs-09-special-highlight-selection.svg">
-  <div class="sp-top">
-    <div class="sp-meta">
-      <span class="sp-badge">KOReader E-Reader</span>
-      <code class="sp-filename">docs-09-special-highlight-selection.svg</code>
-    </div>
-    <button type="button" class="placeholder-copy-btn" data-copy-filename="docs-09-special-highlight-selection.svg" aria-label="Copy filename docs-09-special-highlight-selection.svg">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-      <span>Copy filename</span>
-    </button>
-  </div>
-  <div class="sp-screen">
-    <p class="sp-title">Special Highlight button in KOReader text selection popup</p>
-    <p class="sp-desc">Inquadra il popup di selezione testo durante la lettura di un libro su KOReader, evidenziando il pulsante <strong>Special Highlight</strong> subito sotto <em>Highlight</em>.</p>
-    <span class="sp-hint">Formato: SVG (preset vettoriale) · Schermo e-ink KOReader (3:4)</span>
-  </div>
-</div>
+<figure class="doc-device-figure">
+  <img src="{{base}}/assets/img/docs-09-special-highlight-selection.svg" alt="Special Highlight button in KOReader text selection popup" width="463" height="647" loading="lazy" decoding="async" />
+</figure>
+
+### Promote or remove a Special Highlight anytime
+
+You are never locked into your initial choice while reading. Tap any existing highlight on the page in KOReader to toggle its starred status right from the highlight popup:
+
+- **Make special**: promotes a normal highlight into a **★ Special Highlight** so it adopts your chosen highlight style and appears in the *Special highlights showcase*.
+- **Remove special**: converts a starred passage back into a standard highlight while keeping the quote and any attached personal note intact.
+
+<figure class="doc-device-figure doc-device-figure-wide">
+  <img src="{{base}}/assets/img/docs-09-special-highlight-make-special.svg" alt="Toggling Make special and Remove special on an existing highlight in KOReader" width="746" height="647" loading="lazy" decoding="async" />
+</figure>
 
 <div class="styles-showcase" data-reveal aria-label="Interactive 6 special highlight styles preview">
   <div class="showcase-tabs" role="tablist">
@@ -136,6 +133,14 @@ Enable **Every highlight is special** in **Settings → Notes & highlights** if 
   </div>
 </div>
 
+## Notes & highlights menu overview
+
+All formatting controls for highlights, personal notes, chapter headings, page bookmarks, handwritten drawings, and book page modules are organized under **Settings → Notes & highlights** in KOReader:
+
+<figure class="doc-device-figure">
+  <img src="{{base}}/assets/img/docs-main-book-page-section-styles.svg" alt="Settings → Notes &amp; highlights full menu in KOReader" width="463" height="647" loading="lazy" decoding="async" />
+</figure>
+
 ## Book page & Section styles
 
 In **Settings → Notes & highlights → Book page**, you can configure the header layout and rich visual sections of every exported book note:
@@ -152,26 +157,12 @@ In **Settings → Notes & highlights → Book page**, you can configure the head
 - **Tags in body**: appends `#tag1 #tag2` clickable hashtags directly below the header.
 - **Special highlights showcase**: generates a collapsible `> [!highlight]- ★ Special highlights (N)` section showcasing your starred quotes at the top.
 - **Section styles ▸**: opens the dedicated visual style submenu:
-  - **Harmonize book style**: master toggle to apply a single unified visual style (**Book style**: *Obsidian Callout*, *Markdown Table*, *Blockquote*, or *Minimalist List*) across the Reading dashboard, Book synopsis, Tags in body, and Special highlights showcase.
-  - When **Harmonize book style** is off, you can configure **Dashboard style**, **Synopsis style**, **Tags style**, and **Showcase style** individually.
+  - **Harmonize book styles**: master toggle to apply a single unified visual style (**Book style**: *Minimal symbols*, *Emoji*, *Code badges*, or *Editorial*) across your book modules, `00 - Index.md`, and `00 - Reading Digest.md`.
+  - When **Harmonize book styles** is off, you can configure **Dashboard style**, **Synopsis style**, **Tags style**, and **Showcase style** individually.
 
-<div class="screenshot-placeholder" role="region" aria-label="Screenshot placeholder: docs-10-book-page-section-styles.svg">
-  <div class="sp-top">
-    <div class="sp-meta">
-      <span class="sp-badge">KOReader E-Reader</span>
-      <code class="sp-filename">docs-10-book-page-section-styles.svg</code>
-    </div>
-    <button type="button" class="placeholder-copy-btn" data-copy-filename="docs-10-book-page-section-styles.svg" aria-label="Copy filename docs-10-book-page-section-styles.svg">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-      <span>Copy filename</span>
-    </button>
-  </div>
-  <div class="sp-screen">
-    <p class="sp-title">Settings → Notes &amp; highlights → Book page &amp; Section styles</p>
-    <p class="sp-desc">Inquadra il sottomenu <strong>Settings → Notes &amp; highlights → Book page</strong> (con <em>Book title in body</em>, <em>Book cover</em>, <em>Overview style</em>, <em>Reading dashboard</em>, <em>Book synopsis</em>, <em>Tags in body</em>, <em>Special highlights showcase</em> e <em>Section styles ▸</em>) oppure l'interno di <strong>Section styles</strong> con <em>Harmonize book style</em>.</p>
-    <span class="sp-hint">Formato: SVG (preset vettoriale) · Schermo e-ink KOReader (3:4)</span>
-  </div>
-</div>
+<figure class="doc-device-figure doc-device-figure-wide">
+  <img src="{{base}}/assets/img/docs-10-book-page-section-styles.svg" alt="Settings → Notes &amp; highlights → Book page &amp; Section styles menus in KOReader" width="746" height="647" loading="lazy" decoding="async" />
+</figure>
 
 ## Handwritten notes & Stylus drawings
 
@@ -200,21 +191,36 @@ In **Settings → Export → Frontmatter fields**, you can:
 - Enable **Custom fields** and tap **Custom frontmatter fields…** to add your own `key: value` properties (e.g. `type: book` or `vault: reading`).
 - Set a **Frontmatter key order…** (comma-separated list of keys).
 
-<div class="screenshot-placeholder" role="region" aria-label="Screenshot placeholder: docs-11-frontmatter-fields-menu.svg">
-  <div class="sp-top">
-    <div class="sp-meta">
-      <span class="sp-badge">KOReader E-Reader</span>
-      <code class="sp-filename">docs-11-frontmatter-fields-menu.svg</code>
-    </div>
-    <button type="button" class="placeholder-copy-btn" data-copy-filename="docs-11-frontmatter-fields-menu.svg" aria-label="Copy filename docs-11-frontmatter-fields-menu.svg">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-      <span>Copy filename</span>
+<div class="spotlight doc-spotlight" role="region" aria-label="Frontmatter fields and custom key order in KOReader">
+  <div class="spotlight-tabs" role="tablist" aria-label="Frontmatter menus">
+    <button type="button" class="spotlight-tab is-active" role="tab" aria-selected="true" aria-controls="fm-fields-slide" id="tab-fm-fields">
+      <span class="spotlight-tab-num">01</span>
+      <span class="spotlight-tab-text">
+        <strong>Frontmatter fields</strong>
+        <span class="spotlight-tab-sub">Toggle keys &amp; custom properties</span>
+      </span>
+    </button>
+    <button type="button" class="spotlight-tab" role="tab" aria-selected="false" aria-controls="fm-order-slide" id="tab-fm-order">
+      <span class="spotlight-tab-num">02</span>
+      <span class="spotlight-tab-text">
+        <strong>Custom key order</strong>
+        <span class="spotlight-tab-sub">Reorder YAML properties</span>
+      </span>
     </button>
   </div>
-  <div class="sp-screen">
-    <p class="sp-title">Settings → Export → Frontmatter fields submenu</p>
-    <p class="sp-desc">Inquadra il sottomenu <strong>Settings → Export → Frontmatter fields</strong> su KOReader, mostrando i toggle delle chiavi YAML, <em>Custom fields</em> e <em>Frontmatter key order…</em>.</p>
-    <span class="sp-hint">Formato: SVG (preset vettoriale) · Schermo e-ink KOReader (3:4)</span>
+  <div class="spotlight-stage">
+    <figure class="spotlight-slide is-active" id="fm-fields-slide" role="tabpanel" aria-labelledby="tab-fm-fields">
+      <div class="doc-device-figure">
+        <img src="{{base}}/assets/img/frontmatter-fields-kindle.svg" alt="Settings → Export → Frontmatter fields submenu in KOReader" width="463" height="647" loading="lazy" decoding="async" />
+      </div>
+      <figcaption class="spotlight-caption">Toggle individual YAML keys and enable custom frontmatter properties.</figcaption>
+    </figure>
+    <figure class="spotlight-slide" id="fm-order-slide" role="tabpanel" aria-labelledby="tab-fm-order">
+      <div class="doc-device-figure doc-device-figure-wide">
+        <img src="{{base}}/assets/img/frontmatter-key-order-kindle.svg" alt="Frontmatter custom key order dialog in KOReader" width="746" height="648" loading="lazy" decoding="async" />
+      </div>
+      <figcaption class="spotlight-caption">Customize the exact order of YAML frontmatter keys across your notes.</figcaption>
+    </figure>
   </div>
 </div>
 

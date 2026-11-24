@@ -4,46 +4,18 @@
 
 ☰ menu → **Tomedown** → **Settings**, organized into seven clear groups:
 
-<div class="screenshot-placeholder" role="region" aria-label="Screenshot placeholder: docs-12-settings-groups.svg">
-  <div class="sp-top">
-    <div class="sp-meta">
-      <span class="sp-badge">KOReader E-Reader</span>
-      <code class="sp-filename">docs-12-settings-groups.svg</code>
-    </div>
-    <button type="button" class="placeholder-copy-btn" data-copy-filename="docs-12-settings-groups.svg" aria-label="Copy filename docs-12-settings-groups.svg">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-      <span>Copy filename</span>
-    </button>
-  </div>
-  <div class="sp-screen">
-    <p class="sp-title">Tomedown → Settings main submenu (7 groups)</p>
-    <p class="sp-desc">Inquadra il menu <strong>Tomedown → Settings</strong> su KOReader con i 7 gruppi: <strong>Export</strong>, <strong>Index &amp; library</strong>, <strong>Notes &amp; highlights</strong>, <strong>Book info</strong>, <strong>Cloud upload</strong>, <strong>My notes</strong> e <strong>App &amp; updates</strong>.</p>
-    <span class="sp-hint">Formato: SVG (preset vettoriale) · Schermo e-ink KOReader (3:4)</span>
-  </div>
-</div>
+<figure class="doc-device-figure doc-device-figure-wide">
+  <img src="{{base}}/assets/img/docs-12-settings-groups.svg" alt="Tomedown → Settings main submenu (7 groups) in KOReader" width="746" height="647" loading="lazy" decoding="async" />
+</figure>
 
 Everything here is stored in KOReader's settings and applies to every book across your library.
 Per-book choices, notes headings, tags, visibility, and format overrides live in the open book's menu: see [Current book](current-book.md), [Keep my notes](keep-my-notes.md), and [File format](file-format.md#imported-book-information).
 
 ## Export
 
-<div class="screenshot-placeholder" role="region" aria-label="Screenshot placeholder: docs-13-settings-export.svg">
-  <div class="sp-top">
-    <div class="sp-meta">
-      <span class="sp-badge">KOReader E-Reader</span>
-      <code class="sp-filename">docs-13-settings-export.svg</code>
-    </div>
-    <button type="button" class="placeholder-copy-btn" data-copy-filename="docs-13-settings-export.svg" aria-label="Copy filename docs-13-settings-export.svg">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-      <span>Copy filename</span>
-    </button>
-  </div>
-  <div class="sp-screen">
-    <p class="sp-title">Settings → Export menu in KOReader</p>
-    <p class="sp-desc">Inquadra il gruppo <strong>Settings → Export</strong> su KOReader mostrando <em>Export format</em>, <em>Markdown style</em>, <em>Local folder</em>, <em>File names &amp; folders ▸</em>, <em>Frontmatter fields ▸</em>, <em>Export when I close a book</em>, <em>Reading digest (00 - Reading Digest.md)</em>, <em>Backup copies</em> e le azioni di backup impostazioni.</p>
-    <span class="sp-hint">Formato: SVG (preset vettoriale) · Schermo e-ink KOReader (3:4)</span>
-  </div>
-</div>
+<figure class="doc-device-figure">
+  <img src="{{base}}/assets/img/docs-13-settings-export.svg" alt="Settings → Export menu in KOReader" width="463" height="647" loading="lazy" decoding="async" />
+</figure>
 
 | Entry | What it does |
 |---|---|
@@ -62,23 +34,9 @@ Covers are always exported in full colour, whatever the device: the extraction f
 
 ## Index & library
 
-<div class="screenshot-placeholder" role="region" aria-label="Screenshot placeholder: docs-07-index-library-menu.svg">
-  <div class="sp-top">
-    <div class="sp-meta">
-      <span class="sp-badge">KOReader E-Reader</span>
-      <code class="sp-filename">docs-07-index-library-menu.svg</code>
-    </div>
-    <button type="button" class="placeholder-copy-btn" data-copy-filename="docs-07-index-library-menu.svg" aria-label="Copy filename docs-07-index-library-menu.svg">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-      <span>Copy filename</span>
-    </button>
-  </div>
-  <div class="sp-screen">
-    <p class="sp-title">Settings → Index &amp; library menu in KOReader</p>
-    <p class="sp-desc">Inquadra il gruppo <strong>Settings → Index &amp; library</strong> con <em>Index note (00 - Index.md)</em>, <em>Index order</em>, <em>Index layout</em>, <em>Index links</em>, <em>Index style</em>, <em>Tags display</em> e i quattro toggle delle sezioni (<em>Reading now section</em>, <em>Completed books</em>, <em>Library dashboard</em>, <em>Tag cloud</em>).</p>
-    <span class="sp-hint">Formato: SVG (preset vettoriale) · Schermo e-ink KOReader (3:4)</span>
-  </div>
-</div>
+<figure class="doc-device-figure">
+  <img src="{{base}}/assets/img/docs-07-index-library-menu.svg" alt="Settings → Index &amp; library menu in KOReader" width="463" height="647" loading="lazy" decoding="async" />
+</figure>
 
 | Entry | What it does |
 |---|---|
@@ -97,23 +55,9 @@ Changing any option in **Index & library** marks the index as stale, so the next
 
 ## Notes & highlights
 
-<div class="screenshot-placeholder" role="region" aria-label="Screenshot placeholder: docs-14-settings-notes-highlights.svg">
-  <div class="sp-top">
-    <div class="sp-meta">
-      <span class="sp-badge">KOReader E-Reader</span>
-      <code class="sp-filename">docs-14-settings-notes-highlights.svg</code>
-    </div>
-    <button type="button" class="placeholder-copy-btn" data-copy-filename="docs-14-settings-notes-highlights.svg" aria-label="Copy filename docs-14-settings-notes-highlights.svg">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-      <span>Copy filename</span>
-    </button>
-  </div>
-  <div class="sp-screen">
-    <p class="sp-title">Settings → Notes &amp; highlights menu in KOReader</p>
-    <p class="sp-desc">Inquadra il gruppo <strong>Settings → Notes &amp; highlights</strong> mostrando i controlli delle evidenziazioni (<em>Special highlight style</em>, <em>Highlight details</em>, <em>Highlight context</em>, <em>Link IDs on highlights</em>, <em>Every highlight is special</em>), delle note e struttura (<em>Personal notes format</em>, <em>Chapter headings</em>, <em>Page bookmarks</em>, <em>Handwritten notes</em>) e la riga <em>Book page ▸</em>.</p>
-    <span class="sp-hint">Formato: SVG (preset vettoriale) · Schermo e-ink KOReader (3:4)</span>
-  </div>
-</div>
+<figure class="doc-device-figure">
+  <img src="{{base}}/assets/img/docs-14-settings-notes-highlights.svg" alt="Settings → Notes &amp; highlights menu in KOReader" width="463" height="647" loading="lazy" decoding="async" />
+</figure>
 
 | Entry | What it does |
 |---|---|
@@ -150,23 +94,9 @@ You can override any of these formatting and book page options for a single book
 
 Tapping **Last export** in the main Tomedown menu opens a rounded e-ink dashboard card summarizing your library sync status:
 
-<div class="screenshot-placeholder" role="region" aria-label="Screenshot placeholder: docs-15-last-export-card.svg">
-  <div class="sp-top">
-    <div class="sp-meta">
-      <span class="sp-badge">KOReader E-Reader</span>
-      <code class="sp-filename">docs-15-last-export-card.svg</code>
-    </div>
-    <button type="button" class="placeholder-copy-btn" data-copy-filename="docs-15-last-export-card.svg" aria-label="Copy filename docs-15-last-export-card.svg">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-      <span>Copy filename</span>
-    </button>
-  </div>
-  <div class="sp-screen">
-    <p class="sp-title">Tomedown → Last export dashboard card</p>
-    <p class="sp-desc">Inquadra la card arrotondata <strong>Last export</strong> su KOReader: mostra data/ora dell'ultimo export, la barra KPI a 3 colonne (<em>Exported</em>, <em>Skipped</em>, <em>Errors / Backups</em>), il formato attivo, gli ultimi titoli esportati e i pulsanti <strong>Export updated</strong>, <strong>Upload now</strong> e <strong>Close</strong>.</p>
-    <span class="sp-hint">Formato: SVG (preset vettoriale) · Schermo e-ink KOReader (3:4)</span>
-  </div>
-</div>
+<figure class="doc-device-figure">
+  <img src="{{base}}/assets/img/docs-15-last-export-card.svg" alt="Tomedown → Last export dashboard card in KOReader" width="463" height="647" loading="lazy" decoding="async" />
+</figure>
 
 The card displays:
 - **Timestamp**: The date and time of the last export run.
@@ -184,23 +114,9 @@ The card displays:
 
 ## Book info
 
-<div class="screenshot-placeholder" role="region" aria-label="Screenshot placeholder: docs-16-settings-book-info.svg">
-  <div class="sp-top">
-    <div class="sp-meta">
-      <span class="sp-badge">KOReader E-Reader</span>
-      <code class="sp-filename">docs-16-settings-book-info.svg</code>
-    </div>
-    <button type="button" class="placeholder-copy-btn" data-copy-filename="docs-16-settings-book-info.svg" aria-label="Copy filename docs-16-settings-book-info.svg">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-      <span>Copy filename</span>
-    </button>
-  </div>
-  <div class="sp-screen">
-    <p class="sp-title">Settings → Book info menu in KOReader</p>
-    <p class="sp-desc">Inquadra il gruppo <strong>Settings → Book info</strong> con le due voci: <em>Update book info automatically</em> e <em>Import book info for all books…</em>.</p>
-    <span class="sp-hint">Formato: SVG (preset vettoriale) · Schermo e-ink KOReader (3:4)</span>
-  </div>
-</div>
+<figure class="doc-device-figure">
+  <img src="{{base}}/assets/img/docs-16-settings-book-info.svg" alt="Settings → Book info menu in KOReader" width="463" height="647" loading="lazy" decoding="async" />
+</figure>
 
 | Entry | What it does |
 |---|---|
@@ -211,23 +127,9 @@ The import itself is always explicit: *Current book → Book info → Import boo
 
 ## Cloud upload
 
-<div class="screenshot-placeholder" role="region" aria-label="Screenshot placeholder: docs-17-settings-cloud-upload.svg">
-  <div class="sp-top">
-    <div class="sp-meta">
-      <span class="sp-badge">KOReader E-Reader</span>
-      <code class="sp-filename">docs-17-settings-cloud-upload.svg</code>
-    </div>
-    <button type="button" class="placeholder-copy-btn" data-copy-filename="docs-17-settings-cloud-upload.svg" aria-label="Copy filename docs-17-settings-cloud-upload.svg">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-      <span>Copy filename</span>
-    </button>
-  </div>
-  <div class="sp-screen">
-    <p class="sp-title">Settings → Cloud upload &amp; Destination submenu</p>
-    <p class="sp-desc">Inquadra il gruppo <strong>Settings → Cloud upload</strong> con <em>Upload to cloud</em>, <em>Destination: … ▸</em> (e il relativo sottomenu con <em>Choose in cloud storage…</em>, <em>Enter remote path…</em>, <em>Clear remote path…</em>) e <em>Re-upload all files…</em>.</p>
-    <span class="sp-hint">Formato: SVG (preset vettoriale) · Schermo e-ink KOReader (3:4)</span>
-  </div>
-</div>
+<figure class="doc-device-figure">
+  <img src="{{base}}/assets/img/docs-17-settings-cloud-upload.svg" alt="Settings → Cloud upload &amp; Destination submenu in KOReader" width="463" height="647" loading="lazy" decoding="async" />
+</figure>
 
 | Entry | What it does |
 |---|---|
@@ -237,23 +139,9 @@ The import itself is always explicit: *Current book → Book info → Import boo
 
 ## My notes
 
-<div class="screenshot-placeholder" role="region" aria-label="Screenshot placeholder: docs-18-settings-my-notes.svg">
-  <div class="sp-top">
-    <div class="sp-meta">
-      <span class="sp-badge">KOReader E-Reader</span>
-      <code class="sp-filename">docs-18-settings-my-notes.svg</code>
-    </div>
-    <button type="button" class="placeholder-copy-btn" data-copy-filename="docs-18-settings-my-notes.svg" aria-label="Copy filename docs-18-settings-my-notes.svg">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-      <span>Copy filename</span>
-    </button>
-  </div>
-  <div class="sp-screen">
-    <p class="sp-title">Settings → My notes menu in KOReader</p>
-    <p class="sp-desc">Inquadra il gruppo <strong>Settings → My notes</strong> con <em>Keep my notes for all books</em>, <em>Keep my notes in the index</em>, <em>Notes heading</em> e <em>Bring in edits made in Obsidian</em>.</p>
-    <span class="sp-hint">Formato: SVG (preset vettoriale) · Schermo e-ink KOReader (3:4)</span>
-  </div>
-</div>
+<figure class="doc-device-figure doc-device-figure-wide">
+  <img src="{{base}}/assets/img/docs-18-settings-my-notes.svg" alt="Settings → My notes menu in KOReader" width="747" height="647" loading="lazy" decoding="async" />
+</figure>
 
 | Entry | What it does |
 |---|---|
@@ -265,23 +153,9 @@ The import itself is always explicit: *Current book → Book info → Import boo
 
 ## App & updates
 
-<div class="screenshot-placeholder" role="region" aria-label="Screenshot placeholder: docs-19-settings-app-updates.svg">
-  <div class="sp-top">
-    <div class="sp-meta">
-      <span class="sp-badge">KOReader E-Reader</span>
-      <code class="sp-filename">docs-19-settings-app-updates.svg</code>
-    </div>
-    <button type="button" class="placeholder-copy-btn" data-copy-filename="docs-19-settings-app-updates.svg" aria-label="Copy filename docs-19-settings-app-updates.svg">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-      <span>Copy filename</span>
-    </button>
-  </div>
-  <div class="sp-screen">
-    <p class="sp-title">Settings → App &amp; updates menu in KOReader</p>
-    <p class="sp-desc">Inquadra il gruppo <strong>Settings → App &amp; updates</strong> mostrando <em>Top bar icon</em>, <em>Check for updates (vX)</em>, <em>Release channel: Stable ▸</em>, <em>Check for updates in background</em> e <em>View changelog</em>.</p>
-    <span class="sp-hint">Formato: SVG (preset vettoriale) · Schermo e-ink KOReader (3:4)</span>
-  </div>
-</div>
+<figure class="doc-device-figure doc-device-figure-wide">
+  <img src="{{base}}/assets/img/docs-19-settings-app-updates.svg" alt="Settings → App &amp; updates menu in KOReader" width="746" height="647" loading="lazy" decoding="async" />
+</figure>
 
 | Entry | What it does |
 |---|---|

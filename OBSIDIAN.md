@@ -8,23 +8,12 @@ For full technical specifications of the generated Markdown, YAML properties, an
 
 Every exported book note is a self-contained Markdown file ready for Obsidian.
 
-<div class="screenshot-placeholder is-wide" role="region" aria-label="Screenshot placeholder: docs-25-book-note-modules-obsidian.webp">
-  <div class="sp-top">
-    <div class="sp-meta">
-      <span class="sp-badge">Obsidian Vault</span>
-      <code class="sp-filename">docs-25-book-note-modules-obsidian.webp</code>
-    </div>
-    <button type="button" class="placeholder-copy-btn" data-copy-filename="docs-25-book-note-modules-obsidian.webp" aria-label="Copy filename docs-25-book-note-modules-obsidian.webp">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-      <span>Copy filename</span>
-    </button>
+<figure class="doc-shot">
+  <div class="doc-shot-frame">
+    <img class="zoom-modules" src="assets/obsidian/book_modules_v210.webp" alt="Book note header modules in Obsidian: Reading dashboard, collapsible synopsis, tags, Overview callout, and Special highlights" />
   </div>
-  <div class="sp-screen">
-    <p class="sp-title">Book note in Obsidian: YAML Properties, cover, dashboard, synopsis &amp; quotes</p>
-    <p class="sp-desc">Inquadra una nota libro aperta in Obsidian (Reading View) mostrando le Properties YAML, la copertina, la <em>Reading dashboard</em>, la <em>Book synopsis</em> richiudibile, i tag cliccabili, il callout <em>Overview</em> e lo showcase <em>★ Special highlights</em>.</p>
-    <span class="sp-hint">Formato: WebP (q90–q95) · Proporzioni: 16:10 (finestra desktop Obsidian / MarkText)</span>
-  </div>
-</div>
+  <figcaption>Book layout in Obsidian: Reading dashboard, collapsible Book synopsis, clickable tags, Overview callout, and Special highlights showcase.</figcaption>
+</figure>
 
 - **Reading View vs. Live Preview**: in Reading View, YAML frontmatter renders cleanly as Obsidian Properties, and internal Tomedown hashes stay out of sight.
 - **Embedded Covers**: when *Settings → Notes & highlights → Book page → Book cover* is enabled, covers are stored in your vault folder (default `covers/`, configurable in *Settings → Export → File names & folders*) and render natively in Obsidian (requires Obsidian 1.8.1 or newer).
@@ -34,23 +23,12 @@ Every exported book note is a self-contained Markdown file ready for Obsidian.
 
 Enable **Tomedown → Settings → My notes → Keep my notes for all books** (or per book in **Tomedown → Current book → Keep my notes in this book**) to turn exported files into shared workspaces.
 
-<div class="screenshot-placeholder is-wide" role="region" aria-label="Screenshot placeholder: docs-28-keep-my-notes-obsidian.webp">
-  <div class="sp-top">
-    <div class="sp-meta">
-      <span class="sp-badge">Obsidian Vault</span>
-      <code class="sp-filename">docs-28-keep-my-notes-obsidian.webp</code>
-    </div>
-    <button type="button" class="placeholder-copy-btn" data-copy-filename="docs-28-keep-my-notes-obsidian.webp" aria-label="Copy filename docs-28-keep-my-notes-obsidian.webp">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-      <span>Copy filename</span>
-    </button>
+<figure class="doc-shot">
+  <div class="doc-shot-frame">
+    <img class="zoom-keep-notes" src="assets/keep-my-notes-obsidian.webp" alt="Keep my notes in Obsidian: personal thoughts written above the marker survive every export" />
   </div>
-  <div class="sp-screen">
-    <p class="sp-title">Keep my notes in Obsidian: personal thoughts preserved above the marker</p>
-    <p class="sp-desc">Inquadra una nota libro in Obsidian con riflessioni personali scritte sotto <code>## My notes...</code> sopra il blocco generato da Tomedown.</p>
-    <span class="sp-hint">Formato: WebP (q90–q95) · Proporzioni: 16:10 (finestra desktop Obsidian / MarkText)</span>
-  </div>
-</div>
+  <figcaption>Personal notes written in <code>## My notes...</code> survive every export — the boundary marker protects your writing.</figcaption>
+</figure>
 
 1. **Write freely**: write reflections, permanent notes, and synthesis directly under the `## My notes...` section.
 2. **Resilient merging**: when you take new highlights on your e-reader, Tomedown folds them into the generated section below without touching a single word of your manual notes.
@@ -60,23 +38,12 @@ Enable **Tomedown → Settings → My notes → Keep my notes for all books** (o
 
 `00 - Index.md` acts as your personal bookshelf dashboard in Obsidian.
 
-<div class="screenshot-placeholder is-wide" role="region" aria-label="Screenshot placeholder: docs-27-index-dashboard-obsidian.webp">
-  <div class="sp-top">
-    <div class="sp-meta">
-      <span class="sp-badge">Obsidian Vault</span>
-      <code class="sp-filename">docs-27-index-dashboard-obsidian.webp</code>
-    </div>
-    <button type="button" class="placeholder-copy-btn" data-copy-filename="docs-27-index-dashboard-obsidian.webp" aria-label="Copy filename docs-27-index-dashboard-obsidian.webp">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-      <span>Copy filename</span>
-    </button>
+<figure class="doc-shot">
+  <div class="doc-shot-frame">
+    <img class="zoom-index" src="assets/obsidian/index_v210_trophy_dashboard.webp" alt="00 - Index.md in Obsidian showing Library dashboard, Tag cloud, and Completed books trophy room" />
   </div>
-  <div class="sp-screen">
-    <p class="sp-title">00 - Index.md in Obsidian: Library dashboard, Completed books &amp; Tag cloud</p>
-    <p class="sp-desc">Inquadra <code>00 - Index.md</code> in Obsidian mostrando la <em>Library dashboard</em>, la sezione <em>Completed books</em>, la tabella con copertine, barre di avanzamento a 5 celle e tag impilati, e la <em>Tag cloud</em>.</p>
-    <span class="sp-hint">Formato: WebP (q90–q95) · Proporzioni: 16:10 (finestra desktop Obsidian / MarkText)</span>
-  </div>
-</div>
+  <figcaption><code>00 - Index.md</code> in Obsidian: Library dashboard, Tag cloud, and Completed books trophy room.</figcaption>
+</figure>
 
 - **Interactive table**: click any book title or cover to navigate straight to that book note.
 - **Visual reading progress**: 5-cell Unicode indicators (`▰▰▰▰▰`) display exact completion percentages without breaking columns.
@@ -87,23 +54,12 @@ Enable **Tomedown → Settings → My notes → Keep my notes for all books** (o
 
 A consolidated chronological reading journal grouping all highlights across your whole library by day:
 
-<div class="screenshot-placeholder is-wide" role="region" aria-label="Screenshot placeholder: docs-03-reading-digest-obsidian.webp">
-  <div class="sp-top">
-    <div class="sp-meta">
-      <span class="sp-badge">Obsidian Vault</span>
-      <code class="sp-filename">docs-03-reading-digest-obsidian.webp</code>
-    </div>
-    <button type="button" class="placeholder-copy-btn" data-copy-filename="docs-03-reading-digest-obsidian.webp" aria-label="Copy filename docs-03-reading-digest-obsidian.webp">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-      <span>Copy filename</span>
-    </button>
+<figure class="doc-shot">
+  <div class="doc-shot-frame">
+    <img class="zoom-digest" src="assets/obsidian/reading_digest_v210.webp" alt="00 - Reading Digest.md in Obsidian showing literary date headings, horizontal book dividers, and clean quote times" />
   </div>
-  <div class="sp-screen">
-    <p class="sp-title">00 - Reading Digest.md rendered inside Obsidian</p>
-    <p class="sp-desc">Inquadra <code>00 - Reading Digest.md</code> in Obsidian con le intestazioni di data letteraria (<code>## 16 Nov 2026</code>), i divisori tra libri e gli orari delle citazioni.</p>
-    <span class="sp-hint">Formato: WebP (q90–q95) · Proporzioni: 16:10 (finestra desktop Obsidian / MarkText)</span>
-  </div>
-</div>
+  <figcaption><code>00 - Reading Digest.md</code> in Obsidian: literary day headings, thin book dividers, and clean quote times.</figcaption>
+</figure>
 
 ## Handwritten notes & Stylus drawings
 
@@ -113,23 +69,12 @@ For stylus devices, handwritten notes are rendered as pure SVG vector strokes or
 
 Enable **Settings → Notes & highlights → Link IDs on highlights** to attach stable block IDs (`^hl-xxxxxxxx`) to every quote:
 
-<div class="screenshot-placeholder is-wide" role="region" aria-label="Screenshot placeholder: docs-29-highlight-link-ids-obsidian.webp">
-  <div class="sp-top">
-    <div class="sp-meta">
-      <span class="sp-badge">Obsidian Vault</span>
-      <code class="sp-filename">docs-29-highlight-link-ids-obsidian.webp</code>
-    </div>
-    <button type="button" class="placeholder-copy-btn" data-copy-filename="docs-29-highlight-link-ids-obsidian.webp" aria-label="Copy filename docs-29-highlight-link-ids-obsidian.webp">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-      <span>Copy filename</span>
-    </button>
+<figure class="doc-shot">
+  <div class="doc-shot-frame">
+    <img class="zoom-link-ids" src="assets/link-ids-obsidian.webp" alt="Single highlight block IDs in Obsidian: ^hl-xxxxxxxx at the end of each quote" />
   </div>
-  <div class="sp-screen">
-    <p class="sp-title">Single highlight block IDs (^hl-xxxxxxxx) &amp; transclusion in Obsidian</p>
-    <p class="sp-desc">Inquadra una citazione con block ID <code>^hl-xxxxxxxx</code> e l'autocompletamento o l'incorporamento live <code>![[Book title#^hl-xxxxxxxx]]</code> dentro un'altra nota di Obsidian.</p>
-    <span class="sp-hint">Formato: WebP (q90–q95) · Proporzioni: 16:10 (finestra desktop Obsidian / MarkText)</span>
-  </div>
-</div>
+  <figcaption>Each quote gets a stable <code>^hl-xxxxxxxx</code> block ID for direct deep linking and transclusion in Obsidian.</figcaption>
+</figure>
 
 Because block IDs are tied to quote hashes, they persist across future re-exports:
 

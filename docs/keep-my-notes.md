@@ -107,23 +107,12 @@ and outside the block is yours
 <!-- tomedown:end body -->
 ```
 
-<div class="screenshot-placeholder is-wide" role="region" aria-label="Screenshot placeholder: docs-28-keep-my-notes-obsidian.webp">
-  <div class="sp-top">
-    <div class="sp-meta">
-      <span class="sp-badge">Obsidian Vault</span>
-      <code class="sp-filename">docs-28-keep-my-notes-obsidian.webp</code>
-    </div>
-    <button type="button" class="placeholder-copy-btn" data-copy-filename="docs-28-keep-my-notes-obsidian.webp" aria-label="Copy filename docs-28-keep-my-notes-obsidian.webp">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-      <span>Copy filename</span>
-    </button>
+<figure class="doc-shot">
+  <div class="doc-shot-frame">
+    <img class="zoom-keep-notes" src="../assets/keep-my-notes-obsidian.webp" alt="Keep my notes in Obsidian: personal reflections written above the marker survive every export" />
   </div>
-  <div class="sp-screen">
-    <p class="sp-title">Personal notes written above the generated block in Obsidian</p>
-    <p class="sp-desc">Inquadra una nota libro in Obsidian con la sezione personale <code>## My notes...</code> popolata dall'utente sopra il blocco generato da Tomedown, dimostrando come le riflessioni personali restino intatte dopo ogni esportazione.</p>
-    <span class="sp-hint">Formato: WebP (q90–q95) · Proporzioni: 16:10 (finestra desktop Obsidian / MarkText)</span>
-  </div>
-</div>
+  <figcaption>Personal reflections written above the generated block survive every export without being overwritten.</figcaption>
+</figure>
 
 Obsidian and every Markdown renderer ignore the comments, so the file looks
 exactly the same. The begin comment carries the digest (`hash=…`) of the

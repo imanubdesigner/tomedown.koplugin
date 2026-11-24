@@ -83,23 +83,12 @@ tags:
 <!-- tomedown:end body -->
 ```
 
-<div class="screenshot-placeholder is-wide" role="region" aria-label="Screenshot placeholder: docs-25-book-note-modules-obsidian.webp">
-  <div class="sp-top">
-    <div class="sp-meta">
-      <span class="sp-badge">Obsidian Vault</span>
-      <code class="sp-filename">docs-25-book-note-modules-obsidian.webp</code>
-    </div>
-    <button type="button" class="placeholder-copy-btn" data-copy-filename="docs-25-book-note-modules-obsidian.webp" aria-label="Copy filename docs-25-book-note-modules-obsidian.webp">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-      <span>Copy filename</span>
-    </button>
+<figure class="doc-shot">
+  <div class="doc-shot-frame">
+    <img class="zoom-modules" src="../assets/obsidian/book_modules_v210.webp" alt="Book note header modules in Obsidian: Reading dashboard, collapsible synopsis, tags, Overview callout, and Special highlights showcase" />
   </div>
-  <div class="sp-screen">
-    <p class="sp-title">Book note header modules &amp; quotes in Obsidian</p>
-    <p class="sp-desc">Inquadra una nota libro completa in Obsidian che mostri i moduli dell'intestazione (<em>Reading dashboard</em>, <em>Book synopsis</em> richiudibile, tag nel corpo, <em>Overview</em> e <em>★ Special highlights showcase</em>) seguiti dalle citazioni del capitolo.</p>
-    <span class="sp-hint">Formato: WebP (q90–q95) · Proporzioni: 16:10 (finestra desktop Obsidian / MarkText)</span>
-  </div>
-</div>
+  <figcaption>Book note header modules in Obsidian: Reading dashboard, collapsible synopsis, tags, Overview, and Special highlights showcase.</figcaption>
+</figure>
 
 The sample above reflects an English interface. When running KOReader in Italian, German, French, Spanish, or Brazilian Portuguese, all exported headings and status labels are translated automatically (see [Languages](developing.md#languages)).
 
@@ -217,21 +206,26 @@ If you read your notes in **MarkText, Typora, VS Code, Zettlr, or GitHub**, swit
 - **Special highlights** fall back from `[!highlight]` callouts to `**bold**` (or any compatible marker such as `⭐ **text**` or `==text==`).
 - **Obsidian-only `^hl-` block IDs** are omitted so quotes stay clean outside Obsidian.
 
-<div class="screenshot-placeholder is-wide" role="region" aria-label="Screenshot placeholder: docs-26-obsidian-vs-standard-markdown.webp">
-  <div class="sp-top">
-    <div class="sp-meta">
-      <span class="sp-badge">Obsidian &amp; Standard Markdown</span>
-      <code class="sp-filename">docs-26-obsidian-vs-standard-markdown.webp</code>
-    </div>
-    <button type="button" class="placeholder-copy-btn" data-copy-filename="docs-26-obsidian-vs-standard-markdown.webp" aria-label="Copy filename docs-26-obsidian-vs-standard-markdown.webp">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-      <span>Copy filename</span>
-    </button>
+<div class="spotlight doc-spotlight" role="region" aria-label="Markdown format comparison: Obsidian style vs Standard style">
+  <div class="spotlight-tabs" role="tablist">
+    <button type="button" class="spotlight-tab is-active" role="tab" aria-selected="true">Obsidian style (callouts &amp; wikilinks)</button>
+    <button type="button" class="spotlight-tab" role="tab" aria-selected="false">Standard Markdown (headings &amp; links)</button>
   </div>
-  <div class="sp-screen">
-    <p class="sp-title">Comparison: Obsidian style vs Standard Markdown style</p>
-    <p class="sp-desc">Inquadra il confronto affiancato della stessa nota libro esportata con <strong>Markdown style: Obsidian</strong> (callout e wikilink a sinistra) e con <strong>Markdown style: Standard</strong> (intestazioni Markdown standard e link <code>[Title](file.md)</code> a destra).</p>
-    <span class="sp-hint">Formato: WebP (q90–q95) · Proporzioni: 16:10 (confronto desktop affiancato)</span>
+  <div class="spotlight-slide is-active" role="tabpanel">
+    <figure class="doc-shot">
+      <div class="doc-shot-frame">
+        <img src="../assets/obsidian/obsidian-markdown.webp" alt="Obsidian Markdown style: native collapsible callouts, book badges, and wikilinks" />
+      </div>
+      <figcaption>Obsidian Markdown style: native collapsible callouts (<code>[!book]</code>, <code>[!summary]</code>, <code>[!highlight]</code>), wikilinks, and block IDs.</figcaption>
+    </figure>
+  </div>
+  <div class="spotlight-slide" role="tabpanel">
+    <figure class="doc-shot">
+      <div class="doc-shot-frame">
+        <img src="../assets/obsidian/standard-markdown.webp" alt="Standard Markdown style: clean Markdown headings and universal markdown links" />
+      </div>
+      <figcaption>Standard Markdown style: clean Markdown headings (<code>### Reading dashboard</code>), universal markdown links (<code>[Title](file.md)</code>), and clean formatting compatible with any reader.</figcaption>
+    </figure>
   </div>
 </div>
 
@@ -268,23 +262,12 @@ Under *Settings → Index & library*, you can enable modular components in `00 -
 - **Tag cloud**: generates an alphabetical directory of all tags across your library with book count badges.
 - **Tags display**: choose between **Show all**, **First 3 (+N)**, or **Collapsible (<details>)** to fold extensive tag lists behind an expandable HTML `<details>` summary.
 
-<div class="screenshot-placeholder is-wide" role="region" aria-label="Screenshot placeholder: docs-27-index-dashboard-obsidian.webp">
-  <div class="sp-top">
-    <div class="sp-meta">
-      <span class="sp-badge">Obsidian Vault</span>
-      <code class="sp-filename">docs-27-index-dashboard-obsidian.webp</code>
-    </div>
-    <button type="button" class="placeholder-copy-btn" data-copy-filename="docs-27-index-dashboard-obsidian.webp" aria-label="Copy filename docs-27-index-dashboard-obsidian.webp">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-      <span>Copy filename</span>
-    </button>
+<figure class="doc-shot">
+  <div class="doc-shot-frame">
+    <img class="zoom-index" src="../assets/obsidian/index_v210_trophy_dashboard.webp" alt="00 - Index.md in Obsidian showing Library dashboard, Tag cloud, and Completed books trophy room" />
   </div>
-  <div class="sp-screen">
-    <p class="sp-title">00 - Index.md in Obsidian (Library dashboard, Completed books &amp; tables)</p>
-    <p class="sp-desc">Inquadra <code>00 - Index.md</code> in Obsidian mostrando la <em>Library dashboard</em>, la sezione <em>Completed books</em>, la tabella con copertine 90×120, barre di avanzamento a 5 celle e tag impilati, e la <em>Tag cloud</em> finale.</p>
-    <span class="sp-hint">Formato: WebP (q90–q95) · Proporzioni: 16:10 (finestra desktop Obsidian / MarkText)</span>
-  </div>
-</div>
+  <figcaption><code>00 - Index.md</code> in Obsidian: Library dashboard, Tag cloud, and Completed books trophy room.</figcaption>
+</figure>
 
 ## Handwritten notes & Stylus drawings
 

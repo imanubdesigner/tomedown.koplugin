@@ -6,23 +6,9 @@ In-reader controls, dashboard cards, highlight navigation, per-book format overr
 
 ☰ menu → **Tomedown** → **Current book**, available whenever a book is open:
 
-<div class="screenshot-placeholder" role="region" aria-label="Screenshot placeholder: docs-20-current-book-menu.svg">
-  <div class="sp-top">
-    <div class="sp-meta">
-      <span class="sp-badge">KOReader E-Reader</span>
-      <code class="sp-filename">docs-20-current-book-menu.svg</code>
-    </div>
-    <button type="button" class="placeholder-copy-btn" data-copy-filename="docs-20-current-book-menu.svg" aria-label="Copy filename docs-20-current-book-menu.svg">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-      <span>Copy filename</span>
-    </button>
-  </div>
-  <div class="sp-screen">
-    <p class="sp-title">Tomedown → Current book menu in KOReader</p>
-    <p class="sp-desc">Inquadra il sottomenu <strong>Tomedown → Current book</strong> con il nuovo ordine gerarchico: <strong>Book summary</strong> in cima, seguito da <strong>★ Special highlights</strong>, separatore, <strong>Book info ▸</strong>, <strong>Book visibility: Normal ▸</strong>, separatore, <strong>Keep my notes in this book</strong>, <strong>Notes heading</strong>, <strong>Backup copies ▸</strong> e <strong>Format &amp; layout ▸</strong>.</p>
-    <span class="sp-hint">Formato: SVG (preset vettoriale) · Schermo e-ink KOReader (3:4)</span>
-  </div>
-</div>
+<figure class="doc-device-figure">
+  <img src="{{base}}/assets/img/docs-20-current-book-menu.svg" alt="Tomedown → Current book menu in KOReader" width="463" height="647" loading="lazy" decoding="async" />
+</figure>
 
 While [Menu & Settings](settings.md) configures global defaults applied across your entire library, **Current book** controls the volume currently open on your screen. Here you can inspect your reading session, jump across quotes, override export formats, manage book info, and edit notes directly inside KOReader.
 
@@ -43,23 +29,9 @@ While [Menu & Settings](settings.md) configures global defaults applied across y
 
 Under **Tomedown → Current book → Book summary**, Tomedown opens a rounded dashboard card built specifically for e-ink displays:
 
-<div class="screenshot-placeholder" role="region" aria-label="Screenshot placeholder: docs-21-book-summary-card.svg">
-  <div class="sp-top">
-    <div class="sp-meta">
-      <span class="sp-badge">KOReader E-Reader</span>
-      <code class="sp-filename">docs-21-book-summary-card.svg</code>
-    </div>
-    <button type="button" class="placeholder-copy-btn" data-copy-filename="docs-21-book-summary-card.svg" aria-label="Copy filename docs-21-book-summary-card.svg">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-      <span>Copy filename</span>
-    </button>
-  </div>
-  <div class="sp-screen">
-    <p class="sp-title">Current book → Book summary dashboard card</p>
-    <p class="sp-desc">Inquadra la card arrotondata <strong>Book summary</strong> su KOReader: titolo e autore in alto, i 3 pulsanti KPI cliccabili (<em>Highlights</em>, <em>★ Special</em>, <em>Notes</em>), i dettagli <em>Format</em>, <em>Status</em>, <em>Tags</em> e i pulsanti <strong>Export this book</strong> e <strong>Close</strong>.</p>
-    <span class="sp-hint">Formato: SVG (preset vettoriale) · Schermo e-ink KOReader (3:4)</span>
-  </div>
-</div>
+<figure class="doc-device-figure">
+  <img src="{{base}}/assets/img/docs-21-book-summary-card.svg" alt="Current book → Book summary dashboard card in KOReader" width="463" height="647" loading="lazy" decoding="async" />
+</figure>
 
 ### What the card displays
 
@@ -85,23 +57,9 @@ Tapping any of the three KPI buttons in **Book summary** (or selecting **Current
 - **Notes KPI**: Displays only passages that contain personal annotations.
 - **★ Special KPI**: Displays all passages you have marked as favorites.
 
-<div class="screenshot-placeholder" role="region" aria-label="Screenshot placeholder: docs-22-highlights-notes-cards.svg">
-  <div class="sp-top">
-    <div class="sp-meta">
-      <span class="sp-badge">KOReader E-Reader</span>
-      <code class="sp-filename">docs-22-highlights-notes-cards.svg</code>
-    </div>
-    <button type="button" class="placeholder-copy-btn" data-copy-filename="docs-22-highlights-notes-cards.svg" aria-label="Copy filename docs-22-highlights-notes-cards.svg">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-      <span>Copy filename</span>
-    </button>
-  </div>
-  <div class="sp-screen">
-    <p class="sp-title">Paginated Highlights / ★ Special / Notes card browser</p>
-    <p class="sp-desc">Inquadra la card paginata delle evidenziazioni o delle note su KOReader (con sottotitolo <em>Tap to jump · Hold for ★</em> oppure <em>Tap to jump · Hold to edit</em>, elenco citazioni con capitolo/pagina e frecce di paginazione <code>◀</code> / <code>▶</code>).</p>
-    <span class="sp-hint">Formato: SVG (preset vettoriale) · Schermo e-ink KOReader (3:4)</span>
-  </div>
-</div>
+<figure class="doc-device-figure">
+  <img src="{{base}}/assets/img/docs-22-highlights-notes-cards.svg" alt="Paginated Highlights, Special, and Notes card browser in KOReader" width="463" height="647" loading="lazy" decoding="async" />
+</figure>
 
 The card browser allows you to review and manage your annotations without leaving your reading session. Designed for 6-inch e-ink screens, it features pagination controls (`◀` / `▶`) showing 3 to 4 items per page.
 
@@ -117,23 +75,9 @@ The card browser allows you to review and manage your annotations without leavin
 
 By default, every book follows your library-wide defaults configured in [Settings → Notes & highlights](settings.md#notes--highlights) and [Settings → Export](settings.md#export). Under **Current book → Format & layout**, you can customize settings for a single volume without affecting the rest of your library:
 
-<div class="screenshot-placeholder" role="region" aria-label="Screenshot placeholder: docs-23-current-book-format-layout.svg">
-  <div class="sp-top">
-    <div class="sp-meta">
-      <span class="sp-badge">KOReader E-Reader</span>
-      <code class="sp-filename">docs-23-current-book-format-layout.svg</code>
-    </div>
-    <button type="button" class="placeholder-copy-btn" data-copy-filename="docs-23-current-book-format-layout.svg" aria-label="Copy filename docs-23-current-book-format-layout.svg">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-      <span>Copy filename</span>
-    </button>
-  </div>
-  <div class="sp-screen">
-    <p class="sp-title">Current book → Format &amp; layout submenu</p>
-    <p class="sp-desc">Inquadra il sottomenu <strong>Current book → Format &amp; layout</strong> su KOReader con indicatori <code>Global</code> / <code>Custom</code> a destra: mostra <em>Export format</em>, <em>Markdown style</em>, <em>Personal notes format</em>, <em>Highlight details</em>, <em>Chapter headings</em>, <em>Highlight context</em>, <em>Book cover</em>, <em>Page bookmarks</em>, <em>Handwritten notes</em>, <em>Book page ▸</em> e <em>Reset to global style settings</em>.</p>
-    <span class="sp-hint">Formato: SVG (preset vettoriale) · Schermo e-ink KOReader (3:4)</span>
-  </div>
-</div>
+<figure class="doc-device-figure">
+  <img src="{{base}}/assets/img/docs-23-current-book-format-layout.svg" alt="Current book → Format &amp; layout submenu in KOReader" width="463" height="647" loading="lazy" decoding="async" />
+</figure>
 
 ### Available overrides
 
@@ -176,23 +120,9 @@ Under **Current book → Book visibility**, choose one of three radio options:
 - **Export, but hide from the index** (*Hidden from index*): the book note is exported to disk, but omitted from `00 - Index.md`.
 - **Do not export** (*Not exported*): instructs Tomedown to ignore this volume during library-wide exports and omit it from both `00 - Index.md` and `00 - Reading Digest.md`.
 
-<div class="screenshot-placeholder" role="region" aria-label="Screenshot placeholder: docs-24-book-visibility-radio.svg">
-  <div class="sp-top">
-    <div class="sp-meta">
-      <span class="sp-badge">KOReader E-Reader</span>
-      <code class="sp-filename">docs-24-book-visibility-radio.svg</code>
-    </div>
-    <button type="button" class="placeholder-copy-btn" data-copy-filename="docs-24-book-visibility-radio.svg" aria-label="Copy filename docs-24-book-visibility-radio.svg">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-      <span>Copy filename</span>
-    </button>
-  </div>
-  <div class="sp-screen">
-    <p class="sp-title">Current book → Book visibility radio submenu</p>
-    <p class="sp-desc">Inquadra il sottomenu radio <strong>Current book → Book visibility</strong> su KOReader con le tre opzioni: <em>Export and show in the index</em>, <em>Export, but hide from the index</em> e <em>Do not export</em>.</p>
-    <span class="sp-hint">Formato: SVG (preset vettoriale) · Schermo e-ink KOReader (3:4)</span>
-  </div>
-</div>
+<figure class="doc-device-figure">
+  <img src="{{base}}/assets/img/docs-24-book-visibility-radio.svg" alt="Current book → Book visibility radio submenu in KOReader" width="463" height="647" loading="lazy" decoding="async" />
+</figure>
 
 ### Per-book Keep my notes
 
