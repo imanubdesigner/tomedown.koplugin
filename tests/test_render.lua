@@ -1679,8 +1679,8 @@ do
             and T.contains(full_idx_md, "◐ 1 Reading")
             and T.contains(full_idx_md, "[[00 - Reading Digest|Reading digest →]]"),
         "index_dashboard renders Library dashboard callout with status breakdown and digest link")
-    T.check(T.contains(full_idx_md, "🏷️ #Detective (2) · #Gothic (1) · #Mystery (1)"),
-        "index_tag_cloud aggregates and sorts tags by frequency")
+    T.check(T.contains(full_idx_md, "▪ *#Detective* (2) · *#Gothic* (1) · *#Mystery* (1)"),
+        "index_tag_cloud aggregates and sorts tags by frequency in default minimal style")
     T.check(T.contains(full_idx_md, "### ✓ Completed books (1)\n")
             and T.contains(full_idx_md, "### ▸ Reading now (1)\n"),
         "completed_books renders Completed books trophy room section")
@@ -1689,24 +1689,28 @@ do
         index_style = "emoji",
         completed_books = true,
         index_dashboard = true,
+        index_tag_cloud = true,
     })
     T.check(T.contains(obs_emoji, "> [!summary] Library dashboard")
             and T.contains(obs_emoji, "**🟢 1 Complete** · **🟡 1 Reading**")
+            and T.contains(obs_emoji, "🏷️ #Detective (2) · #Gothic (1) · #Mystery (1)")
             and T.contains(obs_emoji, "### 🟢 Completed books (1)\n")
             and T.contains(obs_emoji, "### 🟡 Reading now (1)\n")
             and T.contains(obs_emoji, "| 🟡 Reading<br>▰▱▱▱▱&nbsp;23% |"),
-        "Obsidian mode supports index_style = emoji")
+        "Obsidian mode supports index_style = emoji including tag cloud")
 
     local obs_badges = render.buildIndexMd(lib_books, {
         index_style = "badges",
         completed_books = true,
         index_dashboard = true,
+        index_tag_cloud = true,
     })
     T.check(T.contains(obs_badges, "> `2 BOOKS` · `1 COMPLETE` · `1 READING`")
+            and T.contains(obs_badges, "`#Detective (2)` `#Gothic (1)` `#Mystery (1)`")
             and T.contains(obs_badges, "### Completed books `(1)`\n")
             and T.contains(obs_badges, "### Reading now `(1)`\n")
             and T.contains(obs_badges, "| `READING`<br>`23%` |"),
-        "Obsidian mode supports index_style = badges")
+        "Obsidian mode supports index_style = badges including tag cloud")
 
     local obs_editorial = render.buildIndexMd(lib_books, {
         index_style = "editorial",
@@ -1972,6 +1976,62 @@ do
         "Standard Markdown has zero wikilinks in 00 - Reading Digest.md")
     T.check(T.contains(std_digest, "### [The Brothers Karamazov](Fyodor%20Dostoevsky%20-%20The%20Brothers%20Karamazov.md) — *Fyodor Dostoevsky*"),
         "Standard Markdown renders CommonMark relative link with encoded target")
+
+    -- Reading Digest visual styles (emoji, badges, editorial) across Obsidian & Standard Markdown
+    local digest_books_sample = {
+        {
+            link = "Fyodor Dostoevsky - The Brothers Karamazov",
+            title = "The Brothers Karamazov",
+            author = "Fyodor Dostoevsky",
+            annotations = {
+                {
+                    text = "Above all, do not lie to yourself.",
+                    chapter = "Book II",
+                    page = 41,
+                    special = true,
+                    time = "2026-11-19 08:00:00",
+                },
+            },
+        },
+    }
+    local emoji_digest = render.buildDigestMd(digest_books_sample, { visual_style = "emoji" })
+    T.check(T.contains(emoji_digest, "📚 **1 book** · ✍️ **1 highlight** · ⭐ **1 special**")
+            and T.contains(emoji_digest, "## 📅 ")
+            and T.contains(emoji_digest, "### 📖 [[Fyodor Dostoevsky - The Brothers Karamazov|The Brothers Karamazov]]"),
+        "Reading Digest renders emoji visual style")
+    local badges_digest = render.buildDigestMd(digest_books_sample, { visual_style = "badges", markdown_style = "standard" })
+    T.check(T.contains(badges_digest, "`1 BOOK` · `1 HIGHLIGHT` · `★ 1 SPECIAL`")
+            and T.contains(badges_digest, "## `"),
+        "Reading Digest renders badges visual style in Standard Markdown")
+    local editorial_digest = render.buildDigestMd(digest_books_sample, { visual_style = "editorial" })
+    T.check(T.contains(editorial_digest, "**1 book** · **1 highlight** · **1 special**")
+            and not T.contains(editorial_digest, "★ 1 special"),
+        "Reading Digest renders clean editorial visual style without symbols")
+
+    -- Reading dashboard heading & rating respect dashboard_style in Obsidian and Standard Markdown
+    local dash_book = {
+        title = "The Three Just Men",
+        author = "Edgar Wallace",
+        status = "complete",
+        progress = "100%",
+        pages = 212,
+        rating = 4,
+        annotations = {
+            { text = "Six million people rose from their beds.", chapter = "Chapter I", page = "4", special = true },
+        },
+    }
+    local dash_emoji_md = render.buildBookMd(dash_book, {
+        reading_dashboard = true, dashboard_style = "emoji",
+    })
+    T.check(T.contains(dash_emoji_md, "> [!book] 📊 Reading dashboard")
+            and T.contains(dash_emoji_md, "**Rating:** ⭐ ★★★★☆ (4/5)"),
+        "dashboard_style = emoji styles dashboard heading and rating in Obsidian")
+    local dash_badges_std = render.buildBookMd(dash_book, {
+        markdown_style = "standard", reading_dashboard = true, dashboard_style = "badges",
+    })
+    T.check(T.contains(dash_badges_std, "### `READING DASHBOARD`")
+            and T.contains(dash_badges_std, "**Rating:** ★★★★☆ `4/5`"),
+        "dashboard_style = badges styles dashboard heading and rating in Standard Markdown")
 end
 
 T.finish("test_render")

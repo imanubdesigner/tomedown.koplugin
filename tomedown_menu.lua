@@ -830,6 +830,59 @@ local function withIcon(glyph, text)
     return glyph .. "  " .. text
 end
 
+-- A visual style row that can either follow the Book style or keep a style
+-- of its own (used by the Index and the Reading digest).
+local function makeFollowStyleRow(cfg)
+    local labels = {
+        minimal = _("Minimal symbols (● / ◐)"),
+        emoji = _("Emoji (🟢 / 🟡)"),
+        badges = _("Code badges (`READING`)"),
+        editorial = _("Editorial (Reading)"),
+    }
+    local sub = {
+        {
+            text = _("Follow book style"),
+            radio = true,
+            keep_menu_open = true,
+            separator = true,
+            checked_func = cfg.getFollow,
+            callback = function()
+                if not cfg.getFollow() then
+                    cfg.setFollow(true)
+                    cfg.onChange()
+                end
+            end,
+        },
+    }
+    for __, key in ipairs({ "minimal", "emoji", "badges", "editorial" }) do
+        sub[#sub + 1] = {
+            text = labels[key],
+            radio = true,
+            keep_menu_open = true,
+            checked_func = function()
+                return not cfg.getFollow() and cfg.getOwn() == key
+            end,
+            callback = function()
+                if cfg.getFollow() or cfg.getOwn() ~= key then
+                    cfg.setOwn(key)
+                    cfg.setFollow(false)
+                    cfg.onChange()
+                end
+            end,
+        }
+    end
+    return {
+        text_func = function()
+            local shown = cfg.getFollow() and _("Follow book style")
+                or labels[cfg.getOwn()] or labels.minimal
+            return T(cfg.title, shown)
+        end,
+        enabled_func = cfg.enabled_func,
+        separator = cfg.separator,
+        sub_item_table = sub,
+    }
+end
+
 --- Settings: four groups (the structure Bookshelf uses). About lives
 -- in the main menu right under Settings. Every setting keeps its own
 -- row; the checkable ones keep their keep_menu_open so KOReader
@@ -2273,80 +2326,19 @@ function M:genSettingsMenu()
                 },
             },
         },
-        {
-            text_func = function()
-                local labels = {
-                    minimal = _("Minimal symbols (● / ◐)"),
-                    emoji = _("Emoji (🟢 / 🟡)"),
-                    badges = _("Code badges (`READING`)"),
-                    editorial = _("Editorial (Reading)"),
-                }
-                local current = shared.getIndexStyle()
-                return T(_("Index style: %1"),
-                    labels[current] or labels.minimal)
-            end,
+        makeFollowStyleRow({
+            title = _("Index style: %1"),
+            getFollow = shared.getIndexFollowBook,
+            setFollow = shared.setIndexFollowBook,
+            getOwn = shared.getIndexStyle,
+            setOwn = shared.setIndexStyle,
             enabled_func = function()
                 return getSetting("with_index", true)
             end,
-            sub_item_table = {
-                {
-                    text = _("Minimal symbols (● / ◐)"),
-                    radio = true,
-                    keep_menu_open = true,
-                    checked_func = function()
-                        return shared.getIndexStyle() == "minimal"
-                    end,
-                    callback = function()
-                        if shared.getIndexStyle() ~= "minimal" then
-                            shared.setIndexStyle("minimal")
-                            setSetting("index_dirty", true)
-                        end
-                    end,
-                },
-                {
-                    text = _("Emoji (🟢 / 🟡)"),
-                    radio = true,
-                    keep_menu_open = true,
-                    checked_func = function()
-                        return shared.getIndexStyle() == "emoji"
-                    end,
-                    callback = function()
-                        if shared.getIndexStyle() ~= "emoji" then
-                            shared.setIndexStyle("emoji")
-                            setSetting("index_dirty", true)
-                        end
-                    end,
-                },
-                {
-                    text = _("Code badges (`READING`)"),
-                    radio = true,
-                    keep_menu_open = true,
-                    checked_func = function()
-                        return shared.getIndexStyle() == "badges"
-                    end,
-                    callback = function()
-                        if shared.getIndexStyle() ~= "badges" then
-                            shared.setIndexStyle("badges")
-                            setSetting("index_dirty", true)
-                        end
-                    end,
-                },
-                {
-                    text = _("Editorial (Reading)"),
-                    radio = true,
-                    keep_menu_open = true,
-                    checked_func = function()
-                        return shared.getIndexStyle() == "editorial"
-                    end,
-                    callback = function()
-                        if shared.getIndexStyle() ~= "editorial" then
-                            shared.setIndexStyle("editorial")
-                            setSetting("index_dirty", true)
-                        end
-                    end,
-                },
-            },
-        },
+            onChange = function()
+                setSetting("index_dirty", true)
+            end,
+        }),
         {
             text_func = function()
                 local labels = {
@@ -2949,6 +2941,7 @@ function M:genSettingsMenu()
                         callback = function(touchmenu)
                             shared.setHarmonizeBookStyle(not shared.getHarmonizeBookStyle())
                             self:invalidateExportHashes()
+                            setSetting("index_dirty", true)
                             rebuildSecStyleRows(touchmenu)
                         end,
                     },
@@ -2957,7 +2950,10 @@ function M:genSettingsMenu()
                     s_rows[#s_rows + 1] = makeGlobalVisualStyleRow(
                         _("Book style: %1"),
                         shared.getBookVisualStyle,
-                        shared.setBookVisualStyle
+                        function(style)
+                            shared.setBookVisualStyle(style)
+                            setSetting("index_dirty", true)
+                        end
                     )
                 else
                     s_rows[#s_rows + 1] = makeGlobalVisualStyleRow(
@@ -5448,8 +5444,17 @@ function M:genBookStyleMenu(file, target_table)
             end
             local function refreshSecStyle(touchmenu)
                 buildBookSecStyleMenu(s_rows)
-                if touchmenu and touchmenu.item_table == s_rows and touchmenu.updateItems then
-                    touchmenu:updateItems()
+                if touchmenu and touchmenu.updateItems then
+                    if touchmenu.item_table == s_rows then
+                        touchmenu:updateItems()
+                    elseif touchmenu.item_table_stack then
+                        for _, entry in ipairs(touchmenu.item_table_stack) do
+                            if entry == s_rows or (type(entry) == "table" and entry.table == s_rows) then
+                                touchmenu:updateItems()
+                                break
+                            end
+                        end
+                    end
                 end
             end
             local book_harmonized = shared.getHarmonizeBookStyle(file)
@@ -5472,7 +5477,13 @@ function M:genBookStyleMenu(file, target_table)
                 s_rows[#s_rows + 1] = makeBookVisualStyleRow(
                     _("Book style: %1"),
                     "book_visual_style",
-                    shared.getBookVisualStyle
+                    shared.getBookVisualStyle,
+                    function()
+                        return shared.getReadingDashboard(file)
+                            or shared.getBookSynopsis(file)
+                            or shared.getBodyTags(file)
+                            or shared.getSpecialShowcase(file)
+                    end
                 )
             else
                 s_rows[#s_rows + 1] = makeBookVisualStyleRow(

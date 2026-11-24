@@ -852,12 +852,21 @@ function render.buildBookMd(book, opts)
             abandoned = _("Abandoned"),
         }
         local dash_pfx = is_std and "- " or "> - "
+        local dash_title = _("Reading dashboard")
+        local dash_heading
+        if dash_style == "emoji" then
+            dash_heading = "📊 " .. dash_title
+        elseif dash_style == "badges" then
+            dash_heading = "`" .. dash_title:upper() .. "`"
+        else
+            dash_heading = dash_title
+        end
         add("")
         if is_std then
-            add("### " .. _("Reading dashboard"))
+            add("### " .. dash_heading)
             add("")
         else
-            add("> [!book] " .. _("Reading dashboard"))
+            add("> [!book] " .. dash_heading)
         end
         local detail_parts = {}
         if book.progress and tostring(book.progress) ~= ""
@@ -899,7 +908,13 @@ function render.buildBookMd(book, opts)
         end
         local r_stars = render.stars(book.rating)
         if r_stars then
-            add(dash_pfx .. "**" .. _("Rating") .. ":** " .. r_stars .. " (" .. tostring(book.rating) .. "/5)")
+            if dash_style == "emoji" then
+                add(dash_pfx .. "**" .. _("Rating") .. ":** ⭐ " .. r_stars .. " (" .. tostring(book.rating) .. "/5)")
+            elseif dash_style == "badges" then
+                add(dash_pfx .. "**" .. _("Rating") .. ":** " .. r_stars .. " `" .. tostring(book.rating) .. "/5`")
+            else
+                add(dash_pfx .. "**" .. _("Rating") .. ":** " .. r_stars .. " (" .. tostring(book.rating) .. "/5)")
+            end
         end
         if book.date_started or book.date_finished then
             local d_parts = {}
@@ -1567,10 +1582,27 @@ function render.buildIndexMd(books, opts)
                     add("> ▪ " .. table.concat(cloud_parts, " · "))
                 end
             else
-                for __, item in ipairs(sorted_tags) do
-                    cloud_parts[#cloud_parts + 1] = "#" .. item.name .. " (" .. tostring(item.count) .. ")"
+                if idx_style == "badges" then
+                    for __, item in ipairs(sorted_tags) do
+                        cloud_parts[#cloud_parts + 1] = "`#" .. item.name .. " (" .. tostring(item.count) .. ")`"
+                    end
+                    add(table.concat(cloud_parts, " "))
+                elseif idx_style == "editorial" then
+                    for __, item in ipairs(sorted_tags) do
+                        cloud_parts[#cloud_parts + 1] = "#" .. item.name .. " *(" .. tostring(item.count) .. ")*"
+                    end
+                    add("*" .. _("Tags") .. ":* " .. table.concat(cloud_parts, " · "))
+                elseif idx_style == "emoji" then
+                    for __, item in ipairs(sorted_tags) do
+                        cloud_parts[#cloud_parts + 1] = "#" .. item.name .. " (" .. tostring(item.count) .. ")"
+                    end
+                    add("🏷️ " .. table.concat(cloud_parts, " · "))
+                else
+                    for __, item in ipairs(sorted_tags) do
+                        cloud_parts[#cloud_parts + 1] = "*#" .. item.name .. "* (" .. tostring(item.count) .. ")"
+                    end
+                    add("▪ " .. table.concat(cloud_parts, " · "))
                 end
-                add("🏷️ " .. table.concat(cloud_parts, " · "))
             end
             add("")
         end
@@ -2264,15 +2296,37 @@ function render.buildDigestMd(books, opts)
         return table.concat(out, "\n") .. "\n"
     end
 
+    local digest_style = opts.visual_style
+    if digest_style ~= "emoji" and digest_style ~= "badges" and digest_style ~= "editorial" then
+        digest_style = "minimal"
+    end
     local books_txt = total_books == 1 and _("%1 book") or _("%1 books")
     local highlights_txt = #items == 1 and _("%1 highlight")
         or _("%1 highlights")
-    local stats = "**" .. (books_txt:gsub("%%1", tostring(total_books)))
-        .. "** · **" .. (highlights_txt:gsub("%%1", tostring(#items)))
-        .. "**"
-    if total_special > 0 then
-        stats = stats .. " · **★ "
-            .. (_("%1 special"):gsub("%%1", tostring(total_special))) .. "**"
+    local books_str = books_txt:gsub("%%1", tostring(total_books))
+    local hl_str = highlights_txt:gsub("%%1", tostring(#items))
+    local sp_str = (_("%1 special"):gsub("%%1", tostring(total_special)))
+    local stats
+    if digest_style == "badges" then
+        stats = "`" .. books_str:upper() .. "` · `" .. hl_str:upper() .. "`"
+        if total_special > 0 then
+            stats = stats .. " · `★ " .. sp_str:upper() .. "`"
+        end
+    elseif digest_style == "emoji" then
+        stats = "📚 **" .. books_str .. "** · ✍️ **" .. hl_str .. "**"
+        if total_special > 0 then
+            stats = stats .. " · ⭐ **" .. sp_str .. "**"
+        end
+    elseif digest_style == "editorial" then
+        stats = "**" .. books_str .. "** · **" .. hl_str .. "**"
+        if total_special > 0 then
+            stats = stats .. " · **" .. sp_str .. "**"
+        end
+    else
+        stats = "**" .. books_str .. "** · **" .. hl_str .. "**"
+        if total_special > 0 then
+            stats = stats .. " · **★ " .. sp_str .. "**"
+        end
     end
     local digest_std = (opts.markdown_style == "standard")
     local ostyle = opts.overview_style or "inline"
@@ -2330,7 +2384,13 @@ function render.buildDigestMd(books, opts)
                 add("---")
             end
             add("")
-            add("## " .. item.day_label)
+            if digest_style == "emoji" then
+                add("## 📅 " .. item.day_label)
+            elseif digest_style == "badges" then
+                add("## `" .. tostring(item.day_label):upper() .. "`")
+            else
+                add("## " .. item.day_label)
+            end
             current_day = item.day_key
             current_book = nil
         end
@@ -2344,10 +2404,11 @@ function render.buildDigestMd(books, opts)
             add("")
             local link = render.bookLink(item.book_link, item.book_title,
                 digest_std and "markdown" or opts.index_links, false)
+            local book_pfx = digest_style == "emoji" and "📖 " or ""
             if item.book_author and tostring(item.book_author) ~= "" then
-                add("### " .. link .. " — *" .. tostring(item.book_author) .. "*")
+                add("### " .. book_pfx .. link .. " — *" .. tostring(item.book_author) .. "*")
             else
-                add("### " .. link)
+                add("### " .. book_pfx .. link)
             end
             current_book = book_id
         end

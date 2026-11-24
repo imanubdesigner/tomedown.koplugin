@@ -69,7 +69,6 @@ local getChapterHeadings = shared.getChapterHeadings
 local getHighlightContext = shared.getHighlightContext
 local getExportFormat = shared.getExportFormat
 local getMarkdownStyle = shared.getMarkdownStyle
-local getIndexStyle = shared.getIndexStyle
 
 local function effectiveIndexLinks(file)
     if getMarkdownStyle(file) == "standard" then
@@ -963,13 +962,17 @@ function M:exportDigest(touchmenu)
     util.makePath(dir)
     local digest_path = dir .. "/" .. DIGEST_FILENAME
     local digest_books = self:buildDigestBooks()
+    local digest_is_std = (getMarkdownStyle() == "standard")
+    local digest_raw_marker = getSetting("special_marker", "callout")
     local digest_md = render.buildDigestMd(digest_books, {
         title = _("Reading digest"),
         exported = os.date("%Y-%m-%d"),
         index_links = effectiveIndexLinks(),
         markdown_style = getMarkdownStyle(),
-        callout = getSetting("callout", false),
-        special_marker = getSetting("special_marker", "callout"),
+        callout = not digest_is_std and getSetting("callout", false) or false,
+        special_marker = (digest_is_std and (digest_raw_marker == "callout"
+            or digest_raw_marker == "alert" or digest_raw_marker == "highlight"
+            or digest_raw_marker == "highlight_bold")) and "bold" or digest_raw_marker,
         note_style = getNoteStyle(),
         overview_style = getOverviewStyle(),
     })
@@ -1465,7 +1468,7 @@ function M:runExport(files, opts)
                 index_layout = getSetting("index_layout", "tags_below"),
                 index_links = effectiveIndexLinks(),
                 markdown_style = getMarkdownStyle(),
-                index_style = getIndexStyle(),
+                index_style = shared.getEffectiveIndexStyle(),
                 index_tags_mode = getIndexTagsMode(),
                 hidden_books = hidden,
                 reading_now = getSetting("reading_now", true),
@@ -1575,13 +1578,17 @@ function M:runExport(files, opts)
         local digest_path = dir .. "/" .. DIGEST_FILENAME
         if exported > 0 or not lfs.attributes(digest_path) then
             local digest_books = self:buildDigestBooks()
+            local digest_is_std = (getMarkdownStyle() == "standard")
+            local digest_raw_marker = getSetting("special_marker", "callout")
             local digest_md = render.buildDigestMd(digest_books, {
                 title = _("Reading digest"),
                 exported = os.date("%Y-%m-%d"),
                 index_links = effectiveIndexLinks(),
-        markdown_style = getMarkdownStyle(),
-                callout = getSetting("callout", false),
-                special_marker = getSetting("special_marker", "callout"),
+                markdown_style = getMarkdownStyle(),
+                callout = not digest_is_std and getSetting("callout", false) or false,
+                special_marker = (digest_is_std and (digest_raw_marker == "callout"
+                    or digest_raw_marker == "alert" or digest_raw_marker == "highlight"
+                    or digest_raw_marker == "highlight_bold")) and "bold" or digest_raw_marker,
                 note_style = getNoteStyle(),
                 overview_style = getOverviewStyle(),
             })

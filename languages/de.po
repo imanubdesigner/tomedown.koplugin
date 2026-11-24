@@ -1107,6 +1107,9 @@ msgstr "Notiz bearbeiten"
 msgid "Index style: %1"
 msgstr "Indexstil: %1"
 
+msgid "Follow book style"
+msgstr "Buchstil folgen"
+
 msgid "Dashboard style: %1"
 msgstr "Dashboard-Stil: %1"
 

@@ -1193,6 +1193,21 @@ local function validVisualStyle(style)
     return "minimal"
 end
 
+-- Index owns a visual style. By default it follows the Book style (so one
+-- choice themes the library); switching "Follow book style" off in Index style
+-- lets 00 - Index.md keep its own style, independent from the books.
+local function getIndexFollowBook()
+    return getSetting("index_follow_book", true) ~= false
+end
+
+local function setIndexFollowBook(follow)
+    if follow then
+        setSetting("index_follow_book", nil)
+    else
+        setSetting("index_follow_book", false)
+    end
+end
+
 local function getHarmonizeBookStyle(file)
     if file then
         local override = getBookStyleOverride(file, "harmonize_book_style")
@@ -1222,6 +1237,13 @@ local function setBookVisualStyle(style)
     else
         setSetting("book_visual_style", nil)
     end
+end
+
+local function getEffectiveIndexStyle()
+    if getIndexFollowBook() then
+        return getBookVisualStyle()
+    end
+    return getIndexStyle()
 end
 
 local function getDashboardStyle(file)
@@ -1589,6 +1611,9 @@ return {
     setMarkdownStyle = setMarkdownStyle,
     getIndexStyle = getIndexStyle,
     setIndexStyle = setIndexStyle,
+    getIndexFollowBook = getIndexFollowBook,
+    setIndexFollowBook = setIndexFollowBook,
+    getEffectiveIndexStyle = getEffectiveIndexStyle,
     getHarmonizeBookStyle = getHarmonizeBookStyle,
     setHarmonizeBookStyle = setHarmonizeBookStyle,
     getBookVisualStyle = getBookVisualStyle,

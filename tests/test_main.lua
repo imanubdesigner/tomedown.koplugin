@@ -5642,6 +5642,48 @@ do
         shared.setReadingDashboard(false)
         shared.setMarkdownStyle("obsidian")
         end
+
+        -- 32: Index style can follow Book style (default) or keep its own independent style
+        do
+            shared.setSetting("with_index", true)
+            shared.setReadingDashboard(true)
+            shared.setHarmonizeBookStyle(true)
+            shared.setBookVisualStyle("emoji")
+            shared.setIndexFollowBook(true)
+            shared.setIndexStyle("minimal")
+            shared.setMarkdownStyle("obsidian")
+            plugin:runExport({ FILE }, { force = true })
+            local h_book_md = T.readFile(MD_PATH) or ""
+            local h_idx_md = T.readFile(INDEX_PATH) or ""
+            T.check(T.contains(h_book_md, "> [!book] 📊 Reading dashboard"),
+                "32: Book style = emoji styles Book Reading dashboard in Obsidian")
+            T.check(T.contains(h_idx_md, "### 📚 Series books (") or T.contains(h_idx_md, "### 📖 My books ("),
+                "32: Index style with Follow book style on tracks Book style (emoji)")
+
+            -- Switch Index style to an independent choice (badges) while Book style stays emoji
+            shared.setIndexStyle("badges")
+            shared.setIndexFollowBook(false)
+            T.check(shared.getEffectiveIndexStyle() == "badges"
+                    and shared.getBookVisualStyle() == "emoji",
+                "32: Follow book style off keeps Index style independent from Book style")
+            plugin:runExport({ FILE }, { force = true })
+            local ind_book = T.readFile(MD_PATH) or ""
+            local ind_idx = T.readFile(INDEX_PATH) or ""
+            T.check(T.contains(ind_book, "> [!book] 📊 Reading dashboard"),
+                "32: Book keeps its own emoji style while Index is independent")
+            T.check(T.contains(ind_idx, "`(") and not T.contains(ind_idx, "### 📖 "),
+                "32: Index renders its own independent badges style")
+
+            shared.setIndexFollowBook(true)
+            T.check(shared.getEffectiveIndexStyle() == "emoji",
+                "32: Follow book style on makes Index track Book style again")
+
+            -- restore defaults
+            shared.setMarkdownStyle("obsidian")
+            shared.setBookVisualStyle("minimal")
+            shared.setIndexStyle("minimal")
+            shared.setReadingDashboard(false)
+        end
     end
 end
 

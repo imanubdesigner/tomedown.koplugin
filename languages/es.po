@@ -1107,6 +1107,9 @@ msgstr "Editar nota"
 msgid "Index style: %1"
 msgstr "Estilo de índice: %1"
 
+msgid "Follow book style"
+msgstr "Seguir el estilo del libro"
+
 msgid "Dashboard style: %1"
 msgstr "Estilo del panel: %1"
 
