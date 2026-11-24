@@ -24,11 +24,12 @@
     <link rel="icon" type="image/png" sizes="32x32" href="{{base}}/assets/img/favicon-32.png?v=mono" />
     <link rel="apple-touch-icon" href="{{base}}/assets/img/favicon-192.png?v=mono" />
     {{fonts}}
-    <script>document.documentElement.classList.add("js");try{var t=localStorage.getItem("tomedown-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t;}catch(e){}</script>
-    <link rel="stylesheet" href="{{base}}/assets/css/main.css?v=32" />
-    <script defer src="{{base}}/assets/js/main.js?v=32"></script>
+    <script>document.documentElement.classList.add("js");try{var t=localStorage.getItem("tomedown-theme");if(t==="light"||t==="dark"){document.documentElement.dataset.theme=t;var cs=document.querySelector('meta[name="color-scheme"]');if(cs)cs.content=t;}}catch(e){}</script>
+    <link rel="stylesheet" href="{{base}}/assets/css/main.css?v=35" />
+    <script defer src="{{base}}/assets/js/main.js?v=35"></script>
   </head>
   <body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
     <header class="site-header">
       <div class="container site-header-inner">
         <a href="{{base}}/" class="logo">
@@ -63,7 +64,7 @@
     </header>
 
     <div class="site-menu-backdrop" id="site-menu-backdrop" aria-hidden="true"></div>
-    <div class="site-menu-drawer" id="site-menu-drawer" aria-label="Mobile navigation" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="site-menu-drawer" id="site-menu-drawer" aria-label="Mobile navigation" role="dialog" aria-modal="true" aria-hidden="true" inert>
       <div class="site-menu-header">
         <a href="{{base}}/" class="logo site-menu-logo">
           <img src="{{base}}/assets/img/icon.svg" alt="" width="28" height="28" />
@@ -109,7 +110,7 @@
       </div>
     </div>
 
-    <main>
+    <main id="main-content">
 {{content}}
     </main>
 

@@ -17,7 +17,7 @@ While each book gets its own note (e.g. `Arthur Machen - The Three Impostors.md`
 - **Clean Timestamps**: each quote displays its exact time of capture (`09:41`) without repetitive dates.
 - **Divider Between Books**: multiple books read on the same calendar day are cleanly separated by a subtle horizontal rule (`---`).
 - **Direct wikilinks**: each book heading links straight to its book note in your vault.
-- **Configurable Overview**: library summary stats at the top adapt to your configured *Overview style* (Inline, Blockquote, Callout, or Table).
+- **Configurable Overview & Visual Style**: library summary stats adapt to your *Overview style*, while **Settings → Export → Digest style** follows your *Book style* automatically (or lets you pick an independent style among *Minimal symbols*, *Emoji*, *Code badges*, and *Editorial*).
 - **Consistent styling**: quotes keep your chosen highlight style (callouts, alerts, bold, or stars), with page numbers and timestamps.
 
 ## How to export it

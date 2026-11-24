@@ -48,7 +48,7 @@ T.check(T.contains(md, "\n# Capitolo I"), "first chapter")
 T.check(T.contains(md, "\n# Capitolo II"), "second chapter")
 T.check(T.contains(md, "> Prima frase."), "quote 1")
 T.check(T.contains(md, "> Seconda riga."), "quote 2")
-T.check(T.contains(md, "- **p. 10** · 02/09/2026\n  - **NOTE:** *nota utente*"),
+T.check(T.contains(md, "- **p. 10** · 02/09/2026\n  - **Note** — *nota utente*"),
     "meta row with page, date and note")
 T.check(T.contains(md, "- **p. 38** · 03/09/2026"), "meta row without note")
 local i10 = md:find("- **p. 10**", 1, true)
@@ -62,7 +62,7 @@ T.check(not T.contains(md, "![]("), "no image in the markdown")
 -- never at the end of the file
 T.check(T.contains(md, "# **2 highlights**\n\n---\n\n# Capitolo I"),
     "separator between the stats and the first chapter")
-T.check(T.contains(md, "- **p. 10** · 02/09/2026\n  - **NOTE:** *nota utente*\n\n---\n\n# Capitolo II"),
+T.check(T.contains(md, "- **p. 10** · 02/09/2026\n  - **Note** — *nota utente*\n\n---\n\n# Capitolo II"),
     "separator when the chapter changes")
 -- markers carry a hash; strip it when asserting literal marker text
 local plain_md = (md:gsub(" hash=%w+", ""))
@@ -203,7 +203,7 @@ local multi = render.buildBookMd({
     count = 1,
     annotations = { { text = "X", note = "riga1\nriga2" } },
 })
-T.check(T.contains(multi, "**NOTE:** *riga1*\n  *riga2*"), "multiline note keeps its lines")
+T.check(T.contains(multi, "**Note** — riga1\n  riga2"), "multiline note keeps its lines")
 T.check(not T.contains(multi, "riga1 riga2"), "the lines are not flattened")
 
 -- a blank line inside the note becomes a paragraph break
@@ -212,7 +212,7 @@ local para = render.buildBookMd({
     count = 1,
     annotations = { { text = "Y", note = "a\n\nb" } },
 })
-T.check(T.contains(para, "**NOTE:** *a*\n\n  *b*"), "blank line in the note")
+T.check(T.contains(para, "**Note** — a\n\n  b"), "blank line in the note")
 
 -- a note without page/date: the note is the meta row
 local only_note = render.buildBookMd({
@@ -220,14 +220,14 @@ local only_note = render.buildBookMd({
     count = 1,
     annotations = { { text = "Z", note = "solo nota" } },
 })
-T.check(T.contains(only_note, "- **NOTE:** *solo nota*"), "note-only annotation")
+T.check(T.contains(only_note, "- **Note** — *solo nota*"), "note-only annotation")
 
 -- nested under a meta row: the continuation lines indent deeper
 local nest = render.buildBookMd({
     title = "Nido", count = 1,
     annotations = { { text = "W", page = 5, date = "01/02/2026", note = "a\nb" } },
 })
-T.check(T.contains(nest, "- **p. 5** · 01/02/2026\n  - **NOTE:** *a*\n    *b*"),
+T.check(T.contains(nest, "- **p. 5** · 01/02/2026\n  - **Note** — a\n    b"),
     "note nested under the meta row")
 
 -- no page/date/note: ellipsis
@@ -317,10 +317,10 @@ T.check(T.contains(importedBook, 'published: "1999-05"'),
 T.check(T.contains(importedBook, "rating: 4"), "the rating is a number")
 T.check(T.contains(importedBook, 'review: "Bello e davvero intenso."'),
     "the review is a quoted one-liner")
-T.check(T.contains(importedBook, 'date_started: "2026-09-10"'),
-    "the reading start date")
-T.check(T.contains(importedBook, 'date_finished: "2026-10-01"'),
-    "the reading finish date")
+T.check(T.contains(importedBook, "date_started: 2026-09-10"),
+    "the reading start date is an unquoted native ISO date")
+T.check(T.contains(importedBook, "date_finished: 2026-10-01"),
+    "the reading finish date is an unquoted native ISO date")
 T.check(T.contains(importedBook, "collections:\n  - Fantascienza\n  - Da leggere"),
     "the collections are a list")
 local importedFm = importedBook:match("^%-%-%-\n(.-)\n%-%-%-\n")
@@ -1249,7 +1249,7 @@ do
         "footnote marker 1 on first highlight meta")
     T.check(T.contains(fn_book, "- **p. 14** [^2]"),
         "footnote marker 2 on second highlight meta")
-    T.check(not T.contains(fn_book, "**NOTE:**"),
+    T.check(not T.contains(fn_book, "**Note**"),
         "inline NOTE label omitted in footnote mode")
     T.check(T.contains(fn_book, "[^1]: First personal note\n    Second line"),
         "multiline footnote definition indented")
@@ -2032,6 +2032,116 @@ do
     T.check(T.contains(dash_badges_std, "### `READING DASHBOARD`")
             and T.contains(dash_badges_std, "**Rating:** ★★★★☆ `4/5`"),
         "dashboard_style = badges styles dashboard heading and rating in Standard Markdown")
+
+    -- Obsidian YAML safety for custom fields with wikilinks, hash bookLink fallback, and italic notes with *
+    local edge_md = render.buildBookMd({
+        title = "C# Guide",
+        author = "Anders",
+        exported = "2026-11-24",
+        annotations = {
+            { text = "First star", chapter = "Ch 1", page = "1", special = true, note = "See *section 2* for 2 * 3" },
+            { text = "Second star", chapter = "Ch 2", page = "9", special = true, note = "Mix *star* and _under_" },
+        },
+    }, {
+        special_showcase = true,
+        custom_fields = {
+            { key = "related", val = "[[Other Note]]" },
+            { key = "cssclasses", val = "[book]" },
+            { key = "links", val = '["[[Note A]]", "[[Note B]]"]' },
+        },
+    })
+    T.check(T.contains(edge_md, 'related: "[[Other Note]]"')
+            and T.contains(edge_md, "cssclasses: [book]")
+            and T.contains(edge_md, 'links: ["[[Note A]]", "[[Note B]]"]'),
+        "unquoted wikilinks in custom frontmatter are quoted while valid YAML arrays stay arrays")
+    T.check(T.contains(edge_md, "**Note** — See *section 2* for 2 * 3")
+            and T.contains(edge_md, "**Note** — Mix *star* and _under_"),
+        "personal notes containing Markdown emphasis render cleanly in roman without breaking formatting")
+    T.check(T.contains(edge_md, "> — *Ch 1 · p. 1*\n>\n> ---\n>\n> “Second star”"),
+        "consecutive special showcase quotes in Obsidian callouts have a clean divider")
+    T.check(render.bookLink("Anders - C# Guide", "C# Guide", "obsidian", true)
+            == "[C Guide](Anders%20-%20C%23%20Guide.md)",
+        "bookLink falls back to encoded Markdown link when target filename contains #")
+    local idx_iso = render.buildIndexMd({}, { exported = "2026-11-24" })
+    T.check(T.contains(idx_iso, "\nexported: 2026-11-24\n"),
+        "buildIndexMd emits unquoted ISO exported date matching buildBookMd")
+
+    -- Proposals 1, 2, 3, 4: showcase & digest deep-links, cross-nav, list notes, and [!note] callout
+    local deep_book = render.buildBookMd({
+        title = "The Three Impostors",
+        author = "Arthur Machen",
+        date_started = "2026-11-10",
+        date_finished = "2026-11", -- non-ISO partial date stays quoted
+        annotations = {
+            {
+                text = "I yield to fantasy.",
+                chapter = "Prologue",
+                page = "5",
+                special = true,
+                id_seed = "2026-11-14 21:15:00",
+                note = "- primo livello\n- secondo livello",
+            },
+        },
+    }, {
+        block_ids = true,
+        special_showcase = true,
+        reading_dashboard = true,
+        with_digest = true,
+    })
+    T.check(T.contains(deep_book, "\ndate_started: 2026-11-10\n")
+            and T.contains(deep_book, '\ndate_finished: "2026-11"\n'),
+        "Proposal 2: full ISO dates are native YAML dates while partial dates stay quoted")
+    T.check(T.contains(deep_book, "[[00 - Index|← Book index]] · [[00 - Reading Digest|Reading digest →]]"),
+        "Proposal 3: Reading dashboard links to both Book index and Reading digest when digest is enabled")
+    local hl_hash = deep_book:match("%^(hl%-%x+)")
+    T.check(hl_hash ~= nil
+            and T.contains(deep_book, "> — [[#^" .. hl_hash .. "|Prologue · p. 5]]"),
+        "Proposal 1: Special highlights showcase links directly to the chapter highlight block ID")
+    T.check(T.contains(deep_book, "  - **Note**\n    - primo livello\n    - secondo livello"),
+        "Proposal 4 (4A+4C): note starting with a bullet list nests cleanly under **Note**")
+
+    local callout_note_md = render.buildBookMd({
+        title = "Callout Book",
+        annotations = {
+            { text = "Quote.", page = "15", note = "Riflessione con **grassetto**\n- dettaglio" },
+        },
+    }, { note_style = "callout" })
+    T.check(T.contains(callout_note_md, "- **p. 15**\n\n> [!note] Note\n> Riflessione con **grassetto**\n> - dettaglio"),
+        "Proposal 4B: note_style = callout renders personal note inside > [!note] callout")
+
+    local std_callout_fallback = render.buildBookMd({
+        title = "Std Book",
+        annotations = { { text = "Quote.", page = "15", note = "Breve nota" } },
+    }, { markdown_style = "standard", note_style = "callout" })
+    T.check(T.contains(std_callout_fallback, "  - **Note** — *Breve nota*")
+            and not T.contains(std_callout_fallback, "[!note]"),
+        "Proposal 4B: note_style = callout falls back cleanly to Inline in Standard Markdown")
+
+    local deep_digest = render.buildDigestMd({
+        {
+            link = "Arthur Machen - The Three Impostors",
+            title = "The Three Impostors",
+            author = "Arthur Machen",
+            annotations = {
+                {
+                    text = "I yield to fantasy.",
+                    chapter = "Prologue",
+                    page = "5",
+                    sort_time = "2026-11-14 21:15:00",
+                    id_seed = "2026-11-14 21:15:00",
+                },
+            },
+        },
+    }, { block_ids = true, with_index = true, note_style = "callout" })
+    T.check(T.contains(deep_digest, "[[00 - Index|← Book index]]")
+            and T.contains(deep_digest, "[[Arthur Machen - The Three Impostors#^" .. hl_hash .. "|Prologue · p. 5]] · 21:15"),
+        "Proposals 1 & 3: Reading Digest links back to Book index and deep-links to exact highlight block ID")
+
+    local cross_idx = render.buildIndexMd({
+        { link = "Arthur Machen - The Three Impostors", title = "The Three Impostors", count = 1 },
+    }, { with_digest = true })
+    T.check(T.contains(cross_idx, "[[00 - Reading Digest|Reading digest →]]"),
+        "Proposal 3: Index stats line includes cross-link to Reading digest when with_digest is enabled")
 end
 
 T.finish("test_render")

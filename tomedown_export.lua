@@ -930,6 +930,8 @@ end
 
 function M:buildDigestBooks()
     local list = {}
+    local drawings = {}
+    local seen_drawings = {}
     local dir = self:getLocalDir()
     local drawings_folder = getDrawingsFolder()
     for __, file in ipairs(self:listBookFiles()) do
@@ -939,18 +941,26 @@ function M:buildDigestBooks()
             local book = self:buildBook(file, live)
             if book and book.annotations and #book.annotations > 0 then
                 if getIncludeHandwritten(file) then
-                    Handwritten.ensureDrawings(book, dir, drawings_folder)
+                    local hw = Handwritten.ensureDrawings(book, dir, drawings_folder)
+                    for __, p in ipairs(hw or {}) do
+                        if not seen_drawings[p] then
+                            seen_drawings[p] = true
+                            drawings[#drawings + 1] = p
+                        end
+                    end
                 end
                 list[#list + 1] = {
                     link = book.base,
                     title = book.title,
                     author = book.author,
+                    has_block_ids = getSetting("block_ids", false)
+                        and getMarkdownStyle(file) ~= "standard",
                     annotations = book.annotations,
                 }
             end
         end
     end
-    return list
+    return list, drawings
 end
 
 function M:exportDigest(touchmenu)
@@ -961,7 +971,7 @@ function M:exportDigest(touchmenu)
     local dir = self:getLocalDir()
     util.makePath(dir)
     local digest_path = dir .. "/" .. DIGEST_FILENAME
-    local digest_books = self:buildDigestBooks()
+    local digest_books, digest_drawings = self:buildDigestBooks()
     local digest_is_std = (getMarkdownStyle() == "standard")
     local digest_raw_marker = getSetting("special_marker", "callout")
     local digest_md = render.buildDigestMd(digest_books, {
@@ -969,6 +979,9 @@ function M:exportDigest(touchmenu)
         exported = os.date("%Y-%m-%d"),
         index_links = effectiveIndexLinks(),
         markdown_style = getMarkdownStyle(),
+        visual_style = shared.getEffectiveDigestStyle(),
+        with_index = getSetting("with_index", true),
+        block_ids = not digest_is_std and getSetting("block_ids", false) or false,
         callout = not digest_is_std and getSetting("callout", false) or false,
         special_marker = (digest_is_std and (digest_raw_marker == "callout"
             or digest_raw_marker == "alert" or digest_raw_marker == "highlight"
@@ -983,12 +996,17 @@ function M:exportDigest(touchmenu)
         })
         return false
     end
+    setSetting("digest_dirty", false)
+    local upload_files = { digest_path }
+    for __, p in ipairs(digest_drawings or {}) do
+        upload_files[#upload_files + 1] = p
+    end
     local server = self:getServer()
     local has_upload = getSetting("upload", false) and server ~= nil
     if has_upload and not NetworkMgr:isConnected() then
-        self:markPendingUploads({ digest_path })
+        self:markPendingUploads(upload_files)
         UIManager:show(Notification:new{
-            text = T(_("%1 files exported — upload when online"), 1),
+            text = T(_("%1 files exported — upload when online"), #upload_files),
             timeout = 3,
         })
         return true
@@ -998,16 +1016,32 @@ function M:exportDigest(touchmenu)
         timeout = 3,
     })
     if has_upload then
-        local upload_info = self:showProgress(T(_("Uploading %1 files to the cloud…"), 1))
-        self:uploadPaths(server, { digest_path }, function(ok_count, fail_count, failed)
+        local upload_info = self:showProgress(T(_("Uploading %1 files to the cloud…"), #upload_files))
+        self:uploadPaths(server, upload_files, function(ok_count, fail_count, failed)
             UIManager:close(upload_info)
+            local failed_set = {}
+            for __, fpath in ipairs(failed) do
+                failed_set[fpath] = true
+            end
+            local ok_paths = {}
+            for __, fpath in ipairs(upload_files) do
+                if not failed_set[fpath] then
+                    ok_paths[#ok_paths + 1] = fpath
+                end
+            end
+            self:clearPendingUploads(ok_paths)
+            if getSetting("include_handwritten", true) ~= false then
+                Handwritten.deleteUploaded(ok_paths, dir, getDrawingsFolder())
+                if getDrawingsFolder() ~= "drawings" then
+                    Handwritten.deleteUploaded(ok_paths, dir, "drawings")
+                end
+            end
             if #failed > 0 then
                 self:markPendingUploads(failed)
                 UIManager:show(InfoMessage:new{
                     text = T(_("Cloud: %1 uploaded, %2 errors"), ok_count, fail_count),
                 })
             else
-                self:clearPendingUploads({ digest_path })
                 UIManager:show(Notification:new{
                     text = T(_("Cloud: %1 files uploaded"), ok_count),
                     timeout = 3,
@@ -1213,6 +1247,8 @@ function M:runExport(files, opts)
                         book_heading = getBookHeading(file),
                         overview_style = getOverviewStyle(file),
                         reading_dashboard = getReadingDashboard(file),
+                        with_index = with_index,
+                        with_digest = getSetting("with_digest", false),
                         book_visual_style = shared.getBookVisualStyle(file),
                         dashboard_style = shared.getHarmonizeBookStyle(file)
                             and shared.getBookVisualStyle(file) or shared.getDashboardStyle(file),
@@ -1475,6 +1511,7 @@ function M:runExport(files, opts)
                 completed_books = getCompletedBooks(),
                 index_dashboard = getIndexDashboard(),
                 index_tag_cloud = getIndexTagCloud(),
+                with_digest = getSetting("with_digest", false),
             })
             -- the index is a region too: the reader may have annotated it
             local content = index_md
@@ -1576,8 +1613,9 @@ function M:runExport(files, opts)
     end
     if getSetting("with_digest", false) then
         local digest_path = dir .. "/" .. DIGEST_FILENAME
-        if exported > 0 or not lfs.attributes(digest_path) then
-            local digest_books = self:buildDigestBooks()
+        if exported > 0 or not lfs.attributes(digest_path)
+                or getSetting("digest_dirty", false) then
+            local digest_books, digest_drawings = self:buildDigestBooks()
             local digest_is_std = (getMarkdownStyle() == "standard")
             local digest_raw_marker = getSetting("special_marker", "callout")
             local digest_md = render.buildDigestMd(digest_books, {
@@ -1585,6 +1623,9 @@ function M:runExport(files, opts)
                 exported = os.date("%Y-%m-%d"),
                 index_links = effectiveIndexLinks(),
                 markdown_style = getMarkdownStyle(),
+                visual_style = shared.getEffectiveDigestStyle(),
+                with_index = with_index,
+                block_ids = not digest_is_std and getSetting("block_ids", false) or false,
                 callout = not digest_is_std and getSetting("callout", false) or false,
                 special_marker = (digest_is_std and (digest_raw_marker == "callout"
                     or digest_raw_marker == "alert" or digest_raw_marker == "highlight"
@@ -1595,7 +1636,20 @@ function M:runExport(files, opts)
             local digest_ok, digest_err =
                 util.writeToFile(digest_md, digest_path, true, false, true)
             if digest_ok then
+                setSetting("digest_dirty", false)
                 written[#written + 1] = digest_path
+                if digest_drawings and #digest_drawings > 0 then
+                    local seen_written = {}
+                    for __, wp in ipairs(written) do
+                        seen_written[wp] = true
+                    end
+                    for __, dp in ipairs(digest_drawings) do
+                        if not seen_written[dp] then
+                            seen_written[dp] = true
+                            written[#written + 1] = dp
+                        end
+                    end
+                end
             else
                 errors[#errors + 1] = DIGEST_FILENAME .. ": "
                     .. tostring(digest_err)

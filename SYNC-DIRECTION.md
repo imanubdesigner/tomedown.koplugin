@@ -18,11 +18,7 @@ for other habits.
 
 ## Why it barely matters with Tomedown
 
-Tomedown only ever **pushes**: an export uploads the book note and the
-index into your cloud folder — it never downloads, never rewrites a
-remote folder listing and never deletes anything. So the direction
-setting really controls one thing: what *your side* (the vault behind
-Remotely Save) is allowed to do back.
+During a normal push, Tomedown uploads your book notes, covers, drawings, and index into your cloud folder — it never rewrites a remote folder listing and never deletes remote files. When **Keep my notes** and **Bring in edits made in Obsidian** are enabled (*Settings → My notes*), Tomedown also fetches the remote Markdown copy right before uploading so your Obsidian edits are folded in safely instead of overwritten. So the direction setting in Remotely Save really controls one thing: what *your side* (the vault behind Remotely Save) is allowed to do back.
 
 ## The five options
 
@@ -61,13 +57,7 @@ Tomedown writes to is the same one your editor watches (mounted, synced
 or copied by hand). Edits are first class: the next export merges around
 them, everything stays on one copy.
 
-**Setup B — the vault lives behind the cloud.** KOReader never downloads,
-so your edits stay on the remote/Obsidian side until something carries
-them back into the device folder (USB, KOReader's cloud browser). Until
-then the next export wins on the remote — Remotely Save will show it as a
-conflict, and your vault receives the device version on the following
-sync. Edit freely, but carry the file back before re-exporting if you
-want the text to survive.
+**Setup B — the vault lives behind the cloud.** With **Keep my notes** and **Bring in edits made in Obsidian** enabled (on by default whenever *Keep my notes* and *Upload to cloud* are active), KOReader downloads the remote Markdown file before uploading, merges your Obsidian notes, frontmatter edits, and inline quote comments into the new export, and keeps a `.bak` safety copy if anything diverges. If you turn *Bring in edits made in Obsidian* off, the device version wins on the remote unless you copy the edited file back to the device first.
 
 ## See also
 

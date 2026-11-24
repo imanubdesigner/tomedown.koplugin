@@ -8,6 +8,7 @@ on the plugin class.
 ]]
 
 local Cover = require("tomedown_cover")
+local Handwritten = require("tomedown_handwritten")
 local Device = require("device")
 local Font = require("ui/font")
 local InfoMessage = require("ui/widget/infomessage")
@@ -27,12 +28,14 @@ local render = require("tomedown_render")
 local shared = require("tomedown_shared")
 
 local INDEX_FILENAME = shared.INDEX_FILENAME
+local DIGEST_FILENAME = shared.DIGEST_FILENAME
 local getSetting = shared.getSetting
 local setSetting = shared.setSetting
 local getNotesTitle = shared.getNotesTitle
 local getBookPreserve = shared.getBookPreserve
 local getIndexPreserve = shared.getIndexPreserve
 local getCoversFolder = shared.getCoversFolder
+local getDrawingsFolder = shared.getDrawingsFolder
 local readIfExists = shared.readIfExists
 local ownCopy = shared.ownCopy
 local isZoned = shared.isZoned
@@ -748,6 +751,9 @@ function M:reconcilePending(server, paths, dir)
         if rel == INDEX_FILENAME then
             return getIndexPreserve()
         end
+        if rel == DIGEST_FILENAME then
+            return false
+        end
         -- a path with no book behind it follows the default, the same
         -- way the export decides for a file it does not know
         return getBookPreserve(bookFor(rel))
@@ -957,6 +963,12 @@ function M:flushPendingUploads()
                 Cover.deleteUploaded(ok_paths, self:getLocalDir(), "covers")
             end
         end
+        if getSetting("include_handwritten", true) ~= false then
+            Handwritten.deleteUploaded(ok_paths, self:getLocalDir(), getDrawingsFolder())
+            if getDrawingsFolder() ~= "drawings" then
+                Handwritten.deleteUploaded(ok_paths, self:getLocalDir(), "drawings")
+            end
+        end
         if fail_count > 0 then
             UIManager:show(InfoMessage:new{
                 text = T(_("Cloud: %1 uploaded, %2 errors"), ok_count, fail_count),
@@ -998,23 +1010,30 @@ function M:reuploadAll(touchmenu)
             end
         end
     end
-    listDir(dir, function(entry)
-        return entry:sub(-3) == ".md"
-    end)
+    local function isNoteFile(entry)
+        return entry:sub(-3) == ".md" or entry:sub(-4) == ".txt"
+    end
+    local function isDrawingFile(entry)
+        local lower = entry:lower()
+        return lower:sub(-4) == ".svg" or lower:sub(-4) == ".png"
+            or lower:sub(-4) == ".jpg" or lower:sub(-5) == ".jpeg"
+    end
+    listDir(dir, isNoteFile)
     local covers_folder = getCoversFolder()
+    local drawings_folder = getDrawingsFolder()
     local ok_sub, iter_sub, obj_sub = pcall(lfs.dir, dir)
     if ok_sub and iter_sub then
         for entry in iter_sub, obj_sub do
-            if entry ~= "." and entry ~= ".." and entry ~= "covers" and entry ~= covers_folder
+            if entry ~= "." and entry ~= ".."
+                    and entry ~= "covers" and entry ~= covers_folder
+                    and entry ~= "drawings" and entry ~= drawings_folder
                     and lfs.attributes(dir .. "/" .. entry, "mode") == "directory" then
-                listDir(dir .. "/" .. entry, function(sub_entry)
-                    return sub_entry:sub(-3) == ".md"
-                end)
+                listDir(dir .. "/" .. entry, isNoteFile)
             end
         end
     end
-    -- covers still sitting on the device (upload was off, or the upload
-    -- failed earlier) ride along with "Upload all files again"
+    -- covers and drawings still sitting on the device (upload was off, or
+    -- the upload failed earlier) ride along with "Upload all files again"
     listDir(dir .. "/" .. covers_folder, function(entry)
         return entry:sub(-4) == ".jpg"
     end)
@@ -1022,6 +1041,10 @@ function M:reuploadAll(touchmenu)
         listDir(dir .. "/covers", function(entry)
             return entry:sub(-4) == ".jpg"
         end)
+    end
+    listDir(dir .. "/" .. drawings_folder, isDrawingFile)
+    if drawings_folder ~= "drawings" then
+        listDir(dir .. "/drawings", isDrawingFile)
     end
     if #paths == 0 then
         UIManager:show(Notification:new{
@@ -1077,6 +1100,12 @@ function M:reuploadAll(touchmenu)
             Cover.deleteUploaded(ok_paths, dir, getCoversFolder())
             if getCoversFolder() ~= "covers" then
                 Cover.deleteUploaded(ok_paths, dir, "covers")
+            end
+        end
+        if getSetting("include_handwritten", true) ~= false then
+            Handwritten.deleteUploaded(ok_paths, dir, getDrawingsFolder())
+            if getDrawingsFolder() ~= "drawings" then
+                Handwritten.deleteUploaded(ok_paths, dir, "drawings")
             end
         end
         if fail_count > 0 then

@@ -1107,6 +1107,15 @@ msgstr "Modifier la note"
 msgid "Index style: %1"
 msgstr "Style d’index : %1"
 
+msgid "Digest style: %1"
+msgstr "Style du digest : %1"
+
+msgid "Note"
+msgstr "Note"
+
+msgid "Callout ([!note])"
+msgstr "Callout ([!note])"
+
 msgid "Follow book style"
 msgstr "Suivre le style du livre"
 

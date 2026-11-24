@@ -29,16 +29,16 @@ tags:
 # The Three Impostors
 ### by Arthur Machen
 
-> [!book]
-> - **Status:** Reading (38%)
+> [!book] Reading dashboard
+> - **Status:** ● **Reading** (38% · 240 pages)
 > - **Rating:** ★★★★☆ (4/5)
 > - **Reading dates:** 10 Nov 2026 → 16 Nov 2026
 > - **Index:** [[00 - Index|← Book index]]
 
-> [!abstract]- Synopsis
+> [!abstract]- § Book synopsis
 > A gripping mystery following Mr. Dyson and Mr. Phillips through the gaslit streets of London...
 
-#horror #weird-fiction
+▪ *#horror* · *#weird-fiction*
 
 ---
 
@@ -48,11 +48,13 @@ tags:
 ---
 
 > [!highlight]- ★ Special highlights (2)
-> > “It is an old story; but it is ever new to those who have the eyes to see and the heart to feel.”
-> > — *Chapter I* · p. 15
+> “It is an old story; but it is ever new to those who have the eyes to see and the heart to feel.”
+> — *Chapter I · p. 15*
 >
-> > “I yield to fantasy, I cannot withstand the influence of the grotesque.”
-> > — *Prologue* · p. 5
+> ---
+>
+> “I yield to fantasy, I cannot withstand the influence of the grotesque.”
+> — *Prologue · p. 5*
 
 ---
 
@@ -61,7 +63,7 @@ tags:
 > It is an old story; but it is ever new to those who have the eyes to see and the heart to feel.
 
 - **p. 15** · 16 Nov 2026 | 10:20
-  - **NOTE:** *to reread*
+  - **Note** — *to reread*
 
 > Another highlight.
 
@@ -70,7 +72,7 @@ tags:
 ![Handwritten note · p. 25](drawings/Arthur%20Machen%20-%20The%20Three%20Impostors%20-%20note-1.svg) ^hl-3a8f19bc
 
 - **p. 25** · 16 Nov 2026 | 12:05 · ✍️ Handwritten note
-  - **NOTE:** *Margin sketch and arrow*
+  - **Note** — *Margin sketch and arrow*
 
 ---
 
@@ -143,8 +145,8 @@ Tomedown can incorporate rich metadata tracked by KOReader (ratings, reviews, re
 published: "1999-05"
 rating: 4
 review: "Riveting narrative and atmosphere."
-date_started: "2026-09-10"
-date_finished: "2026-10-01"
+date_started: 2026-09-10
+date_finished: 2026-10-01
 collections:
   - Classics
   - Favorites
@@ -203,15 +205,15 @@ If you read your notes in **MarkText, Typora, VS Code, Zettlr, or GitHub**, swit
 
 - **Book notes, index, and reading digest** use pure Markdown headings (`### Reading dashboard`, `### Book synopsis`, `### ★ Special highlights`, `### Library dashboard`) instead of `[!...]` callouts.
 - **Links** automatically use standard Markdown syntax (`[Title](Book.md)`).
-- **Special highlights** fall back from `[!highlight]` callouts to `**bold**` (or any compatible marker such as `⭐ **text**` or `==text==`).
+- **Special highlights** fall back from Obsidian-only `[!highlight]` / `==text==` markers to universal `**bold**` (or `⭐ **text**` when *Star & Bold* is selected).
 - **Obsidian-only `^hl-` block IDs** are omitted so quotes stay clean outside Obsidian.
 
 <div class="spotlight doc-spotlight" role="region" aria-label="Markdown format comparison: Obsidian style vs Standard style">
-  <div class="spotlight-tabs" role="tablist">
-    <button type="button" class="spotlight-tab is-active" role="tab" aria-selected="true">Obsidian style (callouts &amp; wikilinks)</button>
-    <button type="button" class="spotlight-tab" role="tab" aria-selected="false">Standard Markdown (headings &amp; links)</button>
+  <div class="spotlight-tabs" role="tablist" aria-label="Markdown output formats">
+    <button type="button" class="spotlight-tab is-active" role="tab" id="tab-fmt-obsidian" aria-selected="true" aria-controls="panel-fmt-obsidian">Obsidian style (callouts &amp; wikilinks)</button>
+    <button type="button" class="spotlight-tab" role="tab" id="tab-fmt-standard" aria-selected="false" tabindex="-1" aria-controls="panel-fmt-standard">Standard Markdown (headings &amp; links)</button>
   </div>
-  <div class="spotlight-slide is-active" role="tabpanel">
+  <div class="spotlight-slide is-active" role="tabpanel" id="panel-fmt-obsidian" aria-labelledby="tab-fmt-obsidian">
     <figure class="doc-shot">
       <div class="doc-shot-frame">
         <img src="../assets/obsidian/obsidian-markdown.webp" alt="Obsidian Markdown style: native collapsible callouts, book badges, and wikilinks" />
@@ -219,7 +221,7 @@ If you read your notes in **MarkText, Typora, VS Code, Zettlr, or GitHub**, swit
       <figcaption>Obsidian Markdown style: native collapsible callouts (<code>[!book]</code>, <code>[!summary]</code>, <code>[!highlight]</code>), wikilinks, and block IDs.</figcaption>
     </figure>
   </div>
-  <div class="spotlight-slide" role="tabpanel">
+  <div class="spotlight-slide" role="tabpanel" id="panel-fmt-standard" aria-labelledby="tab-fmt-standard" hidden="until-found">
     <figure class="doc-shot">
       <div class="doc-shot-frame">
         <img src="../assets/obsidian/standard-markdown.webp" alt="Standard Markdown style: clean Markdown headings and universal markdown links" />
@@ -238,9 +240,7 @@ With *Settings → Notes & highlights → Book page → Book cover* enabled, Tom
 cover: "covers/Arthur Machen - The Three Impostors.jpg"
 ---
 
-<p align="center">
-  <img src="covers/Arthur Machen - The Three Impostors.jpg" alt="Cover" style="object-fit:contain;max-height:420px;border-radius:4px" />
-</p>
+<img src="covers/Arthur Machen - The Three Impostors.jpg" alt="" style="object-fit:contain;width:400px;height:533px">
 ```
 
 ## The index (`00 - Index.md`)
@@ -250,7 +250,7 @@ cover: "covers/Arthur Machen - The Three Impostors.jpg"
 ```markdown
 | Cover | Book | Author | Series | Status | Last read | Highlights |
 |:---:|---|---|---|---|:---:|:---:|
-| <img src="covers/Edgar Wallace - The Three Just Men.jpg" alt="" style="object-fit:contain;width:90px;height:120px"> | [[Edgar Wallace - The Three Just Men\|The Three Just Men]]<hr>#mystery #crime | Edgar Wallace | The Four Just Men #4 | Complete<br>▰▰▰▰▰&nbsp;100%<br>★★★★★ | 16 Nov 2026 | 22 · ★5 |
+| <img src="covers/Edgar Wallace - The Three Just Men.jpg" alt="" style="object-fit:contain;width:90px;height:120px"> | [[Edgar Wallace - The Three Just Men\|The Three Just Men]]<hr>#mystery #crime | Edgar Wallace | The Four Just Men #4 | ● **Complete**<br>▰▰▰▰▰&nbsp;100%<br>★★★★★ | 16/11/2026 | 22 · ★5 |
 ```
 
 ### Library index sections
@@ -286,7 +286,7 @@ For devices equipped with a stylus (Kindle Scribe, Kobo Sage/Elipsa, Android e-i
 ![Handwritten note · p. 25](drawings/Author%20-%20Title%20-%20note-1.svg) ^hl-3a8f19bc
 
 - **p. 25** · 16 Nov 2026 | 12:05 · ✍️ Handwritten note
-  - **NOTE:** *Margin sketch and arrow*
+  - **Note** — *Margin sketch and arrow*
 ```
 
 ## Reading Digest (`00 - Reading Digest.md`)
@@ -297,7 +297,7 @@ When *Reading digest (00 - Reading Digest.md)* is enabled in *Settings → Expor
 ---
 tomedown: "1.0"
 title: "Reading digest"
-exported: "2026-11-16"
+exported: 2026-11-16
 highlights: 25
 tags:
   - ebook

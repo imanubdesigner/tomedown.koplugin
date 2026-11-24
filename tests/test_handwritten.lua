@@ -230,7 +230,7 @@ do
         "Book Markdown embeds SVG stroke drawing")
     T.check(T.contains(md, "- **p. 12** · 16 Nov 2026 | 09:15 · ✍️ Handwritten note"),
         "Book Markdown metadata line includes stylus marker")
-    T.check(T.contains(md, "**NOTE:** *Margin arrow & star*"),
+    T.check(T.contains(md, "**Note** — *Margin arrow & star*"),
         "Book Markdown includes user note attached to stylus drawing")
 
     -- Keep my notes preservation across re-exports

@@ -473,15 +473,15 @@ end
 local function getNoteStyle(file)
     local override = file and getBookStyleOverride(file, "note_style")
     local style = override or getSetting("note_style", "inline")
-    if style == "footnote" then
-        return "footnote"
+    if style == "footnote" or style == "callout" then
+        return style
     end
     return "inline"
 end
 
 local function setNoteStyle(style)
-    if style == "footnote" then
-        setSetting("note_style", "footnote")
+    if style == "footnote" or style == "callout" then
+        setSetting("note_style", style)
     else
         setSetting("note_style", nil)
     end
@@ -893,6 +893,39 @@ local function setFrontmatterOrder(raw, file)
     return clean
 end
 
+local function splitCustomPairs(line)
+    local pairs_out = {}
+    local start_idx = 1
+    local in_dq, in_sq = false, false
+    local bracket_depth = 0
+    local len = #line
+    local i = 1
+    while i <= len do
+        local ch = line:sub(i, i)
+        if ch == "\\" and (in_dq or in_sq) then
+            i = i + 1
+        elseif ch == '"' and not in_sq then
+            in_dq = not in_dq
+        elseif ch == "'" and not in_dq then
+            in_sq = not in_sq
+        elseif not in_dq and not in_sq then
+            if ch == "[" then
+                bracket_depth = bracket_depth + 1
+            elseif ch == "]" and bracket_depth > 0 then
+                bracket_depth = bracket_depth - 1
+            elseif ch == "," and bracket_depth == 0 then
+                if line:sub(i + 1):match("^%s*[%w_%-]+%s*:") then
+                    pairs_out[#pairs_out + 1] = line:sub(start_idx, i - 1)
+                    start_idx = i + 1
+                end
+            end
+        end
+        i = i + 1
+    end
+    pairs_out[#pairs_out + 1] = line:sub(start_idx)
+    return pairs_out
+end
+
 local function parseCustomFields(raw)
     if type(raw) ~= "string" or raw:match("^%s*$") then
         return nil
@@ -900,14 +933,14 @@ local function parseCustomFields(raw)
     local fields = {}
     local seen = {}
     -- Support both newline-separated lines and comma-separated pairs
-    -- e.g. "genre: sci-fi, project: thesis" or lines
+    -- e.g. "genre: sci-fi, project: thesis" without breaking commas inside values
     local normalized = raw:gsub("\r\n", "\n"):gsub("\r", "\n")
     local lines = {}
     for line in normalized:gmatch("[^\n]+") do
         lines[#lines + 1] = line
     end
     for __, line in ipairs(lines) do
-        for pair in line:gmatch("[^,]+") do
+        for __, pair in ipairs(splitCustomPairs(line)) do
             local k, v = pair:match("^%s*([%w_%-]+)%s*:%s*(.-)%s*$")
             if k and k ~= "" then
                 local lk = k:lower()
@@ -1244,6 +1277,37 @@ local function getEffectiveIndexStyle()
         return getBookVisualStyle()
     end
     return getIndexStyle()
+end
+
+local function getDigestStyle()
+    return validVisualStyle(getSetting("digest_style", "minimal"))
+end
+
+local function setDigestStyle(style)
+    if style == "emoji" or style == "badges" or style == "editorial" then
+        setSetting("digest_style", style)
+    else
+        setSetting("digest_style", nil)
+    end
+end
+
+local function getDigestFollowBook()
+    return getSetting("digest_follow_book", true) ~= false
+end
+
+local function setDigestFollowBook(follow)
+    if follow then
+        setSetting("digest_follow_book", nil)
+    else
+        setSetting("digest_follow_book", false)
+    end
+end
+
+local function getEffectiveDigestStyle()
+    if getDigestFollowBook() then
+        return getBookVisualStyle()
+    end
+    return getDigestStyle()
 end
 
 local function getDashboardStyle(file)
@@ -1614,6 +1678,11 @@ return {
     getIndexFollowBook = getIndexFollowBook,
     setIndexFollowBook = setIndexFollowBook,
     getEffectiveIndexStyle = getEffectiveIndexStyle,
+    getDigestStyle = getDigestStyle,
+    setDigestStyle = setDigestStyle,
+    getDigestFollowBook = getDigestFollowBook,
+    setDigestFollowBook = setDigestFollowBook,
+    getEffectiveDigestStyle = getEffectiveDigestStyle,
     getHarmonizeBookStyle = getHarmonizeBookStyle,
     setHarmonizeBookStyle = setHarmonizeBookStyle,
     getBookVisualStyle = getBookVisualStyle,

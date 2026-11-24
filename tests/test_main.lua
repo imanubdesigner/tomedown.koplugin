@@ -360,7 +360,7 @@ if md then
     T.check(T.contains(md, "\n# Capitolo I"), "chapter 1")
     T.check(T.contains(md, "\n# Capitolo II"), "chapter 2")
     T.check(T.contains(md, "> Prima frase."), "quote")
-    T.check(T.contains(md, "- **p. 10** · 2 Sep 2026 | 10:00\n  - **NOTE:** *nota utente*"), "meta with note")
+    T.check(T.contains(md, "- **p. 10** · 2 Sep 2026 | 10:00\n  - **Note** — *nota utente*"), "meta with note")
     T.check(T.contains(md, "nota utente"), "note present")
     T.check(not T.contains(md, "Segnalibro"), "page bookmark excluded")
     T.check(not T.contains(md, "Cancellato"), "deleted highlight excluded")
@@ -519,7 +519,7 @@ local legacy_md = T.readFile(DIR .. "/N_A - LibroVecchio.md")
 T.check(legacy_md ~= nil, "export of the book with the old .sdr")
 if legacy_md then
     T.check(T.contains(legacy_md, "> Vecchio evidenziato"), "highlight from a legacy .sdr")
-    T.check(T.contains(legacy_md, "**NOTE:** *nota vecchia*"), "note from legacy bookmarks")
+    T.check(T.contains(legacy_md, "**Note** — *nota vecchia*"), "note from legacy bookmarks")
     T.check(T.contains(legacy_md, "**p. 3**"), "legacy page")
 end
 
@@ -1180,9 +1180,9 @@ T.check(#updates == 5, "app & updates rows: " .. #updates)
 T.check(cloud[1].text == "Upload to cloud", "upload entry")
 T.check(cloud[2].text_func() == "Destination: Not set", "destination not set")
 T.check(cloud[3].text == "\xEE\xB4\xBE  Re-upload all files…", "re-upload entry")
--- Export: 10 rows
+-- Export: 10 rows when Reading digest is off; 11 when Reading digest is checked
 local files = settings[1].sub_item_table
-T.check(#files == 10, "export rows: " .. #files)
+T.check(#files == 10, "export rows when digest off: " .. #files)
 T.check(files[1].text_func() == "Export format: Markdown (.md)", "export format entry")
 T.check(files[2].text_func() == "Markdown style: Obsidian", "markdown style entry")
 T.check(T.contains(files[3].text_func(), "clipboard/tomedown"), "default local folder")
@@ -1201,6 +1201,11 @@ T.check(files[5].text == "Frontmatter fields", "frontmatter fields entry")
 T.check(files[6].text == "Export when I close a book", "auto-export entry")
 T.check(files[6].checked_func() == false, "auto-export off by default")
 T.check(files[7].text == "Reading digest (00 - Reading Digest.md)", "reading digest entry")
+files[7].callback()
+T.check(#files == 11 and files[8].text_func() == "Digest style: Follow book style",
+    "Digest style appears dynamically right below Reading digest when checked")
+files[7].callback()
+T.check(#files == 10, "Digest style hides again when Reading digest is unchecked")
 
 -- Index & library: ten static rows
 do
@@ -4804,9 +4809,9 @@ do
     T.check(T.contains(imported, "rating: 4"), "26: the rating is written")
     T.check(T.contains(imported, 'review: "Bello e davvero intenso."'),
         "26: the review is folded to one line")
-    T.check(T.contains(imported, 'date_started: "' .. START_DATE .. '"'),
+    T.check(T.contains(imported, "date_started: " .. START_DATE),
         "26: the start date comes from the statistics")
-    T.check(T.contains(imported, 'date_finished: "2026-10-01"'),
+    T.check(T.contains(imported, "date_finished: 2026-10-01"),
         "26: the finish date comes from the completed summary")
     T.check(T.contains(imported,
             "collections:\n  - Fantascienza\n  - Preferiti"),
@@ -5677,6 +5682,39 @@ do
             shared.setIndexFollowBook(true)
             T.check(shared.getEffectiveIndexStyle() == "emoji",
                 "32: Follow book style on makes Index track Book style again")
+
+            -- Custom frontmatter values containing commas and Digest visual_style parity
+            shared.setSetting("fm_custom_enabled", true)
+            shared.setSetting("fm_custom_fields", "subtitle: Crime, Mystery, and Horror, related: [[Other Note]], genre: gothic")
+            plugin:runExport({ FILE }, { force = true })
+            local cfm_md = T.readFile(MD_PATH) or ""
+            T.check(T.contains(cfm_md, 'subtitle: "Crime, Mystery, and Horror"')
+                    and T.contains(cfm_md, 'related: "[[Other Note]]"')
+                    and T.contains(cfm_md, 'genre: "gothic"'),
+                "32: parseCustomFields preserves commas inside values and quotes wikilinks end-to-end")
+            shared.setSetting("fm_custom_enabled", nil)
+            shared.setSetting("fm_custom_fields", nil)
+
+            shared.setBookVisualStyle("emoji")
+            shared.setDigestFollowBook(true)
+            shared.setDigestStyle("minimal")
+            plugin:exportDigest(nil)
+            local dig_emoji = T.readFile(DIR .. "/00 - Reading Digest.md") or ""
+            T.check(T.contains(dig_emoji, "📚 **") and T.contains(dig_emoji, "✍️ **"),
+                "32: Digest style with Follow book style on tracks Book style (emoji)")
+
+            shared.setDigestStyle("badges")
+            shared.setDigestFollowBook(false)
+            T.check(shared.getEffectiveDigestStyle() == "badges"
+                    and shared.getBookVisualStyle() == "emoji",
+                "32: Follow book style off keeps Digest style independent from Book style")
+            plugin:exportDigest(nil)
+            local dig_badges = T.readFile(DIR .. "/00 - Reading Digest.md") or ""
+            T.check(T.contains(dig_badges, "BOOK") and T.contains(dig_badges, "HIGHLIGHT")
+                    and not T.contains(dig_badges, "📚 **"),
+                "32: Digest renders its own independent badges style")
+            shared.setDigestFollowBook(true)
+            shared.setDigestStyle("minimal")
 
             -- restore defaults
             shared.setMarkdownStyle("obsidian")

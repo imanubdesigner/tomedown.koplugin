@@ -83,7 +83,7 @@ By default, every book follows your library-wide defaults configured in [Setting
 
 1. **Export format**: Choose between **Follow global setting**, **Markdown (.md)**, **Plain text (.txt)**, or **Both (.md and .txt)**.
 2. **Markdown style**: Select **Follow global setting**, **Obsidian** (wikilinks, `[!...]` callouts, `^hl-` block IDs), or **Standard** (universal Markdown headings, `[Title](file.md)` links, no orphan block IDs).
-3. **Personal notes format**: Override between **Inline** (indented right under the quote) or **Footnotes** (`[^1]` at the end of the file).
+3. **Personal notes format**: Override between **Inline** (smart indented bullet under the quote), **Callout ([!note])** (dedicated note callout in Obsidian mode), or **Footnotes** (`[^1]` at the end of the file).
 4. **Highlight details**: Switch between **Page and date**, **Page only**, **Date only**, or **None**.
 5. **Chapter headings**: Override heading level (**Heading 1**, **Heading 2**, **Heading 3**, or **None**).
 6. **Highlight context**: Enable or disable sentence surrounding extraction for this book.
@@ -98,7 +98,7 @@ When you select **Standard** for a book, Tomedown automatically adapts the gener
 - Callouts (`[!book]`, `[!abstract]-`, `[!highlight]`) become clean Markdown headings (`### Reading dashboard`, `### Book synopsis`, `### ★ Special highlights`).
 - Obsidian wikilinks switch to standard `[Title](file.md)`.
 - Obsidian-only block IDs (`^hl-xxxxxxxx`) are omitted.
-- Obsidian-specific style options (such as *Obsidian Callout* in Section styles) are disabled for that volume.
+- Obsidian-specific style options (such as *Callout ([!summary])* in Overview style or *Callout ([!note])* in Personal notes format) automatically fall back to universal Markdown for that volume.
 
 ## Book info & Metadata
 

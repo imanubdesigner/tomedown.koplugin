@@ -1942,6 +1942,7 @@ function M:genSettingsMenu()
     }
     buildFilesRows = function()
         local fm_sub = self:genFrontmatterFieldsMenu(nil)
+        local with_digest = getSetting("with_digest", false)
         local rows = {
             {
                 text_func = function()
@@ -2072,6 +2073,7 @@ function M:genSettingsMenu()
             },
             {
                 text = _("Export when I close a book"),
+                separator = true,
                 checked_func = function()
                     return getSetting("auto_export", false)
                 end,
@@ -2083,80 +2085,98 @@ function M:genSettingsMenu()
             },
             {
                 text = T(_("Reading digest (%1)"), DIGEST_FILENAME),
-                separator = true,
+                separator = not with_digest,
                 checked_func = function()
                     return getSetting("with_digest", false)
                 end,
                 keep_menu_open = true,
-                callback = function()
-                    setSetting("with_digest", not getSetting("with_digest", false))
-                end,
-            },
-            {
-                text_func = function()
-                    return T(_("Backup copies (%1)"), #self:allBackups())
-                end,
-                enabled_func = function()
-                    return #self:allBackups() > 0
-                end,
-                mandatory_func = function()
-                    if #self:allBackups() == 0 then
-                        return _("None")
-                    end
-                end,
-                sub_item_table_func = function()
-                    return self:genAllBackupsMenu()
-                end,
-            },
-            {
-                text = _("Export settings to file"),
-                callback = function()
-                    local backup_path = self:getLocalDir() .. "/" .. shared.SETTINGS_BACKUP_FILENAME
-                    if shared.exportSettingsToFile(backup_path) then
-                        UIManager:show(Notification:new{
-                            text = T(_("Settings exported to %1"), shared.SETTINGS_BACKUP_FILENAME),
-                            timeout = 3,
-                        })
-                    else
-                        UIManager:show(InfoMessage:new{
-                            text = _("The settings backup could not be written."),
-                        })
-                    end
-                end,
-            },
-            {
-                text = _("Restore settings from backup…"),
-                enabled_func = function()
-                    local backup_path = self:getLocalDir() .. "/" .. shared.SETTINGS_BACKUP_FILENAME
-                    return lfs.attributes(backup_path, "mode") == "file"
-                end,
                 callback = function(touchmenu)
-                    local backup_path = self:getLocalDir() .. "/" .. shared.SETTINGS_BACKUP_FILENAME
-                    UIManager:scheduleIn(0.1, function()
-                        UIManager:show(ConfirmBox:new{
-                            text = T(_("Restore all Tomedown settings from %1?\n\nCurrent settings will be replaced."),
-                                shared.SETTINGS_BACKUP_FILENAME),
-                            ok_text = _("Restore"),
-                            cancel_text = _("Cancel"),
-                            ok_callback = function()
-                                if shared.restoreSettingsFromFile(backup_path) then
-                                    if touchmenu and touchmenu.updateItems then
-                                        touchmenu:updateItems()
-                                    end
-                                    UIManager:show(Notification:new{
-                                        text = _("Settings restored from backup."),
-                                        timeout = 3,
-                                    })
-                                else
-                                    UIManager:show(InfoMessage:new{
-                                        text = _("The settings backup could not be read."),
-                                    })
-                                end
-                            end,
-                        })
-                    end)
+                    local next_val = not getSetting("with_digest", false)
+                    setSetting("with_digest", next_val)
+                    if next_val then
+                        setSetting("digest_dirty", true)
+                    end
+                    rebuildFilesRows(touchmenu)
                 end,
             },
+        }
+        if with_digest then
+            rows[#rows + 1] = makeFollowStyleRow({
+                title = _("Digest style: %1"),
+                getFollow = shared.getDigestFollowBook,
+                setFollow = shared.setDigestFollowBook,
+                getOwn = shared.getDigestStyle,
+                setOwn = shared.setDigestStyle,
+                separator = true,
+                onChange = function()
+                    setSetting("digest_dirty", true)
+                end,
+            })
+        end
+        rows[#rows + 1] = {
+            text_func = function()
+                return T(_("Backup copies (%1)"), #self:allBackups())
+            end,
+            enabled_func = function()
+                return #self:allBackups() > 0
+            end,
+            mandatory_func = function()
+                if #self:allBackups() == 0 then
+                    return _("None")
+                end
+            end,
+            sub_item_table_func = function()
+                return self:genAllBackupsMenu()
+            end,
+        }
+        rows[#rows + 1] = {
+            text = _("Export settings to file"),
+            callback = function()
+                local backup_path = self:getLocalDir() .. "/" .. shared.SETTINGS_BACKUP_FILENAME
+                if shared.exportSettingsToFile(backup_path) then
+                    UIManager:show(Notification:new{
+                        text = T(_("Settings exported to %1"), shared.SETTINGS_BACKUP_FILENAME),
+                        timeout = 3,
+                    })
+                else
+                    UIManager:show(InfoMessage:new{
+                        text = _("The settings backup could not be written."),
+                    })
+                end
+            end,
+        }
+        rows[#rows + 1] = {
+            text = _("Restore settings from backup…"),
+            enabled_func = function()
+                local backup_path = self:getLocalDir() .. "/" .. shared.SETTINGS_BACKUP_FILENAME
+                return lfs.attributes(backup_path, "mode") == "file"
+            end,
+            callback = function(touchmenu)
+                local backup_path = self:getLocalDir() .. "/" .. shared.SETTINGS_BACKUP_FILENAME
+                UIManager:scheduleIn(0.1, function()
+                    UIManager:show(ConfirmBox:new{
+                        text = T(_("Restore all Tomedown settings from %1?\n\nCurrent settings will be replaced."),
+                            shared.SETTINGS_BACKUP_FILENAME),
+                        ok_text = _("Restore"),
+                        cancel_text = _("Cancel"),
+                        ok_callback = function()
+                            if shared.restoreSettingsFromFile(backup_path) then
+                                if touchmenu and touchmenu.updateItems then
+                                    touchmenu:updateItems()
+                                end
+                                UIManager:show(Notification:new{
+                                    text = _("Settings restored from backup."),
+                                    timeout = 3,
+                                })
+                            else
+                                UIManager:show(InfoMessage:new{
+                                    text = _("The settings backup could not be read."),
+                                })
+                            end
+                        end,
+                    })
+                end)
+            end,
         }
         return rows
     end
@@ -2779,9 +2799,13 @@ function M:genSettingsMenu()
             text_func = function()
                 local labels = {
                     inline = _("Inline"),
+                    callout = _("Callout ([!note])"),
                     footnote = _("Footnotes"),
                 }
                 local current = getNoteStyle()
+                if shared.getMarkdownStyle() == "standard" and current == "callout" then
+                    current = "inline"
+                end
                 return T(_("Personal notes format: %1"),
                     labels[current] or labels.inline)
             end,
@@ -2791,12 +2815,34 @@ function M:genSettingsMenu()
                     radio = true,
                     keep_menu_open = true,
                     checked_func = function()
-                        return getNoteStyle() == "inline"
+                        local cur = getNoteStyle()
+                        return cur == "inline"
+                            or (shared.getMarkdownStyle() == "standard" and cur == "callout")
                     end,
                     callback = function()
                         if getNoteStyle() ~= "inline" then
                             setNoteStyle("inline")
                             self:invalidateExportHashes()
+                            setSetting("digest_dirty", true)
+                        end
+                    end,
+                },
+                {
+                    text = _("Callout ([!note])"),
+                    radio = true,
+                    keep_menu_open = true,
+                    enabled_func = function()
+                        return shared.getMarkdownStyle() ~= "standard"
+                    end,
+                    checked_func = function()
+                        return shared.getMarkdownStyle() ~= "standard"
+                            and getNoteStyle() == "callout"
+                    end,
+                    callback = function()
+                        if getNoteStyle() ~= "callout" then
+                            setNoteStyle("callout")
+                            self:invalidateExportHashes()
+                            setSetting("digest_dirty", true)
                         end
                     end,
                 },
@@ -2811,6 +2857,7 @@ function M:genSettingsMenu()
                         if getNoteStyle() ~= "footnote" then
                             setNoteStyle("footnote")
                             self:invalidateExportHashes()
+                            setSetting("digest_dirty", true)
                         end
                     end,
                 },
@@ -2895,6 +2942,7 @@ function M:genSettingsMenu()
             keep_menu_open = true,
             callback = function()
                 setSetting("include_bookmarks", not getSetting("include_bookmarks", false))
+                self:invalidateExportHashes()
             end,
         },
         {
@@ -2942,6 +2990,7 @@ function M:genSettingsMenu()
                             shared.setHarmonizeBookStyle(not shared.getHarmonizeBookStyle())
                             self:invalidateExportHashes()
                             setSetting("index_dirty", true)
+                            setSetting("digest_dirty", true)
                             rebuildSecStyleRows(touchmenu)
                         end,
                     },
@@ -2953,6 +3002,7 @@ function M:genSettingsMenu()
                         function(style)
                             shared.setBookVisualStyle(style)
                             setSetting("index_dirty", true)
+                            setSetting("digest_dirty", true)
                         end
                     )
                 else
@@ -5140,18 +5190,29 @@ function M:genBookStyleMenu(file, target_table)
         )
     end
 
+    local note_style_opts = {
+        { val = "inline", text = _("Inline") },
+    }
+    if shared.getMarkdownStyle(file) ~= "standard" then
+        note_style_opts[#note_style_opts + 1] = { val = "callout", text = _("Callout ([!note])") }
+    end
+    note_style_opts[#note_style_opts + 1] = { val = "footnote", text = _("Footnotes") }
     rows[#rows + 1] = choiceRow(
         _("Personal notes format: %1"),
         "note_style",
-        getNoteStyle,
+        function(f)
+            local cur = getNoteStyle(f)
+            if shared.getMarkdownStyle(f) == "standard" and cur == "callout" then
+                return "inline"
+            end
+            return cur
+        end,
         {
             inline = _("Inline"),
+            callout = _("Callout ([!note])"),
             footnote = _("Footnotes"),
         },
-        {
-            { val = "inline",   text = _("Inline") },
-            { val = "footnote", text = _("Footnotes") },
-        }
+        note_style_opts
     )
 
     rows[#rows + 1] = choiceRow(

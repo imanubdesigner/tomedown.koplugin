@@ -25,7 +25,8 @@ Per-book choices, notes headings, tags, visibility, and format overrides live in
 | *File names & folders ▸* | Opens the naming and directory layout submenu: **File name template** (`Author - Title`, `Title (Author)`, `Title only`, or `Custom template…`), **Folder organization** (`Single folder`, `By author`, `By series`, `By reading status`), **Covers folder** (defaults to `covers`, active when book covers are enabled), and **Drawings folder** (defaults to `drawings`, active when handwritten notes are enabled) |
 | *Frontmatter fields ▸* | Toggle YAML frontmatter on or off (*Include YAML frontmatter*, on by default), toggle optional keys (`cover`, `series`, `language`, `pages`, `exported`, `highlights`, `special`, `status`, `progress`), enable **Custom fields** (*Custom frontmatter fields…*), or set a custom key order (*Frontmatter key order…*). `tomedown` stays first and enabled at all times |
 | *Export when I close a book* | Off by default: exports the book when you close it, and again (silently, no network) before the device suspends |
-| *Reading digest (00 - Reading Digest.md)* | Off by default: creates a consolidated chronological digest (`00 - Reading Digest.md`) grouping highlights across all books by day, with literary dates (`16 Nov 2026`) and clean quote times (`09:41`) |
+| *Reading digest (00 - Reading Digest.md)* | Off by default: creates a consolidated chronological digest (`00 - Reading Digest.md`) grouping highlights across all books by day, with literary dates (`16 Nov 2026`) and clean quote times (`09:41`). When enabled, reveals the **Digest style** selector right below it |
+| *Digest style: %1* | Shown while *Reading digest* is enabled: sets the visual style of `00 - Reading Digest.md` via **Follow book style** (tracks *Book style* automatically, on by default) or an independent choice among **Minimal symbols**, **Emoji**, **Code badges**, and **Editorial** |
 | *Backup copies (%1)* | Opens the backups submenu listing existing `.bak` copies across your library with real file dates (`Saved notes · 16 Nov 26`, `Latest snapshot · 14 Nov 26`). Includes **Delete all backup copies…** to clean stale copies with a single confirmation. When no backups exist, the row is disabled with `None` on the right |
 | *Export settings to file* | Exports all Tomedown configuration options deterministically to `tomedown_settings_backup.lua` inside your local export folder |
 | *Restore settings from backup…* | Safely restores your Tomedown configuration from `tomedown_settings_backup.lua` with a confirmation dialog |
@@ -44,7 +45,7 @@ Covers are always exported in full colour, whatever the device: the extraction f
 | *Index order: %1* | Order of the *My books* table: **Author** (default), **Title**, **Last read**, or **Highlights**. Last read and highlights run newest and most first, with author and title as tie-breakers; series books keep their own order by series and position. Changing it rebuilds only the index at the next export |
 | *Index layout: %1* | How the table carries tags and dates: **Tags under the title** (default: each book's tags sit under its title after a thin rule), **Tags column** (tags in their own column between Series and Status), or **Tags column, compact** (Status and Last read merged into one) |
 | *Index links: %1* | Format of internal links inside the index: **Obsidian wikilink** (`[[Link\|Title]]`, default) or **Standard Markdown** (`[Title](Link.md)`) |
-| *Index style: %1* | Visual style of progress bars and ratings in the index: **Minimal symbols** (`▰▰▰▰▰` and `★`, default), **Classic text**, or **Emoji badges** |
+| *Index style: %1* | Visual style for status indicators, headings, and metrics in `00 - Index.md`: includes **Follow book style** (tracks *Book style* automatically, on by default) or an independent choice among **Minimal symbols** (`● / ◐`), **Emoji** (`🟢 / 🟡`), **Code badges** (`` `READING` ``), and **Editorial** (`Reading`) |
 | *Tags display: %1* | How tags appear in the index: **Show all** (default), **First 3 (+N)** (shows the first 3 tags with a compact badge for remaining tags), or **Collapsible (<details>)** (folds all tags behind an expandable dropdown) |
 | *Reading now section* | On by default: repeats books currently being read in a *Reading now* section above the full table, latest opening first |
 | *Completed books* | Off by default: adds a trophy showcase section (`### Completed books`) highlighting finished volumes with stars and reading metrics |
@@ -66,7 +67,7 @@ Changing any option in **Index & library** marks the index as stale, so the next
 | *Highlight context* | Off by default: on reflowable books (EPUB, FB2, MOBI…), extracts surrounding words and renders a `- **Context:** *…*` line below the quote |
 | *Link IDs on highlights* | Off by default: writes a stable `^hl-xxxxxxxx` ID at the end of every quote so Obsidian can link to or transclude a single highlight (available when *Markdown style* is **Obsidian**) |
 | *Every highlight is special* | Off by default: renders every highlight using your chosen special highlight style |
-| *Personal notes format: %1* | **Inline** (indented right under the quote, default) or **Footnotes** (appends notes as numbered Markdown footnotes `[^1]` at the end of the file) |
+| *Personal notes format: %1* | **Inline** (smart indented bullet under the quote: italic for brief plain notes, clean roman text with preserved sub-lists and Markdown for rich/multi-line notes, default), **Callout ([!note])** (renders personal notes inside a dedicated `> [!note]` callout in Obsidian), or **Footnotes** (appends notes as numbered Markdown footnotes `[^1]` at the end of the file) |
 | *Chapter headings: %1* | Defaults to **Heading 1 (`# Chapter`)**; can be set to **Heading 2 (`## Chapter`)**, **Heading 3 (`### Chapter`)**, or **None (continuous list)** |
 | *Page bookmarks* | Off by default: adds a `# Page bookmarks` section (bookmarked page + note) after the highlights |
 | *Handwritten notes* | On by default: extracts stylus/pencil drawings from `.sdr` folders, renders them as pure vector SVG or PNG images into `drawings/`, and embeds them into your Markdown notes |
@@ -79,14 +80,14 @@ Inside **Settings → Notes & highlights → Book page**:
 | Entry | What it does |
 |---|---|
 | *Book title in body* | On by default: adds `# Book Title` H1 and `### by Author · *Series (#N)*` H3 at the start of the notes body |
-| *Book cover* | Off by default: exports every cover into `covers/` (or your custom folder configured in *Export → File names & folders*) and embeds it in the book file and in the index. Requires **Obsidian 1.8.1 or newer** |
+| *Book cover image* | Off by default: exports every cover into `covers/` (or your custom folder configured in *Export → File names & folders*) and embeds it in the book file and in the index. Requires **Obsidian 1.8.1 or newer** |
 | *Overview style: %1* | Appearance of the highlights recap: **Inline / Heading** (`### **14 highlights · ★ 2 special**`, default), **Classic blockquote** (`> **...**`), **Callout ([!summary])** (`> [!summary] Overview`), or **Table** (compact Markdown table) |
 | *Reading dashboard* | Off by default: renders a header dashboard with Reading Status, Star Rating, Reading dates (`10 Nov 2026 → 16 Nov 2026`), and a link back to `00 - Index.md` |
 | *Book synopsis* | Off by default: embeds the EPUB description into the note header |
-| *Synopsis display: %1* | **Collapsed** (default) or **Expanded**; enabled when *Book synopsis* is turned on |
+| *Synopsis display: %1* | **Collapsed (foldable)** (default), **Short preview (~300 chars)**, **Collapsed + Short preview**, or **Expanded (full text)**; enabled when *Book synopsis* is turned on |
 | *Tags in body* | Off by default: appends hashtags (`#tag1 #tag2`) below the book header for quick tag filtering |
 | *Special highlights showcase* | Off by default: places a showcase block of your starred passages at the top of the note |
-| *Section styles ▸* | Opens the visual style submenu containing **Harmonize book style** (master switch to unify all header modules under **Book style**: *Obsidian Callout*, *Markdown Table*, *Blockquote*, or *Minimalist List*) or individual selectors (**Dashboard style**, **Synopsis style**, **Tags style**, **Showcase style**) when harmonization is off |
+| *Section styles ▸* | Opens the visual style submenu containing **Harmonize book styles** (master switch to unify all header modules under **Book style**: *Minimal symbols*, *Emoji*, *Code badges*, or *Editorial*) or individual selectors (**Dashboard style**, **Synopsis style**, **Tags style**, **Showcase style**) when harmonization is off |
 
 You can override any of these formatting and book page options for a single book without changing global settings via **Tomedown → Current book → Format & layout**. See [Current book](current-book.md#format-layout-overrides) for complete details.
 

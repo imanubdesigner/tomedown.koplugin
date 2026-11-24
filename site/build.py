@@ -154,7 +154,7 @@ def build_docs(site, docs_root, slugmap, nav):
             if sec != last:
                 if last is not None:
                     out.append("</ul>")
-                out.append(f'<h4>{html.escape(sec)}</h4><ul>')
+                out.append(f'<h2 class="docs-nav-sec">{html.escape(sec)}</h2><ul>')
                 last = sec
             cur = ' aria-current="page"' if item["slug"] == active else ""
             out.append(f'<li><a href="{{{{base}}}}/docs/{item["slug"]}/"{cur}>{html.escape(item["title"])}</a></li>')
@@ -204,7 +204,7 @@ def build_docs(site, docs_root, slugmap, nav):
             f'<li class="toc-l{lvl}"><a href="#{html.escape(hid)}">{html.escape(html.unescape(name))}</a></li>'
             for hid, name, lvl in flat
         )
-        return f'<aside class="docs-toc" aria-label="On this page"><h4>On this page</h4><ul>{lis}</ul></aside>'
+        return f'<aside class="docs-toc" aria-label="On this page"><h2 class="docs-toc-title">On this page</h2><ul>{lis}</ul></aside>'
 
     md = markdown.Markdown(extensions=["tables", "fenced_code", "toc", "sane_lists"],
                            extension_configs={"toc": {"permalink": "#", "permalink_class": "header-anchor", "permalink_title": "Permanent link"}})
@@ -310,14 +310,16 @@ def build_docs(site, docs_root, slugmap, nav):
         f'    <span class="editorial-kicker">Documentation &amp; Technical Manual</span>'
         f'    <h1>The <mark class="editorial-highlight">Library</mark> Reference</h1>'
         f'    <p class="lead">Setup, formats, highlight styles, menu settings, and vault sync for your e-reader library.</p>'
-        f'    <div class="hub-search-wrap">'
+        f'    <search class="hub-search-wrap">'
+        f'      <label for="hub-search-input" class="sr-only">Search documentation chapters</label>'
         f'      <svg class="hub-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>'
         f'      <input type="search" id="hub-search-input" class="hub-search-input" placeholder="Jump to any chapter or keyword..." autocomplete="off" />'
-        f'      <kbd class="hub-search-kbd">⌘K</kbd>'
-        f'    </div>'
+        f'      <kbd class="hub-search-kbd" id="hub-search-kbd" aria-hidden="true">⌘K</kbd>'
+        f'    </search>'
+        f'    <p id="hub-search-status" class="sr-only" role="status" aria-live="polite"></p>'
         f'  </header>'
         f'  <div id="hub-content" class="hub-chapters-wrap">{all_sections}</div>'
-        f'  <p id="hub-empty" class="hub-empty" hidden>No matching chapters found. Try a different keyword.</p>'
+        f'  <p id="hub-empty" class="hub-empty" role="status" hidden>No matching chapters found. Try a different keyword.</p>'
         f'  <footer class="hub-footer center">'
         f'    <p class="hub-quote">“Every volume, every note, every highlight: forever yours in plain text.”</p>'
         f'    <p class="muted">Free software under the AGPL-3.0 license. Zero telemetry and 100% offline first.</p>'
@@ -345,6 +347,10 @@ def copy_static(docs_root, offline):
                     fail(f"dev-fonts/{fname} is missing")
                 css.append(f'@font-face{{font-family:"{fam}";src:url("../dev-fonts/{fname}");'
                            f'font-weight:{weight};font-style:{style};font-display:swap}}')
+        for fname, weight in [("Caveat-Medium.ttf", 500), ("Caveat-SemiBold.ttf", 600)]:
+            if (ROOT / "dev-fonts" / fname).exists():
+                css.append(f'@font-face{{font-family:"Caveat";src:url("../dev-fonts/{fname}");'
+                           f'font-weight:{weight};font-style:normal;font-display:swap}}')
         (DIST / "assets" / "css" / "dev-fonts.css").write_text("\n".join(css), encoding="utf-8")
         shutil.copytree(ROOT / "dev-fonts", DIST / "assets" / "dev-fonts", dirs_exist_ok=True)
     (DIST / ".nojekyll").write_text("")

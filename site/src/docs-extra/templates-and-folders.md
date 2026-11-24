@@ -69,7 +69,7 @@ Configure in **Settings → Export → File names & folders → Folder organizat
 - **Single folder** *(default)*: all book notes sit together in your Tomedown folder alongside `00 - Index.md`.
 - **By author**: groups books into author subfolders (`Arthur Machen/The Three Impostors.md`).
 - **By series**: groups multi-volume series into dedicated folders.
-- **By reading status**: organizes books by status (`Reading`, `Completed`, `On hold`).
+- **By reading status**: organizes books by status (`Reading`, `Complete`, `Abandoned`).
 
 ### 3. Covers folder & Drawings folder
 - **Covers folder**: custom folder name for extracted cover images (defaults to `covers`, e.g. `_covers` or `assets`, with automatic migration). Available when *Book cover* is enabled in **Settings → Notes & highlights → Book page**.
@@ -83,7 +83,7 @@ In **Settings → Index & library**, you can tailor the library index:
 - **Index order**: sort by **Author** *(default)*, **Title**, **Last read** (newest first), or **Highlights** (most first).
 - **Index layout**: **Tags under the title** *(default)*, **Tags column**, or **Tags column, compact**.
 - **Index links**: choose **Obsidian wikilink** (`[[Book]]`) or **Standard Markdown** (`[Book](Book.md)`) if you use another Markdown app.
-- **Index style**: choose **Minimal symbols** (`▰▰▰▰▰` and `★`), **Classic text**, or **Emoji badges** for status and progress cells.
+- **Index style**: tracks **Book style** automatically via **Follow book style** *(on by default)*, or lets you pick an independent style among **Minimal symbols** (`● / ◐`), **Emoji** (`🟢 / 🟡`), **Code badges** (`` `READING` ``), and **Editorial** (`Reading`).
 - **Tags display**: choose **Show all** *(default)*, **First 3 (+N)** for a compact badge, or **Collapsible (<details>)** to fold long tag lists behind an expandable dropdown.
 - **Reading now section**: repeats currently active books in a dedicated top section.
 - **Completed books**: generates a `### Completed books` trophy showcase celebrating finished volumes with ratings and stats.

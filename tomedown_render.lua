@@ -350,16 +350,87 @@ function render.encodeLinkTarget(s)
     s = s:gsub("%[", "%%5B")
     s = s:gsub("%]", "%%5D")
     s = s:gsub("#", "%%23")
+    s = s:gsub("%^", "%%5E")
+    s = s:gsub("|", "%%7C")
     return s
+end
+
+local function formatYamlDate(val, default_today)
+    local s = val ~= nil and tostring(val) or (default_today and os.date("%Y-%m-%d") or "")
+    if s:match("^%d%d%d%d%-%d%d%-%d%d$") then
+        return s
+    end
+    return yamlQuote(s)
+end
+
+local function isPlainSingleLineNote(note_lines)
+    if #note_lines ~= 1 then
+        return false
+    end
+    local s = note_lines[1]
+    if s:find("[*_`~%[%]]")
+            or s:match("^[-*+]%s")
+            or s:match("^%d+%.%s")
+            or s:match("^#") then
+        return false
+    end
+    return true
+end
+
+local function renderInlineNote(add, note_lines, has_top_bullet)
+    local head = has_top_bullet and "  - " or "- "
+    local pad = has_top_bullet and "    " or "  "
+    local label = "**" .. _("Note") .. "**"
+    if isPlainSingleLineNote(note_lines) then
+        add(head .. label .. " — *" .. note_lines[1] .. "*")
+        return
+    end
+    local first_line = note_lines[1] or ""
+    if first_line:match("^[-*+]%s") or first_line:match("^%d+%.%s") then
+        add(head .. label)
+        for __, line in ipairs(note_lines) do
+            if line:match("^%s*$") then
+                add("")
+            else
+                add(pad .. line)
+            end
+        end
+        return
+    end
+    local first = true
+    for __, line in ipairs(note_lines) do
+        if line:match("^%s*$") then
+            add("")
+        elseif first then
+            add(head .. label .. " — " .. line)
+            first = false
+        else
+            add(pad .. line)
+        end
+    end
+end
+
+local function renderCalloutNote(add, note_lines)
+    add("")
+    add("> [!note] " .. _("Note"))
+    for __, line in ipairs(note_lines) do
+        if line:match("^%s*$") then
+            add(">")
+        else
+            add("> " .. line)
+        end
+    end
 end
 
 -- Format a book link: in an index table uses an escaped pipe (`[[link\|title]]`)
 -- so table columns don't break; in headings or outside tables uses an unescaped
 -- pipe (`[[link|title]]`); or a standard Markdown link (`[title](link.md)`).
+-- Falls back to an encoded Markdown link in Obsidian too when `link` carries
+-- characters that break wikilink target resolution (`#`, `^`, `[`, `]`, `|`).
 function render.bookLink(link, title, format, in_table)
     local raw_link = tostring(link or "")
     local alias = render.alias(title)
-    if format == "markdown" then
+    if format == "markdown" or raw_link:find("[#%^[%]|]") then
         local label = alias ~= "" and alias or render.alias(raw_link)
         local target = raw_link
         if target:sub(-3):lower() ~= ".md" then
@@ -596,7 +667,7 @@ function render.buildBookMd(book, opts)
         fm_blocks.pages = { "pages: " .. tostring(book.pages) }
     end
     if not isHidden("exported") then
-        fm_blocks.exported = { "exported: " .. (book.exported or os.date("%Y-%m-%d")) }
+        fm_blocks.exported = { "exported: " .. formatYamlDate(book.exported, true) }
     end
     if not isHidden("highlights") then
         fm_blocks.highlights = { "highlights: " .. tostring(count) }
@@ -629,7 +700,9 @@ function render.buildBookMd(book, opts)
                     local qv
                     if v:match('^".*"$') or v:match("^'.*'$")
                             or v:match("^%-?%d+%.?%d*$")
-                            or v == "true" or v == "false" or v == "null" or v:match("^%[.*%]$") then
+                            or v == "true" or v == "false" or v == "null"
+                            or (v:match("^%[.*%]$")
+                                and not v:gsub('"[^"]*"', ""):gsub("'[^']*'", ""):find("[[", 1, true)) then
                         qv = v
                     else
                         qv = yamlQuote(v)
@@ -659,10 +732,10 @@ function render.buildBookMd(book, opts)
         fm_blocks.review = { "review: " .. yamlQuote(book.review) }
     end
     if book.date_started then
-        fm_blocks.date_started = { "date_started: " .. yamlQuote(book.date_started) }
+        fm_blocks.date_started = { "date_started: " .. formatYamlDate(book.date_started, false) }
     end
     if book.date_finished then
-        fm_blocks.date_finished = { "date_finished: " .. yamlQuote(book.date_finished) }
+        fm_blocks.date_finished = { "date_finished: " .. formatYamlDate(book.date_finished, false) }
     end
     if book.collections and #book.collections > 0 then
         local col_lines = { "collections:" }
@@ -926,9 +999,18 @@ function render.buildBookMd(book, opts)
             end
             add(dash_pfx .. "**" .. _("Reading dates") .. ":** " .. table.concat(d_parts, " → "))
         end
-        local idx_link = render.bookLink("00 - Index", "← " .. _("Book index"),
-            is_std and "markdown" or opts.index_links, false)
-        add(dash_pfx .. "**" .. _("Index") .. ":** " .. idx_link)
+        local link_fmt = is_std and "markdown" or opts.index_links
+        local nav_links = {}
+        if opts.with_index ~= false then
+            nav_links[#nav_links + 1] = render.bookLink("00 - Index", "← " .. _("Book index"), link_fmt, false)
+        end
+        if opts.with_digest == true then
+            nav_links[#nav_links + 1] = render.bookLink("00 - Reading Digest", _("Reading digest") .. " →", link_fmt, false)
+        end
+        if #nav_links > 0 then
+            local nav_label = opts.with_index ~= false and _("Index") or _("Reading digest")
+            add(dash_pfx .. "**" .. nav_label .. ":** " .. table.concat(nav_links, " · "))
+        end
         has_card_extras = true
     end
 
@@ -1102,7 +1184,13 @@ function render.buildBookMd(book, opts)
         for __, a in ipairs(annotations) do
             if a.special then
                 if not first_sp then
-                    add(is_std and "" or ">")
+                    if is_std then
+                        add("")
+                    else
+                        add(">")
+                        add("> ---")
+                        add(">")
+                    end
                 end
                 first_sp = false
                 local stext = tostring(a.text or ""):gsub("\r\n", "\n"):gsub("\r", "\n")
@@ -1116,7 +1204,14 @@ function render.buildBookMd(book, opts)
                 if a.page and tostring(a.page) ~= "" then
                     ref[#ref + 1] = "p. " .. tostring(a.page)
                 end
-                if #ref > 0 then
+                if opts.block_ids and a.id and not is_std then
+                    local ref_label = #ref > 0 and render.alias(table.concat(ref, " · ")) or ""
+                    if ref_label ~= "" then
+                        add("> — [[#^" .. a.id .. "|" .. ref_label .. "]]")
+                    else
+                        add("> — [[#^" .. a.id .. "|→]]")
+                    end
+                elseif #ref > 0 then
                     add("> — *" .. table.concat(ref, " · ") .. "*")
                 end
             end
@@ -1146,6 +1241,7 @@ function render.buildBookMd(book, opts)
     local with_chapters = chapter_mode ~= "none" and hasAnyChapter(annotations)
     local current_chapter = nil
     local use_footnotes = opts.note_style == "footnote"
+    local use_note_callout = not is_std and opts.note_style == "callout"
     local details_mode = opts.highlight_details or "page_date"
     local show_page = details_mode == "page_date" or details_mode == "page_only"
     local show_date = details_mode == "page_date" or details_mode == "date_only"
@@ -1291,6 +1387,17 @@ function render.buildBookMd(book, opts)
                 if ctx_line then
                     add("  - **" .. _("Context:") .. "** *" .. ctx_line .. "*")
                 end
+            elseif use_note_callout and note_lines then
+                if #meta > 0 or ctx_line then
+                    if #meta > 0 then
+                        add("- " .. table.concat(meta, " · "))
+                    end
+                    if ctx_line then
+                        local chead = has_top_bullet and "  - " or "- "
+                        add(chead .. "**" .. _("Context:") .. "** *" .. ctx_line .. "*")
+                    end
+                end
+                renderCalloutNote(add, note_lines)
             else
                 if #meta > 0 then
                     add("- " .. table.concat(meta, " · "))
@@ -1301,19 +1408,7 @@ function render.buildBookMd(book, opts)
                     has_top_bullet = true
                 end
                 if note_lines then
-                    local head = has_top_bullet and "  - " or "- "
-                    local pad = has_top_bullet and "    " or "  "
-                    local first = true
-                    for __, line in ipairs(note_lines) do
-                        if line:match("^%s*$") then
-                            add("")
-                        elseif first then
-                            add(head .. "**NOTE:** *" .. line .. "*")
-                            first = false
-                        else
-                            add(pad .. "*" .. line .. "*")
-                        end
-                    end
+                    renderInlineNote(add, note_lines, has_top_bullet)
                 elseif not has_top_bullet then
                     add("- …")
                 end
@@ -1407,10 +1502,13 @@ function render.buildIndexMd(books, opts)
     add("---")
     add('tomedown: "' .. render.FORMAT_VERSION .. '"')
     add("title: " .. yamlQuote(title))
-    add("exported: " .. yamlQuote(opts.exported or os.date("%Y-%m-%d")))
+    add("exported: " .. formatYamlDate(opts.exported, true))
     add("tags:")
     add("  - ebook")
-    add("  - " .. _("index"))
+    local idx_tag = render.sanitizeTag(_("index"))
+    if idx_tag ~= "" and idx_tag:lower() ~= "ebook" then
+        add("  - " .. yamlListItem(idx_tag))
+    end
     add("---")
     if markers then
         if opts.notes_title and opts.notes_title ~= "" then
@@ -1521,12 +1619,20 @@ function render.buildIndexMd(books, opts)
         end
         add(pfx .. b_line)
         add(pfx .. h_line)
-        local digest_link = render.bookLink("00 - Reading Digest", _("Reading digest") .. " →",
-            idx_std and "markdown" or opts.index_links, false)
-        add(pfx .. digest_link)
+        if opts.with_digest ~= false then
+            local digest_link = render.bookLink("00 - Reading Digest", _("Reading digest") .. " →",
+                idx_std and "markdown" or opts.index_links, false)
+            add(pfx .. digest_link)
+        end
         add("")
     else
-        add(stats)
+        if opts.with_digest == true then
+            local digest_link = render.bookLink("00 - Reading Digest", _("Reading digest") .. " →",
+                idx_std and "markdown" or opts.index_links, false)
+            add(stats .. " · " .. digest_link)
+        else
+            add(stats)
+        end
         add("")
     end
 
@@ -2207,11 +2313,16 @@ function render.buildDigestMd(books, opts)
     local total_special = 0
     for __, b in ipairs(books or {}) do
         local anns = b.annotations or {}
+        local book_wants_ids = (opts.markdown_style ~= "standard")
+            and ((opts.block_ids and b.has_block_ids ~= false) or b.has_block_ids == true)
         if #anns > 0 then
             local bkey = tostring(b.link or b.title or "")
             if not book_seen[bkey] then
                 book_seen[bkey] = true
                 total_books = total_books + 1
+            end
+            if book_wants_ids then
+                render.assignBlockIds(anns)
             end
         end
         for ___, a in ipairs(anns) do
@@ -2237,6 +2348,7 @@ function render.buildDigestMd(books, opts)
             items[#items + 1] = {
                 book_link = b.link or b.base or b.title or "",
                 book_title = b.title or b.link or "",
+                id = book_wants_ids and a.id or nil,
                 book_author = b.author,
                 text = a.text,
                 note = a.note,
@@ -2276,11 +2388,14 @@ function render.buildDigestMd(books, opts)
     add("---")
     add('tomedown: "' .. render.FORMAT_VERSION .. '"')
     add("title: " .. yamlQuote(title))
-    add("exported: " .. yamlQuote(opts.exported or os.date("%Y-%m-%d")))
+    add("exported: " .. formatYamlDate(opts.exported, true))
     add("highlights: " .. tostring(#items))
     add("tags:")
     add("  - ebook")
-    add("  - " .. _("digest"))
+    local dig_tag = render.sanitizeTag(_("digest"))
+    if dig_tag ~= "" and dig_tag:lower() ~= "ebook" then
+        add("  - " .. yamlListItem(dig_tag))
+    end
     add("---")
     add("")
     add("# " .. title)
@@ -2329,15 +2444,20 @@ function render.buildDigestMd(books, opts)
         end
     end
     local digest_std = (opts.markdown_style == "standard")
+    local idx_back_link
+    if opts.with_index == true then
+        idx_back_link = render.bookLink("00 - Index", "← " .. _("Book index"),
+            digest_std and "markdown" or opts.index_links, false)
+    end
     local ostyle = opts.overview_style or "inline"
     if ostyle == "blockquote" then
-        add("> " .. stats)
+        add("> " .. stats .. (idx_back_link and (" · " .. idx_back_link) or ""))
     elseif ostyle == "callout" then
         if digest_std then
-            add("> " .. stats)
+            add("> " .. stats .. (idx_back_link and (" · " .. idx_back_link) or ""))
         else
             add("> [!summary] " .. _("Overview"))
-            add("> " .. stats)
+            add("> " .. stats .. (idx_back_link and (" · " .. idx_back_link) or ""))
         end
     elseif ostyle == "table" then
         if total_special > 0 then
@@ -2349,8 +2469,12 @@ function render.buildDigestMd(books, opts)
             add("|:---:|:---:|")
             add("| " .. tostring(total_books) .. " | " .. tostring(#items) .. " |")
         end
+        if idx_back_link then
+            add("")
+            add(idx_back_link)
+        end
     else
-        add(stats)
+        add(stats .. (idx_back_link and (" · " .. idx_back_link) or ""))
     end
 
     local valid_markers = {
@@ -2372,6 +2496,7 @@ function render.buildDigestMd(books, opts)
     end
     local digest_callout = not digest_std and opts.callout or false
     local use_footnotes = opts.note_style == "footnote"
+    local use_note_callout = not digest_std and opts.note_style == "callout"
     local footnotes = {}
 
     local current_day = nil
@@ -2471,11 +2596,31 @@ function render.buildDigestMd(books, opts)
         add("")
 
         local meta = {}
-        if item.chapter and tostring(item.chapter) ~= "" then
-            meta[#meta + 1] = "*" .. tostring(item.chapter) .. "*"
-        end
-        if item.page and tostring(item.page) ~= "" then
-            meta[#meta + 1] = "**p. " .. tostring(item.page) .. "**"
+        local can_deeplink = not digest_std
+            and opts.index_links ~= "markdown"
+            and item.id ~= nil
+            and tostring(item.book_link or "") ~= ""
+            and not tostring(item.book_link):find("[#%^[%]|]")
+        if can_deeplink then
+            local loc_parts = {}
+            if item.chapter and tostring(item.chapter) ~= "" then
+                loc_parts[#loc_parts + 1] = tostring(item.chapter)
+            end
+            if item.page and tostring(item.page) ~= "" then
+                loc_parts[#loc_parts + 1] = "p. " .. tostring(item.page)
+            end
+            local loc_label = #loc_parts > 0 and render.alias(table.concat(loc_parts, " · ")) or ""
+            if loc_label == "" then
+                loc_label = "→"
+            end
+            meta[#meta + 1] = "[[" .. tostring(item.book_link) .. "#^" .. item.id .. "|" .. loc_label .. "]]"
+        else
+            if item.chapter and tostring(item.chapter) ~= "" then
+                meta[#meta + 1] = "*" .. tostring(item.chapter) .. "*"
+            end
+            if item.page and tostring(item.page) ~= "" then
+                meta[#meta + 1] = "**p. " .. tostring(item.page) .. "**"
+            end
         end
         if item.time and tostring(item.time) ~= "" then
             meta[#meta + 1] = tostring(item.time)
@@ -2510,24 +2655,17 @@ function render.buildDigestMd(books, opts)
             else
                 add("- [^" .. fn_idx .. "]")
             end
+        elseif use_note_callout and note_lines then
+            if #meta > 0 then
+                add("- " .. table.concat(meta, " · "))
+            end
+            renderCalloutNote(add, note_lines)
         else
             if #meta > 0 then
                 add("- " .. table.concat(meta, " · "))
             end
             if note_lines then
-                local head = #meta > 0 and "  - " or "- "
-                local pad = #meta > 0 and "    " or "  "
-                local first = true
-                for __, line in ipairs(note_lines) do
-                    if line:match("^%s*$") then
-                        add("")
-                    elseif first then
-                        add(head .. "**NOTE:** *" .. line .. "*")
-                        first = false
-                    else
-                        add(pad .. "*" .. line .. "*")
-                    end
-                end
+                renderInlineNote(add, note_lines, #meta > 0)
             elseif #meta == 0 then
                 add("- …")
             end
