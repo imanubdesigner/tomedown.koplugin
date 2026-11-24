@@ -70,7 +70,7 @@ Changing any option in **Index & library** marks the index as stale, so the next
 | *Chapter headings: %1* | Defaults to **Heading 1 (`# Chapter`)**; can be set to **Heading 2 (`## Chapter`)**, **Heading 3 (`### Chapter`)**, or **None (continuous list)** |
 | *Page bookmarks* | Off by default: adds a `# Page bookmarks` section (bookmarked page + note) after the highlights |
 | *Handwritten notes* | On by default: extracts stylus/pencil drawings from `.sdr` folders, renders them as pure vector SVG or PNG images into `drawings/`, and embeds them into your Markdown notes |
-| *Book page ▸* | Opens the submenu for the book note header and visual modules (see [Book page & Section styles](#book-page--section-styles) below) |
+| *Book page ▸* | Opens the submenu for the book note header and visual modules (see [Book page & Section styles](#book-page-section-styles) below) |
 
 ### Book page & Section styles
 
@@ -88,7 +88,7 @@ Inside **Settings → Notes & highlights → Book page**:
 | *Special highlights showcase* | Off by default: places a showcase block of your starred passages at the top of the note |
 | *Section styles ▸* | Opens the visual style submenu containing **Harmonize book style** (master switch to unify all header modules under **Book style**: *Obsidian Callout*, *Markdown Table*, *Blockquote*, or *Minimalist List*) or individual selectors (**Dashboard style**, **Synopsis style**, **Tags style**, **Showcase style**) when harmonization is off |
 
-You can override any of these formatting and book page options for a single book without changing global settings via **Tomedown → Current book → Format & layout**. See [Current book](current-book.md#format--layout-overrides) for complete details.
+You can override any of these formatting and book page options for a single book without changing global settings via **Tomedown → Current book → Format & layout**. See [Current book](current-book.md#format-layout-overrides) for complete details.
 
 ## Last export dashboard (`Tomedown → Last export`)
 

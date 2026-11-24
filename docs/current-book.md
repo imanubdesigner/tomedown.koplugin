@@ -18,12 +18,12 @@ While [Menu & Settings](settings.md) configures global defaults applied across y
 |---|---|
 | *Book summary* | First entry in the menu: opens the rounded e-ink dashboard card showing book metrics, 3 interactive KPI counters, effective format, tags, and export status (see [Book summary](#book-summary-dashboard-card)) |
 | *★ Special highlights* | Displayed when starred highlights exist in the book (with the count on the right): opens the in-device card browser to review standout passages |
-| *Book info ▸* | Opens the book info submenu to import KOReader ratings, reviews, reading dates, collections, or manage per-book tags (see [Book info](#book-info--metadata)) |
+| *Book info ▸* | Opens the book info submenu to import KOReader ratings, reviews, reading dates, collections, or manage per-book tags (see [Book info](#book-info-metadata)) |
 | *Book visibility: %1 ▸* | Opens a 3-option radio submenu: **Export and show in the index** (*Normal*), **Export, but hide from the index** (*Hidden from index*), or **Do not export** (*Not exported*) |
 | *Keep my notes in this book* | Enables [Keep my notes](keep-my-notes.md) specifically for this volume without turning it on for all books. If turned off later, Tomedown asks first and preserves an automatic `.bak` copy before reverting to plain exports |
 | *Notes heading: %1* | Displayed when *Keep my notes* is active for this book: tap to set a custom Markdown heading (e.g. `## My thoughts`) above the generated body |
 | *Backup copies ▸* | Displayed when `.bak` snapshots exist for this book: opens a submenu to view real file dates and safely delete stale backup files |
-| *Format & layout ▸* | Overrides global style and layout settings (export format, Markdown style, notes format, details, headings, context, covers, bookmarks, handwritten notes, and **Book page** modules) specifically for this book (see [Format & layout overrides](#format--layout-overrides)) |
+| *Format & layout ▸* | Overrides global style and layout settings (export format, Markdown style, notes format, details, headings, context, covers, bookmarks, handwritten notes, and **Book page** modules) specifically for this book (see [Format & layout overrides](#format-layout-overrides)) |
 
 ## Book summary dashboard card
 
@@ -73,7 +73,7 @@ The card browser allows you to review and manage your annotations without leavin
 <a id="style--format-overrides"></a>
 ## Format & layout overrides
 
-By default, every book follows your library-wide defaults configured in [Settings → Notes & highlights](settings.md#notes--highlights) and [Settings → Export](settings.md#export). Under **Current book → Format & layout**, you can customize settings for a single volume without affecting the rest of your library:
+By default, every book follows your library-wide defaults configured in [Settings → Notes & highlights](settings.md#notes-highlights) and [Settings → Export](settings.md#export). Under **Current book → Format & layout**, you can customize settings for a single volume without affecting the rest of your library:
 
 <figure class="doc-device-figure">
   <img src="{{base}}/assets/img/docs-23-current-book-format-layout.svg" alt="Current book → Format &amp; layout submenu in KOReader" width="463" height="647" loading="lazy" decoding="async" />
