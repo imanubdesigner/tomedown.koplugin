@@ -1,22 +1,34 @@
 <!-- title: 404 — Page Not Found — Tomedown | description: The requested page does not exist or has wandered from the stacks. -->
       <section class="error-section">
-        <div class="container narrow">
-          <div class="error-head center" data-reveal>
-            <div class="error-monument">
-              <span class="error-giant-num">404</span>
-              <span class="error-giant-badge">Folio missing</span>
+        <div class="container">
+          <div class="error-grid">
+            <div class="error-copy" data-reveal>
+              <div class="error-code-row">
+                <span class="error-code-num" aria-hidden="true">404</span>
+                <span class="error-code-label">Folio missing</span>
+              </div>
+              <h1>This page is <mark class="editorial-highlight">not on the shelf</mark>.</h1>
+              <p class="lead error-lead">
+                The chapter or note you requested may have been moved, renamed, or never bound into this volume.
+              </p>
+              <div class="actions error-actions">
+                <a href="{{base}}/" class="btn btn-primary">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+                  <span>Return to the library</span>
+                </a>
+                <a href="{{base}}/docs/" class="btn btn-ghost">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                  <span>Browse the docs</span>
+                </a>
+              </div>
             </div>
-            <h1>Page <mark class="editorial-highlight">not found</mark></h1>
-            <p class="lead">The chapter or document you requested is not on this shelf.</p>
-          </div>
 
-          <div class="folio-card" data-reveal>
-            <div class="folio-header">
-              <span class="folio-tab"><code>00 - 404 Not Found.md</code></span>
-              <span class="folio-badge">Missing Note</span>
-            </div>
+            <aside class="folio-ledger" aria-label="Missing note metadata" data-reveal>
+              <div class="folio-ledger-head">
+                <code class="folio-filename">00 - 404 Not Found.md</code>
+                <span class="folio-status">Unlocated</span>
+              </div>
 
-            <div class="folio-body">
               <pre class="folio-frontmatter"><code>---
 title: "The Missing Tome"
 status: "unlocated"
@@ -27,29 +39,42 @@ tags:
   - #404
 ---</code></pre>
 
-              <div class="folio-quote">
-                <div class="folio-callout">
-                  <span class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
-                  <div class="callout-content">
-                    <p>The passage you are searching for is not on this shelf. Perhaps it was moved, renamed, or never bound into this volume.</p>
-                  </div>
-                </div>
+              <p class="folio-scribe">
+                “The words you seek belong to <mark>another tome</mark> entirely.”
+              </p>
+            </aside>
+          </div>
 
-                <p class="folio-scribe">
-                  “The words you seek belong to <mark>another tome</mark> entirely.”
-                </p>
+          <nav class="error-shelves" aria-label="Suggested destinations" data-reveal>
+            <a href="{{base}}/docs/quickstart/" class="error-shelf-link">
+              <div class="error-shelf-head">
+                <span class="editorial-icon-seal is-sm" aria-hidden="true">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                </span>
+                <h3>Quickstart guide</h3>
               </div>
-            </div>
-          </div>
+              <p>Export your first standalone book notes in two minutes.</p>
+            </a>
 
-          <div class="error-guide center" data-reveal>
-            <p class="muted">Let us guide you back to familiar shelves:</p>
-            <div class="actions error-actions">
-              <a href="{{base}}/" class="btn btn-primary">Return to the library</a>
-              <a href="{{base}}/docs/" class="btn btn-ghost">Browse the docs</a>
-              <a href="{{base}}/docs/quickstart/" class="btn btn-ghost">Quickstart</a>
-              <a href="{{base}}/download/" class="btn btn-ghost">Download</a>
-            </div>
-          </div>
+            <a href="{{base}}/download/" class="error-shelf-link">
+              <div class="error-shelf-head">
+                <span class="editorial-icon-seal is-sm" aria-hidden="true">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                </span>
+                <h3>Download plugin</h3>
+              </div>
+              <p>Get the latest pure Lua release for Kindle, Kobo, or Android.</p>
+            </a>
+
+            <a href="{{base}}/about/" class="error-shelf-link">
+              <div class="error-shelf-head">
+                <span class="editorial-icon-seal is-sm" aria-hidden="true">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                </span>
+                <h3>About Tomedown</h3>
+              </div>
+              <p>Read the story, philosophy, and visual identity behind the plugin.</p>
+            </a>
+          </nav>
         </div>
       </section>

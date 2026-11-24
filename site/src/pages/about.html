@@ -24,14 +24,53 @@
 
           <div class="about-aside">
             <aside class="colophon-card" aria-label="Technical colophon">
-              <span class="colophon-tag">Colophon</span>
+              <div class="colophon-head">
+                <span class="colophon-tag">Colophon</span>
+                <span class="colophon-edition">Edition {{v_version}}</span>
+              </div>
               <dl class="colophon-list">
-                <div><dt>Written in</dt><dd>Pure Lua (KOReader plugin)</dd></div>
-                <div><dt>Tested on</dt><dd>Kindle PW5 &amp; Kindle 4 NT</dd></div>
-                <div><dt>Storage</dt><dd>Local first, Cloud optional</dd></div>
-                <div><dt>Formats</dt><dd>Markdown (.md) &amp; Plain text (.txt)</dd></div>
-                <div><dt>Telemetry</dt><dd>None. Zero tracking.</dd></div>
-                <div><dt>License</dt><dd>GNU AGPL-3.0</dd></div>
+                <div>
+                  <dt>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                    Written in
+                  </dt>
+                  <dd>Pure Lua (KOReader plugin)</dd>
+                </div>
+                <div>
+                  <dt>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                    Tested on
+                  </dt>
+                  <dd>Kindle PW5 &amp; Kindle 4 NT</dd>
+                </div>
+                <div>
+                  <dt>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                    Storage
+                  </dt>
+                  <dd>Local first, Cloud optional</dd>
+                </div>
+                <div>
+                  <dt>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    Formats
+                  </dt>
+                  <dd>Markdown (.md) &amp; Plain text (.txt)</dd>
+                </div>
+                <div>
+                  <dt>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                    Telemetry
+                  </dt>
+                  <dd>None. Zero tracking.</dd>
+                </div>
+                <div>
+                  <dt>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l2 2"/></svg>
+                    License
+                  </dt>
+                  <dd>GNU AGPL-3.0</dd>
+                </div>
               </dl>
             </aside>
 
@@ -196,8 +235,13 @@
 
           <div class="brand-anatomy">
             <div class="brand-icon-stage">
-              <img src="{{base}}/assets/img/icon.svg" alt="Tomedown Brand Mark" width="140" height="140" />
-              <span class="brand-icon-caption">Master Mark (v6)</span>
+              <div class="brand-icon-frame">
+                <img src="{{base}}/assets/img/icon.svg" alt="Tomedown Brand Mark" width="128" height="128" />
+              </div>
+              <div class="brand-icon-meta">
+                <span class="brand-icon-caption">Master Mark (v6)</span>
+                <span class="brand-icon-sub">Vector SVG (1:1)</span>
+              </div>
             </div>
             <div class="brand-pillars-grid">
               <div class="brand-pillar-item">
@@ -239,86 +283,106 @@
             </div>
           </div>
 
-          <h3 class="brand-swatches-title">The Palette</h3>
-          <p class="muted">Five essential shades calibrated for long reading sessions and editorial typography.</p>
-
-          <div class="brand-swatches-grid">
-            <div class="brand-swatch-card">
-              <div class="brand-swatch-box swatch-book-paper"></div>
-              <div class="brand-swatch-info">
-                <span class="brand-swatch-name">Book Paper</span>
-                <span class="brand-swatch-hex">#FAF6EE</span>
-                <span class="brand-swatch-role">Warm editorial paper, zero glare</span>
-              </div>
+          <div class="brand-subblock">
+            <div class="brand-subblock-head">
+              <h3 class="brand-swatches-title">The Palette</h3>
+              <p class="muted">Five essential shades calibrated for long reading sessions and editorial typography. Click any swatch to copy its hex value.</p>
             </div>
 
-            <div class="brand-swatch-card">
-              <div class="brand-swatch-box swatch-amber-hl"></div>
-              <div class="brand-swatch-info">
-                <span class="brand-swatch-name">Amber Highlight</span>
-                <span class="brand-swatch-hex">#F0B00A</span>
-                <span class="brand-swatch-role">Warm highlighter &amp; accent</span>
-              </div>
-            </div>
+            <div class="brand-swatches-grid">
+              <button type="button" class="brand-swatch-card" data-copy-hex="#FAF6EE" aria-label="Copy Book Paper hex #FAF6EE">
+                <div class="brand-swatch-box swatch-book-paper"></div>
+                <div class="brand-swatch-info">
+                  <span class="brand-swatch-name">Book Paper</span>
+                  <span class="brand-swatch-hex" data-hex-label="#FAF6EE">#FAF6EE</span>
+                  <span class="brand-swatch-role">Warm editorial paper, zero glare</span>
+                </div>
+              </button>
 
-            <div class="brand-swatch-card">
-              <div class="brand-swatch-box swatch-eink-charcoal"></div>
-              <div class="brand-swatch-info">
-                <span class="brand-swatch-name">E-ink Charcoal</span>
-                <span class="brand-swatch-hex">#1E1E1E</span>
-                <span class="brand-swatch-role">Device bezel &amp; dark mode</span>
-              </div>
-            </div>
+              <button type="button" class="brand-swatch-card" data-copy-hex="#F0B00A" aria-label="Copy Amber Highlight hex #F0B00A">
+                <div class="brand-swatch-box swatch-amber-hl"></div>
+                <div class="brand-swatch-info">
+                  <span class="brand-swatch-name">Amber Highlight</span>
+                  <span class="brand-swatch-hex" data-hex-label="#F0B00A">#F0B00A</span>
+                  <span class="brand-swatch-role">Warm highlighter &amp; accent</span>
+                </div>
+              </button>
 
-            <div class="brand-swatch-card">
-              <div class="brand-swatch-box swatch-printers-ink"></div>
-              <div class="brand-swatch-info">
-                <span class="brand-swatch-name">Printer’s Ink</span>
-                <span class="brand-swatch-hex">#2C2823</span>
-                <span class="brand-swatch-role">High-contrast typographic ink</span>
-              </div>
-            </div>
+              <button type="button" class="brand-swatch-card" data-copy-hex="#1E1E1E" aria-label="Copy E-ink Charcoal hex #1E1E1E">
+                <div class="brand-swatch-box swatch-eink-charcoal"></div>
+                <div class="brand-swatch-info">
+                  <span class="brand-swatch-name">E-ink Charcoal</span>
+                  <span class="brand-swatch-hex" data-hex-label="#1E1E1E">#1E1E1E</span>
+                  <span class="brand-swatch-role">Device bezel &amp; dark mode</span>
+                </div>
+              </button>
 
-            <div class="brand-swatch-card">
-              <div class="brand-swatch-box swatch-warm-page"></div>
-              <div class="brand-swatch-info">
-                <span class="brand-swatch-name">Warm Page</span>
-                <span class="brand-swatch-hex">#F4ECD8</span>
-                <span class="brand-swatch-role">Classic cream book leaves</span>
-              </div>
+              <button type="button" class="brand-swatch-card" data-copy-hex="#2C2823" aria-label="Copy Printer’s Ink hex #2C2823">
+                <div class="brand-swatch-box swatch-printers-ink"></div>
+                <div class="brand-swatch-info">
+                  <span class="brand-swatch-name">Printer’s Ink</span>
+                  <span class="brand-swatch-hex" data-hex-label="#2C2823">#2C2823</span>
+                  <span class="brand-swatch-role">High-contrast typographic ink</span>
+                </div>
+              </button>
+
+              <button type="button" class="brand-swatch-card" data-copy-hex="#F4ECD8" aria-label="Copy Warm Page hex #F4ECD8">
+                <div class="brand-swatch-box swatch-warm-page"></div>
+                <div class="brand-swatch-info">
+                  <span class="brand-swatch-name">Warm Page</span>
+                  <span class="brand-swatch-hex" data-hex-label="#F4ECD8">#F4ECD8</span>
+                  <span class="brand-swatch-role">Classic cream book leaves</span>
+                </div>
+              </button>
             </div>
           </div>
 
-          <h3 class="brand-swatches-title">Typography System</h3>
-          <p class="muted">Four typefaces balancing literature, user interface, handwritten marginalia, and plain text precision.</p>
-
-          <div class="brand-typography-grid">
-            <div class="brand-type-card">
-              <span class="brand-type-badge">Display &amp; Editorial</span>
-              <div class="brand-type-sample type-sample-serif">Aa &amp; Qq</div>
-              <span class="brand-type-name">Instrument Serif</span>
-              <span class="brand-type-role">Literary authority, editorial warmth, and classic book titles.</span>
+          <div class="brand-subblock">
+            <div class="brand-subblock-head">
+              <h3 class="brand-swatches-title">Typography System</h3>
+              <p class="muted">Four typefaces balancing literature, user interface, handwritten marginalia, and plain text precision.</p>
             </div>
 
-            <div class="brand-type-card">
-              <span class="brand-type-badge">Interface &amp; Clarity</span>
-              <div class="brand-type-sample type-sample-sans">Aa 123</div>
-              <span class="brand-type-name">Instrument Sans</span>
-              <span class="brand-type-role">Functional UI, responsive controls, and crisp reading menus.</span>
-            </div>
+            <div class="brand-typography-grid">
+              <div class="brand-type-card">
+                <div class="brand-type-top">
+                  <span class="brand-type-badge">Display &amp; Editorial</span>
+                  <span class="brand-type-spec">Serif 400</span>
+                </div>
+                <div class="brand-type-sample type-sample-serif">Aa &amp; Qq</div>
+                <span class="brand-type-name">Instrument Serif</span>
+                <span class="brand-type-role">Literary authority, editorial warmth, and classic book titles.</span>
+              </div>
 
-            <div class="brand-type-card">
-              <span class="brand-type-badge">Handwritten &amp; Marginalia</span>
-              <div class="brand-type-sample type-sample-hand">Notes &amp; Ink</div>
-              <span class="brand-type-name">Caveat</span>
-              <span class="brand-type-role">Personal margin scribbles, stylus annotations, and warm editorial accents.</span>
-            </div>
+              <div class="brand-type-card">
+                <div class="brand-type-top">
+                  <span class="brand-type-badge">Interface &amp; Clarity</span>
+                  <span class="brand-type-spec">Sans 400–600</span>
+                </div>
+                <div class="brand-type-sample type-sample-sans">Aa 123</div>
+                <span class="brand-type-name">Instrument Sans</span>
+                <span class="brand-type-role">Functional UI, responsive controls, and crisp reading menus.</span>
+              </div>
 
-            <div class="brand-type-card">
-              <span class="brand-type-badge">Code &amp; Metadata</span>
-              <div class="brand-type-sample type-sample-mono">{ # }</div>
-              <span class="brand-type-name">JetBrains Mono</span>
-              <span class="brand-type-role">Frontmatter YAML, hashes, timestamps, and plain text notes.</span>
+              <div class="brand-type-card">
+                <div class="brand-type-top">
+                  <span class="brand-type-badge">Handwritten &amp; Marginalia</span>
+                  <span class="brand-type-spec">Script 500</span>
+                </div>
+                <div class="brand-type-sample type-sample-hand">Notes &amp; Ink</div>
+                <span class="brand-type-name">Caveat</span>
+                <span class="brand-type-role">Personal margin scribbles, stylus annotations, and warm editorial accents.</span>
+              </div>
+
+              <div class="brand-type-card">
+                <div class="brand-type-top">
+                  <span class="brand-type-badge">Code &amp; Metadata</span>
+                  <span class="brand-type-spec">Mono 400–700</span>
+                </div>
+                <div class="brand-type-sample type-sample-mono">{ # }</div>
+                <span class="brand-type-name">JetBrains Mono</span>
+                <span class="brand-type-role">Frontmatter YAML, hashes, timestamps, and plain text notes.</span>
+              </div>
             </div>
           </div>
         </section>

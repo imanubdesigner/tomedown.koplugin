@@ -31,11 +31,13 @@
   }
 
   // spotlight: tab switcher + gentle auto-cycle (supports home & docs)
+  var prefersReducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   document.querySelectorAll(".spotlight").forEach(function (spotlight) {
     var tabs = spotlight.querySelectorAll(".spotlight-tab");
     var slides = spotlight.querySelectorAll(".spotlight-slide");
     var idx = 0;
     var timer = null;
+    var userInteracted = false;
     var show = function (next) {
       idx = (next + slides.length) % slides.length;
       tabs.forEach(function (t, i) {
@@ -47,18 +49,25 @@
         s.classList.toggle("is-active", i === idx);
       });
     };
+    var stop = function () {
+      if (timer) { clearInterval(timer); timer = null; }
+    };
     var start = function () {
-      if (timer) clearInterval(timer);
+      if (prefersReducedMotion || userInteracted) return;
+      stop();
       timer = setInterval(function () { show(idx + 1); }, 6500);
     };
     tabs.forEach(function (tab, i) {
       tab.addEventListener("click", function () {
+        userInteracted = true;
+        stop();
         show(i);
-        start();
       });
     });
-    spotlight.addEventListener("mouseenter", function () { if (timer) clearInterval(timer); });
+    spotlight.addEventListener("mouseenter", stop);
     spotlight.addEventListener("mouseleave", start);
+    spotlight.addEventListener("focusin", stop);
+    spotlight.addEventListener("focusout", start);
     start();
   });
 
@@ -123,9 +132,10 @@
     setActive();
   }
 
-  // Interactive intelligent zoom inspector for obsidian-guide SVGs
+  // Interactive intelligent zoom inspector for Obsidian graphics and diagrams
   var guideImages = document.querySelectorAll(".docs .prose img[src*='obsidian-guide']");
-  if (guideImages.length) {
+  var docShotFrames = document.querySelectorAll(".docs .prose .doc-shot-frame");
+  if (guideImages.length || docShotFrames.length) {
     // 1. Wrap each in-page guide image with interactive wrapper and badge
     guideImages.forEach(function (img) {
       if (img.parentElement && img.parentElement.classList.contains("guide-interactive-wrapper")) return;
@@ -228,15 +238,27 @@
       viewport.classList.remove("is-tracking");
     }
 
-    // Attach click to in-page guide wrappers
-    document.querySelectorAll(".guide-interactive-wrapper").forEach(function (w) {
-      w.addEventListener("click", function (e) {
+    // Attach click to in-page guide wrappers and doc-shot frames
+    document.querySelectorAll(".guide-interactive-wrapper, .docs .prose .doc-shot-frame").forEach(function (w) {
+      if (!w.hasAttribute("tabindex")) {
+        w.setAttribute("tabindex", "0");
+        w.setAttribute("role", "button");
+        w.setAttribute("title", "Click to inspect with interactive zoom");
+      }
+      var trigger = function (e) {
         var img = w.querySelector("img");
         if (!img) return;
         var r = w.getBoundingClientRect();
-        var fx = (e.clientX - r.left) / r.width;
-        var fy = (e.clientY - r.top) / r.height;
-        openLightbox(img.src, img.alt, fx, fy);
+        var fx = (e.clientX !== undefined && r.width) ? (e.clientX - r.left) / r.width : 0.5;
+        var fy = (e.clientY !== undefined && r.height) ? (e.clientY - r.top) / r.height : 0.5;
+        openLightbox(img.currentSrc || img.src, img.alt, fx, fy);
+      };
+      w.addEventListener("click", trigger);
+      w.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          trigger(e);
+        }
       });
     });
 
@@ -754,6 +776,22 @@
           btn.classList.remove("is-copied");
           btn.textContent = "Copy";
         }, 1800);
+      });
+    });
+  });
+  // Brand Palette Swatches: click-to-copy hex value
+  document.querySelectorAll("[data-copy-hex]").forEach(function (card) {
+    card.addEventListener("click", function () {
+      var hex = card.getAttribute("data-copy-hex");
+      var label = card.querySelector("[data-hex-label]");
+      if (!hex || !label) return;
+      copyTextToClipboard(hex, function () {
+        label.classList.add("is-copied");
+        label.textContent = "Copied " + hex;
+        setTimeout(function () {
+          label.classList.remove("is-copied");
+          label.textContent = label.getAttribute("data-hex-label") || hex;
+        }, 1600);
       });
     });
   });

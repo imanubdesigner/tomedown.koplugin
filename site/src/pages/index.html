@@ -225,7 +225,7 @@
         </div>
       </section>
 
-      <!-- Visual Previews Placeholders / How it works -->
+      <!-- Visual Previews / How it works -->
       <section id="how-it-works" class="section section-alt">
         <div class="container">
           <div class="section-head" data-reveal>
@@ -234,41 +234,52 @@
             <p class="muted">Clean tables, chronological journals, and in-device summary cards built for e-ink and desktop reading.</p>
           </div>
 
-          <div class="install-grid" data-reveal>
-            <div class="screenshot-placeholder" role="region" aria-label="Screenshot placeholder: home-02-koreader-cards.webp">
-              <div class="sp-top">
-                <div class="sp-meta">
-                  <span class="sp-badge">KOReader E-Reader</span>
-                  <code class="sp-filename">home-02-koreader-cards.webp</code>
-                </div>
-                <button type="button" class="placeholder-copy-btn" data-copy-filename="home-02-koreader-cards.webp" aria-label="Copy filename home-02-koreader-cards.webp">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                  <span>Copy filename</span>
-                </button>
-              </div>
-              <div class="sp-screen">
-                <p class="sp-title">In-reader Book summary &amp; Last export cards on KOReader</p>
-                <p class="sp-desc">Inquadra su KOReader la card <strong>Current book → Book summary</strong> (con i 3 contatori KPI cliccabili <em>Highlights</em>, <em>★ Special</em>, <em>Notes</em>) affiancata alla card <strong>Last export</strong> o al menu ristrutturato.</p>
-                <span class="sp-hint">Formato: WebP (q90–q95) · Composizione card + menu KOReader</span>
-              </div>
+          <div class="spotlight" role="region" aria-label="In practice visual showcase" data-reveal>
+            <div class="spotlight-tabs" role="tablist" aria-label="Showcase views">
+              <button type="button" class="spotlight-tab is-active" role="tab" aria-selected="true" aria-controls="spotlight-koreader" id="tab-koreader">
+                <span class="spotlight-tab-num">01</span>
+                <span class="spotlight-tab-text">
+                  <strong>On KOReader</strong>
+                  <span class="spotlight-tab-sub">Book summary &amp; Last export</span>
+                </span>
+              </button>
+              <button type="button" class="spotlight-tab" role="tab" aria-selected="false" aria-controls="spotlight-obsidian" id="tab-obsidian">
+                <span class="spotlight-tab-num">02</span>
+                <span class="spotlight-tab-text">
+                  <strong>In Obsidian</strong>
+                  <span class="spotlight-tab-sub">00 - Index.md &amp; Reading Digest</span>
+                </span>
+              </button>
             </div>
 
-            <div class="screenshot-placeholder" role="region" aria-label="Screenshot placeholder: home-03-obsidian-vault-views.webp">
-              <div class="sp-top">
-                <div class="sp-meta">
-                  <span class="sp-badge">Obsidian Vault</span>
-                  <code class="sp-filename">home-03-obsidian-vault-views.webp</code>
+            <div class="spotlight-stage">
+              <figure class="spotlight-slide is-active" id="spotlight-koreader" role="tabpanel" aria-labelledby="tab-koreader">
+                <div class="spotlight-frame">
+                  <img
+                    src="{{base}}/assets/img/home-02-koreader-cards.webp"
+                    alt="In-reader Book summary and Last export dashboard cards on KOReader"
+                    width="1922"
+                    height="1195"
+                    loading="lazy"
+                    decoding="async"
+                  />
                 </div>
-                <button type="button" class="placeholder-copy-btn" data-copy-filename="home-03-obsidian-vault-views.webp" aria-label="Copy filename home-03-obsidian-vault-views.webp">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                  <span>Copy filename</span>
-                </button>
-              </div>
-              <div class="sp-screen">
-                <p class="sp-title">00 - Index.md &amp; 00 - Reading Digest.md inside Obsidian</p>
-                <p class="sp-desc">Inquadra la libreria generata in Obsidian con <code>00 - Index.md</code> (copertine 90×120, barre di avanzamento a 5 celle, Trophy Room e Tag cloud) e il diario cronologico <code>00 - Reading Digest.md</code>.</p>
-                <span class="sp-hint">Formato: WebP (q90–q95) · Proporzioni: 16:10 (finestra desktop Obsidian / MarkText)</span>
-              </div>
+                <figcaption class="spotlight-caption">Interactive Book summary and Last export dashboard cards inside KOReader.</figcaption>
+              </figure>
+
+              <figure class="spotlight-slide" id="spotlight-obsidian" role="tabpanel" aria-labelledby="tab-obsidian">
+                <div class="spotlight-frame">
+                  <img
+                    src="{{base}}/assets/img/home-03-obsidian-vault-views.webp"
+                    alt="00 - Index.md library catalog and 00 - Reading Digest.md timeline inside Obsidian"
+                    width="1920"
+                    height="1198"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </div>
+                <figcaption class="spotlight-caption">Full bookshelf catalog in <code>00 - Index.md</code> and daily timeline in <code>00 - Reading Digest.md</code>.</figcaption>
+              </figure>
             </div>
           </div>
         </div>
