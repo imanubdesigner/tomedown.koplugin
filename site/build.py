@@ -33,7 +33,7 @@ GOOGLE_FONTS = """<link rel="preconnect" href="https://fonts.googleapis.com">
 
 # files that make up the wiki; copied out of `main` when --docs is not given
 DOC_SOURCES = ["docs", "OBSIDIAN.md", "TUTORIAL.md", "SYNC-DIRECTION.md",
-               "assets/menu", "assets/obsidian", "assets/obsidian-guide", "assets/tutorials"]
+               "assets/menu", "assets/obsidian"]
 
 
 def fail(msg):

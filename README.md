@@ -80,7 +80,6 @@ rsync -a --exclude tests --exclude site --exclude docs \
       --exclude .gitattributes --exclude .gitignore \
       --exclude '*.md' \
       --exclude assets/menu --exclude assets/obsidian \
-      --exclude assets/obsidian-guide --exclude assets/tutorials \
       --exclude 'assets/banner-*' \
       . /mnt/us/koreader/plugins/tomedown.koplugin/
 ```
