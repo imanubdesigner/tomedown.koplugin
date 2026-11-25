@@ -5254,32 +5254,52 @@ do
     T.check(style_row and style_row.text == "Format & layout",
         "28: Format & layout is the last row in Current book menu")
     local bstyle = style_row.sub_item_table_func()
-    T.check(#bstyle == 13, "28: 10 per-book style choices + 1 Book page + 1 frontmatter fields + 1 reset row")
+    T.check(#bstyle == 7,
+        "28: Format & layout fits on 1 Kindle page (7 rows: format, md style, Notes & highlights, Book page, YAML, Frontmatter fields, Reset)")
     T.check(bstyle[2].mandatory_func() == "Global",
         "28: markdown_style starts on Global")
-    T.check(bstyle[5].mandatory_func() == "Global",
-        "28: chapter_headings starts on Global")
-    T.check(bstyle[10].key == "book_card_sections" and bstyle[10].text == "Book page" and bstyle[10].mandatory_func() == "Global",
+    T.check(bstyle[3].key == "book_notes_highlights" and bstyle[3].text == "Notes & highlights" and bstyle[3].mandatory_func() == "Global",
+        "28: Notes & highlights group is present and starts on Global")
+    T.check(bstyle[4].key == "book_card_sections" and bstyle[4].text == "Book page" and bstyle[4].mandatory_func() == "Global",
         "28: Book page group is present and starts on Global")
-    T.check(bstyle[12].text == "Frontmatter fields" and bstyle[12].mandatory_func() == "Global",
+    T.check(bstyle[6].text == "Frontmatter fields" and bstyle[6].mandatory_func() == "Global",
         "28: Frontmatter fields row is present and starts on Global")
-    T.check(bstyle[13].enabled_func() == false,
+    T.check(bstyle[7].enabled_func() == false,
         "28: Reset to global style settings disabled when no overrides exist")
 
-    -- Pin FILE to chapter_headings = "none", highlight_details = "none", include_bookmarks = true via submenu callbacks
-    bstyle[5].sub_item_table[5].callback() -- "none"
-    bstyle[4].sub_item_table[5].callback() -- "none"
-    bstyle[8].sub_item_table[2].callback() -- include_bookmarks = true
+    local bnh = bstyle[3].sub_item_table_func()
+    T.check(#bnh == 9
+            and bnh[1].key == "special_marker"
+            and bnh[2].key == "highlight_details"
+            and bnh[3].key == "highlight_context"
+            and bnh[4].key == "block_ids"
+            and bnh[5].key == "callout"
+            and bnh[6].key == "note_style"
+            and bnh[7].key == "chapter_headings"
+            and bnh[8].key == "include_bookmarks"
+            and bnh[9].key == "include_handwritten",
+        "28: Current book -> Notes & highlights mirrors all 9 Global visual options")
+
+    -- Pin FILE to chapter_headings = "none", highlight_details = "none", include_bookmarks = true,
+    -- block_ids = true, and special_marker = "highlight" via submenu callbacks
+    bnh[7].sub_item_table[5].callback() -- chapter_headings = "none"
+    bnh[2].sub_item_table[5].callback() -- highlight_details = "none"
+    bnh[8].sub_item_table[2].callback() -- include_bookmarks = true
+    bnh[4].sub_item_table[2].callback() -- block_ids = true
+    bnh[1].sub_item_table[4].callback() -- special_marker = "highlight" (==text==)
     -- Pin FILE to hide progress in frontmatter via Frontmatter fields
-    bstyle[12].sub_item_table[10].callback() -- progress toggled off
+    bstyle[6].sub_item_table[10].callback() -- progress toggled off
     T.check(shared.isFrontmatterKeyEnabled("progress", FILE) == false
             and shared.isFrontmatterKeyEnabled("progress") == true,
         "28: progress hidden for FILE only, global still enabled")
-    T.check(bstyle[5].mandatory_func() == "Custom"
-            and bstyle[8].mandatory_func() == "Custom"
-            and bstyle[12].mandatory_func() == "Custom"
-            and bstyle[13].enabled_func() == true,
-        "28: mandatory shows Custom and Reset is enabled after setting per-book override")
+    T.check(bstyle[3].mandatory_func() == "Custom"
+            and bnh[7].mandatory_func() == "Custom"
+            and bnh[8].mandatory_func() == "Custom"
+            and bnh[4].mandatory_func() == "Custom"
+            and bnh[1].mandatory_func() == "Custom"
+            and bstyle[6].mandatory_func() == "Custom"
+            and bstyle[7].enabled_func() == true,
+        "28: mandatory shows Custom on Notes & highlights + Frontmatter fields and Reset is enabled")
 
     plugin:runExport({ FILE, FILE2 }, { force = true })
     UIManager:runPending()
@@ -5289,26 +5309,28 @@ do
     T.check(not T.contains(file1_md, "# Capitolo I")
             and not T.contains(file1_md, "**p. 10**")
             and T.contains(file1_md, "Segnalibro di pagina")
+            and T.contains(file1_md, " ^hl-")
             and not T.contains(file1_md, "progress:"),
-        "28: FILE uses per-book override (no chapter headings, no highlight details, page bookmarks enabled, no progress)")
+        "28: FILE uses per-book override (no chapter headings, no highlight details, page bookmarks enabled, per-book block IDs, no progress)")
     T.check(T.contains(file2_md, "**p. 3**")
+            and not T.contains(file2_md, " ^hl-")
             and T.contains(file2_md, "status:"),
-        "28: FILE2 still uses global settings (page and date details, status enabled): base="
+        "28: FILE2 still uses global settings (page and date details, no block IDs, status enabled): base="
             .. tostring(file2_base) .. " md=" .. tostring(file2_md))
 
     -- If YAML frontmatter is set to Disabled, Frontmatter fields row disappears
-    bstyle[11].sub_item_table[3].callback() -- fm_enabled = false
+    bstyle[5].sub_item_table[3].callback() -- fm_enabled = false
     local bstyle_disabled = style_row.sub_item_table_func()
-    T.check(#bstyle_disabled == 12 and bstyle_disabled[12].key == "reset_book_style",
+    T.check(#bstyle_disabled == 6 and bstyle_disabled[6].key == "reset_book_style",
         "28: Frontmatter fields row disappears when YAML frontmatter is disabled")
-    bstyle[11].sub_item_table[1].callback() -- reset to global (enabled)
+    bstyle[5].sub_item_table[1].callback() -- reset to global (enabled)
 
     -- Reset FILE back to global settings
-    bstyle[13].callback()
-    T.check(bstyle[5].mandatory_func() == "Global"
-            and bstyle[8].mandatory_func() == "Global"
-            and bstyle[12].mandatory_func() == "Global"
-            and bstyle[13].enabled_func() == false,
+    bstyle[7].callback()
+    T.check(bstyle[3].mandatory_func() == "Global"
+            and bstyle[4].mandatory_func() == "Global"
+            and bstyle[6].mandatory_func() == "Global"
+            and bstyle[7].enabled_func() == false,
         "28: Reset to global style settings clears all overrides for FILE")
 
     do
@@ -5333,12 +5355,12 @@ do
 
         -- Per-book: export_format = txt hides markdown_style; 'both' shows it again
         bstyle[1].sub_item_table[3].callback() -- txt
-        T.check(#bstyle == 12 and bstyle[2].key ~= "markdown_style",
+        T.check(#bstyle == 6 and bstyle[2].key ~= "markdown_style",
             "28: Per-book Format & layout hides markdown_style when export_format is txt")
         bstyle[1].sub_item_table[4].callback() -- both
-        T.check(#bstyle == 13 and bstyle[2].key == "markdown_style",
+        T.check(#bstyle == 7 and bstyle[2].key == "markdown_style",
             "28: Per-book Format & layout shows markdown_style when export_format is both")
-        bstyle[13].callback() -- reset FILE overrides
+        bstyle[7].callback() -- reset FILE overrides
     end
 
     do
@@ -5362,7 +5384,7 @@ do
             "28: saving global custom fields adds individual checkboxes in Global menu")
 
         -- Open Current book -> Format & layout -> Frontmatter fields: global custom keys appear as checkboxes
-        local book_fm_rows = plugin:genBookStyleMenu(FILE)[12].sub_item_table
+        local book_fm_rows = plugin:genBookStyleMenu(FILE)[6].sub_item_table
         T.check(book_fm_rows[11].key == "genre" and book_fm_rows[11].checked_func() == true
                 and book_fm_rows[12].key == "project" and book_fm_rows[12].checked_func() == true,
             "28: global custom keys appear as checkboxes in Current book -> Frontmatter fields")
@@ -5385,7 +5407,7 @@ do
         T.check(book_fm_rows[14].key == "doi" and book_fm_rows[14].checked_func() == true,
             "28: book-specific custom key appears as checkbox in Current book")
         -- Verify 'doi' does NOT appear in Global or FILE2
-        local file2_fm_rows = plugin:genBookStyleMenu(FILE2)[12].sub_item_table
+        local file2_fm_rows = plugin:genBookStyleMenu(FILE2)[6].sub_item_table
         for __, r in ipairs(file2_fm_rows) do
             T.check(r.key ~= "doi", "28: book-only custom key doi does not leak to FILE2")
         end
@@ -5625,13 +5647,21 @@ do
         T.check(sec_style[2].enabled_func() == true,
             "31: Dashboard style is enabled when Reading dashboard is on")
         local bstyle_std = plugin:genBookStyleMenu(FILE)
-        local bcard_std = bstyle_std[10].sub_item_table_func()
-        T.check(bstyle_std[10].key == "book_card_sections"
-                and bstyle_std[10].text == "Book page"
+        local bcard_std = bstyle_std[4].sub_item_table_func()
+        T.check(bstyle_std[4].key == "book_card_sections"
+                and bstyle_std[4].text == "Book page"
                 and #bcard_std == 8
-                and bcard_std[2].key == "overview_style"
-                and bcard_std[2].sub_item_table[4].enabled_func() == false,
-            "31: Current book -> Book page has 8 rows and Overview style disables Callout ([!summary]) in Standard Markdown mode")
+                and bcard_std[2].key == "covers"
+                and bcard_std[3].key == "overview_style"
+                and bcard_std[3].sub_item_table[4].enabled_func() == false,
+            "31: Current book -> Book page has 8 rows when synopsis is off (includes Book cover) and disables Callout ([!summary]) in Standard Markdown mode")
+        -- Enable Book synopsis for FILE -> Synopsis display appears conditionally (9 rows)
+        bcard_std[5].sub_item_table[2].callback() -- book_synopsis = true
+        T.check(#bcard_std == 9 and bcard_std[6].key == "synopsis_mode",
+            "31: Current book -> Book page reveals Synopsis display only when Book synopsis is enabled")
+        bcard_std[5].sub_item_table[1].callback() -- reset book_synopsis to global (false)
+        T.check(#bcard_std == 8 and bcard_std[6].key == "body_tags",
+            "31: Current book -> Book page hides Synopsis display again when Book synopsis is off")
         local bsec_style = bcard_std[8].sub_item_table_func()
         T.check(bcard_std[8].key == "book_card_style"
                 and bcard_std[8].text == "Section styles"
@@ -5641,10 +5671,16 @@ do
                 and bsec_style[2].enabled_func() == true,
             "31: Current book -> Book page -> Section styles submenu places style rows below Harmonize book styles")
         sec_style[1].callback() -- re-enable Harmonize book styles
+        shared.setReadingDashboard(false)
+        -- Verify Book style in Current book is ALWAYS selectable under Harmonize even when all 4 optional modules are off
+        local bsec_harmonized = bcard_std[8].sub_item_table_func()
+        T.check(#bsec_harmonized == 2
+                and bsec_harmonized[2].key == "book_visual_style"
+                and bsec_harmonized[2].enabled_func == nil,
+            "31: Current book -> Book style under Harmonize is always selectable even when optional header modules are off")
         T.check(shared.getHarmonizeBookStyle() == true and #sec_style == 2
                 and T.contains(sec_style[2].text_func(), "Book style:"),
             "31: re-enabling Harmonize book styles leaves only Book style inside Section styles submenu (2 rows)")
-        shared.setReadingDashboard(false)
         shared.setMarkdownStyle("obsidian")
         end
 
@@ -5721,6 +5757,105 @@ do
             shared.setBookVisualStyle("minimal")
             shared.setIndexStyle("minimal")
             shared.setReadingDashboard(false)
+        end
+
+        -- 33: Strict Current book isolation across graphical & structural/code options
+        do
+            -- Global baseline: covers = true, note_style = inline, fm_hidden hides 'status',
+            -- reading_dashboard = true, book_visual_style = minimal, preserve = false
+            local saved_global_preserve = store.tomedown.preserve
+            store.tomedown.preserve = false
+            store.tomedown.covers = true
+            BookInfo.cover_bb = fakeBB(800, 1200)
+            shared.setNoteStyle("inline")
+            shared.setFrontmatterKeyEnabled("status", false)
+            shared.setReadingDashboard(true)
+            shared.setHarmonizeBookStyle(true)
+            shared.setBookVisualStyle("minimal")
+            shared.setOverviewStyle("inline")
+            shared.setBookPreserve(FILE, false)
+            shared.setBookPreserve(FILE2, false)
+
+            -- Export both books once so covers exist on disk and both hashes are stored
+            plugin:runExport({ FILE, FILE2 }, { force = true })
+            UIManager:runPending()
+            local file2_hash_before = (store.tomedown.exports[FILE2] or {}).hash
+            T.check(file2_hash_before ~= nil, "33: FILE2 has stored export hash before Current book edits on FILE")
+
+            -- Customize FILE ONLY via Current book:
+            -- 1) Re-enable globally-hidden 'status' frontmatter key on FILE (regression check for empty fm_hidden override)
+            shared.setFrontmatterKeyEnabled("status", true, FILE)
+            T.check(shared.isFrontmatterKeyEnabled("status", FILE) == true
+                    and shared.isFrontmatterKeyEnabled("status", FILE2) == false
+                    and shared.isFrontmatterKeyEnabled("status") == false,
+                "33: re-enabling globally-hidden frontmatter key works for FILE without affecting FILE2 or global")
+
+            -- 2) Disable Book cover on FILE while global covers stays true; customize note_style, visual style, overview, preserve, heading, tags
+            local fm_menu = plugin:genBookStyleMenu(FILE)
+            local nh_sub = fm_menu[3].sub_item_table_func()
+            local card_sub = fm_menu[4].sub_item_table_func()
+            nh_sub[6].sub_item_table[3].callback() -- Personal notes format = Callout ([!note]) for FILE
+            card_sub[2].sub_item_table[3].callback() -- Book cover = Disabled for FILE
+            card_sub[3].sub_item_table[5].callback() -- Overview style = Table for FILE
+            local sec_sub = card_sub[8].sub_item_table_func()
+            sec_sub[2].sub_item_table[4].callback() -- Book style = Code badges for FILE
+            shared.setBookPreserve(FILE, true)
+            shared.setBookNotesTitle(FILE, "Solo questo libro")
+            plugin:saveBookTags(FILE, { "isolato" })
+
+            -- Verify FILE2's export hash was NEVER invalidated by FILE's Current book edits
+            T.check((store.tomedown.exports[FILE2] or {}).hash == file2_hash_before,
+                "33: Current book edits on FILE never invalidate FILE2 export hash")
+            -- Verify global settings remain untouched
+            T.check(store.tomedown.covers == true
+                    and shared.getNoteStyle() == "inline"
+                    and shared.getBookVisualStyle() == "minimal"
+                    and shared.getEffectiveIndexStyle() == "minimal"
+                    and shared.getOverviewStyle() == "inline"
+                    and shared.getBookPreserve(FILE2) == false
+                    and shared.getNotesTitle(FILE2) == "My notes...",
+                "33: Current book edits on FILE leave all global settings and FILE2 getters untouched")
+
+            -- Re-export both books and verify isolation in generated Markdown + 00 - Index.md
+            plugin:runExport({ FILE, FILE2 }, { force = true })
+            UIManager:runPending()
+            local iso_md1 = T.readFile(MD_PATH) or ""
+            local iso_base2 = (store.tomedown.exports[FILE2] or {}).base
+            local iso_md2 = T.readFile(DIR .. "/" .. iso_base2 .. ".md") or ""
+            local iso_idx = T.readFile(INDEX_PATH) or ""
+            local file1_cover_rel = "covers/" .. BASE .. ".jpg"
+            local file2_cover_rel = "covers/" .. tostring(iso_base2) .. ".jpg"
+
+            T.check(not T.contains(iso_md1, file1_cover_rel)
+                    and T.contains(iso_md1, "status:")
+                    and T.contains(iso_md1, "> [!note]")
+                    and T.contains(iso_md1, "> [!book] `READING DASHBOARD`")
+                    and T.contains(iso_md1, "| Highlights")
+                    and T.contains(iso_md1, "## Solo questo libro <!-- tomedown:notes -->")
+                    and T.contains(iso_md1, "isolato"),
+                "33: FILE renders all per-book graphical and code overrides (no cover, status re-enabled, [!note], badges, table overview, custom zone, tag)")
+
+            T.check(T.contains(iso_md2, file2_cover_rel)
+                    and not T.contains(iso_md2, "\nstatus:")
+                    and not T.contains(iso_md2, "> [!note]")
+                    and not T.contains(iso_md2, "`READING DASHBOARD`")
+                    and not T.contains(iso_md2, "Solo questo libro")
+                    and not T.contains(iso_md2, "isolato"),
+                "33: FILE2 keeps global cover, omits globally-hidden status, keeps inline notes and minimal style")
+
+            T.check(not T.contains(iso_idx, file1_cover_rel)
+                    and T.contains(iso_idx, file2_cover_rel),
+                "33: 00 - Index.md respects FILE per-book cover disabled while keeping FILE2 cover")
+
+            -- Clean up section 33 state
+            shared.clearBookStyleOverrides(FILE)
+            shared.setFrontmatterKeyEnabled("status", true)
+            shared.setReadingDashboard(false)
+            shared.setBookPreserve(FILE, false)
+            shared.setBookNotesTitle(FILE, nil)
+            shared.clearBookTags(FILE)
+            store.tomedown.covers = nil
+            store.tomedown.preserve = saved_global_preserve
         end
     end
 end

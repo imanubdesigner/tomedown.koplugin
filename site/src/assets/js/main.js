@@ -61,13 +61,10 @@
         p.classList.toggle("is-active", on);
         if (on) {
           p.removeAttribute("hidden");
-          if (!p.querySelector("a[href], button:not([disabled]), input:not([disabled]), [tabindex='0']")) {
-            p.setAttribute("tabindex", "0");
-          }
         } else {
           p.setAttribute("hidden", "until-found");
-          p.removeAttribute("tabindex");
         }
+        p.removeAttribute("tabindex");
       });
     }
 
@@ -104,12 +101,143 @@
     };
   }
 
-  // Spotlight: accessible static-by-default tab switcher (WCAG 2.2.2 compliant, user-initiated)
+  // Spotlight: fixed-geometry CSS Grid switcher with pre-decoded slides and calm auto-rotation
   document.querySelectorAll(".spotlight").forEach(function (spotlight) {
-    wireTablist(
-      spotlight.querySelectorAll(".spotlight-tab"),
-      spotlight.querySelectorAll(".spotlight-slide")
-    );
+    var tabs = Array.prototype.slice.call(spotlight.querySelectorAll(".spotlight-tab"));
+    var slides = Array.prototype.slice.call(spotlight.querySelectorAll(".spotlight-slide"));
+    if (tabs.length < 2 || tabs.length !== slides.length) return;
+
+    var activeIdx = 0;
+    tabs.forEach(function (t, i) {
+      if (t.classList.contains("is-active") || t.getAttribute("aria-selected") === "true") {
+        activeIdx = i;
+      }
+    });
+
+    var autoDelayMs = 5500;
+    var autoTimer = null;
+    var inViewport = true;
+    var isHovered = false;
+    var hasFocusInside = false;
+    var predecoded = false;
+
+    function predecodeSlides() {
+      if (predecoded) return;
+      predecoded = true;
+      slides.forEach(function (slide) {
+        var img = slide.querySelector("img");
+        if (!img) return;
+        img.loading = "eager";
+        if (typeof img.decode === "function") {
+          img.decode().catch(function () {});
+        }
+      });
+    }
+
+    function setSlide(nextIdx, moveFocus) {
+      activeIdx = (nextIdx + tabs.length) % tabs.length;
+      tabs.forEach(function (t, i) {
+        var on = i === activeIdx;
+        t.classList.toggle("is-active", on);
+        t.setAttribute("aria-selected", on ? "true" : "false");
+        t.setAttribute("tabindex", on ? "0" : "-1");
+        if (on && moveFocus) t.focus();
+      });
+      slides.forEach(function (s, i) {
+        var on = i === activeIdx;
+        s.classList.toggle("is-active", on);
+        s.removeAttribute("hidden");
+        s.removeAttribute("tabindex");
+        s.setAttribute("aria-hidden", on ? "false" : "true");
+        if ("inert" in s) s.inert = !on;
+      });
+    }
+
+    function stopAuto() {
+      if (autoTimer) {
+        clearInterval(autoTimer);
+        autoTimer = null;
+      }
+    }
+
+    function syncAuto() {
+      stopAuto();
+      if (prefersReducedMotion || !inViewport || isHovered || hasFocusInside || document.hidden) {
+        return;
+      }
+      autoTimer = setInterval(function () {
+        setSlide(activeIdx + 1, false);
+      }, autoDelayMs);
+    }
+
+    tabs.forEach(function (tab, i) {
+      tab.addEventListener("click", function () {
+        predecodeSlides();
+        setSlide(i, false);
+        syncAuto();
+      });
+      tab.addEventListener("keydown", function (e) {
+        var next = null;
+        if (e.key === "ArrowRight" || e.key === "ArrowDown") next = activeIdx + 1;
+        else if (e.key === "ArrowLeft" || e.key === "ArrowUp") next = activeIdx - 1;
+        else if (e.key === "Home") next = 0;
+        else if (e.key === "End") next = tabs.length - 1;
+        if (next !== null) {
+          e.preventDefault();
+          predecodeSlides();
+          setSlide(next, true);
+          syncAuto();
+        }
+      });
+    });
+
+    spotlight.addEventListener("mouseenter", function () {
+      isHovered = true;
+      predecodeSlides();
+      syncAuto();
+    });
+    spotlight.addEventListener("mouseleave", function () {
+      isHovered = false;
+      syncAuto();
+    });
+    spotlight.addEventListener("focusin", function () {
+      hasFocusInside = true;
+      predecodeSlides();
+      syncAuto();
+    });
+    spotlight.addEventListener("focusout", function (e) {
+      if (!spotlight.contains(e.relatedTarget)) {
+        hasFocusInside = false;
+        syncAuto();
+      }
+    });
+    document.addEventListener("visibilitychange", syncAuto);
+
+    if ("IntersectionObserver" in window) {
+      inViewport = false;
+      var preloadObserver = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            predecodeSlides();
+            preloadObserver.disconnect();
+          }
+        });
+      }, { rootMargin: "800px 0px" });
+      preloadObserver.observe(spotlight);
+
+      var viewObserver = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          inViewport = entry.isIntersecting;
+          syncAuto();
+        });
+      }, { threshold: 0.25 });
+      viewObserver.observe(spotlight);
+    } else {
+      predecodeSlides();
+    }
+
+    setSlide(activeIdx, false);
+    syncAuto();
   });
 
   // Homepage Tomedown 3.0 Interactive Live Note Specimen
@@ -465,13 +593,13 @@
     setActive();
   }
 
-  // 6. Native <dialog> Lightbox Inspector for documentation screenshots
-  var docShotFrames = document.querySelectorAll(".docs .prose .doc-shot-frame");
+  // 6. Native <dialog> Lightbox Inspector for documentation screenshots (opens calm at 100%, gentle drag-to-pan when zoomed)
+  var docShotFrames = document.querySelectorAll(".docs .prose .doc-shot-frame, .docs .prose .doc-specimen-viewport");
   if (docShotFrames.length) {
     var dialog = document.createElement("dialog");
     dialog.className = "guide-lightbox";
     dialog.setAttribute("closedby", "any");
-    dialog.setAttribute("aria-label", "Interactive screenshot inspector");
+    dialog.setAttribute("aria-label", "Screenshot preview");
     dialog.innerHTML =
       '<div class="guide-lightbox-content">' +
         '<div class="guide-viewport">' +
@@ -479,14 +607,14 @@
         '</div>' +
         '<div class="guide-toolbar">' +
           '<div class="guide-toolbar-info">' +
-            '<span class="guide-zoom-badge" aria-live="polite">2.4×</span>' +
-            '<span class="guide-toolbar-hint">Move pointer to pan • Wheel to zoom • Click image for 1×</span>' +
+            '<span class="guide-zoom-badge" aria-live="polite">100%</span>' +
+            '<span class="guide-toolbar-hint">Click image to zoom • Drag to pan when zoomed</span>' +
           '</div>' +
           '<div class="guide-toolbar-actions">' +
             '<button type="button" class="guide-btn guide-btn-zoom-out" aria-label="Zoom out">−</button>' +
             '<button type="button" class="guide-btn guide-btn-zoom-in" aria-label="Zoom in">+</button>' +
-            '<button type="button" class="guide-btn guide-btn-toggle" aria-label="Toggle overview and detail zoom">Overview (1×)</button>' +
-            '<button type="button" class="guide-btn guide-btn-close" aria-label="Close screenshot inspector">✕ Close</button>' +
+            '<button type="button" class="guide-btn guide-btn-toggle" aria-label="Toggle detail zoom">Zoom (160%)</button>' +
+            '<button type="button" class="guide-btn guide-btn-close" aria-label="Close preview">✕ Close</button>' +
           '</div>' +
         '</div>' +
       '</div>';
@@ -501,52 +629,77 @@
     var btnClose = dialog.querySelector(".guide-btn-close");
     var lastTrigger = null;
 
-    var currentScale = 2.4;
-    var defaultZoom = 2.4;
+    var currentScale = 1.0;
+    var detailZoom = 1.6;
     var minScale = 1.0;
-    var maxScale = 3.8;
+    var maxScale = 2.2;
+    var panX = 0;
+    var panY = 0;
+    var panPointerId = null;
+    var panStartX = 0;
+    var panStartY = 0;
+    var panOriginX = 0;
+    var panOriginY = 0;
+    var didPanDrag = false;
 
     function isLightboxOpen() {
       return dialog.open || dialog.classList.contains("is-open");
     }
 
-    function applyScale(scale) {
-      currentScale = Math.max(minScale, Math.min(maxScale, Math.round(scale * 10) / 10));
-      badgeScale.textContent = currentScale.toFixed(1) + "×";
-      if (currentScale <= 1.05) {
+    function clampPan() {
+      var w = zoomImg.offsetWidth || 0;
+      var h = zoomImg.offsetHeight || 0;
+      var maxX = Math.max(0, (w * (currentScale - 1)) / 2);
+      var maxY = Math.max(0, (h * (currentScale - 1)) / 2);
+      panX = Math.max(-maxX, Math.min(maxX, panX));
+      panY = Math.max(-maxY, Math.min(maxY, panY));
+    }
+
+    function renderTransform() {
+      clampPan();
+      zoomImg.style.transform = "translate3d(" + panX.toFixed(1) + "px, " + panY.toFixed(1) + "px, 0) scale(" + currentScale.toFixed(2) + ")";
+    }
+
+    function applyScale(nextScale, focalClientX, focalClientY) {
+      var prevScale = currentScale;
+      var clamped = Math.max(minScale, Math.min(maxScale, Math.round(nextScale * 20) / 20));
+      if (clamped <= 1.04) {
         currentScale = 1.0;
-        zoomImg.style.transform = "scale(1)";
-        zoomImg.style.transformOrigin = "50% 50%";
-        viewport.classList.add("is-overview");
-        viewport.classList.remove("is-tracking");
-        btnToggle.textContent = "Detail (2.4×)";
+        panX = 0;
+        panY = 0;
+        viewport.classList.remove("is-zoomed", "is-panning");
+        btnToggle.textContent = "Zoom (160%)";
         btnToggle.classList.remove("is-active");
       } else {
-        zoomImg.style.transform = "scale(" + currentScale + ")";
-        viewport.classList.remove("is-overview");
-        btnToggle.textContent = "Overview (1×)";
+        currentScale = clamped;
+        if (focalClientX !== undefined && focalClientY !== undefined) {
+          var rect = viewport.getBoundingClientRect();
+          if (rect.width && rect.height) {
+            var dx = rect.left + rect.width / 2 - focalClientX;
+            var dy = rect.top + rect.height / 2 - focalClientY;
+            if (prevScale <= 1.04) {
+              panX = dx * (currentScale - 1);
+              panY = dy * (currentScale - 1);
+            } else {
+              var ratio = currentScale / prevScale;
+              panX = panX * ratio;
+              panY = panY * ratio;
+            }
+          }
+        }
+        viewport.classList.add("is-zoomed");
+        btnToggle.textContent = "Fit (100%)";
         btnToggle.classList.add("is-active");
       }
+      badgeScale.textContent = Math.round(currentScale * 100) + "%";
+      renderTransform();
     }
 
-    function updateOrigin(clientX, clientY) {
-      if (currentScale <= 1.0) return;
-      var rect = viewport.getBoundingClientRect();
-      if (!rect.width || !rect.height) return;
-      var fx = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-      var fy = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
-      viewport.classList.add("is-tracking");
-      zoomImg.style.transformOrigin = (fx * 100).toFixed(2) + "% " + (fy * 100).toFixed(2) + "%";
-    }
-
-    function openLightbox(src, alt, initialFx, initialFy, triggerEl) {
+    function openLightbox(src, alt, triggerEl) {
       lastTrigger = triggerEl || document.activeElement;
       zoomImg.src = src;
       zoomImg.alt = alt || "";
-      applyScale(defaultZoom);
-      var fx = (initialFx !== undefined) ? Math.max(0, Math.min(1, initialFx)) : 0.5;
-      var fy = (initialFy !== undefined) ? Math.max(0, Math.min(1, initialFy)) : 0.25;
-      zoomImg.style.transformOrigin = (fx * 100).toFixed(2) + "% " + (fy * 100).toFixed(2) + "%";
+      applyScale(1.0);
       dialog.classList.add("is-open");
       if (typeof dialog.showModal === "function" && !dialog.open) {
         dialog.showModal();
@@ -556,7 +709,8 @@
 
     function closeLightbox() {
       dialog.classList.remove("is-open");
-      viewport.classList.remove("is-tracking");
+      viewport.classList.remove("is-zoomed", "is-panning");
+      panPointerId = null;
       if (typeof dialog.close === "function" && dialog.open) {
         dialog.close();
       }
@@ -567,7 +721,8 @@
 
     dialog.addEventListener("close", function () {
       dialog.classList.remove("is-open");
-      viewport.classList.remove("is-tracking");
+      viewport.classList.remove("is-zoomed", "is-panning");
+      panPointerId = null;
     });
 
     docShotFrames.forEach(function (w) {
@@ -575,63 +730,92 @@
       if (!w.hasAttribute("tabindex")) {
         w.setAttribute("tabindex", "0");
         w.setAttribute("role", "button");
-        var label = img && img.alt ? ("Inspect screenshot: " + img.alt) : "Inspect screenshot with interactive zoom";
+        var label = img && img.alt ? ("Inspect screenshot: " + img.alt) : "Inspect screenshot";
         w.setAttribute("aria-label", label);
       }
-      var trigger = function (e) {
+      var trigger = function () {
         var targetImg = w.querySelector("img");
         if (!targetImg) return;
-        var r = w.getBoundingClientRect();
-        var fx = (e.clientX !== undefined && r.width) ? (e.clientX - r.left) / r.width : 0.5;
-        var fy = (e.clientY !== undefined && r.height) ? (e.clientY - r.top) / r.height : 0.5;
-        openLightbox(targetImg.currentSrc || targetImg.src, targetImg.alt, fx, fy, w);
+        openLightbox(targetImg.currentSrc || targetImg.src, targetImg.alt, w);
       };
       w.addEventListener("click", trigger);
       w.addEventListener("keydown", function (e) {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          trigger(e);
+          trigger();
         }
       });
     });
 
-    viewport.addEventListener("mousemove", function (e) {
-      updateOrigin(e.clientX, e.clientY);
+    viewport.addEventListener("pointerdown", function (e) {
+      if (e.button !== undefined && e.button !== 0) return;
+      if (panPointerId !== null) return;
+      panPointerId = e.pointerId;
+      panStartX = e.clientX;
+      panStartY = e.clientY;
+      panOriginX = panX;
+      panOriginY = panY;
+      didPanDrag = false;
+      if (currentScale > 1.0) {
+        try { viewport.setPointerCapture(e.pointerId); } catch (_) {}
+      }
     });
 
-    viewport.addEventListener("touchmove", function (e) {
-      if (e.touches && e.touches[0]) {
-        updateOrigin(e.touches[0].clientX, e.touches[0].clientY);
+    viewport.addEventListener("pointermove", function (e) {
+      if (e.pointerId !== panPointerId || currentScale <= 1.0) return;
+      var dx = e.clientX - panStartX;
+      var dy = e.clientY - panStartY;
+      if (!didPanDrag && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
+        didPanDrag = true;
+        viewport.classList.add("is-panning");
       }
-    }, { passive: true });
+      if (didPanDrag) {
+        panX = panOriginX + dx;
+        panY = panOriginY + dy;
+        renderTransform();
+      }
+    });
+
+    function endPan(e) {
+      if (e.pointerId !== panPointerId) return;
+      var wasDrag = didPanDrag;
+      panPointerId = null;
+      didPanDrag = false;
+      viewport.classList.remove("is-panning");
+      if (!wasDrag && e.type === "pointerup") {
+        if (currentScale > 1.0) {
+          applyScale(1.0);
+        } else {
+          applyScale(detailZoom, e.clientX, e.clientY);
+        }
+      }
+    }
+
+    viewport.addEventListener("pointerup", endPan);
+    viewport.addEventListener("pointercancel", endPan);
+    viewport.addEventListener("lostpointercapture", function () {
+      panPointerId = null;
+      didPanDrag = false;
+      viewport.classList.remove("is-panning");
+    });
 
     viewport.addEventListener("wheel", function (e) {
       e.preventDefault();
-      var delta = e.deltaY < 0 ? 0.3 : -0.3;
-      applyScale(currentScale + delta);
-      updateOrigin(e.clientX, e.clientY);
+      var delta = e.deltaY < 0 ? 0.2 : -0.2;
+      applyScale(currentScale + delta, e.clientX, e.clientY);
     }, { passive: false });
-
-    viewport.addEventListener("click", function (e) {
-      if (currentScale > 1.0) {
-        applyScale(1.0);
-      } else {
-        applyScale(defaultZoom);
-        updateOrigin(e.clientX, e.clientY);
-      }
-    });
 
     btnZoomIn.addEventListener("click", function (e) {
       e.stopPropagation();
-      applyScale(currentScale + 0.4);
+      applyScale(currentScale + 0.25);
     });
     btnZoomOut.addEventListener("click", function (e) {
       e.stopPropagation();
-      applyScale(currentScale - 0.4);
+      applyScale(currentScale - 0.25);
     });
     btnToggle.addEventListener("click", function (e) {
       e.stopPropagation();
-      applyScale(currentScale > 1.0 ? 1.0 : defaultZoom);
+      applyScale(currentScale > 1.0 ? 1.0 : detailZoom);
     });
     btnClose.addEventListener("click", function (e) {
       e.stopPropagation();
@@ -646,8 +830,8 @@
 
     window.addEventListener("keydown", function (e) {
       if (!isLightboxOpen()) return;
-      if (e.key === "+" || e.key === "=") applyScale(currentScale + 0.3);
-      else if (e.key === "-" || e.key === "_") applyScale(currentScale - 0.3);
+      if (e.key === "+" || e.key === "=") applyScale(currentScale + 0.25);
+      else if (e.key === "-" || e.key === "_") applyScale(currentScale - 0.25);
       else if (e.key === "0") applyScale(1.0);
     });
   }
@@ -1041,6 +1225,85 @@
         }, 1800);
       });
     });
+  });
+
+  // Interactive Before/After Image Comparison Slider (Pointer Capture + Keyboard Range)
+  document.querySelectorAll("[data-compare]").forEach(function (slider) {
+    var range = slider.querySelector(".compare-range");
+    if (!range) return;
+    var activePointerId = null;
+    var downX = 0;
+    var isDragging = false;
+    var clickTimer = null;
+
+    function applySplit(val, syncInput) {
+      var clamped = Math.max(0, Math.min(100, val));
+      if (isNaN(clamped)) clamped = 50;
+      slider.style.setProperty("--split", clamped.toFixed(2) + "%");
+      slider.setAttribute("data-edge", clamped < 14 ? "start" : (clamped > 86 ? "end" : "mid"));
+      if (syncInput) {
+        range.value = clamped.toFixed(1);
+      }
+    }
+
+    function splitFromClientX(clientX) {
+      var rect = slider.getBoundingClientRect();
+      if (!rect.width) return 50;
+      return ((clientX - rect.left) / rect.width) * 100;
+    }
+
+    slider.addEventListener("pointerdown", function (e) {
+      if (e.button !== undefined && e.button !== 0) return;
+      if (activePointerId !== null) return;
+      if (e.pointerType === "mouse") e.preventDefault();
+      if (clickTimer) { clearTimeout(clickTimer); clickTimer = null; }
+      activePointerId = e.pointerId;
+      downX = e.clientX;
+      isDragging = false;
+      slider.classList.remove("is-dragging");
+      slider.classList.add("is-clicking");
+      try { slider.setPointerCapture(e.pointerId); } catch (_) {}
+      applySplit(splitFromClientX(e.clientX), true);
+    });
+
+    slider.addEventListener("pointermove", function (e) {
+      if (e.pointerId !== activePointerId) return;
+      if (!isDragging && Math.abs(e.clientX - downX) > 3) {
+        isDragging = true;
+        slider.classList.remove("is-clicking");
+        slider.classList.add("is-dragging");
+      }
+      if (isDragging) {
+        applySplit(splitFromClientX(e.clientX), true);
+      }
+    });
+
+    function finishPointer(e) {
+      if (e.pointerId !== activePointerId) return;
+      activePointerId = null;
+      isDragging = false;
+      slider.classList.remove("is-dragging");
+      clickTimer = setTimeout(function () {
+        slider.classList.remove("is-clicking");
+        clickTimer = null;
+      }, 180);
+    }
+
+    slider.addEventListener("pointerup", finishPointer);
+    slider.addEventListener("pointercancel", finishPointer);
+    slider.addEventListener("lostpointercapture", function () {
+      activePointerId = null;
+      isDragging = false;
+      slider.classList.remove("is-dragging", "is-clicking");
+    });
+
+    range.addEventListener("input", function () {
+      applySplit(Number(range.value), false);
+    });
+    range.addEventListener("change", function () {
+      applySplit(Number(range.value), false);
+    });
+    applySplit(Number(range.value), false);
   });
 
   // Logo click: if already on homepage, smoothly scroll to top

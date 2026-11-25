@@ -182,6 +182,54 @@ In **Settings → Notes & highlights**:
 - **Highlight context**: on reflowable books (EPUB, FB2, MOBI…), extracts the words right before and after your highlight and adds a `- **Context:** *…*` line below the quote.
 - **Link IDs on highlights**: appends a stable `^hl-xxxxxxxx` block ID at the end of each quote so Obsidian can link to or embed a single highlight.
 
+<figure class="doc-specimen">
+  <div class="doc-specimen-mat">
+    <div class="doc-specimen-head">
+      <span class="doc-specimen-label">Obsidian · Inline personal note</span>
+    </div>
+    <div class="doc-specimen-viewport">
+      <img src="../assets/obsidian/note-inline-context.webp" alt="Quote in Obsidian followed by an inline Note bullet with preserved nested sub-bullets and inline code" loading="lazy" decoding="async" />
+    </div>
+  </div>
+  <figcaption>Default <strong>Inline</strong> note format preserving nested bullets, bold text, and inline code right under the citation.</figcaption>
+</figure>
+
+<figure class="doc-specimen">
+  <div class="doc-specimen-mat">
+    <div class="doc-specimen-head">
+      <span class="doc-specimen-label">Obsidian · Personal note callout</span>
+    </div>
+    <div class="doc-specimen-viewport">
+      <img src="../assets/obsidian/note-callout.webp" alt="Quote in Obsidian followed by page and date metadata and a [!note] Personal note callout with nested bullets and inline code" loading="lazy" decoding="async" />
+    </div>
+  </div>
+  <figcaption>Multi-line personal note rendered with <strong>Callout ([!note])</strong> below the citation.</figcaption>
+</figure>
+
+<figure class="doc-specimen">
+  <div class="doc-specimen-mat">
+    <div class="doc-specimen-head">
+      <span class="doc-specimen-label">Obsidian · Footnotes format</span>
+    </div>
+    <div class="doc-specimen-viewport">
+      <img src="../assets/obsidian/footnote_obsidian.webp" alt="Obsidian note showing personal notes cleanly formatted as footnotes at the bottom of the file" loading="lazy" decoding="async" />
+    </div>
+  </div>
+  <figcaption>Personal notes grouped at the bottom of the document as clickable <code>[^1]</code> footnotes.</figcaption>
+</figure>
+
+<figure class="doc-specimen">
+  <div class="doc-specimen-mat">
+    <div class="doc-specimen-head">
+      <span class="doc-specimen-label">Obsidian · Sentence context</span>
+    </div>
+    <div class="doc-specimen-viewport">
+      <img src="../assets/obsidian/hightlights_context.webp" alt="Obsidian note showing sentence context extracted around the highlighted passage" loading="lazy" decoding="async" />
+    </div>
+  </div>
+  <figcaption>Surrounding words captured automatically via <code>- **Context:** *…*</code>.</figcaption>
+</figure>
+
 ## Frontmatter fields & custom properties
 
 In **Settings → Export → Frontmatter fields**, you can:
@@ -226,4 +274,4 @@ In **Settings → Export → Frontmatter fields**, you can:
 
 ## Per-book overrides
 
-Inside an open book, go to **Tomedown → Current book → Format & layout** to override export format, Markdown style, personal notes format, highlight details, chapter headings, context, book cover, page bookmarks, handwritten notes, or **Book page** settings for **that book only**. Tap **Reset to global style settings** anytime to return to your library defaults.
+Inside an open book, go to **Tomedown → Current book → Format & layout** to override any formatting option (**Export format**, **Markdown style**, **Notes & highlights**, **Book page**, **Section styles**, or **YAML frontmatter**) for **that book only**—every option defaults to *Follow global setting*. Tap **Reset to global style settings** anytime to return to your library defaults.

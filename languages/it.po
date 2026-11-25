@@ -1232,8 +1232,14 @@ msgstr "Contesto citazioni"
 msgid "Link IDs on highlights"
 msgstr "ID link sulle citazioni"
 
+msgid "Link IDs on highlights: %1"
+msgstr "ID link sulle citazioni: %1"
+
 msgid "Every highlight is special"
 msgstr "Ogni citazione è speciale"
+
+msgid "Every highlight is special: %1"
+msgstr "Ogni citazione è speciale: %1"
 
 msgid "Handwritten notes"
 msgstr "Note a mano libera"

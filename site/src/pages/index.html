@@ -60,7 +60,7 @@
 
             <figure class="showcase-note showcase-note-right" data-reveal>
               <figcaption class="margin-quote">
-                Make any highlight <mark>Special</mark>, anytime.
+               Your <mark>book summary</mark>, live stats, and export in one place
               </figcaption>
               <svg class="margin-arrow" viewBox="0 0 120 76" fill="none" aria-hidden="true">
                 <path class="arrow-shaft" pathLength="1" d="M 98 6 C 106 42, 74 64, 16 62" />
@@ -307,14 +307,14 @@
 
           <div class="spotlight" data-reveal>
             <div class="spotlight-tabs" role="tablist" aria-label="Showcase views">
-              <button type="button" class="spotlight-tab is-active" role="tab" aria-selected="true" id="tab-koreader">
+              <button type="button" class="spotlight-tab is-active" role="tab" aria-selected="true" aria-controls="spotlight-koreader" id="tab-koreader">
                 <span class="spotlight-tab-num" aria-hidden="true">01</span>
                 <span class="spotlight-tab-text">
                   <span class="spotlight-tab-title">On KOReader</span>
                   <span class="spotlight-tab-sub">Book summary &amp; Last export KPIs</span>
                 </span>
               </button>
-              <button type="button" class="spotlight-tab" role="tab" aria-selected="false" tabindex="-1" id="tab-obsidian">
+              <button type="button" class="spotlight-tab" role="tab" aria-selected="false" aria-controls="spotlight-obsidian" tabindex="-1" id="tab-obsidian">
                 <span class="spotlight-tab-num" aria-hidden="true">02</span>
                 <span class="spotlight-tab-text">
                   <span class="spotlight-tab-title">In Obsidian</span>
@@ -324,7 +324,7 @@
             </div>
 
             <div class="spotlight-stage">
-              <figure class="spotlight-slide is-active" id="spotlight-koreader" role="tabpanel" aria-labelledby="tab-koreader" tabindex="0">
+              <figure class="spotlight-slide is-active" id="spotlight-koreader" role="tabpanel" aria-labelledby="tab-koreader">
                 <div class="spotlight-slide-inner">
                   <div class="spotlight-frame">
                     <img
@@ -340,19 +340,19 @@
                 </div>
               </figure>
 
-              <figure class="spotlight-slide" id="spotlight-obsidian" role="tabpanel" aria-labelledby="tab-obsidian" hidden="until-found">
+              <figure class="spotlight-slide" id="spotlight-obsidian" role="tabpanel" aria-labelledby="tab-obsidian" aria-hidden="true">
                 <div class="spotlight-slide-inner">
                   <div class="spotlight-frame">
                     <img
                       src="{{base}}/assets/img/home-03-obsidian-vault-views.webp"
-                      alt="00 - Index.md library catalog and 00 - Reading Digest.md timeline inside Obsidian"
-                      width="1920"
-                      height="1198"
+                      alt="00 - Index.md library catalog and Book Note folio side by side inside Obsidian"
+                      width="2720"
+                      height="1720"
                       loading="lazy"
                       decoding="async"
                     />
                   </div>
-                  <figcaption class="spotlight-caption">Visual cover bookshelf in <code>00 - Index.md</code> alongside your chronological journal in <code>00 - Reading Digest.md</code>.</figcaption>
+                  <figcaption class="spotlight-caption">Visual cover bookshelf in <code>00 - Index.md</code> alongside your book folio inside Obsidian.</figcaption>
                 </div>
               </figure>
             </div>

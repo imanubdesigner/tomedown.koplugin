@@ -862,10 +862,12 @@ function M:buildIndexEntries(dir, export_records)
             else
                 local cover_leaf = book.base:match("([^/]+)$") or book.base
                 local cover_rel = Cover.relPath(cover_leaf, getCoversFolder())
-                local has_cover = lfs.attributes(dir .. "/" .. cover_rel, "mode") == "file"
-                if not has_cover and with_covers then
+                local wants_cover = getBookCovers(file)
+                local has_cover = wants_cover
+                    and (lfs.attributes(dir .. "/" .. cover_rel, "mode") == "file")
+                if not has_cover and with_covers and wants_cover then
                     -- backfill: books exported before the option was turned on
-                    has_cover = self:ensureCover(file, book.base, dir)
+                    has_cover = self:ensureCover(file, book.base, dir) ~= nil
                     if has_cover then
                         new_covers[#new_covers + 1] = dir .. "/" .. cover_rel
                     end
@@ -953,7 +955,7 @@ function M:buildDigestBooks()
                     link = book.base,
                     title = book.title,
                     author = book.author,
-                    has_block_ids = getSetting("block_ids", false)
+                    has_block_ids = shared.getBlockIds(file)
                         and getMarkdownStyle(file) ~= "standard",
                     annotations = book.annotations,
                 }
@@ -1225,12 +1227,12 @@ function M:runExport(files, opts)
                     local hw_written = (write_md and getIncludeHandwritten(file))
                         and Handwritten.ensureDrawings(book, dir, current_drawings) or {}
                     local is_std_book = (getMarkdownStyle(file) == "standard")
-                    local raw_marker = getSetting("special_marker", "callout")
+                    local raw_marker = shared.getSpecialMarker(file)
                     local render_opts = {
                         no_chapter_label = _("No chapter"),
                         cover = book_cover,
-                        callout = not is_std_book and getSetting("callout", false) or false,
-                        block_ids = not is_std_book and getSetting("block_ids", false) or false,
+                        callout = not is_std_book and shared.getEveryHighlightSpecial(file) or false,
+                        block_ids = not is_std_book and shared.getBlockIds(file) or false,
                         special_marker = (is_std_book and (raw_marker == "callout"
                             or raw_marker == "alert" or raw_marker == "highlight"
                             or raw_marker == "highlight_bold")) and "bold" or raw_marker,

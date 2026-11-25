@@ -107,9 +107,14 @@ and outside the block is yours
 <!-- tomedown:end body -->
 ```
 
-<figure class="doc-shot">
-  <div class="doc-shot-frame">
-    <img class="zoom-keep-notes" src="../assets/keep-my-notes-obsidian.webp" alt="Keep my notes in Obsidian: personal reflections written above the marker survive every export" />
+<figure class="doc-specimen">
+  <div class="doc-specimen-mat">
+    <div class="doc-specimen-head">
+      <span class="doc-specimen-label">Obsidian · Keep my notes workspace</span>
+    </div>
+    <div class="doc-specimen-viewport">
+      <img src="../assets/obsidian/keep-my-notes-obsidian.webp" alt="Keep my notes in Obsidian: personal reflections written above the marker survive every export" loading="lazy" decoding="async" />
+    </div>
   </div>
   <figcaption>Personal reflections written above the generated block survive every export without being overwritten.</figcaption>
 </figure>

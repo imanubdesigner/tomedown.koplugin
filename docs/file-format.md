@@ -85,9 +85,14 @@ tags:
 <!-- tomedown:end body -->
 ```
 
-<figure class="doc-shot">
-  <div class="doc-shot-frame">
-    <img class="zoom-modules" src="../assets/obsidian/book_modules_v210.webp" alt="Book note header modules in Obsidian: Reading dashboard, collapsible synopsis, tags, Overview callout, and Special highlights showcase" />
+<figure class="doc-specimen">
+  <div class="doc-specimen-mat">
+    <div class="doc-specimen-head">
+      <span class="doc-specimen-label">Obsidian · Book note header modules</span>
+    </div>
+    <div class="doc-specimen-viewport">
+      <img src="../assets/obsidian/book-header-modules.webp" alt="Book note header modules in Obsidian: Reading dashboard, collapsible synopsis, tags, Overview callout, and Special highlights showcase" loading="lazy" decoding="async" />
+    </div>
   </div>
   <figcaption>Book note header modules in Obsidian: Reading dashboard, collapsible synopsis, tags, Overview, and Special highlights showcase.</figcaption>
 </figure>
@@ -110,6 +115,18 @@ The sample above reflects an English interface. When running KOReader in Italian
 | `tags` | Combined list of `ebook`, `highlights`, book keywords, and tags assigned via the menu |
 | `tomedown_book_tags` | Internal ledger of tags managed by Tomedown, used during merges (see below) |
 | `cover` | Path to extracted cover image (e.g. `"covers/Author - Title.jpg"`), when enabled |
+
+<figure class="doc-specimen">
+  <div class="doc-specimen-mat">
+    <div class="doc-specimen-head">
+      <span class="doc-specimen-label">Obsidian · YAML frontmatter properties</span>
+    </div>
+    <div class="doc-specimen-viewport">
+      <img src="../assets/obsidian/book-properties-yaml.webp" alt="Obsidian document properties panel showing YAML frontmatter fields formatted with clean metadata types and tags" loading="lazy" decoding="async" />
+    </div>
+  </div>
+  <figcaption>Obsidian Properties view rendering Tomedown's structured YAML frontmatter (tags, status, progress, dates, and collections).</figcaption>
+</figure>
 
 ### Frontmatter tag normalization & ledger
 
@@ -174,6 +191,46 @@ Marking standout passages with **Special Highlight** in KOReader differentiates 
 
 Obsidian, Notion, and GitHub natively render `> [!highlight]` (or `> [!IMPORTANT]`) as styled alert callouts. For plaintext editors or readers that do not support callouts, choose **Bold** (`> **quote**`) or **Star & Bold** (`> ⭐ **quote**`).
 
+### Personal notes
+
+Personal reflections attached to a highlight in KOReader are formatted right below the citation according to *Settings → Notes & highlights → Personal notes format* (**Inline** smart indented bullet by default, **Callout (`[!note]`)** in Obsidian, or **Footnotes** `[^1]`):
+
+<figure class="doc-specimen">
+  <div class="doc-specimen-mat">
+    <div class="doc-specimen-head">
+      <span class="doc-specimen-label">Obsidian · Inline personal note</span>
+    </div>
+    <div class="doc-specimen-viewport">
+      <img src="../assets/obsidian/note-inline-context.webp" alt="Quote in Obsidian followed by an inline Note bullet with preserved nested sub-bullets and inline code" loading="lazy" decoding="async" />
+    </div>
+  </div>
+  <figcaption>Default <strong>Inline</strong> note format preserving nested bullets, emphasis, and inline code directly beneath the citation.</figcaption>
+</figure>
+
+<figure class="doc-specimen">
+  <div class="doc-specimen-mat">
+    <div class="doc-specimen-head">
+      <span class="doc-specimen-label">Obsidian · Personal note callout</span>
+    </div>
+    <div class="doc-specimen-viewport">
+      <img src="../assets/obsidian/note-callout.webp" alt="Quote in Obsidian followed by page and date metadata and a [!note] Personal note callout with nested bullets and inline code" loading="lazy" decoding="async" />
+    </div>
+  </div>
+  <figcaption>A highlight paired with <strong>Callout ([!note])</strong> in Obsidian, framing longer annotations inside a dedicated note callout.</figcaption>
+</figure>
+
+<figure class="doc-specimen">
+  <div class="doc-specimen-mat">
+    <div class="doc-specimen-head">
+      <span class="doc-specimen-label">Obsidian · Markdown footnotes</span>
+    </div>
+    <div class="doc-specimen-viewport">
+      <img src="../assets/obsidian/footnote_obsidian.webp" alt="Obsidian note showing personal notes cleanly formatted as footnotes at the bottom of the document" loading="lazy" decoding="async" />
+    </div>
+  </div>
+  <figcaption>Personal reflections gathered neatly at the foot of the document with clickable <code>[^1]</code> footnote references.</figcaption>
+</figure>
+
 ### Sentence context
 
 When *Settings → Notes & highlights → Highlight context* is enabled, Tomedown extracts the immediate sentence surroundings on reflowable documents:
@@ -184,6 +241,18 @@ When *Settings → Notes & highlights → Highlight context* is enabled, Tomedow
 - **p. 42** · 16 Nov 2026 | 10:30
   - **Context:** *…leading thought before the sentence. …following argument after.*
 ```
+
+<figure class="doc-specimen">
+  <div class="doc-specimen-mat">
+    <div class="doc-specimen-head">
+      <span class="doc-specimen-label">Obsidian · Sentence context</span>
+    </div>
+    <div class="doc-specimen-viewport">
+      <img src="../assets/obsidian/hightlights_context.webp" alt="Obsidian note showing extracted sentence context underneath a quote" loading="lazy" decoding="async" />
+    </div>
+  </div>
+  <figcaption>Surrounding sentence context captured automatically below the quote, preserving reading flow in Obsidian.</figcaption>
+</figure>
 
 <a id="links-to-a-single-highlight"></a>
 ## Granular link IDs (Block references)
@@ -197,6 +266,18 @@ With *Settings → Notes & highlights → Link IDs on highlights* enabled, every
 - **Jump to quote**: `[[Book title#^hl-4f2a9c31]]`
 - **Embed quote live**: `![[Book title#^hl-4f2a9c31]]`
 
+<figure class="doc-specimen">
+  <div class="doc-specimen-mat">
+    <div class="doc-specimen-head">
+      <span class="doc-specimen-label">Obsidian · Granular block ID (^hl-)</span>
+    </div>
+    <div class="doc-specimen-viewport doc-specimen-zoom-hl">
+      <img src="../assets/obsidian/hightlights_context.webp" alt="Obsidian note highlight ending with an immutable block reference anchor ^hl-30d0c4b7" loading="lazy" decoding="async" />
+    </div>
+  </div>
+  <figcaption>Granular <code>^hl-xxxxxxxx</code> block anchor generated at the end of the quote for instant deep linking and embeds.</figcaption>
+</figure>
+
 ## Standard Markdown vs Obsidian style
 
 By default, Tomedown uses **Obsidian** Markdown style (`Settings → Export → Markdown style → Obsidian`), enabling Obsidian wikilinks (`[[Book]]`), collapsible callouts (`> [!book]`, `> [!abstract]-`, `> [!highlight]-`, `> [!summary]`), and `^hl-` block IDs.
@@ -208,32 +289,34 @@ If you read your notes in **MarkText, Typora, VS Code, Zettlr, or GitHub**, swit
 - **Special highlights** fall back from Obsidian-only `[!highlight]` / `==text==` markers to universal `**bold**` (or `⭐ **text**` when *Star & Bold* is selected).
 - **Obsidian-only `^hl-` block IDs** are omitted so quotes stay clean outside Obsidian.
 
-<div class="spotlight doc-spotlight" role="region" aria-label="Markdown format comparison: Obsidian style vs Standard style">
-  <div class="spotlight-tabs" role="tablist" aria-label="Markdown output formats">
-    <button type="button" class="spotlight-tab is-active" role="tab" id="tab-fmt-obsidian" aria-selected="true" aria-controls="panel-fmt-obsidian">Obsidian style (callouts &amp; wikilinks)</button>
-    <button type="button" class="spotlight-tab" role="tab" id="tab-fmt-standard" aria-selected="false" tabindex="-1" aria-controls="panel-fmt-standard">Standard Markdown (headings &amp; links)</button>
-  </div>
-  <div class="spotlight-slide is-active" role="tabpanel" id="panel-fmt-obsidian" aria-labelledby="tab-fmt-obsidian">
-    <figure class="doc-shot">
-      <div class="doc-shot-frame">
-        <img src="../assets/obsidian/obsidian-markdown.webp" alt="Obsidian Markdown style: native collapsible callouts, book badges, and wikilinks" />
+<figure class="compare-figure">
+  <div class="compare-mat">
+    <div class="doc-specimen-head">
+      <span class="doc-specimen-label">Obsidian style vs. Standard Markdown</span>
+    </div>
+    <div class="compare-slider" data-compare style="--split: 50%;" data-edge="mid">
+      <div class="compare-pane compare-before">
+        <img src="../assets/obsidian/obsidian-markdown.webp" alt="Obsidian Markdown style: cover header, native Reading dashboard callout, collapsible Book synopsis callout, and tag pills" width="1200" height="950" loading="lazy" decoding="async" />
+        <span class="compare-badge compare-badge-left">Obsidian</span>
       </div>
-      <figcaption>Obsidian Markdown style: native collapsible callouts (<code>[!book]</code>, <code>[!summary]</code>, <code>[!highlight]</code>), wikilinks, and block IDs.</figcaption>
-    </figure>
-  </div>
-  <div class="spotlight-slide" role="tabpanel" id="panel-fmt-standard" aria-labelledby="tab-fmt-standard" hidden="until-found">
-    <figure class="doc-shot">
-      <div class="doc-shot-frame">
-        <img src="../assets/obsidian/standard-markdown.webp" alt="Standard Markdown style: clean Markdown headings and universal markdown links" />
+      <div class="compare-pane compare-after">
+        <img src="../assets/obsidian/standard-markdown.webp" alt="Standard Markdown style: cover header, clean Markdown headings, HTML details synopsis, and tag list" width="1200" height="950" loading="lazy" decoding="async" />
+        <span class="compare-badge compare-badge-right">Standard Markdown</span>
       </div>
-      <figcaption>Standard Markdown style: clean Markdown headings (<code>### Reading dashboard</code>), universal markdown links (<code>[Title](file.md)</code>), and clean formatting compatible with any reader.</figcaption>
-    </figure>
+      <div class="compare-divider" aria-hidden="true">
+        <span class="compare-handle">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 3 12 9 6"/><polyline points="15 6 21 12 15 18"/></svg>
+        </span>
+      </div>
+      <input type="range" class="compare-range" min="0" max="100" step="0.1" value="50" aria-label="Drag left or right to compare Obsidian style on the left with Standard Markdown on the right" />
+    </div>
   </div>
-</div>
+  <figcaption>Drag the central handle left or right to compare the same book note header (cover, Reading dashboard, Book synopsis, and tags) in <strong>Obsidian</strong> versus <strong>Standard Markdown</strong>.</figcaption>
+</figure>
 
 ## Covers
 
-With *Settings → Notes & highlights → Book page → Book cover* enabled, Tomedown extracts the cover image into your vault (`covers/` by default, configurable in *Settings → Export → File names & folders → Covers folder*) as an 800×1200 JPEG:
+With *Settings → Notes & highlights → Book page → Book cover* (or *Current book → Format & layout → Book page → Book cover*) enabled, Tomedown extracts the cover image into your vault (`covers/` by default, configurable in *Settings → Export → File names & folders → Covers folder*) as an 800×1200 JPEG:
 
 ```markdown
 ---
@@ -242,6 +325,18 @@ cover: "covers/Arthur Machen - The Three Impostors.jpg"
 
 <img src="covers/Arthur Machen - The Three Impostors.jpg" alt="" style="object-fit:contain;width:400px;height:533px">
 ```
+
+<figure class="doc-specimen is-fade-bottom">
+  <div class="doc-specimen-mat">
+    <div class="doc-specimen-head">
+      <span class="doc-specimen-label">Obsidian · Book cover &amp; Code badges style</span>
+    </div>
+    <div class="doc-specimen-viewport">
+      <img src="../assets/obsidian/cover_book.webp" alt="Book note header in Obsidian showing the extracted front cover artwork positioned above the book title and Code badges reading dashboard" loading="lazy" decoding="async" />
+    </div>
+  </div>
+  <figcaption>Extracted cover artwork rendered at the top of the book note above the title and reading modules (shown here with the <strong>Code badges</strong> section style).</figcaption>
+</figure>
 
 ## The index (`00 - Index.md`)
 
@@ -262,9 +357,14 @@ Under *Settings → Index & library*, you can enable modular components in `00 -
 - **Tag cloud**: generates an alphabetical directory of all tags across your library with book count badges.
 - **Tags display**: choose between **Show all**, **First 3 (+N)**, or **Collapsible (<details>)** to fold extensive tag lists behind an expandable HTML `<details>` summary.
 
-<figure class="doc-shot">
-  <div class="doc-shot-frame">
-    <img class="zoom-index" src="../assets/obsidian/index_v210_trophy_dashboard.webp" alt="00 - Index.md in Obsidian showing Library dashboard, Tag cloud, and Completed books trophy room" />
+<figure class="doc-specimen is-fade-bottom">
+  <div class="doc-specimen-mat">
+    <div class="doc-specimen-head">
+      <span class="doc-specimen-label">Obsidian · 00 - Index.md</span>
+    </div>
+    <div class="doc-specimen-viewport">
+      <img src="../assets/obsidian/index-dashboard-trophy.webp" alt="00 - Index.md in Obsidian showing Library dashboard, Tag cloud, and Completed books trophy room" loading="lazy" decoding="async" />
+    </div>
   </div>
   <figcaption><code>00 - Index.md</code> in Obsidian: Library dashboard, Tag cloud, and Completed books trophy room.</figcaption>
 </figure>

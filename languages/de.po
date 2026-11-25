@@ -1233,8 +1233,14 @@ msgstr "Markierungskontext"
 msgid "Link IDs on highlights"
 msgstr "Link-IDs bei Markierungen"
 
+msgid "Link IDs on highlights: %1"
+msgstr "Link-IDs bei Markierungen: %1"
+
 msgid "Every highlight is special"
 msgstr "Jede Markierung ist besonders"
+
+msgid "Every highlight is special: %1"
+msgstr "Jede Markierung ist besonders: %1"
 
 msgid "Handwritten notes"
 msgstr "Handschriftliche Notizen"

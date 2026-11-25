@@ -2,9 +2,14 @@
 
 **`00 - Reading Digest.md`** is a single chronological journal that brings together every highlight you take across all your books, grouped by day.
 
-<figure class="doc-shot">
-  <div class="doc-shot-frame">
-    <img class="zoom-digest" src="../assets/obsidian/reading_digest_v210.webp" alt="00 - Reading Digest.md rendered inside Obsidian showing literary date headings and clean quote times" />
+<figure class="doc-specimen">
+  <div class="doc-specimen-mat">
+    <div class="doc-specimen-head">
+      <span class="doc-specimen-label">Obsidian · 00 - Reading Digest.md</span>
+    </div>
+    <div class="doc-specimen-viewport">
+      <img src="../assets/obsidian/reading-digest-timeline.webp" alt="00 - Reading Digest.md rendered inside Obsidian showing literary date headings and clean quote times" loading="lazy" decoding="async" />
+    </div>
   </div>
   <figcaption><code>00 - Reading Digest.md</code> in Obsidian: literary day headings, horizontal book dividers, and clean quote times.</figcaption>
 </figure>

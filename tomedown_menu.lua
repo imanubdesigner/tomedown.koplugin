@@ -1405,6 +1405,7 @@ local function setBookExclusionState(file, value)
     end
     setBookExclusion(file, value)
     setSetting("index_dirty", true)
+    setSetting("digest_dirty", true)
     return true
 end
 
@@ -5150,6 +5151,22 @@ function M:genBookStyleMenu(file, target_table)
         }
     end
 
+    local function notifyMenuUpdated(touchmenu, tbl)
+        if not touchmenu or not touchmenu.updateItems then
+            return
+        end
+        if touchmenu.item_table == tbl then
+            touchmenu:updateItems()
+        elseif touchmenu.item_table_stack then
+            for _, entry in ipairs(touchmenu.item_table_stack) do
+                if entry == tbl or (type(entry) == "table" and entry.table == tbl) then
+                    touchmenu:updateItems()
+                    break
+                end
+            end
+        end
+    end
+
     rows[#rows + 1] = choiceRow(
         _("Export format: %1"),
         "export_format",
@@ -5185,135 +5202,276 @@ function M:genBookStyleMenu(file, target_table)
             },
             true,
             function(touchmenu)
+                setSetting("digest_dirty", true)
                 self:refreshBookStyleMenu(touchmenu, file, rows)
             end
         )
     end
 
-    local note_style_opts = {
-        { val = "inline", text = _("Inline") },
+    -- Group 1 in Current book -> Format & layout: Notes & highlights (100% parity with Global).
+    local nh_keys = {
+        "special_marker", "highlight_details", "highlight_context",
+        "block_ids", "callout", "note_style", "chapter_headings",
+        "include_bookmarks", "include_handwritten",
     }
-    if shared.getMarkdownStyle(file) ~= "standard" then
-        note_style_opts[#note_style_opts + 1] = { val = "callout", text = _("Callout ([!note])") }
-    end
-    note_style_opts[#note_style_opts + 1] = { val = "footnote", text = _("Footnotes") }
-    rows[#rows + 1] = choiceRow(
-        _("Personal notes format: %1"),
-        "note_style",
-        function(f)
-            local cur = getNoteStyle(f)
-            if shared.getMarkdownStyle(f) == "standard" and cur == "callout" then
-                return "inline"
+    local book_nh_rows = {}
+    local function buildBookNotesHighlightsMenu(target)
+        local nh_rows = target or {}
+        for i = #nh_rows, 1, -1 do
+            nh_rows[i] = nil
+        end
+        local function refreshNHMenu(touchmenu)
+            buildBookNotesHighlightsMenu(nh_rows)
+            notifyMenuUpdated(touchmenu, nh_rows)
+        end
+
+        local sp_row = choiceRow(
+            _("Special highlight style: %1"),
+            "special_marker",
+            function(f)
+                local cur = shared.getSpecialMarker(f)
+                if shared.getMarkdownStyle(f) == "standard"
+                        and (cur == "callout" or cur == "alert"
+                            or cur == "highlight" or cur == "highlight_bold") then
+                    return "bold"
+                end
+                return cur
+            end,
+            {
+                callout        = _("Callout ([!highlight])"),
+                alert          = _("Alert ([!IMPORTANT])"),
+                highlight      = _("Highlight (==text==)"),
+                highlight_bold = _("Highlight & Bold (==**text**==)"),
+                star_bold      = _("Star & Bold (⭐ **text**)"),
+                bold           = _("Bold (**text**)"),
+            },
+            {
+                {
+                    val = "callout",
+                    text = _("Callout ([!highlight])"),
+                    enabled_func = function()
+                        return shared.getMarkdownStyle(file) ~= "standard"
+                    end,
+                },
+                {
+                    val = "alert",
+                    text = _("Alert ([!IMPORTANT])"),
+                    enabled_func = function()
+                        return shared.getMarkdownStyle(file) ~= "standard"
+                    end,
+                },
+                {
+                    val = "highlight",
+                    text = _("Highlight (==text==)"),
+                    enabled_func = function()
+                        return shared.getMarkdownStyle(file) ~= "standard"
+                    end,
+                },
+                {
+                    val = "highlight_bold",
+                    text = _("Highlight & Bold (==**text**==)"),
+                    enabled_func = function()
+                        return shared.getMarkdownStyle(file) ~= "standard"
+                    end,
+                },
+                { val = "star_bold", text = _("Star & Bold (⭐ **text**)") },
+                {
+                    val = "bold",
+                    text = _("Bold (**text**)"),
+                    checked_func = function()
+                        local ov = getBookStyleOverride(file, "special_marker")
+                        return ov == "bold"
+                            or (shared.getMarkdownStyle(file) == "standard"
+                                and (ov == "callout" or ov == "alert"
+                                    or ov == "highlight" or ov == "highlight_bold"))
+                    end,
+                },
+            }
+        )
+        sp_row.enabled_func = function()
+            return shared.getMarkdownStyle(file) == "standard"
+                or not shared.getEveryHighlightSpecial(file)
+        end
+        nh_rows[#nh_rows + 1] = sp_row
+
+        nh_rows[#nh_rows + 1] = choiceRow(
+            _("Highlight details: %1"),
+            "highlight_details",
+            getHighlightDetails,
+            {
+                page_date = _("Page and date"),
+                page_only = _("Page only"),
+                date_only = _("Date only"),
+                none = _("None"),
+            },
+            {
+                { val = "page_date", text = _("Page and date") },
+                { val = "page_only", text = _("Page only") },
+                { val = "date_only", text = _("Date only") },
+                { val = "none",      text = _("None") },
+            }
+        )
+
+        nh_rows[#nh_rows + 1] = choiceRow(
+            _("Highlight context: %1"),
+            "highlight_context",
+            getHighlightContext,
+            {
+                [true] = _("Enabled"),
+                [false] = _("Disabled"),
+            },
+            {
+                { val = true,  text = _("Enabled") },
+                { val = false, text = _("Disabled") },
+            }
+        )
+
+        local block_ids_row = choiceRow(
+            _("Link IDs on highlights: %1"),
+            "block_ids",
+            function(f)
+                return shared.getMarkdownStyle(f) ~= "standard"
+                    and shared.getBlockIds(f) or false
+            end,
+            {
+                [true] = _("Enabled"),
+                [false] = _("Disabled"),
+            },
+            {
+                { val = true,  text = _("Enabled") },
+                { val = false, text = _("Disabled") },
+            },
+            false,
+            function()
+                setSetting("digest_dirty", true)
             end
-            return cur
+        )
+        block_ids_row.enabled_func = function()
+            return shared.getMarkdownStyle(file) ~= "standard"
+        end
+        nh_rows[#nh_rows + 1] = block_ids_row
+
+        local every_special_row = choiceRow(
+            _("Every highlight is special: %1"),
+            "callout",
+            function(f)
+                return shared.getMarkdownStyle(f) ~= "standard"
+                    and shared.getEveryHighlightSpecial(f) or false
+            end,
+            {
+                [true] = _("Enabled"),
+                [false] = _("Disabled"),
+            },
+            {
+                { val = true,  text = _("Enabled") },
+                { val = false, text = _("Disabled") },
+            },
+            true,
+            refreshNHMenu
+        )
+        every_special_row.enabled_func = function()
+            return shared.getMarkdownStyle(file) ~= "standard"
+        end
+        nh_rows[#nh_rows + 1] = every_special_row
+
+        local note_style_opts = {
+            { val = "inline", text = _("Inline") },
+        }
+        if shared.getMarkdownStyle(file) ~= "standard" then
+            note_style_opts[#note_style_opts + 1] = { val = "callout", text = _("Callout ([!note])") }
+        end
+        note_style_opts[#note_style_opts + 1] = { val = "footnote", text = _("Footnotes") }
+        nh_rows[#nh_rows + 1] = choiceRow(
+            _("Personal notes format: %1"),
+            "note_style",
+            function(f)
+                local cur = getNoteStyle(f)
+                if shared.getMarkdownStyle(f) == "standard" and cur == "callout" then
+                    return "inline"
+                end
+                return cur
+            end,
+            {
+                inline = _("Inline"),
+                callout = _("Callout ([!note])"),
+                footnote = _("Footnotes"),
+            },
+            note_style_opts
+        )
+
+        nh_rows[#nh_rows + 1] = choiceRow(
+            _("Chapter headings: %1"),
+            "chapter_headings",
+            getChapterHeadings,
+            {
+                h1 = _("Heading 1 (# Chapter)"),
+                h2 = _("Heading 2 (## Chapter)"),
+                h3 = _("Heading 3 (### Chapter)"),
+                none = _("None (continuous list)"),
+            },
+            {
+                { val = "h1",   text = _("Heading 1 (# Chapter)") },
+                { val = "h2",   text = _("Heading 2 (## Chapter)") },
+                { val = "h3",   text = _("Heading 3 (### Chapter)") },
+                { val = "none", text = _("None (continuous list)") },
+            }
+        )
+
+        nh_rows[#nh_rows + 1] = choiceRow(
+            _("Page bookmarks: %1"),
+            "include_bookmarks",
+            getIncludeBookmarks,
+            {
+                [true] = _("Enabled"),
+                [false] = _("Disabled"),
+            },
+            {
+                { val = true,  text = _("Enabled") },
+                { val = false, text = _("Disabled") },
+            }
+        )
+
+        nh_rows[#nh_rows + 1] = choiceRow(
+            _("Handwritten notes: %1"),
+            "include_handwritten",
+            shared.getIncludeHandwritten,
+            {
+                [true] = _("Enabled"),
+                [false] = _("Disabled"),
+            },
+            {
+                { val = true,  text = _("Enabled") },
+                { val = false, text = _("Disabled") },
+            },
+            false,
+            function()
+                setSetting("digest_dirty", true)
+            end
+        )
+
+        return nh_rows
+    end
+    buildBookNotesHighlightsMenu(book_nh_rows)
+    rows[#rows + 1] = {
+        key = "book_notes_highlights",
+        text = _("Notes & highlights"),
+        mandatory_func = function()
+            for __, k in ipairs(nh_keys) do
+                if getBookStyleOverride(file, k) ~= nil then
+                    return _("Custom")
+                end
+            end
+            return _("Global")
         end,
-        {
-            inline = _("Inline"),
-            callout = _("Callout ([!note])"),
-            footnote = _("Footnotes"),
-        },
-        note_style_opts
-    )
+        sub_item_table = book_nh_rows,
+        sub_item_table_func = function()
+            return buildBookNotesHighlightsMenu(book_nh_rows)
+        end,
+    }
 
-    rows[#rows + 1] = choiceRow(
-        _("Highlight details: %1"),
-        "highlight_details",
-        getHighlightDetails,
-        {
-            page_date = _("Page and date"),
-            page_only = _("Page only"),
-            date_only = _("Date only"),
-            none = _("None"),
-        },
-        {
-            { val = "page_date", text = _("Page and date") },
-            { val = "page_only", text = _("Page only") },
-            { val = "date_only", text = _("Date only") },
-            { val = "none",      text = _("None") },
-        }
-    )
-
-    rows[#rows + 1] = choiceRow(
-        _("Chapter headings: %1"),
-        "chapter_headings",
-        getChapterHeadings,
-        {
-            h1 = _("Heading 1 (# Chapter)"),
-            h2 = _("Heading 2 (## Chapter)"),
-            h3 = _("Heading 3 (### Chapter)"),
-            none = _("None (continuous list)"),
-        },
-        {
-            { val = "h1",   text = _("Heading 1 (# Chapter)") },
-            { val = "h2",   text = _("Heading 2 (## Chapter)") },
-            { val = "h3",   text = _("Heading 3 (### Chapter)") },
-            { val = "none", text = _("None (continuous list)") },
-        }
-    )
-
-    rows[#rows + 1] = choiceRow(
-        _("Highlight context: %1"),
-        "highlight_context",
-        getHighlightContext,
-        {
-            [true] = _("Enabled"),
-            [false] = _("Disabled"),
-        },
-        {
-            { val = true,  text = _("Enabled") },
-            { val = false, text = _("Disabled") },
-        },
-        true
-    )
-
-    rows[#rows + 1] = choiceRow(
-        _("Book cover: %1"),
-        "covers",
-        getBookCovers,
-        {
-            [true] = _("Enabled"),
-            [false] = _("Disabled"),
-        },
-        {
-            { val = true,  text = _("Enabled") },
-            { val = false, text = _("Disabled") },
-        }
-    )
-
-    rows[#rows + 1] = choiceRow(
-        _("Page bookmarks: %1"),
-        "include_bookmarks",
-        getIncludeBookmarks,
-        {
-            [true] = _("Enabled"),
-            [false] = _("Disabled"),
-        },
-        {
-            { val = true,  text = _("Enabled") },
-            { val = false, text = _("Disabled") },
-        }
-    )
-
-    rows[#rows + 1] = choiceRow(
-        _("Handwritten notes: %1"),
-        "include_handwritten",
-        shared.getIncludeHandwritten,
-        {
-            [true] = _("Enabled"),
-            [false] = _("Disabled"),
-        },
-        {
-            { val = true,  text = _("Enabled") },
-            { val = false, text = _("Disabled") },
-        },
-        true
-    )
-
-    -- Book page submenu in Current book -> Format & layout:
-    -- groups title in body, overview style, harmonize/diversify, and the
-    -- 4 book sections onto one single KOReader menu page.
+    -- Group 2 in Current book -> Format & layout: Book page (100% parity with Global).
     local book_card_keys = {
-        "book_heading", "overview_style", "harmonize_book_style",
+        "book_heading", "covers", "overview_style", "harmonize_book_style",
         "book_visual_style", "reading_dashboard", "dashboard_style",
         "book_synopsis", "synopsis_mode", "synopsis_style",
         "body_tags", "body_tags_style", "special_showcase", "showcase_style",
@@ -5326,9 +5484,7 @@ function M:genBookStyleMenu(file, target_table)
         end
         local function refreshCardMenu(touchmenu)
             buildBookCardMenu(c_rows)
-            if touchmenu and touchmenu.item_table == c_rows and touchmenu.updateItems then
-                touchmenu:updateItems()
-            end
+            notifyMenuUpdated(touchmenu, c_rows)
         end
         local visual_style_labels = {
             minimal   = _("Minimal symbols (● / ◐)"),
@@ -5354,6 +5510,20 @@ function M:genBookStyleMenu(file, target_table)
             _("Book title in body: %1"),
             "book_heading",
             shared.getBookHeading,
+            {
+                [true] = _("Enabled"),
+                [false] = _("Disabled"),
+            },
+            {
+                { val = true,  text = _("Enabled") },
+                { val = false, text = _("Disabled") },
+            }
+        )
+
+        c_rows[#c_rows + 1] = choiceRow(
+            _("Book cover: %1"),
+            "covers",
+            getBookCovers,
             {
                 [true] = _("Enabled"),
                 [false] = _("Disabled"),
@@ -5423,6 +5593,7 @@ function M:genBookStyleMenu(file, target_table)
             refreshCardMenu
         )
 
+        local syn_active = shared.getBookSynopsis(file)
         c_rows[#c_rows + 1] = choiceRow(
             _("Book synopsis: %1"),
             "book_synopsis",
@@ -5435,31 +5606,29 @@ function M:genBookStyleMenu(file, target_table)
                 { val = true,  text = _("Enabled") },
                 { val = false, text = _("Disabled") },
             },
-            false,
+            not syn_active,
             refreshCardMenu
         )
-        local syn_mode_row = choiceRow(
-            _("Synopsis display: %1"),
-            "synopsis_mode",
-            shared.getSynopsisMode,
-            {
-                collapsed       = _("Collapsed (foldable)"),
-                short           = _("Short preview (~300 chars)"),
-                collapsed_short = _("Collapsed + Short preview"),
-                expanded        = _("Expanded (full text)"),
-            },
-            {
-                { val = "collapsed",       text = _("Collapsed (foldable)") },
-                { val = "short",           text = _("Short preview (~300 chars)") },
-                { val = "collapsed_short", text = _("Collapsed + Short preview") },
-                { val = "expanded",        text = _("Expanded (full text)") },
-            },
-            true
-        )
-        syn_mode_row.enabled_func = function()
-            return shared.getBookSynopsis(file)
+        if syn_active then
+            c_rows[#c_rows + 1] = choiceRow(
+                _("Synopsis display: %1"),
+                "synopsis_mode",
+                shared.getSynopsisMode,
+                {
+                    collapsed       = _("Collapsed (foldable)"),
+                    short           = _("Short preview (~300 chars)"),
+                    collapsed_short = _("Collapsed + Short preview"),
+                    expanded        = _("Expanded (full text)"),
+                },
+                {
+                    { val = "collapsed",       text = _("Collapsed (foldable)") },
+                    { val = "short",           text = _("Short preview (~300 chars)") },
+                    { val = "collapsed_short", text = _("Collapsed + Short preview") },
+                    { val = "expanded",        text = _("Expanded (full text)") },
+                },
+                true
+            )
         end
-        c_rows[#c_rows + 1] = syn_mode_row
 
         c_rows[#c_rows + 1] = choiceRow(
             _("Tags in body: %1"),
@@ -5505,18 +5674,7 @@ function M:genBookStyleMenu(file, target_table)
             end
             local function refreshSecStyle(touchmenu)
                 buildBookSecStyleMenu(s_rows)
-                if touchmenu and touchmenu.updateItems then
-                    if touchmenu.item_table == s_rows then
-                        touchmenu:updateItems()
-                    elseif touchmenu.item_table_stack then
-                        for _, entry in ipairs(touchmenu.item_table_stack) do
-                            if entry == s_rows or (type(entry) == "table" and entry.table == s_rows) then
-                                touchmenu:updateItems()
-                                break
-                            end
-                        end
-                    end
-                end
+                notifyMenuUpdated(touchmenu, s_rows)
             end
             local book_harmonized = shared.getHarmonizeBookStyle(file)
             s_rows[#s_rows + 1] = choiceRow(
@@ -5538,13 +5696,7 @@ function M:genBookStyleMenu(file, target_table)
                 s_rows[#s_rows + 1] = makeBookVisualStyleRow(
                     _("Book style: %1"),
                     "book_visual_style",
-                    shared.getBookVisualStyle,
-                    function()
-                        return shared.getReadingDashboard(file)
-                            or shared.getBookSynopsis(file)
-                            or shared.getBodyTags(file)
-                            or shared.getSpecialShowcase(file)
-                    end
+                    shared.getBookVisualStyle
                 )
             else
                 s_rows[#s_rows + 1] = makeBookVisualStyleRow(
@@ -5605,6 +5757,7 @@ function M:genBookStyleMenu(file, target_table)
     rows[#rows + 1] = {
         key = "book_card_sections",
         text = _("Book page"),
+        separator = true,
         mandatory_func = function()
             for __, k in ipairs(book_card_keys) do
                 if getBookStyleOverride(file, k) ~= nil then
@@ -5667,6 +5820,7 @@ function M:genBookStyleMenu(file, target_table)
         end,
         callback = function(touchmenu)
             clearBookStyleOverrides(file)
+            setSetting("digest_dirty", true)
             self:invalidateExportHash(file)
             self:refreshBookStyleMenu(touchmenu, file)
         end,

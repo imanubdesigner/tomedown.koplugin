@@ -830,7 +830,9 @@ local function setFrontmatterKeyEnabled(key, enabled, file)
         else
             next_map[lk] = true
         end
-        setBookStyleOverride(file, "fm_hidden", next(next_map) and next_map or nil)
+        local store_val = next(next_map) and next_map
+            or (getFrontmatterHidden(nil) ~= nil and {} or nil)
+        setBookStyleOverride(file, "fm_hidden", store_val)
         return
     end
     local current = getSetting("fm_hidden", nil)
@@ -1167,6 +1169,36 @@ local function setHighlightContext(enabled)
     else
         setSetting("highlight_context", nil)
     end
+end
+
+local function getSpecialMarker(file)
+    local override = file and getBookStyleOverride(file, "special_marker")
+    local marker = override or getSetting("special_marker", "callout")
+    if marker == "alert" or marker == "highlight" or marker == "highlight_bold"
+            or marker == "star_bold" or marker == "bold" then
+        return marker
+    end
+    return "callout"
+end
+
+local function getBlockIds(file)
+    if file then
+        local override = getBookStyleOverride(file, "block_ids")
+        if override ~= nil then
+            return override == true
+        end
+    end
+    return getSetting("block_ids", false) == true
+end
+
+local function getEveryHighlightSpecial(file)
+    if file then
+        local override = getBookStyleOverride(file, "callout")
+        if override ~= nil then
+            return override == true
+        end
+    end
+    return getSetting("callout", false) == true
 end
 
 local function getExportFormat(file)
@@ -1669,6 +1701,9 @@ return {
     setChapterHeadings = setChapterHeadings,
     getHighlightContext = getHighlightContext,
     setHighlightContext = setHighlightContext,
+    getSpecialMarker = getSpecialMarker,
+    getBlockIds = getBlockIds,
+    getEveryHighlightSpecial = getEveryHighlightSpecial,
     getExportFormat = getExportFormat,
     setExportFormat = setExportFormat,
     getMarkdownStyle = getMarkdownStyle,

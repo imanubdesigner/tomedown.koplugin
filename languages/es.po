@@ -1233,8 +1233,14 @@ msgstr "Contexto de subrayados"
 msgid "Link IDs on highlights"
 msgstr "ID de enlace en subrayados"
 
+msgid "Link IDs on highlights: %1"
+msgstr "ID de enlace en subrayados: %1"
+
 msgid "Every highlight is special"
 msgstr "Cada subrayado es especial"
+
+msgid "Every highlight is special: %1"
+msgstr "Cada subrayado es especial: %1"
 
 msgid "Handwritten notes"
 msgstr "Notas manuscritas"

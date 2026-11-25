@@ -81,16 +81,25 @@ By default, every book follows your library-wide defaults configured in [Setting
 
 ### Available overrides
 
+Every row inside **Current book → Format & layout** displays `Global` on the right while following your library defaults, or `Custom` when pinned specifically for this book—and every submenu starts with **Follow global setting** so you can restore individual options at any time:
+
 1. **Export format**: Choose between **Follow global setting**, **Markdown (.md)**, **Plain text (.txt)**, or **Both (.md and .txt)**.
-2. **Markdown style**: Select **Follow global setting**, **Obsidian** (wikilinks, `[!...]` callouts, `^hl-` block IDs), or **Standard** (universal Markdown headings, `[Title](file.md)` links, no orphan block IDs).
-3. **Personal notes format**: Override between **Inline** (smart indented bullet under the quote), **Callout ([!note])** (dedicated note callout in Obsidian mode), or **Footnotes** (`[^1]` at the end of the file).
-4. **Highlight details**: Switch between **Page and date**, **Page only**, **Date only**, or **None**.
-5. **Chapter headings**: Override heading level (**Heading 1**, **Heading 2**, **Heading 3**, or **None**).
-6. **Highlight context**: Enable or disable sentence surrounding extraction for this book.
-7. **Book cover**: Override cover image extraction for this volume.
-8. **Page bookmarks & Handwritten notes**: Enable or disable bookmarks and stylus vector drawing extraction.
-9. **Book page ▸**: Override header layout, **Overview style**, **Reading dashboard**, **Book synopsis**, **Tags in body**, **Special highlights showcase**, **Section styles ▸** (*Harmonize book style* or per-section styles), and **YAML frontmatter** (**Frontmatter fields ▸**) for this title.
-10. **Reset to global style settings**: Removes all per-book overrides and restores global defaults with a single tap.
+2. **Markdown style**: Select **Follow global setting**, **Obsidian** (wikilinks, `[!...]` callouts, `^hl-` block IDs), or **Standard** (universal Markdown headings, `[Title](file.md)` links, no orphan block IDs). Hidden automatically when *Export format* is `.txt`.
+3. **Notes & highlights ▸**: Full per-book parity with [Settings → Notes & highlights](settings.md#notes-highlights):
+   - **Special highlight style**: Choose any of the 6 highlight styles (`[!highlight]`, `[!IMPORTANT]`, `==text==`, `==**text**==`, `⭐ **text**`, or `**text**`) for this volume.
+   - **Highlight details**: **Page and date**, **Page only**, **Date only**, or **None**.
+   - **Highlight context**: Enable or disable surrounding sentence extraction (ideal for study essays and textbooks).
+   - **Link IDs on highlights**: Enable or disable `^hl-xxxxxxxx` block anchors for this book alone.
+   - **Every highlight is special**: Render every highlight in this book with your special marker.
+   - **Personal notes format**: **Inline**, **Callout ([!note])**, or **Footnotes** (`[^1]`).
+   - **Chapter headings**: **Heading 1**, **Heading 2**, **Heading 3**, or **None (continuous list)**.
+   - **Page bookmarks & Handwritten notes**: Enable or disable bookmarks and stylus vector SVG extraction (`drawings/*.svg`) for this book.
+4. **Book page ▸**: Full per-book parity with [Settings → Notes & highlights → Book page](settings.md#book-page-section-styles):
+   - **Book title in body**, **Book cover**, and **Overview style** (`Inline / Heading`, `Classic blockquote`, `Callout ([!summary])`, or `Table`).
+   - **Reading dashboard**, **Book synopsis** (revealing **Synopsis display** only while active—so you can disable the synopsis on an academic essay while keeping it on novels), **Tags in body**, and **Special highlights showcase**.
+   - **Section styles ▸**: Override **Harmonize book styles** and **Book style** (*Minimal symbols*, *Emoji*, *Code badges*, or *Editorial*), or customize individual module styles for this book.
+5. **YAML frontmatter & Frontmatter fields ▸**: Enable or disable YAML frontmatter, hide individual YAML keys, add book-specific custom fields (e.g. `course: Philosophy`), or set a custom key order.
+6. **Reset to global style settings**: Removes all per-book overrides and restores global defaults with a single tap.
 
 ### Selecting Markdown style for a book
 

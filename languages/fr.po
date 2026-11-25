@@ -1233,8 +1233,14 @@ msgstr "Contexte des surlignages"
 msgid "Link IDs on highlights"
 msgstr "ID de lien sur les surlignages"
 
+msgid "Link IDs on highlights: %1"
+msgstr "ID de lien sur les surlignages : %1"
+
 msgid "Every highlight is special"
 msgstr "Chaque surlignage est spécial"
+
+msgid "Every highlight is special: %1"
+msgstr "Chaque surlignage est spécial : %1"
 
 msgid "Handwritten notes"
 msgstr "Notes manuscrites"
