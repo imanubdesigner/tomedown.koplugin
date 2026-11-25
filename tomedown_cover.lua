@@ -24,6 +24,11 @@ local cover = {}
 -- export box: the shorter side wins, the aspect ratio is preserved
 local MAX_W, MAX_H = 800, 1200
 local JPEG_QUALITY = 50
+-- CommonMark has no image dimension syntax (![alt](src) renders at 1:1 natural
+-- pixel width in Zettlr/Logseq/Pandoc), so pure CommonMark exports a compact
+-- book-sized cover at higher JPEG quality to stay crisp without HTML <img>.
+local CM_MAX_W, CM_MAX_H = 260, 390
+local CM_JPEG_QUALITY = 75
 
 --- The relative path a cover occupies inside the vault (POSIX, the
 -- markdown always uses "/" even on Windows KOReader builds).
@@ -51,8 +56,9 @@ end
 -- @string file the book's file path
 -- @string path absolute target .jpg path
 -- @treturn boolean true when the file is there after the call
-function cover.extract(document, file, path)
-    if lfs.attributes(path, "mode") == "file" then
+function cover.extract(document, file, path, opts)
+    opts = opts or {}
+    if not opts.force and lfs.attributes(path, "mode") == "file" then
         return true
     end
     local saved_has_color_screen = Device.hasColorScreen
@@ -76,7 +82,10 @@ function cover.extract(document, file, path)
         pcall(bb.free, bb)
         return false
     end
-    local scale = math.min(MAX_W / w, MAX_H / h, 1)
+    local max_w = opts.compact and CM_MAX_W or (opts.max_w or MAX_W)
+    local max_h = opts.compact and CM_MAX_H or (opts.max_h or MAX_H)
+    local quality = opts.compact and CM_JPEG_QUALITY or (opts.quality or JPEG_QUALITY)
+    local scale = math.min(max_w / w, max_h / h, 1)
     if scale < 1 then
         -- lazy: the real module pulls in ffi/mupdf, the tests only load
         -- their stub when a scaled cover is actually written
@@ -94,7 +103,7 @@ function cover.extract(document, file, path)
     if target_dir then
         util.makePath(target_dir)
     end
-    local ok_w = bb:writeToFile(path, "jpg", JPEG_QUALITY, false)
+    local ok_w = bb:writeToFile(path, "jpg", quality, false)
     pcall(bb.free, bb)
     if not ok_w then
         logger.err("tomedown: cannot write cover", path)

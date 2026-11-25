@@ -377,12 +377,13 @@ local function isPlainSingleLineNote(note_lines)
     return true
 end
 
-local function renderInlineNote(add, note_lines, has_top_bullet)
+local function renderInlineNote(add, note_lines, has_top_bullet, em_char)
+    local em = em_char or "*"
     local head = has_top_bullet and "  - " or "- "
     local pad = has_top_bullet and "    " or "  "
     local label = "**" .. _("Note") .. "**"
     if isPlainSingleLineNote(note_lines) then
-        add(head .. label .. " — *" .. note_lines[1] .. "*")
+        add(head .. label .. " — " .. em .. note_lines[1] .. em)
         return
     end
     local first_line = note_lines[1] or ""
@@ -616,7 +617,9 @@ function render.buildBookMd(book, opts)
         star_bold = true,
         bold = true,
     }
-    local is_std = (opts.markdown_style == "standard")
+    local is_pure_cm = (opts.markdown_style == "commonmark")
+    local is_std = (opts.markdown_style == "standard" or is_pure_cm)
+    local em = is_pure_cm and "_" or "*"
     local marker_global = opts.special_marker
     if not valid_markers[marker_global] then
         marker_global = "callout"
@@ -843,7 +846,7 @@ function render.buildBookMd(book, opts)
     else
         add("# " .. tostring(book.title or ""))
         if book.author and tostring(book.author) ~= "" and tostring(book.author) ~= "N/A" then
-            add("*" .. tostring(book.author) .. "*")
+            add(em .. tostring(book.author) .. em)
         end
     end
     -- one generated block per book file: from the rule down to the last
@@ -871,7 +874,10 @@ function render.buildBookMd(book, opts)
 
     if opts.cover then
         add("")
-        if is_std then
+        if is_pure_cm then
+            local alt = render.alias(book.title or _("Cover"))
+            add("![" .. alt .. "](" .. render.encodeLinkTarget(opts.cover) .. ")")
+        elseif is_std then
             local csrc = tostring(opts.cover):gsub('"', "&quot;")
             add('<p align="center"><img src="' .. csrc .. '" alt="" width="240"></p>')
         else
@@ -891,11 +897,11 @@ function render.buildBookMd(book, opts)
             sub_parts[#sub_parts + 1] = (_("by %1"):gsub("%%1", tostring(book.author)))
         end
         if book.series and tostring(book.series) ~= "" then
-            local s = "*" .. tostring(book.series)
+            local s = em .. tostring(book.series)
             if book.series_index ~= nil and tostring(book.series_index) ~= "" then
                 s = s .. " (#" .. tostring(book.series_index) .. ")"
             end
-            s = s .. "*"
+            s = s .. em
             sub_parts[#sub_parts + 1] = s
         end
         if #sub_parts > 0 then
@@ -1051,7 +1057,7 @@ function render.buildBookMd(book, opts)
             end
             add("")
             if is_std then
-                if is_folded then
+                if is_folded and not is_pure_cm then
                     local sum_html = syn_style == "badges"
                         and ("<code>" .. syn_title:upper() .. "</code>")
                         or ("<b>" .. syn_heading .. "</b>")
@@ -1106,11 +1112,11 @@ function render.buildBookMd(book, opts)
             if btags_style == "badges" then
                 add("`" .. table.concat(btags, "` `") .. "`")
             elseif btags_style == "editorial" then
-                add("*" .. _("Tags") .. ":* " .. table.concat(btags, " · "))
+                add(em .. _("Tags") .. ":" .. em .. " " .. table.concat(btags, " · "))
             elseif btags_style == "emoji" then
                 add("🏷️ " .. table.concat(btags, " · "))
             else
-                add("▪ *" .. table.concat(btags, "* · *") .. "*")
+                add("▪ " .. em .. table.concat(btags, em .. " · " .. em) .. em)
             end
             has_card_extras = true
         end
@@ -1212,7 +1218,7 @@ function render.buildBookMd(book, opts)
                         add("> — [[#^" .. a.id .. "|→]]")
                     end
                 elseif #ref > 0 then
-                    add("> — *" .. table.concat(ref, " · ") .. "*")
+                    add("> — " .. em .. table.concat(ref, " · ") .. em)
                 end
             end
         end
@@ -1385,7 +1391,7 @@ function render.buildBookMd(book, opts)
                 end
                 has_top_bullet = true
                 if ctx_line then
-                    add("  - **" .. _("Context:") .. "** *" .. ctx_line .. "*")
+                    add("  - **" .. _("Context:") .. "** " .. em .. ctx_line .. em)
                 end
             elseif use_note_callout and note_lines then
                 if #meta > 0 or ctx_line then
@@ -1394,7 +1400,7 @@ function render.buildBookMd(book, opts)
                     end
                     if ctx_line then
                         local chead = has_top_bullet and "  - " or "- "
-                        add(chead .. "**" .. _("Context:") .. "** *" .. ctx_line .. "*")
+                        add(chead .. "**" .. _("Context:") .. "** " .. em .. ctx_line .. em)
                     end
                 end
                 renderCalloutNote(add, note_lines)
@@ -1404,11 +1410,11 @@ function render.buildBookMd(book, opts)
                 end
                 if ctx_line then
                     local chead = has_top_bullet and "  - " or "- "
-                    add(chead .. "**" .. _("Context:") .. "** *" .. ctx_line .. "*")
+                    add(chead .. "**" .. _("Context:") .. "** " .. em .. ctx_line .. em)
                     has_top_bullet = true
                 end
                 if note_lines then
-                    renderInlineNote(add, note_lines, has_top_bullet)
+                    renderInlineNote(add, note_lines, has_top_bullet, em)
                 elseif not has_top_bullet then
                     add("- …")
                 end
@@ -1561,7 +1567,9 @@ function render.buildIndexMd(books, opts)
         stats = stats .. " · **★ "
             .. (_("%1 special"):gsub("%%1", tostring(total_special))) .. "**"
     end
-    local idx_std = (opts.markdown_style == "standard")
+    local idx_pure_cm = (opts.markdown_style == "commonmark")
+    local idx_std = (opts.markdown_style == "standard" or idx_pure_cm)
+    local idx_em = idx_pure_cm and "_" or "*"
     local idx_style = opts.index_style
     if idx_style ~= "emoji" and idx_style ~= "badges" and idx_style ~= "editorial" then
         idx_style = "minimal"
@@ -1673,9 +1681,9 @@ function render.buildIndexMd(books, opts)
                     add("> " .. table.concat(cloud_parts, " "))
                 elseif idx_style == "editorial" then
                     for __, item in ipairs(sorted_tags) do
-                        cloud_parts[#cloud_parts + 1] = "#" .. item.name .. " *(" .. tostring(item.count) .. ")*"
+                        cloud_parts[#cloud_parts + 1] = "#" .. item.name .. " " .. idx_em .. "(" .. tostring(item.count) .. ")" .. idx_em
                     end
-                    add("> *" .. _("Tags") .. ":* " .. table.concat(cloud_parts, " · "))
+                    add("> " .. idx_em .. _("Tags") .. ":" .. idx_em .. " " .. table.concat(cloud_parts, " · "))
                 elseif idx_style == "emoji" then
                     for __, item in ipairs(sorted_tags) do
                         cloud_parts[#cloud_parts + 1] = "#" .. item.name .. " (" .. tostring(item.count) .. ")"
@@ -1683,7 +1691,7 @@ function render.buildIndexMd(books, opts)
                     add("> 🏷️ " .. table.concat(cloud_parts, " · "))
                 else
                     for __, item in ipairs(sorted_tags) do
-                        cloud_parts[#cloud_parts + 1] = "*#" .. item.name .. "* (" .. tostring(item.count) .. ")"
+                        cloud_parts[#cloud_parts + 1] = idx_em .. "#" .. item.name .. idx_em .. " (" .. tostring(item.count) .. ")"
                     end
                     add("> ▪ " .. table.concat(cloud_parts, " · "))
                 end
@@ -1858,9 +1866,9 @@ function render.buildIndexMd(books, opts)
             if (mode == "first_3" or mode == "collapsible") and #pills > 3 then
                 local head = { pills[1], pills[2], pills[3] }
                 local extra = #pills - 3
-                return "*" .. table.concat(head, " ") .. " +" .. tostring(extra) .. "*"
+                return idx_em .. table.concat(head, " ") .. " +" .. tostring(extra) .. idx_em
             end
-            return "*" .. table.concat(pills, " ") .. "*"
+            return idx_em .. table.concat(pills, " ") .. idx_em
         end
         if mode == "first_3" and #pills > 3 then
             local head = { pills[1], pills[2], pills[3] }
@@ -1918,14 +1926,14 @@ function render.buildIndexMd(books, opts)
             return pct
         end
         if bar and pct then
-            return bar .. "&nbsp;" .. pct
+            return bar .. (idx_pure_cm and " " or "&nbsp;") .. pct
         end
         return bar or pct
     end
 
     local function addTable(list, with_series)
         if idx_std then
-            local has_covers = with_covers and any_filled(list, "cover")
+            local has_covers = (not idx_pure_cm) and with_covers and any_filled(list, "cover")
             if has_covers then
                 add("| | |")
                 add("|:---|:---|")
@@ -1939,7 +1947,7 @@ function render.buildIndexMd(books, opts)
                     if has_covers then
                         a = a:gsub("|", "\\|")
                     end
-                    head_meta[#head_meta + 1] = "*" .. a .. "*"
+                    head_meta[#head_meta + 1] = idx_em .. a .. idx_em
                 end
                 if filled(b.series) then
                     local series = tostring(b.series):gsub("[\r\n]+", " ")
@@ -1949,7 +1957,7 @@ function render.buildIndexMd(books, opts)
                     if has_covers then
                         series = series:gsub("|", "\\|")
                     end
-                    head_meta[#head_meta + 1] = "*" .. series .. "*"
+                    head_meta[#head_meta + 1] = idx_em .. series .. idx_em
                 end
                 if #head_meta > 0 then
                     head = head .. " — " .. table.concat(head_meta, " · ")
@@ -2006,7 +2014,21 @@ function render.buildIndexMd(books, opts)
                     body_parts[#body_parts + 1] = tag_md
                 end
 
-                if has_covers then
+                if idx_pure_cm then
+                    if i > 1 then
+                        add("")
+                        add("---")
+                        add("")
+                    end
+                    add("- " .. head)
+                    if with_covers and filled(b.cover) then
+                        local calt = render.alias(b.title or _("Cover"))
+                        add("  - ![" .. calt .. "](" .. render.encodeLinkTarget(b.cover) .. ")")
+                    end
+                    for __, bp in ipairs(body_parts) do
+                        add("  - " .. bp)
+                    end
+                elseif has_covers then
                     local cover_cell = filled(b.cover)
                         and string.format('<img src="%s" alt="" width="120">',
                             tostring(b.cover):gsub('"', "&quot;"))
@@ -2313,7 +2335,7 @@ function render.buildDigestMd(books, opts)
     local total_special = 0
     for __, b in ipairs(books or {}) do
         local anns = b.annotations or {}
-        local book_wants_ids = (opts.markdown_style ~= "standard")
+        local book_wants_ids = (opts.markdown_style ~= "standard" and opts.markdown_style ~= "commonmark")
             and ((opts.block_ids and b.has_block_ids ~= false) or b.has_block_ids == true)
         if #anns > 0 then
             local bkey = tostring(b.link or b.title or "")
@@ -2398,9 +2420,11 @@ function render.buildDigestMd(books, opts)
     end
     add("---")
     add("")
+    local dig_pure_cm = (opts.markdown_style == "commonmark")
+    local dig_em = dig_pure_cm and "_" or "*"
     add("# " .. title)
     add("")
-    add('> *"' .. _("Welcome to the quiet space where authors' thoughts linger, and your own reflections take shape.") .. '"*')
+    add('> ' .. dig_em .. '"' .. _("Welcome to the quiet space where authors' thoughts linger, and your own reflections take shape.") .. '"' .. dig_em)
     add("")
     add("---")
     add("")
@@ -2443,7 +2467,7 @@ function render.buildDigestMd(books, opts)
             stats = stats .. " · **★ " .. sp_str .. "**"
         end
     end
-    local digest_std = (opts.markdown_style == "standard")
+    local digest_std = (opts.markdown_style == "standard" or dig_pure_cm)
     local idx_back_link
     if opts.with_index == true then
         idx_back_link = render.bookLink("00 - Index", "← " .. _("Book index"),
@@ -2485,7 +2509,9 @@ function render.buildDigestMd(books, opts)
         star_bold = true,
         bold = true,
     }
-    local is_std = (opts.markdown_style == "standard")
+    local is_pure_cm = (opts.markdown_style == "commonmark")
+    local is_std = (opts.markdown_style == "standard" or is_pure_cm)
+    local em = is_pure_cm and "_" or "*"
     local marker_global = opts.special_marker
     if not valid_markers[marker_global] then
         marker_global = "callout"
@@ -2531,7 +2557,7 @@ function render.buildDigestMd(books, opts)
                 digest_std and "markdown" or opts.index_links, false)
             local book_pfx = digest_style == "emoji" and "📖 " or ""
             if item.book_author and tostring(item.book_author) ~= "" then
-                add("### " .. book_pfx .. link .. " — *" .. tostring(item.book_author) .. "*")
+                add("### " .. book_pfx .. link .. " — " .. dig_em .. tostring(item.book_author) .. dig_em)
             else
                 add("### " .. book_pfx .. link)
             end
@@ -2616,7 +2642,7 @@ function render.buildDigestMd(books, opts)
             meta[#meta + 1] = "[[" .. tostring(item.book_link) .. "#^" .. item.id .. "|" .. loc_label .. "]]"
         else
             if item.chapter and tostring(item.chapter) ~= "" then
-                meta[#meta + 1] = "*" .. tostring(item.chapter) .. "*"
+                meta[#meta + 1] = dig_em .. tostring(item.chapter) .. dig_em
             end
             if item.page and tostring(item.page) ~= "" then
                 meta[#meta + 1] = "**p. " .. tostring(item.page) .. "**"
@@ -2665,7 +2691,7 @@ function render.buildDigestMd(books, opts)
                 add("- " .. table.concat(meta, " · "))
             end
             if note_lines then
-                renderInlineNote(add, note_lines, #meta > 0)
+                renderInlineNote(add, note_lines, #meta > 0, dig_em)
             elseif #meta == 0 then
                 add("- …")
             end

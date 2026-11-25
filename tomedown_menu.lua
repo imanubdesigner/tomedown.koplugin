@@ -2006,8 +2006,9 @@ function M:genSettingsMenu()
             {
                 text_func = function()
                     local labels = {
-                        obsidian = _("Obsidian"),
-                        standard = _("Standard"),
+                        obsidian   = _("Obsidian"),
+                        standard   = _("Standard"),
+                        commonmark = _("CommonMark"),
                     }
                     local current = shared.getMarkdownStyle()
                     return T(_("Markdown style: %1"), labels[current] or labels.obsidian)
@@ -2037,7 +2038,7 @@ function M:genSettingsMenu()
                         end,
                     },
                     {
-                        text = _("Standard"),
+                        text = _("Standard (GitHub / HTML)"),
                         radio = true,
                         keep_menu_open = true,
                         checked_func = function()
@@ -2046,6 +2047,20 @@ function M:genSettingsMenu()
                         callback = function()
                             if shared.getMarkdownStyle() ~= "standard" then
                                 shared.setMarkdownStyle("standard")
+                                self:invalidateExportHashes()
+                            end
+                        end,
+                    },
+                    {
+                        text = _("CommonMark (no HTML)"),
+                        radio = true,
+                        keep_menu_open = true,
+                        checked_func = function()
+                            return shared.getMarkdownStyle() == "commonmark"
+                        end,
+                        callback = function()
+                            if shared.getMarkdownStyle() ~= "commonmark" then
+                                shared.setMarkdownStyle("commonmark")
                                 self:invalidateExportHashes()
                             end
                         end,
@@ -2264,13 +2279,13 @@ function M:genSettingsMenu()
                     tags_column = _("Tags column"),
                     tags_column_compact = _("Tags column, compact"),
                 }
-                local current = shared.getMarkdownStyle() == "standard"
+                local current = not shared.isObsidianStyle()
                     and "tags_below" or getSetting("index_layout", "tags_below")
                 return T(_("Index layout: %1"),
                     labels[current] or labels.tags_below)
             end,
             enabled_func = function()
-                return getSetting("with_index", true) and shared.getMarkdownStyle() ~= "standard"
+                return getSetting("with_index", true) and shared.isObsidianStyle()
             end,
             sub_item_table = {
                 {
@@ -2314,13 +2329,13 @@ function M:genSettingsMenu()
                     wikilink = _("Obsidian wikilink"),
                     markdown = _("Standard Markdown"),
                 }
-                local current = shared.getMarkdownStyle() == "standard"
+                local current = not shared.isObsidianStyle()
                     and "markdown" or getIndexLinks()
                 return T(_("Index links: %1"),
                     labels[current] or labels.wikilink)
             end,
             enabled_func = function()
-                return getSetting("with_index", true) and shared.getMarkdownStyle() ~= "standard"
+                return getSetting("with_index", true) and shared.isObsidianStyle()
             end,
             sub_item_table = {
                 {
@@ -2368,7 +2383,7 @@ function M:genSettingsMenu()
                     collapsible = _("Collapsible (<details>)"),
                 }
                 local current = shared.getIndexTagsMode()
-                if shared.getMarkdownStyle() == "standard" and current == "collapsible" then
+                if not shared.isObsidianStyle() and current == "collapsible" then
                     current = "first_3"
                 end
                 return T(_("Tags display: %1"),
@@ -2379,7 +2394,7 @@ function M:genSettingsMenu()
             end,
             separator = true,
             sub_item_table_func = function()
-                local is_std = shared.getMarkdownStyle() == "standard"
+                local is_std = not shared.isObsidianStyle()
                 local items = {
                     {
                         text = _("Show all"),
@@ -2578,7 +2593,7 @@ function M:genSettingsMenu()
                     bold = _("Bold (**text**)"),
                 }
                 local cur = getSetting("special_marker", "callout")
-                if shared.getMarkdownStyle() == "standard"
+                if not shared.isObsidianStyle()
                         and (cur == "callout" or cur == "alert"
                             or cur == "highlight" or cur == "highlight_bold") then
                     cur = "bold"
@@ -2587,7 +2602,7 @@ function M:genSettingsMenu()
                     labels[cur] or labels.callout)
             end,
             enabled_func = function()
-                return shared.getMarkdownStyle() == "standard" or not getSetting("callout", false)
+                return not shared.isObsidianStyle() or not getSetting("callout", false)
             end,
             keep_menu_open = true,
             sub_item_table = {
@@ -2595,10 +2610,10 @@ function M:genSettingsMenu()
                     text = _("Callout ([!highlight])"),
                     radio = true,
                     enabled_func = function()
-                        return shared.getMarkdownStyle() ~= "standard"
+                        return shared.isObsidianStyle()
                     end,
                     checked_func = function()
-                        return shared.getMarkdownStyle() ~= "standard"
+                        return shared.isObsidianStyle()
                             and getSetting("special_marker", "callout") == "callout"
                     end,
                     keep_menu_open = true,
@@ -2611,10 +2626,10 @@ function M:genSettingsMenu()
                     text = _("Alert ([!IMPORTANT])"),
                     radio = true,
                     enabled_func = function()
-                        return shared.getMarkdownStyle() ~= "standard"
+                        return shared.isObsidianStyle()
                     end,
                     checked_func = function()
-                        return shared.getMarkdownStyle() ~= "standard"
+                        return shared.isObsidianStyle()
                             and getSetting("special_marker", "callout") == "alert"
                     end,
                     keep_menu_open = true,
@@ -2627,10 +2642,10 @@ function M:genSettingsMenu()
                     text = _("Highlight (==text==)"),
                     radio = true,
                     enabled_func = function()
-                        return shared.getMarkdownStyle() ~= "standard"
+                        return shared.isObsidianStyle()
                     end,
                     checked_func = function()
-                        return shared.getMarkdownStyle() ~= "standard"
+                        return shared.isObsidianStyle()
                             and getSetting("special_marker", "callout") == "highlight"
                     end,
                     keep_menu_open = true,
@@ -2643,10 +2658,10 @@ function M:genSettingsMenu()
                     text = _("Highlight & Bold (==**text**==)"),
                     radio = true,
                     enabled_func = function()
-                        return shared.getMarkdownStyle() ~= "standard"
+                        return shared.isObsidianStyle()
                     end,
                     checked_func = function()
-                        return shared.getMarkdownStyle() ~= "standard"
+                        return shared.isObsidianStyle()
                             and getSetting("special_marker", "callout") == "highlight_bold"
                     end,
                     keep_menu_open = true,
@@ -2673,7 +2688,7 @@ function M:genSettingsMenu()
                     checked_func = function()
                         local cur = getSetting("special_marker", "callout")
                         return cur == "bold"
-                            or (shared.getMarkdownStyle() == "standard"
+                            or (not shared.isObsidianStyle()
                                 and (cur == "callout" or cur == "alert"
                                     or cur == "highlight" or cur == "highlight_bold"))
                     end,
@@ -2770,10 +2785,10 @@ function M:genSettingsMenu()
         {
             text = _("Link IDs on highlights"),
             enabled_func = function()
-                return shared.getMarkdownStyle() ~= "standard"
+                return shared.isObsidianStyle()
             end,
             checked_func = function()
-                return shared.getMarkdownStyle() ~= "standard" and getSetting("block_ids", false)
+                return shared.isObsidianStyle() and getSetting("block_ids", false)
             end,
             keep_menu_open = true,
             callback = function()
@@ -2785,10 +2800,10 @@ function M:genSettingsMenu()
             text = _("Every highlight is special"),
             separator = true,
             enabled_func = function()
-                return shared.getMarkdownStyle() ~= "standard"
+                return shared.isObsidianStyle()
             end,
             checked_func = function()
-                return shared.getMarkdownStyle() ~= "standard" and getSetting("callout", false)
+                return shared.isObsidianStyle() and getSetting("callout", false)
             end,
             keep_menu_open = true,
             callback = function()
@@ -2804,7 +2819,7 @@ function M:genSettingsMenu()
                     footnote = _("Footnotes"),
                 }
                 local current = getNoteStyle()
-                if shared.getMarkdownStyle() == "standard" and current == "callout" then
+                if not shared.isObsidianStyle() and current == "callout" then
                     current = "inline"
                 end
                 return T(_("Personal notes format: %1"),
@@ -2818,7 +2833,7 @@ function M:genSettingsMenu()
                     checked_func = function()
                         local cur = getNoteStyle()
                         return cur == "inline"
-                            or (shared.getMarkdownStyle() == "standard" and cur == "callout")
+                            or (not shared.isObsidianStyle() and cur == "callout")
                     end,
                     callback = function()
                         if getNoteStyle() ~= "inline" then
@@ -2833,10 +2848,10 @@ function M:genSettingsMenu()
                     radio = true,
                     keep_menu_open = true,
                     enabled_func = function()
-                        return shared.getMarkdownStyle() ~= "standard"
+                        return shared.isObsidianStyle()
                     end,
                     checked_func = function()
-                        return shared.getMarkdownStyle() ~= "standard"
+                        return shared.isObsidianStyle()
                             and getNoteStyle() == "callout"
                     end,
                     callback = function()
@@ -3075,7 +3090,7 @@ function M:genSettingsMenu()
                             table = _("Table"),
                         }
                         local current = shared.getOverviewStyle()
-                        if shared.getMarkdownStyle() == "standard" and current == "callout" then
+                        if not shared.isObsidianStyle() and current == "callout" then
                             current = "blockquote"
                         end
                         return T(_("Overview style: %1"),
@@ -3104,7 +3119,7 @@ function M:genSettingsMenu()
                             checked_func = function()
                                 local cur = shared.getOverviewStyle()
                                 return cur == "blockquote"
-                                    or (shared.getMarkdownStyle() == "standard" and cur == "callout")
+                                    or (not shared.isObsidianStyle() and cur == "callout")
                             end,
                             callback = function()
                                 if shared.getOverviewStyle() ~= "blockquote" then
@@ -3118,10 +3133,10 @@ function M:genSettingsMenu()
                             radio = true,
                             keep_menu_open = true,
                             enabled_func = function()
-                                return shared.getMarkdownStyle() ~= "standard"
+                                return shared.isObsidianStyle()
                             end,
                             checked_func = function()
-                                return shared.getMarkdownStyle() ~= "standard"
+                                return shared.isObsidianStyle()
                                     and shared.getOverviewStyle() == "callout"
                             end,
                             callback = function()
@@ -3178,6 +3193,13 @@ function M:genSettingsMenu()
                             expanded = _("Expanded (full text)"),
                         }
                         local current = shared.getSynopsisMode()
+                        if shared.getMarkdownStyle() == "commonmark" then
+                            if current == "collapsed" then
+                                current = "expanded"
+                            elseif current == "collapsed_short" then
+                                current = "short"
+                            end
+                        end
                         return T(_("Synopsis display: %1"),
                             labels[current] or labels.collapsed)
                     end,
@@ -3190,8 +3212,12 @@ function M:genSettingsMenu()
                             text = _("Collapsed (foldable)"),
                             radio = true,
                             keep_menu_open = true,
+                            enabled_func = function()
+                                return shared.getMarkdownStyle() ~= "commonmark"
+                            end,
                             checked_func = function()
-                                return shared.getSynopsisMode() == "collapsed"
+                                return shared.getMarkdownStyle() ~= "commonmark"
+                                    and shared.getSynopsisMode() == "collapsed"
                             end,
                             callback = function()
                                 if shared.getSynopsisMode() ~= "collapsed" then
@@ -3205,7 +3231,9 @@ function M:genSettingsMenu()
                             radio = true,
                             keep_menu_open = true,
                             checked_func = function()
-                                return shared.getSynopsisMode() == "short"
+                                local m = shared.getSynopsisMode()
+                                return m == "short"
+                                    or (shared.getMarkdownStyle() == "commonmark" and m == "collapsed_short")
                             end,
                             callback = function()
                                 if shared.getSynopsisMode() ~= "short" then
@@ -3218,8 +3246,12 @@ function M:genSettingsMenu()
                             text = _("Collapsed + Short preview"),
                             radio = true,
                             keep_menu_open = true,
+                            enabled_func = function()
+                                return shared.getMarkdownStyle() ~= "commonmark"
+                            end,
                             checked_func = function()
-                                return shared.getSynopsisMode() == "collapsed_short"
+                                return shared.getMarkdownStyle() ~= "commonmark"
+                                    and shared.getSynopsisMode() == "collapsed_short"
                             end,
                             callback = function()
                                 if shared.getSynopsisMode() ~= "collapsed_short" then
@@ -3233,7 +3265,9 @@ function M:genSettingsMenu()
                             radio = true,
                             keep_menu_open = true,
                             checked_func = function()
-                                return shared.getSynopsisMode() == "expanded"
+                                local m = shared.getSynopsisMode()
+                                return m == "expanded"
+                                    or (shared.getMarkdownStyle() == "commonmark" and m == "collapsed")
                             end,
                             callback = function()
                                 if shared.getSynopsisMode() ~= "expanded" then
@@ -4746,8 +4780,9 @@ function M:showBookSummaryCard(file)
         both = _("Both (.md and .txt)"),
     }
     local style_labels = {
-        obsidian = _("Obsidian"),
-        standard = _("Standard"),
+        obsidian   = _("Obsidian"),
+        standard   = _("Standard"),
+        commonmark = _("CommonMark"),
     }
     local cur_fmt = getExportFormat(file)
     local fmt_desc = fmt_labels[cur_fmt] or fmt_labels.md
@@ -5193,12 +5228,14 @@ function M:genBookStyleMenu(file, target_table)
             "markdown_style",
             shared.getMarkdownStyle,
             {
-                obsidian = _("Obsidian"),
-                standard = _("Standard"),
+                obsidian   = _("Obsidian"),
+                standard   = _("Standard"),
+                commonmark = _("CommonMark"),
             },
             {
-                { val = "obsidian", text = _("Obsidian") },
-                { val = "standard", text = _("Standard") },
+                { val = "obsidian",   text = _("Obsidian") },
+                { val = "standard",   text = _("Standard (GitHub / HTML)") },
+                { val = "commonmark", text = _("CommonMark (no HTML)") },
             },
             true,
             function(touchmenu)
@@ -5230,7 +5267,7 @@ function M:genBookStyleMenu(file, target_table)
             "special_marker",
             function(f)
                 local cur = shared.getSpecialMarker(f)
-                if shared.getMarkdownStyle(f) == "standard"
+                if not shared.isObsidianStyle(f)
                         and (cur == "callout" or cur == "alert"
                             or cur == "highlight" or cur == "highlight_bold") then
                     return "bold"
@@ -5250,28 +5287,28 @@ function M:genBookStyleMenu(file, target_table)
                     val = "callout",
                     text = _("Callout ([!highlight])"),
                     enabled_func = function()
-                        return shared.getMarkdownStyle(file) ~= "standard"
+                        return shared.isObsidianStyle(file)
                     end,
                 },
                 {
                     val = "alert",
                     text = _("Alert ([!IMPORTANT])"),
                     enabled_func = function()
-                        return shared.getMarkdownStyle(file) ~= "standard"
+                        return shared.isObsidianStyle(file)
                     end,
                 },
                 {
                     val = "highlight",
                     text = _("Highlight (==text==)"),
                     enabled_func = function()
-                        return shared.getMarkdownStyle(file) ~= "standard"
+                        return shared.isObsidianStyle(file)
                     end,
                 },
                 {
                     val = "highlight_bold",
                     text = _("Highlight & Bold (==**text**==)"),
                     enabled_func = function()
-                        return shared.getMarkdownStyle(file) ~= "standard"
+                        return shared.isObsidianStyle(file)
                     end,
                 },
                 { val = "star_bold", text = _("Star & Bold (⭐ **text**)") },
@@ -5281,7 +5318,7 @@ function M:genBookStyleMenu(file, target_table)
                     checked_func = function()
                         local ov = getBookStyleOverride(file, "special_marker")
                         return ov == "bold"
-                            or (shared.getMarkdownStyle(file) == "standard"
+                            or (not shared.isObsidianStyle(file)
                                 and (ov == "callout" or ov == "alert"
                                     or ov == "highlight" or ov == "highlight_bold"))
                     end,
@@ -5289,7 +5326,7 @@ function M:genBookStyleMenu(file, target_table)
             }
         )
         sp_row.enabled_func = function()
-            return shared.getMarkdownStyle(file) == "standard"
+            return not shared.isObsidianStyle(file)
                 or not shared.getEveryHighlightSpecial(file)
         end
         nh_rows[#nh_rows + 1] = sp_row
@@ -5330,7 +5367,7 @@ function M:genBookStyleMenu(file, target_table)
             _("Link IDs on highlights: %1"),
             "block_ids",
             function(f)
-                return shared.getMarkdownStyle(f) ~= "standard"
+                return shared.isObsidianStyle(f)
                     and shared.getBlockIds(f) or false
             end,
             {
@@ -5347,7 +5384,7 @@ function M:genBookStyleMenu(file, target_table)
             end
         )
         block_ids_row.enabled_func = function()
-            return shared.getMarkdownStyle(file) ~= "standard"
+            return shared.isObsidianStyle(file)
         end
         nh_rows[#nh_rows + 1] = block_ids_row
 
@@ -5355,7 +5392,7 @@ function M:genBookStyleMenu(file, target_table)
             _("Every highlight is special: %1"),
             "callout",
             function(f)
-                return shared.getMarkdownStyle(f) ~= "standard"
+                return shared.isObsidianStyle(f)
                     and shared.getEveryHighlightSpecial(f) or false
             end,
             {
@@ -5370,14 +5407,14 @@ function M:genBookStyleMenu(file, target_table)
             refreshNHMenu
         )
         every_special_row.enabled_func = function()
-            return shared.getMarkdownStyle(file) ~= "standard"
+            return shared.isObsidianStyle(file)
         end
         nh_rows[#nh_rows + 1] = every_special_row
 
         local note_style_opts = {
             { val = "inline", text = _("Inline") },
         }
-        if shared.getMarkdownStyle(file) ~= "standard" then
+        if shared.isObsidianStyle(file) then
             note_style_opts[#note_style_opts + 1] = { val = "callout", text = _("Callout ([!note])") }
         end
         note_style_opts[#note_style_opts + 1] = { val = "footnote", text = _("Footnotes") }
@@ -5386,7 +5423,7 @@ function M:genBookStyleMenu(file, target_table)
             "note_style",
             function(f)
                 local cur = getNoteStyle(f)
-                if shared.getMarkdownStyle(f) == "standard" and cur == "callout" then
+                if not shared.isObsidianStyle(f) and cur == "callout" then
                     return "inline"
                 end
                 return cur
@@ -5539,7 +5576,7 @@ function M:genBookStyleMenu(file, target_table)
             "overview_style",
             function(f)
                 local cur = shared.getOverviewStyle(f)
-                if shared.getMarkdownStyle(f) == "standard" and cur == "callout" then
+                if not shared.isObsidianStyle(f) and cur == "callout" then
                     return "blockquote"
                 end
                 return cur
@@ -5558,17 +5595,17 @@ function M:genBookStyleMenu(file, target_table)
                     checked_func = function()
                         local ov = getBookStyleOverride(file, "overview_style")
                         return ov == "blockquote"
-                            or (shared.getMarkdownStyle(file) == "standard" and ov == "callout")
+                            or (not shared.isObsidianStyle(file) and ov == "callout")
                     end,
                 },
                 {
                     val = "callout",
                     text = _("Callout ([!summary])"),
                     enabled_func = function()
-                        return shared.getMarkdownStyle(file) ~= "standard"
+                        return shared.isObsidianStyle(file)
                     end,
                     checked_func = function()
-                        return shared.getMarkdownStyle(file) ~= "standard"
+                        return shared.isObsidianStyle(file)
                             and getBookStyleOverride(file, "overview_style") == "callout"
                     end,
                 },
@@ -5613,7 +5650,17 @@ function M:genBookStyleMenu(file, target_table)
             c_rows[#c_rows + 1] = choiceRow(
                 _("Synopsis display: %1"),
                 "synopsis_mode",
-                shared.getSynopsisMode,
+                function(f)
+                    local m = shared.getSynopsisMode(f)
+                    if shared.getMarkdownStyle(f) == "commonmark" then
+                        if m == "collapsed" then
+                            return "expanded"
+                        elseif m == "collapsed_short" then
+                            return "short"
+                        end
+                    end
+                    return m
+                end,
                 {
                     collapsed       = _("Collapsed (foldable)"),
                     short           = _("Short preview (~300 chars)"),
@@ -5621,10 +5668,46 @@ function M:genBookStyleMenu(file, target_table)
                     expanded        = _("Expanded (full text)"),
                 },
                 {
-                    { val = "collapsed",       text = _("Collapsed (foldable)") },
-                    { val = "short",           text = _("Short preview (~300 chars)") },
-                    { val = "collapsed_short", text = _("Collapsed + Short preview") },
-                    { val = "expanded",        text = _("Expanded (full text)") },
+                    {
+                        val = "collapsed",
+                        text = _("Collapsed (foldable)"),
+                        enabled_func = function()
+                            return shared.getMarkdownStyle(file) ~= "commonmark"
+                        end,
+                        checked_func = function()
+                            return shared.getMarkdownStyle(file) ~= "commonmark"
+                                and getBookStyleOverride(file, "synopsis_mode") == "collapsed"
+                        end,
+                    },
+                    {
+                        val = "short",
+                        text = _("Short preview (~300 chars)"),
+                        checked_func = function()
+                            local ov = getBookStyleOverride(file, "synopsis_mode")
+                            return ov == "short"
+                                or (shared.getMarkdownStyle(file) == "commonmark" and ov == "collapsed_short")
+                        end,
+                    },
+                    {
+                        val = "collapsed_short",
+                        text = _("Collapsed + Short preview"),
+                        enabled_func = function()
+                            return shared.getMarkdownStyle(file) ~= "commonmark"
+                        end,
+                        checked_func = function()
+                            return shared.getMarkdownStyle(file) ~= "commonmark"
+                                and getBookStyleOverride(file, "synopsis_mode") == "collapsed_short"
+                        end,
+                    },
+                    {
+                        val = "expanded",
+                        text = _("Expanded (full text)"),
+                        checked_func = function()
+                            local ov = getBookStyleOverride(file, "synopsis_mode")
+                            return ov == "expanded"
+                                or (shared.getMarkdownStyle(file) == "commonmark" and ov == "collapsed")
+                        end,
+                    },
                 },
                 true
             )

@@ -1221,15 +1221,19 @@ end
 local function getMarkdownStyle(file)
     local override = file and getBookStyleOverride(file, "markdown_style")
     local style = override or getSetting("markdown_style", "obsidian")
-    if style == "standard" then
-        return "standard"
+    if style == "standard" or style == "commonmark" then
+        return style
     end
     return "obsidian"
 end
 
+local function isObsidianStyle(file)
+    return getMarkdownStyle(file) == "obsidian"
+end
+
 local function setMarkdownStyle(style)
-    if style == "standard" then
-        setSetting("markdown_style", "standard")
+    if style == "standard" or style == "commonmark" then
+        setSetting("markdown_style", style)
     else
         setSetting("markdown_style", nil)
     end
@@ -1707,6 +1711,7 @@ return {
     getExportFormat = getExportFormat,
     setExportFormat = setExportFormat,
     getMarkdownStyle = getMarkdownStyle,
+    isObsidianStyle = isObsidianStyle,
     setMarkdownStyle = setMarkdownStyle,
     getIndexStyle = getIndexStyle,
     setIndexStyle = setIndexStyle,

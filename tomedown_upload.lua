@@ -660,8 +660,9 @@ function M:showStatus()
         both = _("Both (.md and .txt)"),
     }
     local style_labels = {
-        obsidian = _("Obsidian"),
-        standard = _("Standard"),
+        obsidian   = _("Obsidian"),
+        standard   = _("Standard"),
+        commonmark = _("CommonMark"),
     }
     local cur_fmt = shared.getExportFormat()
     local fmt_desc = fmt_labels[cur_fmt] or fmt_labels.md

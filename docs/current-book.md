@@ -40,7 +40,7 @@ Under **Tomedown → Current book → Book summary**, Tomedown opens a rounded d
   - **Highlights**: Total count of all highlighted passages in the book.
   - **★ Special**: Count of standout passages marked with *Special highlight*.
   - **Notes**: Count of highlights that have personal user notes attached.
-- **Format**: Shows the effective export format and Markdown style for this book (e.g. `Markdown (.md) · Obsidian` or `Markdown (.md) · Standard`).
+- **Format**: Shows the effective export format and Markdown style for this book (e.g. `Markdown (.md) · Obsidian`, `Markdown (.md) · Standard`, or `Markdown (.md) · CommonMark`).
 - **Status**: Indicates the export state:
   - `Up to date`: Exported file matches your latest highlights and reading position.
   - `Updates pending`: New highlights, notes, or reading progress await the next export.
@@ -84,7 +84,7 @@ By default, every book follows your library-wide defaults configured in [Setting
 Every row inside **Current book → Format & layout** displays `Global` on the right while following your library defaults, or `Custom` when pinned specifically for this book—and every submenu starts with **Follow global setting** so you can restore individual options at any time:
 
 1. **Export format**: Choose between **Follow global setting**, **Markdown (.md)**, **Plain text (.txt)**, or **Both (.md and .txt)**.
-2. **Markdown style**: Select **Follow global setting**, **Obsidian** (wikilinks, `[!...]` callouts, `^hl-` block IDs), or **Standard** (universal Markdown headings, `[Title](file.md)` links, no orphan block IDs). Hidden automatically when *Export format* is `.txt`.
+2. **Markdown style**: Select **Follow global setting**, **Obsidian** (wikilinks, `[!...]` callouts, `^hl-` block IDs), **Standard (GitHub / HTML)** (`[Title](file.md)` links, `<details>` synopses, `<img>` covers), or **CommonMark (no HTML)** (strict zero-HTML output with compact `260×390 px` `![Title](covers/...)` covers and `###` + `>` synopses for Zettlr, Pandoc, and Logseq). Hidden automatically when *Export format* is `.txt`.
 3. **Notes & highlights ▸**: Full per-book parity with [Settings → Notes & highlights](settings.md#notes-highlights):
    - **Special highlight style**: Choose any of the 6 highlight styles (`[!highlight]`, `[!IMPORTANT]`, `==text==`, `==**text**==`, `⭐ **text**`, or `**text**`) for this volume.
    - **Highlight details**: **Page and date**, **Page only**, **Date only**, or **None**.
@@ -103,11 +103,11 @@ Every row inside **Current book → Format & layout** displays `Global` on the r
 
 ### Selecting Markdown style for a book
 
-When you select **Standard** for a book, Tomedown automatically adapts the generated note:
+When you select **Standard (GitHub / HTML)** or **CommonMark (no HTML)** for a book, Tomedown automatically adapts the generated note:
 - Callouts (`[!book]`, `[!abstract]-`, `[!highlight]`) become clean Markdown headings (`### Reading dashboard`, `### Book synopsis`, `### ★ Special highlights`).
-- Obsidian wikilinks switch to standard `[Title](file.md)`.
-- Obsidian-only block IDs (`^hl-xxxxxxxx`) are omitted.
+- Obsidian wikilinks switch to standard `[Title](file.md)` and `^hl-xxxxxxxx` block IDs are omitted.
 - Obsidian-specific style options (such as *Callout ([!summary])* in Overview style or *Callout ([!note])* in Personal notes format) automatically fall back to universal Markdown for that volume.
+- Choosing **CommonMark (no HTML)** additionally strips all inline HTML (`<details>`, `<img>`, `<br>`) and extracts a compact `260×390 px` cover image sized for pure `![Title](covers/...)` renderers; switching back to **Obsidian** or **Standard** automatically re-extracts the full `800×1200 px` cover on the next export.
 
 ## Book info & Metadata
 

@@ -1041,6 +1041,15 @@ msgstr "Obsidian"
 msgid "Standard"
 msgstr "Standard"
 
+msgid "CommonMark"
+msgstr "CommonMark"
+
+msgid "Standard (GitHub / HTML)"
+msgstr "Standard (GitHub / HTML)"
+
+msgid "CommonMark (no HTML)"
+msgstr "CommonMark (sans HTML)"
+
 msgid "Exported books"
 msgstr "Livres exportés"
 

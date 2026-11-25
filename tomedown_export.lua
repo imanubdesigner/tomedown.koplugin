@@ -71,7 +71,7 @@ local getExportFormat = shared.getExportFormat
 local getMarkdownStyle = shared.getMarkdownStyle
 
 local function effectiveIndexLinks(file)
-    if getMarkdownStyle(file) == "standard" then
+    if getMarkdownStyle(file) ~= "obsidian" then
         return "markdown"
     end
     return getIndexLinks()
@@ -584,17 +584,21 @@ end
 --- The vault-relative path of a book's cover, extracting the image the
 -- first time it is needed. nil when "Include book covers" is off or the
 -- book has no cover at all; the markdown then simply omits it.
-function M:ensureCover(file, base, dir)
+function M:ensureCover(file, base, dir, opts)
     if not getBookCovers(file) then
         return nil
     end
     local leaf = tostring(base or ""):match("([^/]+)$") or tostring(base or "")
     local rel = Cover.relPath(leaf, getCoversFolder())
+    local is_cm = (getMarkdownStyle(file) == "commonmark")
+    local rec = file and getSetting("exports", {})[file]
+    local prev_cm = type(rec) == "table" and (rec.cover_cm == true) or false
+    local force = (opts and opts.force) or (is_cm ~= prev_cm)
     local document
     if self.ui and self.ui.document and self.ui.document.file == file then
         document = self.ui.document
     end
-    if Cover.extract(document, file, dir .. "/" .. rel) then
+    if Cover.extract(document, file, dir .. "/" .. rel, { compact = is_cm, force = force }) then
         return rel
     end
     return nil
@@ -863,12 +867,19 @@ function M:buildIndexEntries(dir, export_records)
                 local cover_leaf = book.base:match("([^/]+)$") or book.base
                 local cover_rel = Cover.relPath(cover_leaf, getCoversFolder())
                 local wants_cover = getBookCovers(file)
-                local has_cover = wants_cover
+                local is_cm_book = (getMarkdownStyle(file) == "commonmark")
+                local rec_entry = export_records and export_records[file]
+                local prev_cm_entry = type(rec_entry) == "table" and (rec_entry.cover_cm == true) or false
+                local stale_cover_size = wants_cover and (is_cm_book ~= prev_cm_entry)
+                local has_cover = wants_cover and not stale_cover_size
                     and (lfs.attributes(dir .. "/" .. cover_rel, "mode") == "file")
                 if not has_cover and with_covers and wants_cover then
-                    -- backfill: books exported before the option was turned on
-                    has_cover = self:ensureCover(file, book.base, dir) ~= nil
+                    -- backfill (or resize when switching CommonMark <-> Standard/Obsidian)
+                    has_cover = self:ensureCover(file, book.base, dir, { force = stale_cover_size }) ~= nil
                     if has_cover then
+                        if type(rec_entry) == "table" then
+                            rec_entry.cover_cm = is_cm_book or nil
+                        end
                         new_covers[#new_covers + 1] = dir .. "/" .. cover_rel
                     end
                 end
@@ -956,7 +967,7 @@ function M:buildDigestBooks()
                     title = book.title,
                     author = book.author,
                     has_block_ids = shared.getBlockIds(file)
-                        and getMarkdownStyle(file) ~= "standard",
+                        and getMarkdownStyle(file) == "obsidian",
                     annotations = book.annotations,
                 }
             end
@@ -974,7 +985,7 @@ function M:exportDigest(touchmenu)
     util.makePath(dir)
     local digest_path = dir .. "/" .. DIGEST_FILENAME
     local digest_books, digest_drawings = self:buildDigestBooks()
-    local digest_is_std = (getMarkdownStyle() == "standard")
+    local digest_is_std = (getMarkdownStyle() ~= "obsidian")
     local digest_raw_marker = getSetting("special_marker", "callout")
     local digest_md = render.buildDigestMd(digest_books, {
         title = _("Reading digest"),
@@ -1221,7 +1232,7 @@ function M:runExport(files, opts)
                     end
                     local hw_written = (write_md and getIncludeHandwritten(file))
                         and Handwritten.ensureDrawings(book, dir, current_drawings) or {}
-                    local is_std_book = (getMarkdownStyle(file) == "standard")
+                    local is_std_book = (getMarkdownStyle(file) ~= "obsidian")
                     local raw_marker = shared.getSpecialMarker(file)
                     local render_opts = {
                         no_chapter_label = _("No chapter"),
@@ -1450,6 +1461,7 @@ function M:runExport(files, opts)
                             hash = book.hash,
                             base = book.base,
                             date = os.date("%Y-%m-%d"),
+                            cover_cm = (cover_rel and getMarkdownStyle(file) == "commonmark") or nil,
                             -- what we would have generated: the proof the
                             -- next export compares the regions against
                             regions = merge.fingerprints(merge.split(md)),
@@ -1613,7 +1625,7 @@ function M:runExport(files, opts)
         if exported > 0 or not lfs.attributes(digest_path)
                 or getSetting("digest_dirty", false) then
             local digest_books, digest_drawings = self:buildDigestBooks()
-            local digest_is_std = (getMarkdownStyle() == "standard")
+            local digest_is_std = (getMarkdownStyle() ~= "obsidian")
             local digest_raw_marker = getSetting("special_marker", "callout")
             local digest_md = render.buildDigestMd(digest_books, {
                 title = _("Reading digest"),

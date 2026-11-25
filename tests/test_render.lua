@@ -2144,4 +2144,177 @@ do
         "Proposal 3: Index stats line includes cross-link to Reading digest when with_digest is enabled")
 end
 
+-- ---------------------------------------------------------------------------
+-- Pure CommonMark profile ("commonmark"): zero HTML tags, Zettlr/Pandoc/Logseq
+-- ---------------------------------------------------------------------------
+do
+    local merge = require("tomedown_merge")
+    local long_syn = string.rep("Duncan Campbell is burdened by second sight in the Highlands. ", 8)
+    local cm_book_data = {
+        title = "The Lifted Veil",
+        author = "George Eliot",
+        series = "Scottish Tales",
+        series_index = 2,
+        status = "reading",
+        progress = "26%",
+        pages = 96,
+        description = "<p>" .. long_syn .. "</p>",
+        keywords = { "Short stories", "Highlands Scotland", "Fiction" },
+        annotations = {
+            {
+                text = "A strange mental vacancy.",
+                chapter = "Chapter I",
+                page = "12",
+                date = "25 Nov 2026 | 17:00",
+                special = true,
+                note = "Primo pensiero",
+                context_prev = "defined by",
+                context_next = "while in a state",
+                id_seed = "2026-11-25 17:00:00",
+            },
+        },
+    }
+
+    -- 1. Standard ("standard") keeps <details> and <img width="240"> unchanged (backward compatibility)
+    local std_md = render.buildBookMd(cm_book_data, {
+        markdown_style = "standard",
+        markers = false,
+        cover = "covers/George Eliot - The Lifted Veil.jpg",
+        book_heading = true,
+        reading_dashboard = true,
+        book_synopsis = true,
+        synopsis_mode = "collapsed",
+        body_tags = true,
+        special_showcase = true,
+    })
+    T.check(T.contains(std_md, "<details>") and T.contains(std_md, '<p align="center"><img src='),
+        "Standard profile preserves <details> and <img width=\"240\"> for GitHub/GFM")
+
+    -- 2. CommonMark ("commonmark") produces ZERO HTML tags on book notes (collapsed + cover + tags + showcase)
+    local cm_md = render.buildBookMd(cm_book_data, {
+        markdown_style = "commonmark",
+        markers = false,
+        cover = "covers/George Eliot - The Lifted Veil.jpg",
+        book_heading = true,
+        reading_dashboard = true,
+        with_index = true,
+        with_digest = true,
+        book_synopsis = true,
+        synopsis_mode = "collapsed",
+        body_tags = true,
+        special_showcase = true,
+        block_ids = true,
+        callout = true,
+        special_marker = "callout",
+        note_style = "callout",
+        overview_style = "callout",
+        highlight_context = true,
+    })
+    T.check(not cm_md:find("<[a-zA-Z/!]") and not T.contains(cm_md, "&nbsp;"),
+        "CommonMark book note contains zero HTML tags or &nbsp; entities:\n" .. cm_md)
+    T.check(T.contains(cm_md, "![The Lifted Veil](covers/George%20Eliot%20-%20The%20Lifted%20Veil.jpg)"),
+        "CommonMark renders book cover with pure CommonMark image syntax and encoded spaces")
+    T.check(T.contains(cm_md, "### § Book synopsis\n\n> Duncan Campbell"),
+        "CommonMark renders collapsed synopsis as ### heading + > blockquote without <details>")
+    T.check(T.contains(cm_md, "▪ _#Short-stories_ · _#Highlands-Scotland_ · _#Fiction_")
+            and not cm_md:find("%*#"),
+        "CommonMark uses _..._ for single emphasis on tags/subtitles (no Zettlr remark-lint * warning)")
+    T.check(not T.contains(cm_md, "[[") and not T.contains(cm_md, "[!") and not T.contains(cm_md, "^hl-"),
+        "CommonMark omits wikilinks, Obsidian callouts, and block IDs")
+
+    -- 3. CommonMark with collapsed_short keeps ~300-char truncation without <details>
+    local cm_short_md = render.buildBookMd(cm_book_data, {
+        markdown_style = "commonmark",
+        markers = false,
+        book_synopsis = true,
+        synopsis_mode = "collapsed_short",
+    })
+    T.check(T.contains(cm_short_md, "### § Book synopsis\n\n> ")
+            and T.contains(cm_short_md, "…")
+            and not T.contains(cm_short_md, "<details>"),
+        "CommonMark collapsed_short keeps ~300-char preview in pure CommonMark without <details>")
+
+    -- 4. CommonMark 00 - Index.md (with covers, progress bar, tag cloud, collapsible tags fallback) has ZERO HTML
+    local cm_idx = render.buildIndexMd({
+        {
+            link = "George Eliot - The Lifted Veil",
+            title = "The Lifted Veil",
+            author = "George Eliot",
+            series = "Scottish Tales",
+            series_index = 2,
+            status = "reading",
+            progress = "26%",
+            rating = 4,
+            last_read = "25/11/2026",
+            count = 5,
+            special = 1,
+            cover = "covers/George Eliot - The Lifted Veil.jpg",
+            tags = { "Short-stories", "Highlands-Scotland", "Fiction", "Gothic" },
+        },
+    }, {
+        markdown_style = "commonmark",
+        markers = false,
+        show_covers = true,
+        index_dashboard = true,
+        index_tag_cloud = true,
+        index_tags_mode = "collapsible",
+        with_digest = true,
+    })
+    T.check(not cm_idx:find("<[a-zA-Z/!]") and not T.contains(cm_idx, "&nbsp;"),
+        "CommonMark 00 - Index.md contains zero HTML tags (<br>, <img>, <details>) and zero &nbsp;:\n" .. cm_idx)
+    T.check(T.contains(cm_idx, "![The Lifted Veil](covers/George%20Eliot%20-%20The%20Lifted%20Veil.jpg)")
+            and T.contains(cm_idx, "▰▱▱▱▱ 26%")
+            and T.contains(cm_idx, "_#Short-stories #Highlands-Scotland #Fiction +1_"),
+        "CommonMark 00 - Index.md renders nested pure-Markdown cover, space-separated progress bar, and underscore italic tags")
+
+    -- 5. CommonMark 00 - Reading Digest.md has ZERO HTML and no Obsidian syntax
+    local cm_dig = render.buildDigestMd({
+        {
+            link = "George Eliot - The Lifted Veil",
+            title = "The Lifted Veil",
+            author = "George Eliot",
+            has_block_ids = true,
+            annotations = cm_book_data.annotations,
+        },
+    }, {
+        markdown_style = "commonmark",
+        with_index = true,
+        block_ids = true,
+        callout = true,
+        special_marker = "callout",
+        note_style = "callout",
+        overview_style = "callout",
+    })
+    T.check(not cm_dig:find("<[a-zA-Z/!]")
+            and not T.contains(cm_dig, "[[")
+            and not T.contains(cm_dig, "[!")
+            and T.contains(cm_dig, "[← Book index](00%20-%20Index.md)"),
+        "CommonMark 00 - Reading Digest.md contains zero HTML tags and uses CommonMark links")
+
+    -- 6. Keep my notes (tomedown_merge) round-trip across Obsidian -> Standard -> CommonMark
+    local z_obs = render.buildBookMd(cm_book_data, {
+        markdown_style = "obsidian",
+        markers = true,
+        notes_title = "My notes...",
+        book_synopsis = true,
+    })
+    z_obs = z_obs:gsub("(<!%-%- tomedown:notes %-%->\n\n)", "%1Appunto personale in cima.\n\n", 1)
+    local z_cm_fresh = render.buildBookMd(cm_book_data, {
+        markdown_style = "commonmark",
+        markers = true,
+        notes_title = "My notes...",
+        book_synopsis = true,
+        synopsis_mode = "collapsed",
+    })
+    local merged_cm, minfo = merge.apply(z_obs, z_cm_fresh, nil, {
+        mode = "preserve",
+        notes_title = "My notes...",
+    })
+    T.check(minfo.reason == "merged"
+            and T.contains(merged_cm, "Appunto personale in cima.")
+            and T.contains(merged_cm, "### § Book synopsis")
+            and not T.contains(merged_cm, "<details>"),
+        "Keep my notes preserves user notes cleanly when switching book to CommonMark")
+end
+
 T.finish("test_render")

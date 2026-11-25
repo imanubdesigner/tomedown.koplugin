@@ -6071,4 +6071,107 @@ do
     UIManager:reset()
 end
 
+-- ------- 35. 3-profile Markdown style: Obsidian, Standard (HTML), CommonMark (pure)
+do
+    local shared = require("tomedown_shared")
+
+    -- 35a. Shared getters/setters, isObsidianStyle, per-book override, and settings backup round-trip
+    T.check(shared.getMarkdownStyle() == "obsidian" and shared.isObsidianStyle() == true,
+        "35a: default Markdown style is obsidian")
+    shared.setMarkdownStyle("commonmark")
+    T.check(shared.getMarkdownStyle() == "commonmark" and shared.isObsidianStyle() == false,
+        "35a: setMarkdownStyle('commonmark') persists commonmark and marks non-Obsidian")
+    shared.setBookStyleOverride(FILE, "markdown_style", "standard")
+    T.check(shared.getMarkdownStyle(FILE) == "standard"
+            and shared.getMarkdownStyle(FILE2) == "commonmark"
+            and shared.isObsidianStyle(FILE) == false,
+        "35a: per-book markdown_style override isolates FILE from global commonmark")
+
+    local cm_backup = DIR .. "/cm_settings_backup.lua"
+    T.check(shared.exportSettingsToFile(cm_backup) == true, "35a: backup written")
+    shared.setMarkdownStyle("obsidian")
+    shared.clearBookStyleOverrides(FILE)
+    T.check(shared.restoreSettingsFromFile(cm_backup) == true, "35a: backup restored")
+    T.check(shared.getMarkdownStyle() == "commonmark"
+            and shared.getMarkdownStyle(FILE) == "standard",
+        "35a: settings backup/restore preserves global commonmark and per-book standard")
+    os.remove(cm_backup)
+    shared.clearBookStyleOverrides(FILE)
+
+    -- 35b. Global & Per-Book menus expose 3 profiles and adapt Synopsis display in CommonMark
+    local g_export = plugin:genSettingsMenu()[1].sub_item_table_func()
+    local md_style_row = g_export[2]
+    T.check(#md_style_row.sub_item_table == 3
+            and T.contains(md_style_row.text_func(), "CommonMark")
+            and md_style_row.sub_item_table[3].checked_func() == true,
+        "35b: Global Markdown style row offers 3 profiles and checks CommonMark")
+
+    shared.setBookSynopsis(true)
+    shared.setSynopsisMode("collapsed")
+    local g_style = plugin:genSettingsMenu()[3].sub_item_table_func()
+    local g_card = g_style[10].sub_item_table
+    local g_syn_disp = g_card[6]
+    T.check(T.contains(g_syn_disp.text_func(), "Expanded")
+            and g_syn_disp.sub_item_table[1].enabled_func() == false
+            and g_syn_disp.sub_item_table[3].enabled_func() == false
+            and g_syn_disp.sub_item_table[4].checked_func() == true,
+        "35b: In CommonMark mode, Global Synopsis display disables Collapsed options and reflects Expanded")
+
+    local bstyle = plugin:genBookStyleMenu(FILE)
+    T.check(#bstyle[2].sub_item_table == 4,
+        "35b: Per-book Markdown style offers Follow global + 3 profiles (4 items)")
+    local bcard = bstyle[4].sub_item_table_func()
+    T.check(bcard[6].key == "synopsis_mode"
+            and T.contains(bcard[6].text_func(), "Expanded")
+            and bcard[6].sub_item_table[2].enabled_func() == false
+            and bcard[6].sub_item_table[4].enabled_func() == false,
+        "35b: Per-book Synopsis display disables Collapsed options when effective profile is CommonMark")
+
+    -- 35c. End-to-end export in CommonMark produces zero HTML tags + compact 260x390 cover,
+    -- and switching back to Standard/Obsidian automatically re-extracts 800x1200 cover
+    store.tomedown.upload = false
+    store.tomedown.covers = true
+    BookInfo.cover_bb = fakeBB(800, 1200)
+    BookList.registry[FILE].doc_props.description = "<p>Una sinossi gotica misteriosa.</p>"
+    plugin:runExport({ FILE }, { force = true })
+    UIManager:runPending()
+    local out_book = T.readFile(MD_PATH) or ""
+    local out_idx = T.readFile(INDEX_PATH) or ""
+    local cm_jpg = T.readFile(COVER_PATH) or ""
+    T.check(not out_book:find("<details>")
+            and not out_book:find("<img ")
+            and T.contains(out_book, "### § Book synopsis")
+            and T.contains(out_book, "![The Three Impostors](covers/"),
+        "35c: CommonMark end-to-end book export has pure Markdown cover and synopsis without HTML")
+    T.check(cm_jpg == "JPG:260x390:jpg:75",
+        "35c: CommonMark extracts compact 260x390 @ q75 cover: " .. tostring(cm_jpg))
+    T.check(not out_idx:find("<img ")
+            and not out_idx:find("<br>")
+            and not T.contains(out_idx, "&nbsp;"),
+        "35c: CommonMark end-to-end 00 - Index.md has zero HTML tags and zero &nbsp;")
+
+    -- Switch back to Standard (GitHub / HTML) and re-export -> cover automatically upgrades back to 800x1200
+    g_export[2].sub_item_table[2].callback() -- standard
+    plugin:runExport({ FILE }, { only_updated = true })
+    local std_jpg = T.readFile(COVER_PATH) or ""
+    T.check(std_jpg == "JPG:800x1200:jpg:50",
+        "35c: switching from CommonMark to Standard re-extracts full 800x1200 cover automatically: " .. tostring(std_jpg))
+
+    -- Switch back to CommonMark -> cover shrinks back to 260x390 on normal re-export
+    g_export[2].sub_item_table[3].callback() -- commonmark
+    plugin:runExport({ FILE }, { only_updated = true })
+    local cm_jpg_again = T.readFile(COVER_PATH) or ""
+    T.check(cm_jpg_again == "JPG:260x390:jpg:75",
+        "35c: switching back to CommonMark shrinks existing cover back to 260x390 automatically: " .. tostring(cm_jpg_again))
+
+    -- Restore clean state
+    BookList.registry[FILE].doc_props.description = nil
+    store.tomedown.covers = nil
+    store.tomedown.upload = true
+    shared.setBookSynopsis(false)
+    shared.setSynopsisMode("collapsed")
+    shared.setMarkdownStyle("obsidian")
+    UIManager:reset()
+end
+
 T.finish("test_main")

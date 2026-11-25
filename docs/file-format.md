@@ -278,16 +278,19 @@ With *Settings → Notes & highlights → Link IDs on highlights* enabled, every
   <figcaption>Granular <code>^hl-xxxxxxxx</code> block anchor generated at the end of the quote for instant deep linking and embeds.</figcaption>
 </figure>
 
-## Standard Markdown vs Obsidian style
+## Markdown styles: Obsidian, Standard & CommonMark
 
 By default, Tomedown uses **Obsidian** Markdown style (`Settings → Export → Markdown style → Obsidian`), enabling Obsidian wikilinks (`[[Book]]`), collapsible callouts (`> [!book]`, `> [!abstract]-`, `> [!highlight]-`, `> [!summary]`), and `^hl-` block IDs.
 
-If you read your notes in **MarkText, Typora, VS Code, Zettlr, or GitHub**, switch **Markdown style** to **Standard** (globally in *Settings → Export* or per book in *Current book → Format & layout*):
+Outside Obsidian, you can choose between two portable profiles (globally in *Settings → Export* or per book in *Current book → Format & layout*):
 
-- **Book notes, index, and reading digest** use pure Markdown headings (`### Reading dashboard`, `### Book synopsis`, `### ★ Special highlights`, `### Library dashboard`) instead of `[!...]` callouts.
-- **Links** automatically use standard Markdown syntax (`[Title](Book.md)`).
-- **Special highlights** fall back from Obsidian-only `[!highlight]` / `==text==` markers to universal `**bold**` (or `⭐ **text**` when *Star & Bold* is selected).
-- **Obsidian-only `^hl-` block IDs** are omitted so quotes stay clean outside Obsidian.
+- **Standard (GitHub / HTML)** — built for **GitHub, MarkText, Typora, and VS Code**:
+  - Replaces `[!...]` callouts with clean Markdown headings (`### Reading dashboard`, `### ★ Special highlights`, `### Library dashboard`), while keeping HTML `<details>` for foldable synopses and sized `<img>` tags for covers.
+  - Uses standard `[Title](Book.md)` links, `**bold**` (or `⭐ **text**`) special highlights, and omits `^hl-` block IDs.
+- **CommonMark (no HTML)** — built for **Zettlr, Pandoc, Logseq, iA Writer, and strict CommonMark pipelines**:
+  - Emits **zero inline HTML tags** (`<details>`, `<img>`, `<br>`) and zero `&nbsp;` entities across book notes, `00 - Index.md`, and `00 - Reading Digest.md`.
+  - Renders book covers with pure `![Title](covers/...)` syntax and extracts a compact `260×390 px` JPEG (`quality 75`) so covers stay neatly proportioned without HTML `width` attributes (switching back to *Obsidian* or *Standard* automatically re-extracts the full `800×1200 px` cover on the next export).
+  - Renders synopses as `### § Book synopsis` + `> ...` blockquotes, formats `00 - Index.md` as nested Markdown lists, and uses `_..._` single emphasis for lint-clean Zettlr compatibility.
 
 <figure class="compare-figure">
   <div class="compare-mat">
@@ -316,7 +319,7 @@ If you read your notes in **MarkText, Typora, VS Code, Zettlr, or GitHub**, swit
 
 ## Covers
 
-With *Settings → Notes & highlights → Book page → Book cover* (or *Current book → Format & layout → Book page → Book cover*) enabled, Tomedown extracts the cover image into your vault (`covers/` by default, configurable in *Settings → Export → File names & folders → Covers folder*) as an 800×1200 JPEG:
+With *Settings → Notes & highlights → Book page → Book cover* (or *Current book → Format & layout → Book page → Book cover*) enabled, Tomedown extracts the cover image into your vault (`covers/` by default, configurable in *Settings → Export → File names & folders → Covers folder*) as an `800×1200` JPEG in **Obsidian** / **Standard** modes (or a compact `260×390` JPEG with pure `![Title](covers/...)` syntax in **CommonMark** mode, resizing automatically whenever you switch profiles and re-export):
 
 ```markdown
 ---
