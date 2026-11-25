@@ -53,12 +53,121 @@ local UPLOAD_RETRY_BASE_DELAY = 2 -- seconds
 -- only transient failures are worth retrying: network errors (code
 -- not a number), temporarily unavailable resources (5xx), timeouts and
 -- too many requests from the server. 4xx (wrong credentials, missing
--- folder) fail on the first shot: retrying them only wastes time.
+-- folder) and missing local files fail on the first shot: retrying them
+-- only wastes time.
 local function isTransient(code)
+    if type(code) == "string" and code:find("No such file or directory", 1, true) then
+        return false
+    end
     if type(code) ~= "number" then
         return true
     end
     return code >= 500 or code == 408 or code == 429
+end
+
+-- Shared upload coordination across plugin instances (ReaderUI and
+-- FileManager each hold their own Tomedown table during book close/open).
+local upload_state = {
+    flushing = false,
+    flush_fn = nil,
+    flush_scheduled = false,
+    flush_deferred = false,
+    uploading = false,
+    in_sync = false,
+    active_fn = nil,
+    close_pending = false,
+    close_fn = nil,
+    queue = {},
+}
+
+local function isScheduledAlive(fn)
+    if not fn then
+        return false
+    end
+    if type(UIManager.scheduled) == "table" then
+        for __, item in ipairs(UIManager.scheduled) do
+            if item.fn == fn then
+                return true
+            end
+        end
+        return false
+    end
+    return true
+end
+
+local function syncUploadState()
+    if upload_state.uploading and not upload_state.in_sync
+            and not isScheduledAlive(upload_state.active_fn) then
+        upload_state.uploading = false
+        upload_state.active_fn = nil
+        upload_state.queue = {}
+    end
+    if upload_state.flushing and not upload_state.in_sync
+            and not upload_state.uploading then
+        upload_state.flushing = false
+    end
+    if upload_state.flush_scheduled and not isScheduledAlive(upload_state.flush_fn) then
+        upload_state.flush_scheduled = false
+        upload_state.flush_fn = nil
+    end
+    if upload_state.close_pending and not isScheduledAlive(upload_state.close_fn) then
+        upload_state.close_pending = false
+        upload_state.close_fn = nil
+    end
+end
+
+function M:setCloseExportPending(active, fn)
+    if active then
+        upload_state.close_pending = true
+        upload_state.close_fn = fn
+    else
+        upload_state.close_pending = false
+        upload_state.close_fn = nil
+    end
+end
+
+function M:finishDeferredFlush()
+    syncUploadState()
+    if upload_state.flush_deferred and not upload_state.uploading
+            and not upload_state.flushing and not upload_state.close_pending then
+        upload_state.flush_deferred = false
+        self:schedulePendingFlush()
+    end
+end
+
+function M:cleanupUploadedAssets(ok_paths, dir, include_covers)
+    if type(ok_paths) ~= "table" or #ok_paths == 0 then
+        return
+    end
+    local queued_paths = {}
+    for __, job in ipairs(upload_state.queue) do
+        for ___, p in ipairs(job.paths or {}) do
+            queued_paths[p] = true
+        end
+    end
+    local deletable = {}
+    for __, p in ipairs(ok_paths) do
+        if not queued_paths[p] then
+            deletable[#deletable + 1] = p
+        end
+    end
+    if #deletable == 0 then
+        return
+    end
+    if include_covers and getSetting("covers", false) then
+        local cf = getCoversFolder()
+        Cover.deleteUploaded(deletable, dir, cf)
+        if cf ~= "covers" then
+            Cover.deleteUploaded(deletable, dir, "covers")
+        end
+    end
+    if getSetting("include_handwritten", true) ~= false then
+        local df = getDrawingsFolder()
+        Handwritten.deleteUploaded(deletable, dir, df)
+        if df ~= "drawings" then
+            Handwritten.deleteUploaded(deletable, dir, "drawings")
+        end
+    end
 end
 
 
@@ -179,7 +288,7 @@ end
 -- permanent failure. It absorbs transient network blips (WiFi reconnecting,
 -- slow DNS, etc.) without needing an "Upload all files again"
 -- by hand every time.
-function M:uploadPaths(server, paths, callback)
+local function runUploadJob(self, server, paths, callback)
     local provider = self:cloudProvider(server)
     -- remembered for the Status panel; every upload path funnels here
     local function recordUpload(uploaded, errors)
@@ -193,13 +302,26 @@ function M:uploadPaths(server, paths, callback)
             })
         end
     end
+    local function finishJob(ok_count, fail_count, failed)
+        recordUpload(ok_count, fail_count)
+        if callback then
+            callback(ok_count, fail_count, failed)
+        end
+        local next_job = table.remove(upload_state.queue, 1)
+        if next_job then
+            runUploadJob(next_job.plugin, next_job.server, next_job.paths, next_job.callback)
+        else
+            upload_state.uploading = false
+            upload_state.active_fn = nil
+            self:finishDeferredFlush()
+        end
+    end
     if #paths > 0 then
         logger.info(string.format("tomedown: upload start: %d files -> %s",
             #paths, server.name or server.type or "?"))
     end
     if not (provider and provider.uploadFile and provider.run) then
-        recordUpload(0, #paths)
-        if callback then callback(0, #paths, paths) end
+        finishJob(0, #paths, paths)
         return
     end
     local i, ok_count, fail_count, failed = 0, 0, 0, {}
@@ -207,6 +329,11 @@ function M:uploadPaths(server, paths, callback)
     local made_folders = {}
 
     local function attemptUpload(path, attempt, on_done)
+        if lfs.attributes(path, "mode") ~= "file" then
+            logger.warn("tomedown: upload failed (local file missing, not retryable):", path)
+            on_done(false)
+            return
+        end
         local srv = util.tableDeepCopy(server)
         local remote_folder = getSetting("remote_folder")
         if remote_folder and remote_folder ~= "" then
@@ -249,9 +376,14 @@ function M:uploadPaths(server, paths, callback)
                 local delay = UPLOAD_RETRY_BASE_DELAY * (2 ^ (attempt - 1))
                 logger.warn("tomedown: upload failed (attempt", attempt, "of", UPLOAD_MAX_ATTEMPTS,
                     "), retrying in", delay, "s:", path, tostring(code))
-                UIManager:scheduleIn(delay, function()
+                local retry_fn
+                retry_fn = function()
+                    upload_state.in_sync = true
                     attemptUpload(path, attempt + 1, on_done)
-                end)
+                    upload_state.in_sync = false
+                end
+                upload_state.active_fn = retry_fn
+                UIManager:scheduleIn(delay, retry_fn)
             else
                 logger.warn("tomedown: upload failed after", attempt,
                     isTransient(code) and "attempts:" or "attempt (error not retryable):",
@@ -261,11 +393,13 @@ function M:uploadPaths(server, paths, callback)
         end)
     end
 
-    local function step()
+    local step
+    step = function()
+        upload_state.in_sync = true
         i = i + 1
         if i > #paths then
-            recordUpload(ok_count, fail_count)
-            if callback then callback(ok_count, fail_count, failed) end
+            upload_state.in_sync = false
+            finishJob(ok_count, fail_count, failed)
             return
         end
         local path = paths[i]
@@ -276,10 +410,27 @@ function M:uploadPaths(server, paths, callback)
                 fail_count = fail_count + 1
                 failed[#failed + 1] = path
             end
+            upload_state.active_fn = step
             UIManager:scheduleIn(0, step)
         end)
+        upload_state.in_sync = false
     end
     step()
+end
+
+function M:uploadPaths(server, paths, callback)
+    syncUploadState()
+    if upload_state.uploading then
+        upload_state.queue[#upload_state.queue + 1] = {
+            plugin = self,
+            server = server,
+            paths = paths,
+            callback = callback,
+        }
+        return
+    end
+    upload_state.uploading = true
+    runUploadJob(self, server, paths, callback)
 end
 
 -- export
@@ -383,7 +534,7 @@ function M:statusLines()
             lines[#lines + 1] = _("Next upload: disabled in settings")
         elseif not NetworkMgr:isConnected() then
             lines[#lines + 1] = _("Next upload: at the next connection")
-        elseif self._flushing then
+        elseif self._flushing or upload_state.flushing or upload_state.uploading then
             lines[#lines + 1] = _("Next upload: in progress")
         else
             lines[#lines + 1] = _("Next upload: any moment now")
@@ -683,7 +834,12 @@ end
 -- the network at the next opportunity without any prompt
 
 function M:schedulePendingFlush()
-    if self._flush_scheduled or self._flushing then
+    syncUploadState()
+    if self._flush_scheduled == false then
+        upload_state.flush_scheduled = false
+        upload_state.flush_fn = nil
+    end
+    if self._flushing or upload_state.flushing then
         return
     end
     if not getSetting("upload", false) then
@@ -695,11 +851,24 @@ function M:schedulePendingFlush()
     if not NetworkMgr:isConnected() then
         return
     end
+    if upload_state.uploading or upload_state.close_pending then
+        upload_state.flush_deferred = true
+        return
+    end
+    if self._flush_scheduled or upload_state.flush_scheduled then
+        return
+    end
     self._flush_scheduled = true
-    UIManager:scheduleIn(1, function()
+    upload_state.flush_scheduled = true
+    local fn
+    fn = function()
         self._flush_scheduled = false
+        upload_state.flush_scheduled = false
+        upload_state.flush_fn = nil
         self:flushPendingUploads()
-    end)
+    end
+    upload_state.flush_fn = fn
+    UIManager:scheduleIn(1, fn)
 end
 
 --- Decide what a push may do before it sends anything: the flush of the
@@ -884,7 +1053,14 @@ function M:reconcilePending(server, paths, dir)
 end
 
 function M:flushPendingUploads()
-    if self._flushing or not getSetting("upload", false) then
+    syncUploadState()
+    if self._flushing or upload_state.flushing or not getSetting("upload", false) then
+        return
+    end
+    if upload_state.uploading or upload_state.close_pending then
+        if next(getSetting("pending_uploads", {})) ~= nil then
+            upload_state.flush_deferred = true
+        end
         return
     end
     local pending = getSetting("pending_uploads", {})
@@ -922,10 +1098,14 @@ function M:flushPendingUploads()
     -- error one included, so a failure inside the reconcile cannot leave
     -- the flush switched off for good.
     self._flushing = true
+    upload_state.flushing = true
+    upload_state.in_sync = true
     local call_ok, ready, held = pcall(self.reconcilePending, self,
         server, paths, dir)
+    upload_state.in_sync = false
     if not call_ok then
         self._flushing = false
+        upload_state.flushing = false
         logger.warn("tomedown: reconcile failed, nothing pushed:",
             tostring(ready))
         return
@@ -934,6 +1114,7 @@ function M:flushPendingUploads()
         -- everything is held back: the notes stay in the cloud and the
         -- highlights stay on the device, nothing to push right now
         self._flushing = false
+        upload_state.flushing = false
         if #held > 0 then
             UIManager:show(InfoMessage:new{
                 text = T(_("Cloud: %1 files kept back, will retry"), #held),
@@ -946,6 +1127,7 @@ function M:flushPendingUploads()
     self:uploadPaths(server, ready, function(ok_count, fail_count, failed)
         UIManager:close(upload_info)
         self._flushing = false
+        upload_state.flushing = false
         local failed_set = {}
         for __, path in ipairs(failed) do
             failed_set[path] = true
@@ -957,18 +1139,7 @@ function M:flushPendingUploads()
             end
         end
         self:clearPendingUploads(ok_paths)
-        if getSetting("covers", false) then
-            Cover.deleteUploaded(ok_paths, self:getLocalDir(), getCoversFolder())
-            if getCoversFolder() ~= "covers" then
-                Cover.deleteUploaded(ok_paths, self:getLocalDir(), "covers")
-            end
-        end
-        if getSetting("include_handwritten", true) ~= false then
-            Handwritten.deleteUploaded(ok_paths, self:getLocalDir(), getDrawingsFolder())
-            if getDrawingsFolder() ~= "drawings" then
-                Handwritten.deleteUploaded(ok_paths, self:getLocalDir(), "drawings")
-            end
-        end
+        self:cleanupUploadedAssets(ok_paths, self:getLocalDir(), true)
         if fail_count > 0 then
             UIManager:show(InfoMessage:new{
                 text = T(_("Cloud: %1 uploaded, %2 errors"), ok_count, fail_count),
@@ -1096,18 +1267,7 @@ function M:reuploadAll(touchmenu)
             -- the next chance, the way it already does for the export
             self:markPendingUploads(failed)
         end
-        if getSetting("covers", false) then
-            Cover.deleteUploaded(ok_paths, dir, getCoversFolder())
-            if getCoversFolder() ~= "covers" then
-                Cover.deleteUploaded(ok_paths, dir, "covers")
-            end
-        end
-        if getSetting("include_handwritten", true) ~= false then
-            Handwritten.deleteUploaded(ok_paths, dir, getDrawingsFolder())
-            if getDrawingsFolder() ~= "drawings" then
-                Handwritten.deleteUploaded(ok_paths, dir, "drawings")
-            end
-        end
+        self:cleanupUploadedAssets(ok_paths, dir, true)
         if fail_count > 0 then
             UIManager:show(InfoMessage:new{
                 text = T(_("Cloud: %1/%2 files uploaded, %3 errors"), ok_count, #ready, fail_count),

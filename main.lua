@@ -209,14 +209,20 @@ function Tomedown:onCloseDocument()
     if not path then
         return
     end
-    -- let the reader finish closing (and flush the .sdr) first
+    -- let the reader finish closing (and flush the .sdr) first; hold back
+    -- FileManager's init pending-flush until this close export runs so both
+    -- instances do not upload and delete the same cover concurrently
     local closed_at = time.now()
-    UIManager:scheduleIn(1, function()
+    local fn
+    fn = function()
+        self:setCloseExportPending(false)
         logger.info(string.format(
             "tomedown: auto export starts %.2fs after the close",
             time.to_ms(time.since(closed_at)) / 1000))
         self:runExport({ path }, { auto = "close" })
-    end)
+    end
+    UIManager:scheduleIn(1, fn)
+    self:setCloseExportPending(true, fn)
 end
 
 function Tomedown:onSuspend()

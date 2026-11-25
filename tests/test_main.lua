@@ -5860,4 +5860,215 @@ do
     end
 end
 
+-- ------- 34. concurrent close export + pending flush race (Kindle bug)
+do
+    local saved_anns1 = BookList.registry[FILE].annotations
+    local saved_cover_bb = BookInfo.cover_bb
+    local orig_upload_file = provider.uploadFile
+    -- Real WebDavApi:uploadFile opens local_path on disk and returns
+    -- "<path>: No such file or directory" when a concurrent job deleted it.
+    provider.uploadFile = function(url, local_path, etag, overwrite)
+        if lfs.attributes(local_path, "mode") ~= "file" then
+            local n = (attempt_count[local_path] or 0) + 1
+            attempt_count[local_path] = n
+            uploads[#uploads + 1] = { url = url, path = local_path, attempt = n, missing = true }
+            return local_path .. ": No such file or directory"
+        end
+        return orig_upload_file(url, local_path, etag, overwrite)
+    end
+
+    -- 34a. Exact Kindle sequence:
+    -- 1) Library exported online with covers=true (covers uploaded & deleted locally)
+    -- 2) Suspend while reading FILE queues MD_PATH, INDEX_PATH, COVER_PATH + backfilled COVER2_PATH
+    -- 3) Closing FILE fires ReaderUI:onCloseDocument() AND creates FileManager's Tomedown:init()
+    do
+        uploadSetup()
+        cleanDir()
+        NetworkMgr.connected = true
+        BookInfo.cover_bb = fakeBB(400, 600)
+        store.tomedown.covers = true
+        store.tomedown.auto_export = true
+        BookList.registry[FILE].annotations = modernAnnotations()
+
+        plugin:runExport({ FILE, FILE2 }, { force = true })
+        UIManager:runPending()
+        local base2 = (store.tomedown.exports[FILE2] or {}).base
+        local cover2_path = DIR .. "/covers/" .. tostring(base2) .. ".jpg"
+        T.check(not T.fileExists(COVER_PATH) and not T.fileExists(cover2_path),
+            "34a: initial online export uploaded and removed both covers")
+
+        -- Reader adds a highlight and suspends Kindle: silent offline export queues 4 files
+        local anns_suspend = modernAnnotations()
+        anns_suspend[#anns_suspend + 1] = {
+            drawer = "underline",
+            text = "Highlight prima della sospensione.",
+            pageno = 42,
+            datetime = "2026-11-25 14:50:00",
+            chapter = "Capitolo III",
+        }
+        BookList.registry[FILE].annotations = anns_suspend
+        resetUpload()
+        ui.document = { file = FILE }
+        plugin:onSuspend()
+        T.check(store.tomedown.pending_uploads[MD_PATH] == true
+                and store.tomedown.pending_uploads[INDEX_PATH] == true
+                and store.tomedown.pending_uploads[COVER_PATH] == true
+                and store.tomedown.pending_uploads[cover2_path] == true,
+            "34a: suspend queued book md, index, and both covers")
+
+        -- Reader adds one more highlight and closes the book:
+        -- ReaderUI schedules close export (1s) AND FileManager creates a fresh Tomedown instance
+        local anns_close = modernAnnotations()
+        anns_close[#anns_close + 1] = {
+            drawer = "underline",
+            text = "Highlight prima della sospensione.",
+            pageno = 42,
+            datetime = "2026-11-25 14:50:00",
+            chapter = "Capitolo III",
+        }
+        anns_close[#anns_close + 1] = {
+            drawer = "underline",
+            text = "Highlight prima della chiusura.",
+            pageno = 45,
+            datetime = "2026-11-25 15:14:00",
+            chapter = "Capitolo III",
+        }
+        BookList.registry[FILE].annotations = anns_close
+        resetUpload()
+        plugin:onCloseDocument()
+        ui.document = nil
+
+        local fm_ui = {
+            cloudstorage = cloud,
+            menu = { registerToMainMenu = function() end },
+            bookinfo = {},
+            addFileDialogButtons = function() end,
+        }
+        local fm_plugin = Tomedown:new { ui = fm_ui }
+        T.check(fm_plugin ~= plugin, "34a: FileManager uses a distinct plugin instance")
+
+        UIManager:runPending()
+
+        local log_all = table.concat(logger.history, "\n")
+        local had_error_modal = false
+        for __, w in ipairs(UIManager.shown) do
+            if w.__widget == "InfoMessage" and T.contains(w.text or "", "errors") then
+                had_error_modal = true
+            end
+        end
+        T.check(not had_error_modal,
+            "34a: closing book with pending cover uploads shows no error modal")
+        T.check(not T.contains(log_all, "No such file or directory")
+                and not T.contains(log_all, "upload failed"),
+            "34a: no missing-cover upload failure in crash.log: " .. log_all)
+        T.check(next(store.tomedown.pending_uploads or {}) == nil,
+            "34a: all pending uploads (including other books' covers) flushed cleanly")
+        T.check(not T.fileExists(COVER_PATH) and not T.fileExists(cover2_path),
+            "34a: both transient covers cleaned up after upload")
+        T.check(#uploads == 4
+                and attempt_count[MD_PATH] == 1
+                and attempt_count[INDEX_PATH] == 1
+                and attempt_count[COVER_PATH] == 1
+                and attempt_count[cover2_path] == 1,
+            "34a: zero duplicate cloud uploads — each of the 4 files uploaded once: " .. #uploads)
+    end
+
+    -- 34d. Closing an unchanged book (exported == 0) still flushes deferred pending uploads
+    do
+        uploadSetup()
+        cleanDir()
+        NetworkMgr.connected = true
+        BookInfo.cover_bb = fakeBB(400, 600)
+        store.tomedown.covers = true
+        store.tomedown.auto_export = true
+        BookList.registry[FILE].annotations = modernAnnotations()
+
+        -- Offline suspend queues MD_PATH, INDEX_PATH, COVER_PATH
+        ui.document = { file = FILE }
+        plugin:onSuspend()
+        T.check(store.tomedown.pending_uploads[COVER_PATH] == true,
+            "34d: suspend queued COVER_PATH")
+
+        -- Book closed with zero changes while FileManager initializes
+        resetUpload()
+        plugin:onCloseDocument()
+        ui.document = nil
+        local fm_ui = {
+            cloudstorage = cloud,
+            menu = { registerToMainMenu = function() end },
+            bookinfo = {},
+            addFileDialogButtons = function() end,
+        }
+        Tomedown:new { ui = fm_ui }
+        UIManager:runPending()
+
+        T.check(#uploads == 3
+                and next(store.tomedown.pending_uploads or {}) == nil
+                and not T.fileExists(COVER_PATH),
+            "34d: deferred flush runs after unchanged close export finishes: " .. #uploads)
+    end
+
+    -- 34b. Flush already mid-flight when a new export starts uploading overlapping cover
+    do
+        uploadSetup()
+        cleanDir()
+        NetworkMgr.connected = true
+        BookInfo.cover_bb = fakeBB(400, 600)
+        store.tomedown.covers = true
+        BookList.registry[FILE].annotations = modernAnnotations()
+
+        -- Offline export creates MD_PATH, INDEX_PATH, COVER_PATH in pending_uploads
+        NetworkMgr.connected = false
+        plugin:runExport({ FILE }, { force = true })
+        T.check(T.fileExists(COVER_PATH) and store.tomedown.pending_uploads[COVER_PATH] == true,
+            "34b: offline export queued COVER_PATH")
+
+        -- Flush starts online and pauses on transient retries on INDEX_PATH
+        NetworkMgr.connected = true
+        resetUpload()
+        upload_script[INDEX_PATH] = { 500, 500, 200 }
+        plugin:flushPendingUploads()
+        T.check(UIManager:pendingCount() > 0, "34b: flush is mid-flight awaiting retry")
+
+        -- While flush is mid-flight, a new export runs and wants to upload MD_PATH + COVER_PATH + INDEX_PATH
+        plugin:runExport({ FILE }, { force = true })
+        UIManager:runPending()
+
+        local log_b = table.concat(logger.history, "\n")
+        local had_err_b = false
+        for __, w in ipairs(UIManager.shown) do
+            if w.__widget == "InfoMessage" and T.contains(w.text or "", "errors") then
+                had_err_b = true
+            end
+        end
+        T.check(not had_err_b and not T.contains(log_b, "No such file or directory"),
+            "34b: overlapping export during active flush serializes without missing-cover error")
+        T.check(next(store.tomedown.pending_uploads or {}) == nil,
+            "34b: pending_uploads empty after serialized batches complete")
+        T.check(not T.fileExists(COVER_PATH),
+            "34b: cover removed after final queued upload completes")
+    end
+
+    -- 34c. Missing local file is never retried with exponential backoff
+    do
+        uploadSetup()
+        cleanDir()
+        NetworkMgr.connected = true
+        local ghost = DIR .. "/covers/ghost.jpg"
+        plugin:uploadPaths(SERVER, { ghost }, function() end)
+        UIManager:runPending()
+        T.check((attempt_count[ghost] or 0) == 0 and #positives() == 0,
+            "34c: missing local file fails fast without network retries or backoff")
+    end
+
+    provider.uploadFile = orig_upload_file
+    BookInfo.cover_bb = saved_cover_bb
+    BookList.registry[FILE].annotations = saved_anns1
+    store.tomedown.covers = nil
+    store.tomedown.auto_export = nil
+    -- Re-bind active_instance to primary test `plugin`
+    plugin:init()
+    UIManager:reset()
+end
+
 T.finish("test_main")

@@ -1032,12 +1032,7 @@ function M:exportDigest(touchmenu)
                 end
             end
             self:clearPendingUploads(ok_paths)
-            if getSetting("include_handwritten", true) ~= false then
-                Handwritten.deleteUploaded(ok_paths, dir, getDrawingsFolder())
-                if getDrawingsFolder() ~= "drawings" then
-                    Handwritten.deleteUploaded(ok_paths, dir, "drawings")
-                end
-            end
+            self:cleanupUploadedAssets(ok_paths, dir, false)
             if #failed > 0 then
                 self:markPendingUploads(failed)
                 UIManager:show(InfoMessage:new{
@@ -1745,6 +1740,7 @@ function M:runExport(files, opts)
             UIManager:show(InfoMessage:new{
                 text = T(_("Cloud: %1 files kept back, will retry"), #held),
             })
+            self:finishDeferredFlush()
             return
         end
         -- stays open for the whole upload phase, retries included
@@ -1769,20 +1765,11 @@ function M:runExport(files, opts)
             -- the vault copy is now the master one: drop the transferred
             -- covers from the device (the .md files stay local, they are
             -- the library this plugin reads its history from)
-            if getSetting("covers", false) then
-                Cover.deleteUploaded(ok_paths, dir, getCoversFolder())
-                if getCoversFolder() ~= "covers" then
-                    Cover.deleteUploaded(ok_paths, dir, "covers")
-                end
-            end
-            if getSetting("include_handwritten", true) ~= false then
-                Handwritten.deleteUploaded(ok_paths, dir, getDrawingsFolder())
-                if getDrawingsFolder() ~= "drawings" then
-                    Handwritten.deleteUploaded(ok_paths, dir, "drawings")
-                end
-            end
+            self:cleanupUploadedAssets(ok_paths, dir, true)
             reportUpload(ok_count, fail_count)
         end)
+    elseif not silent then
+        self:finishDeferredFlush()
     end
 end
 
