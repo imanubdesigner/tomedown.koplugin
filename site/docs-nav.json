@@ -13,7 +13,8 @@
       {"slug": "templates-and-folders", "src": "extra/templates-and-folders.md", "title": "Templates, Folders & Index", "description": ".md/.txt lifecycle, folder grouping, filename patterns, tag pills, covers, and top bar icon."}
     ]},
     {"title": "Using Tomedown", "items": [
-      {"slug": "settings", "src": "docs/settings.md", "title": "Menu & Settings", "description": "Every menu entry in Files, Book info, Cloud, My notes, Style and Updates."},
+      {"slug": "settings", "src": "docs/settings.md", "title": "Menu & Settings", "description": "Every menu entry in Export, Index & library, Notes & highlights, Book info, Cloud upload, My notes, and App & updates."},
+      {"slug": "current-book", "src": "docs/current-book.md", "title": "Current book", "description": "In-reader controls: Book summary, highlights & notes cards, Format & layout overrides, and Book visibility."},
       {"slug": "keep-my-notes", "src": "docs/keep-my-notes.md", "title": "Keep my notes", "description": "Write in the file; the next export folds highlights in without erasing your notes."}
     ]},
     {"title": "Cloud & Obsidian (Optional)", "items": [

@@ -830,6 +830,59 @@ local function withIcon(glyph, text)
     return glyph .. "  " .. text
 end
 
+-- A visual style row that can either follow the Book style or keep a style
+-- of its own (used by the Index and the Reading digest).
+local function makeFollowStyleRow(cfg)
+    local labels = {
+        minimal = _("Minimal symbols (● / ◐)"),
+        emoji = _("Emoji (🟢 / 🟡)"),
+        badges = _("Code badges (`READING`)"),
+        editorial = _("Editorial (Reading)"),
+    }
+    local sub = {
+        {
+            text = _("Follow book style"),
+            radio = true,
+            keep_menu_open = true,
+            separator = true,
+            checked_func = cfg.getFollow,
+            callback = function()
+                if not cfg.getFollow() then
+                    cfg.setFollow(true)
+                    cfg.onChange()
+                end
+            end,
+        },
+    }
+    for __, key in ipairs({ "minimal", "emoji", "badges", "editorial" }) do
+        sub[#sub + 1] = {
+            text = labels[key],
+            radio = true,
+            keep_menu_open = true,
+            checked_func = function()
+                return not cfg.getFollow() and cfg.getOwn() == key
+            end,
+            callback = function()
+                if cfg.getFollow() or cfg.getOwn() ~= key then
+                    cfg.setOwn(key)
+                    cfg.setFollow(false)
+                    cfg.onChange()
+                end
+            end,
+        }
+    end
+    return {
+        text_func = function()
+            local shown = cfg.getFollow() and _("Follow book style")
+                or labels[cfg.getOwn()] or labels.minimal
+            return T(cfg.title, shown)
+        end,
+        enabled_func = cfg.enabled_func,
+        separator = cfg.separator,
+        sub_item_table = sub,
+    }
+end
+
 --- Settings: four groups (the structure Bookshelf uses). About lives
 -- in the main menu right under Settings. Every setting keeps its own
 -- row; the checkable ones keep their keep_menu_open so KOReader
@@ -938,7 +991,7 @@ function M:editCoversFolder(touchmenu)
     dialog = InputDialog:new{
         title = _("Covers folder name"),
         input = getCoversFolder(),
-        hint = _("e.g. covers, _covers, assets"),
+        hint = _("e.g. covers, assets/covers"),
         buttons = {
             {
                 {
@@ -960,6 +1013,7 @@ function M:editCoversFolder(touchmenu)
                         if new_folder ~= old then
                             local Cover = require("tomedown_cover")
                             Cover.migrateFolder(self:getLocalDir(), old, new_folder)
+                            shared.remapPendingFolder(self:getLocalDir(), old, new_folder)
                             self:invalidateExportHashes()
                             setSetting("index_dirty", true)
                         end
@@ -981,7 +1035,7 @@ function M:editDrawingsFolder(touchmenu)
     dialog = InputDialog:new{
         title = _("Drawings folder name"),
         input = shared.getDrawingsFolder(),
-        hint = _("e.g. drawings, attachments, assets"),
+        hint = _("e.g. drawings, assets/drawings"),
         buttons = {
             {
                 {
@@ -1003,7 +1057,9 @@ function M:editDrawingsFolder(touchmenu)
                         if new_folder ~= old then
                             local Handwritten = require("tomedown_handwritten")
                             Handwritten.migrateFolder(self:getLocalDir(), old, new_folder)
+                            shared.remapPendingFolder(self:getLocalDir(), old, new_folder)
                             self:invalidateExportHashes()
+                            setSetting("digest_dirty", true)
                         end
                         UIManager:close(dialog)
                         if touchmenu and touchmenu.updateItems then
@@ -1352,17 +1408,62 @@ local function setBookExclusionState(file, value)
     end
     setBookExclusion(file, value)
     setSetting("index_dirty", true)
+    setSetting("digest_dirty", true)
     return true
 end
 
 function M:bookVisibilityLabel(file)
     local state = getBookExclusion(file)
     if state == "index" then
-        return _("Book visibility: hidden from the index")
+        return T(_("Book visibility: %1"), _("Hidden from index"))
     elseif state == "none" then
-        return _("Book visibility: not exported")
+        return T(_("Book visibility: %1"), _("Not exported"))
     end
-    return _("Book visibility: normal")
+    return T(_("Book visibility: %1"), _("Normal"))
+end
+
+function M:genBookVisibilityMenu(file)
+    return {
+        {
+            text = _("Export and show in the index"),
+            radio = true,
+            keep_menu_open = true,
+            checked_func = function()
+                return getBookExclusion(file) == nil
+            end,
+            callback = function(touchmenu)
+                if setBookExclusionState(file, nil) and touchmenu and touchmenu.updateItems then
+                    touchmenu:updateItems()
+                end
+            end,
+        },
+        {
+            text = _("Export, but hide from the index"),
+            radio = true,
+            keep_menu_open = true,
+            checked_func = function()
+                return getBookExclusion(file) == "index"
+            end,
+            callback = function(touchmenu)
+                if setBookExclusionState(file, "index") and touchmenu and touchmenu.updateItems then
+                    touchmenu:updateItems()
+                end
+            end,
+        },
+        {
+            text = _("Do not export"),
+            radio = true,
+            keep_menu_open = true,
+            checked_func = function()
+                return getBookExclusion(file) == "none"
+            end,
+            callback = function(touchmenu)
+                if setBookExclusionState(file, "none") and touchmenu and touchmenu.updateItems then
+                    touchmenu:updateItems()
+                end
+            end,
+        },
+    }
 end
 
 function M:editBookVisibility(file, touchmenu)
@@ -1678,16 +1779,25 @@ function M:bookInfoStatusRowLabel(file)
 end
 
 function M:genSettingsMenu()
-    -- Files: filesystem storage, naming templates and folder layouts.
-    local files = {
-        {
-            text_func = function()
-                return T(_("Local folder: %1"), self:getLocalDir())
-            end,
-            callback = function(touchmenu)
-                self:editLocalDir(touchmenu)
-            end,
-        },
+    -- Group 1: Export (format, markdown style, folders, frontmatter, auto-export, digest, backups).
+    local files_table
+    local buildFilesRows
+    local function rebuildFilesRows(touchmenu)
+        if not files_table then
+            return
+        end
+        local fresh = buildFilesRows()
+        for i = #files_table, 1, -1 do
+            files_table[i] = nil
+        end
+        for _, item in ipairs(fresh) do
+            files_table[#files_table + 1] = item
+        end
+        if touchmenu and touchmenu.item_table == files_table and touchmenu.updateItems then
+            touchmenu:updateItems()
+        end
+    end
+    local filenames_folders_table = {
         {
             text_func = function()
                 local tpl = getFilenameTemplate()
@@ -1812,94 +1922,233 @@ function M:genSettingsMenu()
             },
         },
         {
-            text = T(_("Create a reading digest (%1)"), DIGEST_FILENAME),
-            checked_func = function()
-                return getSetting("with_digest", false)
+            text_func = function()
+                return T(_("Covers folder: %1"), getCoversFolder())
             end,
-            keep_menu_open = true,
-            callback = function()
-                setSetting("with_digest", not getSetting("with_digest", false))
+            enabled_func = function()
+                return getSetting("covers", false)
             end,
-        },
-        {
-            text = _("Export when I close a book"),
-            checked_func = function()
-                return getSetting("auto_export", false)
-            end,
-            keep_menu_open = true,
-            callback = function()
-                setSetting("auto_export",
-                    not getSetting("auto_export", false))
+            callback = function(touchmenu)
+                self:editCoversFolder(touchmenu)
             end,
         },
         {
             text_func = function()
-                local labels = {
-                    md = _("Markdown (.md)"),
-                    txt = _("Plain text (.txt)"),
-                    both = _("Both (.md and .txt)"),
-                }
-                local current = getExportFormat()
-                return T(_("Export format: %1"), labels[current] or labels.md)
+                return T(_("Drawings folder: %1"), shared.getDrawingsFolder())
             end,
-            sub_item_table = {
-                {
-                    text = _("Markdown (.md)"),
-                    radio = true,
-                    keep_menu_open = true,
-                    checked_func = function()
-                        return getExportFormat() == "md"
-                    end,
-                    callback = function()
-                        if getExportFormat() ~= "md" then
-                            setExportFormat("md")
-                            self:invalidateExportHashes()
-                        end
-                    end,
-                },
-                {
-                    text = _("Plain text (.txt)"),
-                    radio = true,
-                    keep_menu_open = true,
-                    checked_func = function()
-                        return getExportFormat() == "txt"
-                    end,
-                    callback = function()
-                        if getExportFormat() ~= "txt" then
-                            setExportFormat("txt")
-                            self:invalidateExportHashes()
-                        end
-                    end,
-                },
-                {
-                    text = _("Both (.md and .txt)"),
-                    radio = true,
-                    keep_menu_open = true,
-                    checked_func = function()
-                        return getExportFormat() == "both"
-                    end,
-                    callback = function()
-                        if getExportFormat() ~= "both" then
-                            setExportFormat("both")
-                            self:invalidateExportHashes()
-                        end
-                    end,
+            enabled_func = function()
+                return getSetting("include_handwritten", true) ~= false
+            end,
+            callback = function(touchmenu)
+                self:editDrawingsFolder(touchmenu)
+            end,
+        },
+    }
+    buildFilesRows = function()
+        local fm_sub = self:genFrontmatterFieldsMenu(nil)
+        local with_digest = getSetting("with_digest", false)
+        local rows = {
+            {
+                text_func = function()
+                    local labels = {
+                        md = _("Markdown (.md)"),
+                        txt = _("Plain text (.txt)"),
+                        both = _("Both (.md and .txt)"),
+                    }
+                    local current = getExportFormat()
+                    return T(_("Export format: %1"), labels[current] or labels.md)
+                end,
+                sub_item_table = {
+                    {
+                        text = _("Markdown (.md)"),
+                        radio = true,
+                        keep_menu_open = true,
+                        checked_func = function()
+                            return getExportFormat() == "md"
+                        end,
+                        callback = function(touchmenu)
+                            if getExportFormat() ~= "md" then
+                                setExportFormat("md")
+                                self:invalidateExportHashes()
+                                rebuildFilesRows(touchmenu)
+                            end
+                        end,
+                    },
+                    {
+                        text = _("Plain text (.txt)"),
+                        radio = true,
+                        keep_menu_open = true,
+                        checked_func = function()
+                            return getExportFormat() == "txt"
+                        end,
+                        callback = function(touchmenu)
+                            if getExportFormat() ~= "txt" then
+                                setExportFormat("txt")
+                                self:invalidateExportHashes()
+                                rebuildFilesRows(touchmenu)
+                            end
+                        end,
+                    },
+                    {
+                        text = _("Both (.md and .txt)"),
+                        radio = true,
+                        keep_menu_open = true,
+                        checked_func = function()
+                            return getExportFormat() == "both"
+                        end,
+                        callback = function(touchmenu)
+                            if getExportFormat() ~= "both" then
+                                setExportFormat("both")
+                                self:invalidateExportHashes()
+                                rebuildFilesRows(touchmenu)
+                            end
+                        end,
+                    },
                 },
             },
-            separator = true,
-        },
-        {
+            {
+                text_func = function()
+                    local labels = {
+                        obsidian   = _("Obsidian"),
+                        standard   = _("Standard"),
+                        commonmark = _("CommonMark"),
+                    }
+                    local current = shared.getMarkdownStyle()
+                    return T(_("Markdown style: %1"), labels[current] or labels.obsidian)
+                end,
+                enabled_func = function()
+                    return getExportFormat() ~= "txt"
+                end,
+                mandatory_func = function()
+                    if getExportFormat() == "txt" then
+                        return _("Not used with .txt")
+                    end
+                end,
+                separator = true,
+                sub_item_table = {
+                    {
+                        text = _("Obsidian"),
+                        radio = true,
+                        keep_menu_open = true,
+                        checked_func = function()
+                            return shared.getMarkdownStyle() == "obsidian"
+                        end,
+                        callback = function()
+                            if shared.getMarkdownStyle() ~= "obsidian" then
+                                shared.setMarkdownStyle("obsidian")
+                                self:invalidateExportHashes()
+                            end
+                        end,
+                    },
+                    {
+                        text = _("Standard (GitHub / HTML)"),
+                        radio = true,
+                        keep_menu_open = true,
+                        checked_func = function()
+                            return shared.getMarkdownStyle() == "standard"
+                        end,
+                        callback = function()
+                            if shared.getMarkdownStyle() ~= "standard" then
+                                shared.setMarkdownStyle("standard")
+                                self:invalidateExportHashes()
+                            end
+                        end,
+                    },
+                    {
+                        text = _("CommonMark (no HTML)"),
+                        radio = true,
+                        keep_menu_open = true,
+                        checked_func = function()
+                            return shared.getMarkdownStyle() == "commonmark"
+                        end,
+                        callback = function()
+                            if shared.getMarkdownStyle() ~= "commonmark" then
+                                shared.setMarkdownStyle("commonmark")
+                                self:invalidateExportHashes()
+                            end
+                        end,
+                    },
+                },
+            },
+            {
+                text_func = function()
+                    return T(_("Local folder: %1"), self:getLocalDir())
+                end,
+                callback = function(touchmenu)
+                    self:editLocalDir(touchmenu)
+                end,
+            },
+            {
+                text = _("File names & folders"),
+                sub_item_table = filenames_folders_table,
+            },
+            {
+                text = _("Frontmatter fields"),
+                separator = true,
+                sub_item_table = fm_sub,
+                sub_item_table_func = function()
+                    return self:genFrontmatterFieldsMenu(nil, fm_sub)
+                end,
+            },
+            {
+                text = _("Export when I close a book"),
+                separator = true,
+                checked_func = function()
+                    return getSetting("auto_export", false)
+                end,
+                keep_menu_open = true,
+                callback = function()
+                    setSetting("auto_export",
+                        not getSetting("auto_export", false))
+                end,
+            },
+            {
+                text = T(_("Reading digest (%1)"), DIGEST_FILENAME),
+                separator = not with_digest,
+                checked_func = function()
+                    return getSetting("with_digest", false)
+                end,
+                keep_menu_open = true,
+                callback = function(touchmenu)
+                    local next_val = not getSetting("with_digest", false)
+                    setSetting("with_digest", next_val)
+                    if next_val then
+                        setSetting("digest_dirty", true)
+                    end
+                    rebuildFilesRows(touchmenu)
+                end,
+            },
+        }
+        if with_digest then
+            rows[#rows + 1] = makeFollowStyleRow({
+                title = _("Digest style: %1"),
+                getFollow = shared.getDigestFollowBook,
+                setFollow = shared.setDigestFollowBook,
+                getOwn = shared.getDigestStyle,
+                setOwn = shared.setDigestStyle,
+                separator = true,
+                onChange = function()
+                    setSetting("digest_dirty", true)
+                end,
+            })
+        end
+        rows[#rows + 1] = {
             text_func = function()
                 return T(_("Backup copies (%1)"), #self:allBackups())
             end,
             enabled_func = function()
                 return #self:allBackups() > 0
             end,
+            mandatory_func = function()
+                if #self:allBackups() == 0 then
+                    return _("None")
+                end
+            end,
             sub_item_table_func = function()
                 return self:genAllBackupsMenu()
             end,
-        },
-        {
+        }
+        rows[#rows + 1] = {
             text = _("Export settings to file"),
             callback = function()
                 local backup_path = self:getLocalDir() .. "/" .. shared.SETTINGS_BACKUP_FILENAME
@@ -1914,8 +2163,8 @@ function M:genSettingsMenu()
                     })
                 end
             end,
-        },
-        {
+        }
+        rows[#rows + 1] = {
             text = _("Restore settings from backup…"),
             enabled_func = function()
                 local backup_path = self:getLocalDir() .. "/" .. shared.SETTINGS_BACKUP_FILENAME
@@ -1947,13 +2196,15 @@ function M:genSettingsMenu()
                     })
                 end)
             end,
-        },
-    }
+        }
+        return rows
+    end
+    files_table = buildFilesRows()
 
-    -- Index: all settings for 00 - Index.md.
+    -- Group 2: Index & library (00 - Index.md settings, structure, and sections).
     local index = {
         {
-            text = T(_("Create an index note (%1)"), INDEX_FILENAME),
+            text = T(_("Index note (%1)"), INDEX_FILENAME),
             checked_func = function()
                 return getSetting("with_index", true)
             end,
@@ -1973,6 +2224,9 @@ function M:genSettingsMenu()
                 local current = getSetting("index_order", "author")
                 return T(_("Index order: %1"),
                     labels[current] or labels.author)
+            end,
+            enabled_func = function()
+                return getSetting("with_index", true)
             end,
             sub_item_table = {
                 {
@@ -2028,9 +2282,13 @@ function M:genSettingsMenu()
                     tags_column = _("Tags column"),
                     tags_column_compact = _("Tags column, compact"),
                 }
-                local current = getSetting("index_layout", "tags_below")
+                local current = not shared.isObsidianStyle()
+                    and "tags_below" or getSetting("index_layout", "tags_below")
                 return T(_("Index layout: %1"),
                     labels[current] or labels.tags_below)
+            end,
+            enabled_func = function()
+                return getSetting("with_index", true) and shared.isObsidianStyle()
             end,
             sub_item_table = {
                 {
@@ -2074,9 +2332,13 @@ function M:genSettingsMenu()
                     wikilink = _("Obsidian wikilink"),
                     markdown = _("Standard Markdown"),
                 }
-                local current = getIndexLinks()
+                local current = not shared.isObsidianStyle()
+                    and "markdown" or getIndexLinks()
                 return T(_("Index links: %1"),
                     labels[current] or labels.wikilink)
+            end,
+            enabled_func = function()
+                return getSetting("with_index", true) and shared.isObsidianStyle()
             end,
             sub_item_table = {
                 {
@@ -2103,8 +2365,94 @@ function M:genSettingsMenu()
                 },
             },
         },
+        makeFollowStyleRow({
+            title = _("Index style: %1"),
+            getFollow = shared.getIndexFollowBook,
+            setFollow = shared.setIndexFollowBook,
+            getOwn = shared.getIndexStyle,
+            setOwn = shared.setIndexStyle,
+            enabled_func = function()
+                return getSetting("with_index", true)
+            end,
+            onChange = function()
+                setSetting("index_dirty", true)
+            end,
+        }),
         {
-            text = _("Show Reading now in the index"),
+            text_func = function()
+                local labels = {
+                    all = _("Show all"),
+                    first_3 = _("First 3 (+N)"),
+                    collapsible = _("Collapsible (<details>)"),
+                }
+                local current = shared.getIndexTagsMode()
+                if not shared.isObsidianStyle() and current == "collapsible" then
+                    current = "first_3"
+                end
+                return T(_("Tags display: %1"),
+                    labels[current] or labels.all)
+            end,
+            enabled_func = function()
+                return getSetting("with_index", true)
+            end,
+            separator = true,
+            sub_item_table_func = function()
+                local is_std = not shared.isObsidianStyle()
+                local items = {
+                    {
+                        text = _("Show all"),
+                        radio = true,
+                        keep_menu_open = true,
+                        checked_func = function()
+                            return shared.getIndexTagsMode() == "all"
+                        end,
+                        callback = function()
+                            if shared.getIndexTagsMode() ~= "all" then
+                                shared.setIndexTagsMode("all")
+                                setSetting("index_dirty", true)
+                            end
+                        end,
+                    },
+                    {
+                        text = _("First 3 (+N)"),
+                        radio = true,
+                        keep_menu_open = true,
+                        checked_func = function()
+                            local m = shared.getIndexTagsMode()
+                            return m == "first_3" or (is_std and m == "collapsible")
+                        end,
+                        callback = function()
+                            if shared.getIndexTagsMode() ~= "first_3" then
+                                shared.setIndexTagsMode("first_3")
+                                setSetting("index_dirty", true)
+                            end
+                        end,
+                    },
+                }
+                if not is_std then
+                    items[#items + 1] = {
+                        text = _("Collapsible (<details>)"),
+                        radio = true,
+                        keep_menu_open = true,
+                        checked_func = function()
+                            return shared.getIndexTagsMode() == "collapsible"
+                        end,
+                        callback = function()
+                            if shared.getIndexTagsMode() ~= "collapsible" then
+                                shared.setIndexTagsMode("collapsible")
+                                setSetting("index_dirty", true)
+                            end
+                        end,
+                    }
+                end
+                return items
+            end,
+        },
+        {
+            text = _("Reading now section"),
+            enabled_func = function()
+                return getSetting("with_index", true)
+            end,
             checked_func = function()
                 return getSetting("reading_now", true)
             end,
@@ -2115,63 +2463,10 @@ function M:genSettingsMenu()
             end,
         },
         {
-            text_func = function()
-                local labels = {
-                    all = _("Show all"),
-                    first_3 = _("First 3 (+N)"),
-                    collapsible = _("Collapsible (<details>)"),
-                }
-                local current = shared.getIndexTagsMode()
-                return T(_("Index tags display: %1"),
-                    labels[current] or labels.all)
+            text = _("Completed books"),
+            enabled_func = function()
+                return getSetting("with_index", true)
             end,
-            sub_item_table = {
-                {
-                    text = _("Show all"),
-                    radio = true,
-                    keep_menu_open = true,
-                    checked_func = function()
-                        return shared.getIndexTagsMode() == "all"
-                    end,
-                    callback = function()
-                        if shared.getIndexTagsMode() ~= "all" then
-                            shared.setIndexTagsMode("all")
-                            setSetting("index_dirty", true)
-                        end
-                    end,
-                },
-                {
-                    text = _("First 3 (+N)"),
-                    radio = true,
-                    keep_menu_open = true,
-                    checked_func = function()
-                        return shared.getIndexTagsMode() == "first_3"
-                    end,
-                    callback = function()
-                        if shared.getIndexTagsMode() ~= "first_3" then
-                            shared.setIndexTagsMode("first_3")
-                            setSetting("index_dirty", true)
-                        end
-                    end,
-                },
-                {
-                    text = _("Collapsible (<details>)"),
-                    radio = true,
-                    keep_menu_open = true,
-                    checked_func = function()
-                        return shared.getIndexTagsMode() == "collapsible"
-                    end,
-                    callback = function()
-                        if shared.getIndexTagsMode() ~= "collapsible" then
-                            shared.setIndexTagsMode("collapsible")
-                            setSetting("index_dirty", true)
-                        end
-                    end,
-                },
-            },
-        },
-        {
-            text = _("Show Completed books in the index"),
             checked_func = function()
                 return shared.getCompletedBooks()
             end,
@@ -2182,7 +2477,10 @@ function M:genSettingsMenu()
             end,
         },
         {
-            text = _("Show Library dashboard in the index"),
+            text = _("Library dashboard"),
+            enabled_func = function()
+                return getSetting("with_index", true)
+            end,
             checked_func = function()
                 return shared.getIndexDashboard()
             end,
@@ -2193,7 +2491,10 @@ function M:genSettingsMenu()
             end,
         },
         {
-            text = _("Show tag cloud in the index"),
+            text = _("Tag cloud"),
+            enabled_func = function()
+                return getSetting("with_index", true)
+            end,
             checked_func = function()
                 return shared.getIndexTagCloud()
             end,
@@ -2205,49 +2506,85 @@ function M:genSettingsMenu()
         },
     }
 
-    -- Style: note formatting, highlights, bookmarks and covers.
-    local style = {
-        {
+    -- Group 3: Notes & highlights (highlight formatting, notes, chapters, and Book page).
+    local style_table
+    local buildStyleRows
+    local function makeGlobalVisualStyleRow(title_tmpl, getter, setter, enabled_fn, sep)
+        local labels = {
+            minimal = _("Minimal symbols (● / ◐)"),
+            emoji = _("Emoji (🟢 / 🟡)"),
+            badges = _("Code badges (`READING`)"),
+            editorial = _("Editorial (Reading)"),
+        }
+        return {
             text_func = function()
-                local labels = {
-                    inline = _("Inline"),
-                    footnote = _("Footnotes"),
-                }
-                local current = getNoteStyle()
-                return T(_("Personal notes format: %1"),
-                    labels[current] or labels.inline)
+                local current = getter()
+                return T(title_tmpl, labels[current] or labels.minimal)
             end,
+            enabled_func = enabled_fn,
+            separator = sep,
             sub_item_table = {
                 {
-                    text = _("Inline"),
+                    text = labels.minimal,
                     radio = true,
                     keep_menu_open = true,
                     checked_func = function()
-                        return getNoteStyle() == "inline"
+                        return getter() == "minimal"
                     end,
                     callback = function()
-                        if getNoteStyle() ~= "inline" then
-                            setNoteStyle("inline")
+                        if getter() ~= "minimal" then
+                            setter("minimal")
                             self:invalidateExportHashes()
                         end
                     end,
                 },
                 {
-                    text = _("Footnotes"),
+                    text = labels.emoji,
                     radio = true,
                     keep_menu_open = true,
                     checked_func = function()
-                        return getNoteStyle() == "footnote"
+                        return getter() == "emoji"
                     end,
                     callback = function()
-                        if getNoteStyle() ~= "footnote" then
-                            setNoteStyle("footnote")
+                        if getter() ~= "emoji" then
+                            setter("emoji")
+                            self:invalidateExportHashes()
+                        end
+                    end,
+                },
+                {
+                    text = labels.badges,
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return getter() == "badges"
+                    end,
+                    callback = function()
+                        if getter() ~= "badges" then
+                            setter("badges")
+                            self:invalidateExportHashes()
+                        end
+                    end,
+                },
+                {
+                    text = labels.editorial,
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return getter() == "editorial"
+                    end,
+                    callback = function()
+                        if getter() ~= "editorial" then
+                            setter("editorial")
                             self:invalidateExportHashes()
                         end
                     end,
                 },
             },
-        },
+        }
+    end
+    buildStyleRows = function()
+    local rows = {
         {
             text_func = function()
                 local labels = {
@@ -2258,20 +2595,29 @@ function M:genSettingsMenu()
                     star_bold = _("Star & Bold (⭐ **text**)"),
                     bold = _("Bold (**text**)"),
                 }
-                return T(_("How special highlights look: %1"),
-                    labels[getSetting("special_marker", "callout")]
-                        or labels.callout)
+                local cur = getSetting("special_marker", "callout")
+                if not shared.isObsidianStyle()
+                        and (cur == "callout" or cur == "alert"
+                            or cur == "highlight" or cur == "highlight_bold") then
+                    cur = "bold"
+                end
+                return T(_("Special highlight style: %1"),
+                    labels[cur] or labels.callout)
             end,
             enabled_func = function()
-                return not getSetting("callout", false)
+                return not shared.isObsidianStyle() or not getSetting("callout", false)
             end,
             keep_menu_open = true,
             sub_item_table = {
                 {
                     text = _("Callout ([!highlight])"),
                     radio = true,
+                    enabled_func = function()
+                        return shared.isObsidianStyle()
+                    end,
                     checked_func = function()
-                        return getSetting("special_marker", "callout") == "callout"
+                        return shared.isObsidianStyle()
+                            and getSetting("special_marker", "callout") == "callout"
                     end,
                     keep_menu_open = true,
                     callback = function()
@@ -2282,8 +2628,12 @@ function M:genSettingsMenu()
                 {
                     text = _("Alert ([!IMPORTANT])"),
                     radio = true,
+                    enabled_func = function()
+                        return shared.isObsidianStyle()
+                    end,
                     checked_func = function()
-                        return getSetting("special_marker", "callout") == "alert"
+                        return shared.isObsidianStyle()
+                            and getSetting("special_marker", "callout") == "alert"
                     end,
                     keep_menu_open = true,
                     callback = function()
@@ -2294,8 +2644,12 @@ function M:genSettingsMenu()
                 {
                     text = _("Highlight (==text==)"),
                     radio = true,
+                    enabled_func = function()
+                        return shared.isObsidianStyle()
+                    end,
                     checked_func = function()
-                        return getSetting("special_marker", "callout") == "highlight"
+                        return shared.isObsidianStyle()
+                            and getSetting("special_marker", "callout") == "highlight"
                     end,
                     keep_menu_open = true,
                     callback = function()
@@ -2306,8 +2660,12 @@ function M:genSettingsMenu()
                 {
                     text = _("Highlight & Bold (==**text**==)"),
                     radio = true,
+                    enabled_func = function()
+                        return shared.isObsidianStyle()
+                    end,
                     checked_func = function()
-                        return getSetting("special_marker", "callout") == "highlight_bold"
+                        return shared.isObsidianStyle()
+                            and getSetting("special_marker", "callout") == "highlight_bold"
                     end,
                     keep_menu_open = true,
                     callback = function()
@@ -2331,7 +2689,11 @@ function M:genSettingsMenu()
                     text = _("Bold (**text**)"),
                     radio = true,
                     checked_func = function()
-                        return getSetting("special_marker", "callout") == "bold"
+                        local cur = getSetting("special_marker", "callout")
+                        return cur == "bold"
+                            or (not shared.isObsidianStyle()
+                                and (cur == "callout" or cur == "alert"
+                                    or cur == "highlight" or cur == "highlight_bold"))
                     end,
                     keep_menu_open = true,
                     callback = function()
@@ -2341,70 +2703,6 @@ function M:genSettingsMenu()
                 },
             },
         },
-        {
-            text = _("Treat every highlight as special"),
-            checked_func = function()
-                return getSetting("callout", false)
-            end,
-            keep_menu_open = true,
-            callback = function()
-                setSetting("callout", not getSetting("callout", false))
-                self:invalidateExportHashes()
-            end,
-        },
-        {
-            text = _("Add link IDs to highlights"),
-            checked_func = function()
-                return getSetting("block_ids", false)
-            end,
-            keep_menu_open = true,
-            callback = function()
-                setSetting("block_ids", not getSetting("block_ids", false))
-                self:invalidateExportHashes()
-            end,
-        },
-        {
-            text = _("Include book covers"),
-            checked_func = function()
-                return getSetting("covers", false)
-            end,
-            keep_menu_open = true,
-            callback = function()
-                setSetting("covers", not getSetting("covers", false))
-                self:invalidateExportHashes()
-            end,
-        },
-        {
-            text_func = function()
-                return T(_("Covers folder: %1"), getCoversFolder())
-            end,
-            enabled_func = function()
-                return getSetting("covers", false)
-            end,
-            callback = function(touchmenu)
-                self:editCoversFolder(touchmenu)
-            end,
-        },
-        {
-            text = _("Include page bookmarks"),
-            checked_func = function()
-                return getSetting("include_bookmarks", false)
-            end,
-            keep_menu_open = true,
-            callback = function()
-                setSetting("include_bookmarks", not getSetting("include_bookmarks", false))
-            end,
-        },
-        (function()
-            local fm_sub = self:genFrontmatterFieldsMenu(nil)
-            return {
-                text = _("Frontmatter fields"),
-                sub_item_table = fm_sub,
-                sub_item_table_func = function()
-                    return self:genFrontmatterFieldsMenu(nil, fm_sub)
-                end,
-            }
-        end)(),
         {
             text_func = function()
                 local labels = {
@@ -2471,6 +2769,114 @@ function M:genSettingsMenu()
                         if getHighlightDetails() ~= "none" then
                             setHighlightDetails("none")
                             self:invalidateExportHashes()
+                        end
+                    end,
+                },
+            },
+        },
+        {
+            text = _("Highlight context"),
+            checked_func = function()
+                return getHighlightContext()
+            end,
+            keep_menu_open = true,
+            callback = function()
+                setHighlightContext(not getHighlightContext())
+                self:invalidateExportHashes()
+            end,
+        },
+        {
+            text = _("Link IDs on highlights"),
+            enabled_func = function()
+                return shared.isObsidianStyle()
+            end,
+            checked_func = function()
+                return shared.isObsidianStyle() and getSetting("block_ids", false)
+            end,
+            keep_menu_open = true,
+            callback = function()
+                setSetting("block_ids", not getSetting("block_ids", false))
+                self:invalidateExportHashes()
+            end,
+        },
+        {
+            text = _("Every highlight is special"),
+            separator = true,
+            enabled_func = function()
+                return shared.isObsidianStyle()
+            end,
+            checked_func = function()
+                return shared.isObsidianStyle() and getSetting("callout", false)
+            end,
+            keep_menu_open = true,
+            callback = function()
+                setSetting("callout", not getSetting("callout", false))
+                self:invalidateExportHashes()
+            end,
+        },
+        {
+            text_func = function()
+                local labels = {
+                    inline = _("Inline"),
+                    callout = _("Callout ([!note])"),
+                    footnote = _("Footnotes"),
+                }
+                local current = getNoteStyle()
+                if not shared.isObsidianStyle() and current == "callout" then
+                    current = "inline"
+                end
+                return T(_("Personal notes format: %1"),
+                    labels[current] or labels.inline)
+            end,
+            sub_item_table = {
+                {
+                    text = _("Inline"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        local cur = getNoteStyle()
+                        return cur == "inline"
+                            or (not shared.isObsidianStyle() and cur == "callout")
+                    end,
+                    callback = function()
+                        if getNoteStyle() ~= "inline" then
+                            setNoteStyle("inline")
+                            self:invalidateExportHashes()
+                            setSetting("digest_dirty", true)
+                        end
+                    end,
+                },
+                {
+                    text = _("Callout ([!note])"),
+                    radio = true,
+                    keep_menu_open = true,
+                    enabled_func = function()
+                        return shared.isObsidianStyle()
+                    end,
+                    checked_func = function()
+                        return shared.isObsidianStyle()
+                            and getNoteStyle() == "callout"
+                    end,
+                    callback = function()
+                        if getNoteStyle() ~= "callout" then
+                            setNoteStyle("callout")
+                            self:invalidateExportHashes()
+                            setSetting("digest_dirty", true)
+                        end
+                    end,
+                },
+                {
+                    text = _("Footnotes"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return getNoteStyle() == "footnote"
+                    end,
+                    callback = function()
+                        if getNoteStyle() ~= "footnote" then
+                            setNoteStyle("footnote")
+                            self:invalidateExportHashes()
+                            setSetting("digest_dirty", true)
                         end
                     end,
                 },
@@ -2548,18 +2954,19 @@ function M:genSettingsMenu()
             },
         },
         {
-            text = _("Include highlight context"),
+            text = _("Page bookmarks"),
             checked_func = function()
-                return getHighlightContext()
+                return getSetting("include_bookmarks", false)
             end,
             keep_menu_open = true,
             callback = function()
-                setHighlightContext(not getHighlightContext())
+                setSetting("include_bookmarks", not getSetting("include_bookmarks", false))
                 self:invalidateExportHashes()
             end,
         },
         {
-            text = _("Include handwritten notes"),
+            text = _("Handwritten notes"),
+            separator = true,
             checked_func = function()
                 return getSetting("include_handwritten", true) ~= false
             end,
@@ -2570,167 +2977,356 @@ function M:genSettingsMenu()
                 self:invalidateExportHashes()
             end,
         },
-        {
-            text_func = function()
-                return T(_("Drawings folder: %1"), shared.getDrawingsFolder())
-            end,
-            enabled_func = function()
-                return getSetting("include_handwritten", true) ~= false
-            end,
-            callback = function(touchmenu)
-                self:editDrawingsFolder(touchmenu)
-            end,
-        },
-        {
-            text = _("Include book title in body"),
-            checked_func = function()
-                return shared.getBookHeading()
-            end,
-            keep_menu_open = true,
-            callback = function()
-                shared.setBookHeading(not shared.getBookHeading())
-                self:invalidateExportHashes()
-            end,
-        },
-        {
-            text_func = function()
-                local labels = {
-                    inline = _("Inline / Heading"),
-                    blockquote = _("Classic blockquote"),
-                    callout = _("Callout ([!summary])"),
-                    table = _("Table"),
+        (function()
+            local sec_style_table
+            local buildSecStyleRows
+            local function rebuildSecStyleRows(touchmenu)
+                if not sec_style_table then
+                    return
+                end
+                local fresh = buildSecStyleRows()
+                for i = #sec_style_table, 1, -1 do
+                    sec_style_table[i] = nil
+                end
+                for __, item in ipairs(fresh) do
+                    sec_style_table[#sec_style_table + 1] = item
+                end
+                if touchmenu and touchmenu.item_table == sec_style_table and touchmenu.updateItems then
+                    touchmenu:updateItems()
+                end
+            end
+            buildSecStyleRows = function()
+                local harmonized = shared.getHarmonizeBookStyle()
+                local s_rows = {
+                    {
+                        text = _("Harmonize book styles"),
+                        checked_func = function()
+                            return shared.getHarmonizeBookStyle()
+                        end,
+                        keep_menu_open = true,
+                        separator = true,
+                        callback = function(touchmenu)
+                            shared.setHarmonizeBookStyle(not shared.getHarmonizeBookStyle())
+                            self:invalidateExportHashes()
+                            setSetting("index_dirty", true)
+                            setSetting("digest_dirty", true)
+                            rebuildSecStyleRows(touchmenu)
+                        end,
+                    },
                 }
-                local current = shared.getOverviewStyle()
-                return T(_("Overview style: %1"),
-                    labels[current] or labels.inline)
-            end,
-            sub_item_table = {
-                {
-                    text = _("Inline / Heading"),
-                    radio = true,
-                    keep_menu_open = true,
-                    checked_func = function()
-                        return shared.getOverviewStyle() == "inline"
-                    end,
-                    callback = function()
-                        if shared.getOverviewStyle() ~= "inline" then
-                            shared.setOverviewStyle("inline")
-                            self:invalidateExportHashes()
+                if harmonized then
+                    s_rows[#s_rows + 1] = makeGlobalVisualStyleRow(
+                        _("Book style: %1"),
+                        shared.getBookVisualStyle,
+                        function(style)
+                            shared.setBookVisualStyle(style)
+                            setSetting("index_dirty", true)
+                            setSetting("digest_dirty", true)
                         end
+                    )
+                else
+                    s_rows[#s_rows + 1] = makeGlobalVisualStyleRow(
+                        _("Dashboard style: %1"),
+                        shared.getDashboardStyle,
+                        shared.setDashboardStyle,
+                        function()
+                            return shared.getReadingDashboard()
+                        end
+                    )
+                    s_rows[#s_rows + 1] = makeGlobalVisualStyleRow(
+                        _("Synopsis style: %1"),
+                        shared.getSynopsisStyle,
+                        shared.setSynopsisStyle,
+                        function()
+                            return shared.getBookSynopsis()
+                        end
+                    )
+                    s_rows[#s_rows + 1] = makeGlobalVisualStyleRow(
+                        _("Tags style: %1"),
+                        shared.getBodyTagsStyle,
+                        shared.setBodyTagsStyle,
+                        function()
+                            return shared.getBodyTags()
+                        end
+                    )
+                    s_rows[#s_rows + 1] = makeGlobalVisualStyleRow(
+                        _("Showcase style: %1"),
+                        shared.getShowcaseStyle,
+                        shared.setShowcaseStyle,
+                        function()
+                            return shared.getSpecialShowcase()
+                        end
+                    )
+                end
+                return s_rows
+            end
+            sec_style_table = buildSecStyleRows()
+            local card_table = {
+                {
+                    text = _("Book title in body"),
+                    checked_func = function()
+                        return shared.getBookHeading()
+                    end,
+                    keep_menu_open = true,
+                    callback = function()
+                        shared.setBookHeading(not shared.getBookHeading())
+                        self:invalidateExportHashes()
                     end,
                 },
                 {
-                    text = _("Classic blockquote"),
-                    radio = true,
-                    keep_menu_open = true,
+                    text = _("Book cover image"),
                     checked_func = function()
-                        return shared.getOverviewStyle() == "blockquote"
+                        return getSetting("covers", false)
                     end,
+                    keep_menu_open = true,
                     callback = function()
-                        if shared.getOverviewStyle() ~= "blockquote" then
-                            shared.setOverviewStyle("blockquote")
-                            self:invalidateExportHashes()
-                        end
+                        setSetting("covers", not getSetting("covers", false))
+                        self:invalidateExportHashes()
                     end,
                 },
                 {
-                    text = _("Callout ([!summary])"),
-                    radio = true,
-                    keep_menu_open = true,
-                    checked_func = function()
-                        return shared.getOverviewStyle() == "callout"
-                    end,
-                    callback = function()
-                        if shared.getOverviewStyle() ~= "callout" then
-                            shared.setOverviewStyle("callout")
-                            self:invalidateExportHashes()
+                    text_func = function()
+                        local labels = {
+                            inline = _("Inline / Heading"),
+                            blockquote = _("Classic blockquote"),
+                            callout = _("Callout ([!summary])"),
+                            table = _("Table"),
+                        }
+                        local current = shared.getOverviewStyle()
+                        if not shared.isObsidianStyle() and current == "callout" then
+                            current = "blockquote"
                         end
+                        return T(_("Overview style: %1"),
+                            labels[current] or labels.inline)
+                    end,
+                    separator = true,
+                    sub_item_table = {
+                        {
+                            text = _("Inline / Heading"),
+                            radio = true,
+                            keep_menu_open = true,
+                            checked_func = function()
+                                return shared.getOverviewStyle() == "inline"
+                            end,
+                            callback = function()
+                                if shared.getOverviewStyle() ~= "inline" then
+                                    shared.setOverviewStyle("inline")
+                                    self:invalidateExportHashes()
+                                end
+                            end,
+                        },
+                        {
+                            text = _("Classic blockquote"),
+                            radio = true,
+                            keep_menu_open = true,
+                            checked_func = function()
+                                local cur = shared.getOverviewStyle()
+                                return cur == "blockquote"
+                                    or (not shared.isObsidianStyle() and cur == "callout")
+                            end,
+                            callback = function()
+                                if shared.getOverviewStyle() ~= "blockquote" then
+                                    shared.setOverviewStyle("blockquote")
+                                    self:invalidateExportHashes()
+                                end
+                            end,
+                        },
+                        {
+                            text = _("Callout ([!summary])"),
+                            radio = true,
+                            keep_menu_open = true,
+                            enabled_func = function()
+                                return shared.isObsidianStyle()
+                            end,
+                            checked_func = function()
+                                return shared.isObsidianStyle()
+                                    and shared.getOverviewStyle() == "callout"
+                            end,
+                            callback = function()
+                                if shared.getOverviewStyle() ~= "callout" then
+                                    shared.setOverviewStyle("callout")
+                                    self:invalidateExportHashes()
+                                end
+                            end,
+                        },
+                        {
+                            text = _("Table"),
+                            radio = true,
+                            keep_menu_open = true,
+                            checked_func = function()
+                                return shared.getOverviewStyle() == "table"
+                            end,
+                            callback = function()
+                                if shared.getOverviewStyle() ~= "table" then
+                                    shared.setOverviewStyle("table")
+                                    self:invalidateExportHashes()
+                                end
+                            end,
+                        },
+                    },
+                },
+                {
+                    text = _("Reading dashboard"),
+                    checked_func = function()
+                        return shared.getReadingDashboard()
+                    end,
+                    keep_menu_open = true,
+                    callback = function()
+                        shared.setReadingDashboard(not shared.getReadingDashboard())
+                        self:invalidateExportHashes()
                     end,
                 },
                 {
-                    text = _("Table"),
-                    radio = true,
-                    keep_menu_open = true,
+                    text = _("Book synopsis"),
                     checked_func = function()
-                        return shared.getOverviewStyle() == "table"
+                        return shared.getBookSynopsis()
                     end,
+                    keep_menu_open = true,
                     callback = function()
-                        if shared.getOverviewStyle() ~= "table" then
-                            shared.setOverviewStyle("table")
-                            self:invalidateExportHashes()
-                        end
+                        shared.setBookSynopsis(not shared.getBookSynopsis())
+                        self:invalidateExportHashes()
                     end,
                 },
-            },
-        },
-        {
-            text = _("Include reading dashboard"),
-            checked_func = function()
-                return shared.getReadingDashboard()
-            end,
-            keep_menu_open = true,
-            callback = function()
-                shared.setReadingDashboard(not shared.getReadingDashboard())
-                self:invalidateExportHashes()
-            end,
-        },
-        {
-            text = _("Include book synopsis"),
-            checked_func = function()
-                return shared.getBookSynopsis()
-            end,
-            keep_menu_open = true,
-            callback = function()
-                shared.setBookSynopsis(not shared.getBookSynopsis())
-                self:invalidateExportHashes()
-            end,
-        },
-        {
-            text = _("Include clickable tags in body"),
-            checked_func = function()
-                return shared.getBodyTags()
-            end,
-            keep_menu_open = true,
-            callback = function()
-                shared.setBodyTags(not shared.getBodyTags())
-                self:invalidateExportHashes()
-            end,
-        },
-        {
-            text = _("Include Special highlights showcase"),
-            checked_func = function()
-                return shared.getSpecialShowcase()
-            end,
-            keep_menu_open = true,
-            separator = true,
-            callback = function()
-                shared.setSpecialShowcase(not shared.getSpecialShowcase())
-                self:invalidateExportHashes()
-            end,
-        },
-        {
-            text = _("Show Tomedown icon in the top bar"),
-            checked_func = function()
-                return getTopbarIcon()
-            end,
-            keep_menu_open = true,
-            callback = function(touchmenu)
-                setTopbarIcon(not getTopbarIcon())
-                self:refreshMenuPlacement(touchmenu)
-            end,
-        },
+                {
+                    text_func = function()
+                        local labels = {
+                            collapsed = _("Collapsed (foldable)"),
+                            short = _("Short preview (~300 chars)"),
+                            collapsed_short = _("Collapsed + Short preview"),
+                            expanded = _("Expanded (full text)"),
+                        }
+                        local current = shared.getSynopsisMode()
+                        if shared.getMarkdownStyle() == "commonmark" then
+                            if current == "collapsed" then
+                                current = "expanded"
+                            elseif current == "collapsed_short" then
+                                current = "short"
+                            end
+                        end
+                        return T(_("Synopsis display: %1"),
+                            labels[current] or labels.collapsed)
+                    end,
+                    enabled_func = function()
+                        return shared.getBookSynopsis()
+                    end,
+                    separator = true,
+                    sub_item_table = {
+                        {
+                            text = _("Collapsed (foldable)"),
+                            radio = true,
+                            keep_menu_open = true,
+                            enabled_func = function()
+                                return shared.getMarkdownStyle() ~= "commonmark"
+                            end,
+                            checked_func = function()
+                                return shared.getMarkdownStyle() ~= "commonmark"
+                                    and shared.getSynopsisMode() == "collapsed"
+                            end,
+                            callback = function()
+                                if shared.getSynopsisMode() ~= "collapsed" then
+                                    shared.setSynopsisMode("collapsed")
+                                    self:invalidateExportHashes()
+                                end
+                            end,
+                        },
+                        {
+                            text = _("Short preview (~300 chars)"),
+                            radio = true,
+                            keep_menu_open = true,
+                            checked_func = function()
+                                local m = shared.getSynopsisMode()
+                                return m == "short"
+                                    or (shared.getMarkdownStyle() == "commonmark" and m == "collapsed_short")
+                            end,
+                            callback = function()
+                                if shared.getSynopsisMode() ~= "short" then
+                                    shared.setSynopsisMode("short")
+                                    self:invalidateExportHashes()
+                                end
+                            end,
+                        },
+                        {
+                            text = _("Collapsed + Short preview"),
+                            radio = true,
+                            keep_menu_open = true,
+                            enabled_func = function()
+                                return shared.getMarkdownStyle() ~= "commonmark"
+                            end,
+                            checked_func = function()
+                                return shared.getMarkdownStyle() ~= "commonmark"
+                                    and shared.getSynopsisMode() == "collapsed_short"
+                            end,
+                            callback = function()
+                                if shared.getSynopsisMode() ~= "collapsed_short" then
+                                    shared.setSynopsisMode("collapsed_short")
+                                    self:invalidateExportHashes()
+                                end
+                            end,
+                        },
+                        {
+                            text = _("Expanded (full text)"),
+                            radio = true,
+                            keep_menu_open = true,
+                            checked_func = function()
+                                local m = shared.getSynopsisMode()
+                                return m == "expanded"
+                                    or (shared.getMarkdownStyle() == "commonmark" and m == "collapsed")
+                            end,
+                            callback = function()
+                                if shared.getSynopsisMode() ~= "expanded" then
+                                    shared.setSynopsisMode("expanded")
+                                    self:invalidateExportHashes()
+                                end
+                            end,
+                        },
+                    },
+                },
+                {
+                    text = _("Tags in body"),
+                    checked_func = function()
+                        return shared.getBodyTags()
+                    end,
+                    keep_menu_open = true,
+                    callback = function()
+                        shared.setBodyTags(not shared.getBodyTags())
+                        self:invalidateExportHashes()
+                    end,
+                },
+                {
+                    text = _("Special highlights showcase"),
+                    checked_func = function()
+                        return shared.getSpecialShowcase()
+                    end,
+                    keep_menu_open = true,
+                    separator = true,
+                    callback = function()
+                        shared.setSpecialShowcase(not shared.getSpecialShowcase())
+                        self:invalidateExportHashes()
+                    end,
+                },
+                {
+                    text = _("Section styles"),
+                    sub_item_table = sec_style_table,
+                    sub_item_table_func = function()
+                        sec_style_table = buildSecStyleRows()
+                        return sec_style_table
+                    end,
+                },
+            }
+            return {
+                text = _("Book page"),
+                sub_item_table = card_table,
+            }
+        end)(),
     }
+    return rows
+    end
+    style_table = buildStyleRows()
 
-    -- Book info: the imported fields are opt-in per book, the automatic
-    -- update is one global switch for the books that were imported, and
-    -- the bulk import is the one action that can cover the whole
-    -- library at once. It carries its own confirmation.
+    -- Group 4: Book info (automatic updates and bulk import).
     local function importableBookInfoFiles()
         local files = {}
         for __, file in ipairs(self:listBookFiles()) do
-            -- "Do not export" is the reader's choice and stays one: the
-            -- bulk action imports the books it can write, not those it
-            -- was told to leave alone
             if getBookExclusion(file) ~= "none" then
                 files[#files + 1] = file
             end
@@ -2742,9 +3338,6 @@ function M:genSettingsMenu()
         for __, file in ipairs(files) do
             metadata.import(file)
         end
-        -- only the imported books are written, and only those whose
-        -- information actually changed: a normal book keeps the file
-        -- 1.2.0 left, exported date included
         local imported = {}
         for __, file in ipairs(files) do
             if getBookImported(file) then
@@ -2765,7 +3358,7 @@ function M:genSettingsMenu()
             end,
         },
         {
-            text = withIcon("\xEF\x80\xAD", _("Import book info for all books")),
+            text = withIcon("\xEF\x80\xAD", _("Import book info for all books…")),
             enabled_func = function()
                 return #importableBookInfoFiles() > 0
             end,
@@ -2786,9 +3379,55 @@ function M:genSettingsMenu()
         },
     }
 
-    -- Cloud: the three rows that speak about the server and the upload.
-    -- The row that folds the cloud copy back into the file now lives in
-    -- My notes, where the notes are, so this group is static too.
+    -- Group 5: Cloud upload (upload switch, unified destination, and re-upload).
+    local dest_table
+    local function buildDestinationRows()
+        local items = {
+            {
+                text = _("Choose in cloud storage…"),
+                callback = function(touchmenu)
+                    self:chooseCloudFolder(touchmenu)
+                end,
+            },
+            {
+                text = _("Enter remote path…"),
+                callback = function(touchmenu)
+                    self:editRemoteFolder(touchmenu)
+                end,
+            },
+        }
+        if getSetting("remote_folder", "") ~= "" then
+            items[#items + 1] = {
+                text = _("Clear remote path…"),
+                callback = function(touchmenu)
+                    UIManager:scheduleIn(0.1, function()
+                        UIManager:show(ConfirmBox:new{
+                            text = _("Clear the custom remote path and use the folder chosen in cloud storage?"),
+                            ok_text = _("Clear"),
+                            cancel_text = _("Cancel"),
+                            ok_callback = function()
+                                setSetting("remote_folder", "")
+                                if touchmenu and touchmenu.item_table == dest_table then
+                                    local fresh = buildDestinationRows()
+                                    for i = #dest_table, 1, -1 do
+                                        dest_table[i] = nil
+                                    end
+                                    for __, item in ipairs(fresh) do
+                                        dest_table[#dest_table + 1] = item
+                                    end
+                                    if touchmenu.updateItems then
+                                        touchmenu:updateItems()
+                                    end
+                                end
+                            end,
+                        })
+                    end)
+                end,
+            }
+        end
+        return items
+    end
+    dest_table = buildDestinationRows()
     local cloud = {
         {
             text = _("Upload to cloud"),
@@ -2806,40 +3445,40 @@ function M:genSettingsMenu()
         {
             text_func = function()
                 local server = self:getServer()
+                local folder = self:getRemoteFolder()
                 if not server then
-                    return _("Server and folder: not set")
+                    if folder ~= "" then
+                        return T(_("Destination: %1"), folder)
+                    end
+                    return _("Destination: Not set")
                 end
                 local cloud_ui = self.ui and self.ui.cloudstorage
                 local name = cloud_ui and cloud_ui.getServerNameType
                     and cloud_ui:getServerNameType(server) or server.name or "?"
-                local folder = self:getRemoteFolder()
                 if folder ~= "" then
-                    return T(_("Server and folder: %1 → %2"), name, folder)
+                    return T(_("Destination: %1 → %2"), name, folder)
                 end
-                return T(_("Server and folder: %1"), name)
+                return T(_("Destination: %1"), name)
             end,
-            callback = function(touchmenu)
-                self:chooseCloudFolder(touchmenu)
+            separator = true,
+            sub_item_table = dest_table,
+            sub_item_table_func = function()
+                dest_table = buildDestinationRows()
+                return dest_table
             end,
         },
         {
-            text_func = function()
-                local folder = self:getRemoteFolder()
-                if folder == "" then
-                    return _("Remote folder: not set")
-                end
-                return T(_("Remote folder: %1"), folder)
+            text = withIcon("\xEE\xB4\xBE", _("Re-upload all files…")),
+            enabled_func = function()
+                return self:hasServer()
             end,
             callback = function(touchmenu)
-                self:editRemoteFolder(touchmenu)
+                self:reuploadAll(touchmenu)
             end,
         },
     }
 
-    -- My notes: the switch that governs every file, the index's own
-    -- switch, the two headings and the merge of the cloud copy. The
-    -- rows come and go with the switches, so the group is rebuilt every
-    -- time it opens and in place when one of them flips.
+    -- Group 6: My notes (global switch, index switch, headings, and cloud merge).
     local notes_table
     local buildNotesRows
     local function rebuildNotesRows(touchmenu)
@@ -2858,40 +3497,22 @@ function M:genSettingsMenu()
     buildNotesRows = function()
         local rows = {
             {
-                -- what wins when the render meets a file the reader
-                -- edited; opt-in since 1.0: off means the tomedown <=
-                -- 0.8 behaviour (every export writes the file from
-                -- scratch), and every file follows the choice it
-                -- stored. On, this switch alone governs every file and
-                -- names every zone, and no other row is built to choose
-                -- for one file.
-                text = _("Keep my notes: all books"),
+                text = _("Keep my notes for all books"),
                 checked_func = function()
                     return getSetting("preserve", false)
                 end,
                 keep_menu_open = true,
                 callback = function(touchmenu)
                     setSetting("preserve", not getSetting("preserve", false))
-                    -- switching modes must regenerate what the other
-                    -- mode left behind: the next export rewrites every
-                    -- file
                     self:invalidateExportHashes()
-                    -- with the switch on the index rows leave (it covers
-                    -- the index too) and the global heading appears
                     rebuildNotesRows(touchmenu)
                 end,
             },
         }
-        -- The index is a file like the others: since 1.1 it gets its own
-        -- switch and the row that names its zone, both only while the
-        -- global switch is off (it governs the index too) and an index
-        -- is generated at all. Its checked state is the effective one:
-        -- the reader's own choice when they made one, the global switch
-        -- otherwise.
         if getSetting("with_index", true)
                 and not getSetting("preserve", false) then
             rows[#rows + 1] = {
-                text = _("Keep my notes: index"),
+                text = _("Keep my notes in the index"),
                 checked_func = function()
                     return getIndexPreserve()
                 end,
@@ -2899,16 +3520,11 @@ function M:genSettingsMenu()
                 callback = function(touchmenu)
                     setSetting("preserve_index",
                         not getIndexPreserve())
-                    -- the index on disk was written the other way
-                    -- round: the next export has to rewrite it
                     self:invalidateExportHashes()
-                    -- the heading row below exists only while the index
-                    -- keeps a zone to name
                     rebuildNotesRows(touchmenu)
                 end,
             }
         end
-        -- with the global switch on it names every zone itself
         if getSetting("preserve", false) then
             rows[#rows + 1] = {
                 text_func = function()
@@ -2932,10 +3548,6 @@ function M:genSettingsMenu()
                 end,
             }
         end
-        -- The cloud copy is folded back into the file before the render,
-        -- but only a cloud reader has one and only while Keep my notes
-        -- keeps a write zone. It belongs here because it is about the
-        -- notes, and it sits last.
         if self:hasServer() and getSetting("upload", false)
                 and getSetting("preserve", false) then
             rows[#rows + 1] = {
@@ -2952,42 +3564,52 @@ function M:genSettingsMenu()
         return rows
     end
 
-    -- Beta versions: everything that is not meant for daily use, in its
-    -- own submenu. Receive beta versions first; while it is ticked a
-    -- beta "Check for beta updates" sits right below it, then a
-    -- separator, the way back to stable and the installed version as a
-    -- plain grey label. The row list is rebuilt whenever the submenu
-    -- opens and in place when the toggle flips, so the beta check
-    -- appears at once.
+    -- Group 7: App & updates (top bar icon, update check, release channel, background check, changelog).
     local beta_table
     local function betaItems()
         local beta_on = getSetting("beta_releases", false)
+        local function setChannel(want_beta, touch_menu)
+            if getSetting("beta_releases", false) == want_beta then
+                return
+            end
+            setSetting("beta_releases", want_beta)
+            Update.clearAvailableCache()
+            if touch_menu and touch_menu.item_table == beta_table then
+                local fresh = betaItems()
+                for i = #beta_table, 1, -1 do
+                    beta_table[i] = nil
+                end
+                for _, item in ipairs(fresh) do
+                    beta_table[#beta_table + 1] = item
+                end
+                if touch_menu.updateItems then
+                    touch_menu:updateItems()
+                end
+            end
+        end
         local items = {
             {
-                text = _("Receive beta versions"),
+                text = _("Stable"),
+                radio = true,
+                keep_menu_open = true,
+                checked_func = function()
+                    return not getSetting("beta_releases", false)
+                end,
+                callback = function(touch_menu)
+                    setChannel(false, touch_menu)
+                end,
+            },
+            {
+                text = _("Beta"),
+                radio = true,
+                keep_menu_open = true,
+                separator = true,
                 checked_func = function()
                     return getSetting("beta_releases", false)
                 end,
-                keep_menu_open = true,
                 callback = function(touch_menu)
-                    setSetting("beta_releases",
-                        not getSetting("beta_releases", false))
-                    Update.clearAvailableCache()
-                    -- the submenu that is open IS this table: rebuild it
-                    -- in place so the check row shows up or goes away
-                    -- without leaving the menu
-                    if touch_menu
-                            and touch_menu.item_table == beta_table then
-                        local fresh = betaItems()
-                        for i = #beta_table, 1, -1 do
-                            beta_table[i] = nil
-                        end
-                        for _, item in ipairs(fresh) do
-                            beta_table[#beta_table + 1] = item
-                        end
-                    end
+                    setChannel(true, touch_menu)
                 end,
-                separator = not beta_on,
             },
         }
         if beta_on then
@@ -3000,8 +3622,7 @@ function M:genSettingsMenu()
             }
         end
         items[#items + 1] = {
-            -- the cartoon bomb (U+ED8F): the reset blows the beta up
-            text = withIcon("\xEE\xB6\x8F", _("Go back to the stable version")),
+            text = withIcon("\xEE\xB6\x8F", _("Go back to the stable version…")),
             callback = function()
                 Update.resetToStable()
             end,
@@ -3019,6 +3640,18 @@ function M:genSettingsMenu()
     end
     local updates = {
         {
+            text = _("Top bar icon"),
+            separator = true,
+            checked_func = function()
+                return getTopbarIcon()
+            end,
+            keep_menu_open = true,
+            callback = function(touchmenu)
+                setTopbarIcon(not getTopbarIcon())
+                self:refreshMenuPlacement(touchmenu)
+            end,
+        },
+        {
             text_func = function()
                 local current = Update.getInstalledVersion()
                 local available = Update.getAvailableVersion()
@@ -3032,11 +3665,14 @@ function M:genSettingsMenu()
             end,
         },
         {
-            text = _("View changelog"),
-            callback = function()
-                Update.showChangelog()
+            text_func = function()
+                local ch = getSetting("beta_releases", false) and _("Beta") or _("Stable")
+                return T(_("Release channel: %1"), ch)
             end,
-            separator = true,
+            sub_item_table_func = function()
+                beta_table = betaItems()
+                return beta_table
+            end,
         },
         {
             text = _("Check for updates in background"),
@@ -3049,31 +3685,38 @@ function M:genSettingsMenu()
             end,
         },
         {
-            text = withIcon("\xEF\x84\xA6", _("Beta versions")), -- code-fork
-            sub_item_table_func = function()
-                beta_table = betaItems()
-                return beta_table
+            text = _("View changelog"),
+            callback = function()
+                Update.showChangelog()
             end,
         },
     }
 
     return {
-        { text = withIcon("\xEF\x83\xB6", _("Files")), -- file-text
-            sub_item_table = files },
-        { text = withIcon("\xEE\xBC\xB4", _("Index")), -- table-of-contents
+        { text = withIcon("\xEF\x83\xB6", _("Export")), -- file-text
+            sub_item_table = files_table,
+            sub_item_table_func = function()
+                files_table = buildFilesRows()
+                return files_table
+            end },
+        { text = withIcon("\xEE\xBC\xB4", _("Index & library")), -- table-of-contents
             sub_item_table = index },
-        { text = withIcon("\xEE\x9F\xA2", _("Style")), -- brush
-            sub_item_table = style },
+        { text = withIcon("\xEE\x9F\xA2", _("Notes & highlights")), -- brush
+            sub_item_table = style_table,
+            sub_item_table_func = function()
+                style_table = buildStyleRows()
+                return style_table
+            end },
         { text = withIcon("\xEF\x81\x9A", _("Book info")), -- star-half
             sub_item_table = bookinfo },
-        { text = withIcon("\xEE\xB4\xBE", _("Cloud")), -- cloud-sync
+        { text = withIcon("\xEE\xB4\xBE", _("Cloud upload")), -- cloud-sync
             sub_item_table = cloud },
         { text = withIcon("\xEF\x89\x89", _("My notes")), -- sticky-note
             sub_item_table_func = function()
                 notes_table = buildNotesRows()
                 return notes_table
             end },
-        { text = withIcon("\xEE\xB6\xAE", _("Updates")), -- update
+        { text = withIcon("\xEE\xB6\xAE", _("App & updates")), -- update
             sub_item_table = updates },
     }
 end
@@ -3274,15 +3917,26 @@ function M:showAbout()
         column,
     }
 
+    local movable = MovableContainer:new{ frame }
     local dialog
     dialog = InputContainer:new{
         align = "center",
         dimen = Geom:new{ x = 0, y = 0, w = sw, h = sh },
         CenterContainer:new{
             dimen = Geom:new{ w = sw, h = sh },
-            MovableContainer:new{ frame },
+            movable,
         },
     }
+    dialog.onShow = function()
+        UIManager:setDirty(dialog, function()
+            return "ui", movable.dimen or frame.dimen
+        end)
+    end
+    dialog.onCloseWidget = function()
+        UIManager:setDirty(nil, function()
+            return "flashui", movable.dimen or frame.dimen
+        end)
+    end
     if Device:isTouchDevice() then
         dialog.ges_events = {
             TapClose = { GestureRange:new{
@@ -3655,10 +4309,6 @@ end
 -- so both Export this book and Current book are left out.
 function M:genBookMenu()
     local rows = {}
-    -- This row needs a book open, which means the document itself: in
-    -- the file manager KOReader hands the plugin the FileManager as ui,
-    -- which carries no document, and "lastfile" would then name the
-    -- last book read over a book nobody has open.
     if self.ui and self.ui.document then
         rows[#rows + 1] = {
             text = withIcon("\xEE\x89\xBC", _("Export this book")),
@@ -3678,55 +4328,55 @@ function M:genBookMenu()
                 if self.book_cache then
                     self.book_cache[current] = nil
                 end
-                -- asked for this book by name: "Do not export" stops
-                -- automatic runs, not this one
                 self:runExport({ current }, { force = true })
             end,
         }
     end
     rows[#rows + 1] = {
-        text = withIcon("\xEE\xA4\xB5", _("Export new and changed books")),
-        enabled_func = function()
-            return #self:listBookFiles() > 0
-        end,
-        callback = function(touchmenu)
-            if touchmenu and touchmenu.closeMenu then
-                touchmenu:closeMenu()
-            end
-            self:runExport(self:listBookFiles(), { only_updated = true })
-        end,
-    }
-    rows[#rows + 1] = {
-        text = withIcon("\xEE\xA7\x99", _("Repair all files")),
-        enabled_func = function()
-            return #self:listBookFiles() > 0
-        end,
-        callback = function(touchmenu)
-            if touchmenu and touchmenu.closeMenu then
-                touchmenu:closeMenu()
-            end
-            self:runExport(self:listBookFiles(), {})
-        end,
-    }
-    rows[#rows + 1] = {
-        text = withIcon("\xEF\x87\xAA", _("Export reading digest")),
-        enabled_func = function()
-            return #self:listBookFiles() > 0
-        end,
-        callback = function(touchmenu)
-            self:exportDigest(touchmenu)
-        end,
-    }
-    rows[#rows + 1] = {
-        text = withIcon("\xEE\xB9\x94", _("Choose books…")),
-        sub_item_table_func = function()
-            return self:genPickerMenu()
-        end,
+        text = withIcon("\xEE\xA4\xB5", _("All books")),
         separator = true,
+        sub_item_table = {
+            {
+                text = withIcon("\xEE\xA4\xB5", _("Export changed books")),
+                enabled_func = function()
+                    return #self:listBookFiles() > 0
+                end,
+                callback = function(touchmenu)
+                    if touchmenu and touchmenu.closeMenu then
+                        touchmenu:closeMenu()
+                    end
+                    self:runExport(self:listBookFiles(), { only_updated = true })
+                end,
+            },
+            {
+                text = withIcon("\xEE\xA7\x99", _("Export all books again…")),
+                enabled_func = function()
+                    return #self:listBookFiles() > 0
+                end,
+                callback = function(touchmenu)
+                    if touchmenu and touchmenu.closeMenu then
+                        touchmenu:closeMenu()
+                    end
+                    self:runExport(self:listBookFiles(), {})
+                end,
+            },
+            {
+                text = withIcon("\xEE\xB9\x94", _("Select books…")),
+                sub_item_table_func = function()
+                    return self:genPickerMenu()
+                end,
+            },
+            {
+                text = withIcon("\xEF\x87\xAA", _("Export reading digest")),
+                enabled_func = function()
+                    return #self:listBookFiles() > 0
+                end,
+                callback = function(touchmenu)
+                    self:exportDigest(touchmenu)
+                end,
+            },
+        },
     }
-    -- The per book rows, grouped in a submenu of their own instead of
-    -- spread through the main menu. ReaderUI passes the document, so
-    -- only there is the row built.
     if self.ui and self.ui.document then
         rows[#rows + 1] = {
             text = withIcon("\xEF\x81\x80", _("Current book")),
@@ -3736,15 +4386,6 @@ function M:genBookMenu()
             separator = true,
         }
     end
-    rows[#rows + 1] = {
-        text = withIcon("\xEE\xB4\xBE", _("Upload all files again")),
-        enabled_func = function()
-            return self:hasServer()
-        end,
-        callback = function(touchmenu)
-            self:reuploadAll(touchmenu)
-        end,
-    }
     rows[#rows + 1] = {
         text = withIcon("\xEF\x83\xA4", _("Last export")),
         callback = function()
@@ -3767,20 +4408,53 @@ function M:genBookMenu()
     return rows
 end
 
--- The rows that name the open book. The switch is always there: with
--- the global one in Settings on it shows off, with the reason on the
--- right, because it is the reason the submenu exists and the stored
--- per book choice has to stay reachable when the global switch goes
--- off again (it is never touched meanwhile). The heading and the
--- copies exist only when they have something to name.
+-- The rows that name the open book. Book summary is first (identity card),
+-- followed by Special highlights if any, then Book info and Book visibility
+-- (radio submenu), then Keep my notes + heading + backups, and Format & layout.
 function M:genCurrentBookMenu()
     local file = self:getCurrentFile()
     local rows = {}
     if not (self.ui and self.ui.document) or not file then
         return rows
     end
+    local specials = self:bookSpecialHighlights(file)
+    rows[#rows + 1] = {
+        text = _("Book summary"),
+        separator = #specials == 0,
+        callback = function()
+            self:showBookSummaryCard(file)
+        end,
+    }
+    if #specials > 0 then
+        rows[#rows + 1] = {
+            text = "★ " .. _("Special highlights"),
+            mandatory = tostring(#specials),
+            separator = true,
+            callback = function()
+                self:openSpecialHighlights(file)
+            end,
+        }
+    end
+    rows[#rows + 1] = {
+        text = _("Book info"),
+        sub_item_table_func = function()
+            return self:genBookInfoMenu(file)
+        end,
+    }
+    rows[#rows + 1] = {
+        text_func = function()
+            return self:bookVisibilityLabel(file)
+        end,
+        separator = true,
+        sub_item_table_func = function()
+            return self:genBookVisibilityMenu(file)
+        end,
+    }
+    local has_notes_heading = not getSetting("preserve", false) and getBookPreserve(file)
+    local has_backups = #self:bookBackups(file) > 0
     rows[#rows + 1] = {
         text = _("Keep my notes in this book"),
+        separator = not has_notes_heading and not has_backups,
         enabled_func = function()
             return not getSetting("preserve", false)
         end,
@@ -3800,34 +4474,16 @@ function M:genCurrentBookMenu()
                 return
             end
             if getBookPreserve(current) then
-                -- the file on disk holds a zone the reader may have
-                -- written in, and turning the switch off hands the
-                -- render straight back to the writer: the file is
-                -- replaced with no merge and no .bak. So it is asked
-                -- first, deferred so the box lands on top of the menu
                 UIManager:scheduleIn(0.1, function()
                     UIManager:show(ConfirmBox:new{
                         text = T(_("Turn off Keep my notes for %1? Your notes will not be lost. A .bak copy is created."), ffiUtil.basename(current)),
                         ok_text = _("Turn off"),
                         cancel_text = _("Keep it on"),
-                        -- nothing has been touched yet, so closing
-                        -- is all cancel has to do (the box says so
-                        -- itself, and the work waits for OK)
                         cancel_callback = function() end,
                         ok_callback = function()
                             setBookPreserve(current, false)
-                            -- the stored hash goes with it: the file
-                            -- was written the other way round
                             self:invalidateExportHash(current)
-                            -- and the file is rewritten plain right
-                            -- away instead of waiting for the next
-                            -- export: runExport keeps the zoned copy
-                            -- as .bak before the plain one lands
                             self:runExport({ current }, {})
-                            -- the heading row below exists only while
-                            -- this book keeps a zone to name, and the
-                            -- menu sat open behind the box: redraw it,
-                            -- tick included
                             self:refreshCurrentBookMenu(touchmenu)
                         end,
                     })
@@ -3835,51 +4491,32 @@ function M:genCurrentBookMenu()
                 return
             end
             setBookPreserve(current, true)
-            -- the file on disk was written the other way round: the
-            -- next export has to rewrite it, so its stored hash goes,
-            -- and only its hash
             self:invalidateExportHash(current)
-            -- the heading row below exists only while this book keeps a
-            -- zone to name
             self:refreshCurrentBookMenu(touchmenu)
         end,
     }
-    rows[#rows + 1] = {
-        text = _("Book info"),
-        sub_item_table_func = function()
-            return self:genBookInfoMenu(file)
-        end,
-    }
-    rows[#rows + 1] = {
-        text_func = function()
-            return self:bookVisibilityLabel(file)
-        end,
-        callback = function(touchmenu)
-            self:editBookVisibility(file, touchmenu)
-        end,
-    }
-    if not getSetting("preserve", false) and getBookPreserve(file) then
+    if has_notes_heading then
         rows[#rows + 1] = {
             text_func = function()
                 return T(_("Notes heading: %1"), getNotesTitle(file))
             end,
+            separator = not has_backups,
             callback = function(touchmenu)
                 self:editNotesTitle(touchmenu, file)
             end,
         }
     end
-    -- the copies kept beside this book's file, when it has any: shown
-    -- one by one and deleted only after a question
-    if #self:bookBackups(file) > 0 then
+    if has_backups then
         rows[#rows + 1] = {
             text = withIcon("\xEF\x83\x87", _("Backup copies")),
+            separator = true,
             sub_item_table_func = function()
                 return self:genBackupsMenu(file)
             end,
         }
     end
     rows[#rows + 1] = {
-        text = _("Style & format"),
+        text = _("Format & layout"),
         sub_item_table_func = function()
             return self:genBookStyleMenu(file)
         end,
@@ -3887,10 +4524,608 @@ function M:genCurrentBookMenu()
     return rows
 end
 
+-- Shared helper to build Tomedown's rounded dashboard/quote card with clean
+-- framebuffer repaint on close (onCloseWidget) and button show_parent wiring.
+local function buildTomedownCard(column, btn_specs, content_w, pad, extra_buttons)
+    local Screen = Device.screen
+    local Geom = require("ui/geometry")
+    local Size = require("ui/size")
+    local Blitbuffer = require("ffi/blitbuffer")
+    local Button = require("ui/widget/button")
+    local CenterContainer = require("ui/widget/container/centercontainer")
+    local FrameContainer = require("ui/widget/container/framecontainer")
+    local GestureRange = require("ui/gesturerange")
+    local HorizontalGroup = require("ui/widget/horizontalgroup")
+    local HorizontalSpan = require("ui/widget/horizontalspan")
+    local InputContainer = require("ui/widget/container/inputcontainer")
+    local LineWidget = require("ui/widget/linewidget")
+    local MovableContainer = require("ui/widget/container/movablecontainer")
+    local VerticalSpan = require("ui/widget/verticalspan")
+
+    local sw, sh = Screen:getWidth(), Screen:getHeight()
+    local gap_m = Screen:scaleBySize(14)
+
+    column[#column + 1] = VerticalSpan:new{ width = gap_m }
+    column[#column + 1] = LineWidget:new{
+        dimen = Geom:new{ w = content_w, h = (Size.line and Size.line.thin) or 1 },
+        background = Blitbuffer.COLOR_LIGHT_GRAY,
+    }
+    column[#column + 1] = VerticalSpan:new{ width = gap_m }
+
+    local dialog
+    local btn_gap = Screen:scaleBySize(10)
+    local btn_w = math.floor((content_w - btn_gap * (#btn_specs - 1)) / #btn_specs)
+    local btn_row = HorizontalGroup:new{ align = "center" }
+    local created_btns = {}
+    for idx, spec in ipairs(btn_specs) do
+        if idx > 1 then
+            btn_row[#btn_row + 1] = HorizontalSpan:new{ width = btn_gap }
+        end
+        local cb = spec.callback
+        local b = Button:new{
+            text = spec.text,
+            width = btn_w,
+            bordersize = (Size.border and Size.border.button) or 1,
+            radius = (Size.radius and Size.radius.button) or 4,
+            text_font_face = "cfont",
+            text_font_size = 15,
+            callback = function()
+                if cb then
+                    cb(dialog)
+                end
+            end,
+        }
+        created_btns[#created_btns + 1] = b
+        btn_row[#btn_row + 1] = b
+    end
+    column[#column + 1] = btn_row
+
+    local frame = FrameContainer:new{
+        radius = Size.radius.window,
+        padding = pad,
+        margin = 0,
+        background = Blitbuffer.COLOR_WHITE,
+        column,
+    }
+    local movable = MovableContainer:new{ frame }
+
+    dialog = InputContainer:new{
+        align = "center",
+        dimen = Geom:new{ x = 0, y = 0, w = sw, h = sh },
+        CenterContainer:new{
+            dimen = Geom:new{ w = sw, h = sh },
+            movable,
+        },
+    }
+    for __, b in ipairs(created_btns) do
+        b.show_parent = dialog
+    end
+    for __, b in ipairs(extra_buttons or {}) do
+        b.show_parent = dialog
+    end
+    dialog.onShow = function()
+        UIManager:setDirty(dialog, function()
+            return "ui", movable.dimen or frame.dimen
+        end)
+    end
+    dialog.onCloseWidget = function()
+        UIManager:setDirty(nil, function()
+            return "flashui", movable.dimen or frame.dimen
+        end)
+    end
+    if Device:isTouchDevice() then
+        dialog.ges_events = {
+            TapClose = { GestureRange:new{
+                ges = "tap",
+                range = Geom:new{ x = 0, y = 0, w = sw, h = sh },
+            } },
+        }
+        dialog.onTapClose = function(self_d, _arg, ges_ev)
+            if not frame.dimen or ges_ev.pos:notIntersectWith(frame.dimen) then
+                UIManager:close(self_d)
+            end
+            return true
+        end
+    end
+    if Device:hasKeys() then
+        dialog.key_events = { Close = { { Device.input.group.Back } } }
+        dialog.onClose = function(self_d)
+            UIManager:close(self_d)
+            return true
+        end
+    end
+    return dialog
+end
+
+function M:showBookSummaryCard(file)
+    if not file then
+        return
+    end
+    local Screen = Device.screen
+    local Geom = require("ui/geometry")
+    local Size = require("ui/size")
+    local Blitbuffer = require("ffi/blitbuffer")
+    local CenterContainer = require("ui/widget/container/centercontainer")
+    local HorizontalGroup = require("ui/widget/horizontalgroup")
+    local LineWidget = require("ui/widget/linewidget")
+    local TextWidget = require("ui/widget/textwidget")
+    local VerticalGroup = require("ui/widget/verticalgroup")
+    local VerticalSpan = require("ui/widget/verticalspan")
+
+    local open = self:openReader(file)
+    local live = open and open.annotation and open.annotation.annotations
+    local ok_b, book = pcall(self.buildBook, self, file, live)
+    book = ok_b and book or nil
+
+    local props = open and open.document and open.document.getProps and open.document:getProps() or {}
+    local title = (book and book.title) or props.title or ffiUtil.basename(tostring(file))
+    local author = (book and book.author) or props.authors or ""
+    local annots = (book and book.annotations) or {}
+    local hl_count = #annots
+    local sp_count, note_count = 0, 0
+    for __, a in ipairs(annots) do
+        if a.special then sp_count = sp_count + 1 end
+        if a.note and tostring(a.note) ~= "" then note_count = note_count + 1 end
+    end
+
+    local sw = Screen:getWidth()
+    local frame_w = math.min(math.floor(sw * 0.86), Screen:scaleBySize(460))
+    local pad = Screen:scaleBySize(22)
+    local content_w = frame_w - pad * 2
+    local gap_s = Screen:scaleBySize(8)
+    local gap_m = Screen:scaleBySize(14)
+
+    local function divider()
+        return LineWidget:new{
+            dimen = Geom:new{ w = content_w, h = (Size.line and Size.line.thin) or 1 },
+            background = Blitbuffer.COLOR_LIGHT_GRAY,
+        }
+    end
+    local function ptfRow(label, value)
+        return TextBoxWidget:new{
+            text = TextBoxWidget.PTF_HEADER
+                .. TextBoxWidget.PTF_BOLD_START .. label .. TextBoxWidget.PTF_BOLD_END
+                .. " " .. tostring(value or ""),
+            face = Font:getFace("cfont", 14),
+            width = content_w,
+        }
+    end
+
+    local column = VerticalGroup:new{ align = "center" }
+    column[#column + 1] = TextBoxWidget:new{
+        text = TextBoxWidget.PTF_HEADER
+            .. TextBoxWidget.PTF_BOLD_START .. tostring(title) .. TextBoxWidget.PTF_BOLD_END,
+        face = Font:getFace("tfont", 20),
+        alignment = "center",
+        width = content_w,
+    }
+    if author and author ~= "" and author ~= "N/A" then
+        column[#column + 1] = VerticalSpan:new{ width = Screen:scaleBySize(4) }
+        column[#column + 1] = TextWidget:new{
+            text = tostring(author),
+            face = Font:getFace("cfont", 14),
+            fgcolor = Blitbuffer.COLOR_DARK_GRAY,
+            max_width = content_w,
+        }
+    end
+
+    column[#column + 1] = VerticalSpan:new{ width = gap_m }
+    column[#column + 1] = divider()
+    column[#column + 1] = VerticalSpan:new{ width = gap_m }
+
+    local col_w = math.floor(content_w / 3)
+    local Button = require("ui/widget/button")
+    local dialog
+    local extra_btns = {}
+    local function kpiTile(num, caption, on_tap)
+        local n = num or 0
+        local num_widget
+        if on_tap and n > 0 then
+            num_widget = Button:new{
+                text = tostring(n),
+                width = col_w - Screen:scaleBySize(12),
+                bordersize = (Size.line and Size.line.thin) or 1,
+                radius = (Size.radius and Size.radius.button) or 4,
+                padding_v = Screen:scaleBySize(4),
+                text_font_face = "tfont",
+                text_font_size = 22,
+                text_font_bold = true,
+                callback = function()
+                    if dialog then
+                        UIManager:close(dialog)
+                    end
+                    on_tap()
+                end,
+            }
+            extra_btns[#extra_btns + 1] = num_widget
+        else
+            num_widget = TextWidget:new{
+                text = tostring(n),
+                face = Font:getFace("tfont", 22),
+                bold = true,
+            }
+        end
+        return CenterContainer:new{
+            dimen = Geom:new{ w = col_w, h = Screen:scaleBySize(64) },
+            VerticalGroup:new{
+                align = "center",
+                num_widget,
+                VerticalSpan:new{ width = Screen:scaleBySize(4) },
+                TextWidget:new{
+                    text = caption,
+                    face = Font:getFace("cfont", 12),
+                    fgcolor = Blitbuffer.COLOR_DARK_GRAY,
+                },
+            },
+        }
+    end
+    column[#column + 1] = HorizontalGroup:new{
+        align = "center",
+        kpiTile(hl_count, _("Highlights"), function()
+            self:openBookHighlights(file, "all")
+        end),
+        kpiTile(sp_count, "★ " .. _("Special"), function()
+            self:openBookHighlights(file, "special")
+        end),
+        kpiTile(note_count, _("Notes"), function()
+            self:openBookHighlights(file, "notes")
+        end),
+    }
+
+    column[#column + 1] = VerticalSpan:new{ width = gap_m }
+    column[#column + 1] = divider()
+    column[#column + 1] = VerticalSpan:new{ width = gap_m }
+
+    local details = VerticalGroup:new{ align = "left" }
+    local fmt_labels = {
+        md = _("Markdown (.md)"),
+        txt = _("Plain text (.txt)"),
+        both = _("Both (.md and .txt)"),
+    }
+    local style_labels = {
+        obsidian   = _("Obsidian"),
+        standard   = _("Standard"),
+        commonmark = _("CommonMark"),
+    }
+    local cur_fmt = getExportFormat(file)
+    local fmt_desc = fmt_labels[cur_fmt] or fmt_labels.md
+    if cur_fmt ~= "txt" then
+        fmt_desc = fmt_desc .. " · " .. (style_labels[shared.getMarkdownStyle(file)] or style_labels.obsidian)
+    end
+    details[#details + 1] = ptfRow(_("Format:"), fmt_desc)
+
+    local exports = getSetting("exports", {})
+    local rec = exports[file]
+    local exp_status = _("Not exported yet")
+    if rec and rec.hash then
+        exp_status = (book and book.hash == rec.hash)
+            and _("Up to date") or _("Updates pending")
+    end
+    details[#details + 1] = VerticalSpan:new{ width = gap_s }
+    details[#details + 1] = ptfRow(_("Status") .. ":", exp_status)
+
+    local btags = book and book.tags or getBookTags(file)
+    if type(btags) == "table" and #btags > 0 then
+        local tag_pills = {}
+        for __, tg in ipairs(btags) do
+            tag_pills[#tag_pills + 1] = "#" .. tostring(tg)
+        end
+        details[#details + 1] = VerticalSpan:new{ width = gap_s }
+        details[#details + 1] = ptfRow(_("Tags") .. ":", table.concat(tag_pills, " "))
+    end
+    column[#column + 1] = details
+
+    local btn_specs = {
+        {
+            text = _("Export this book"),
+            callback = function(dlg)
+                UIManager:close(dlg)
+                self:runExport({ file }, { force = true })
+            end,
+        },
+        {
+            text = _("Close"),
+            callback = function(dlg)
+                UIManager:close(dlg)
+            end,
+        },
+    }
+    dialog = buildTomedownCard(column, btn_specs, content_w, pad, extra_btns)
+    UIManager:show(dialog)
+end
+
+function M:bookHighlights(file, filter)
+    local out = {}
+    local open = self:openReader(file)
+    local annots = open and open.annotation and open.annotation.annotations
+    if type(annots) ~= "table" and file then
+        local ok_ds, DocSettings = pcall(require, "docsettings")
+        if ok_ds and DocSettings and type(DocSettings.open) == "function" then
+            local ok_open, ds = pcall(DocSettings.open, DocSettings, file)
+            if ok_open and ds then
+                annots = ds:readSetting("annotations")
+            end
+        end
+    end
+    if type(annots) ~= "table" then
+        return out
+    end
+    for __, item in ipairs(annots) do
+        if type(item) == "table" and item.drawer ~= nil and not item.deleted
+                and type(item.text) == "string" and item.text ~= "" then
+            if filter == "special" then
+                if item.tomedown_special then out[#out + 1] = item end
+            elseif filter == "notes" then
+                if type(item.note) == "string" and item.note ~= "" then out[#out + 1] = item end
+            else
+                out[#out + 1] = item
+            end
+        end
+    end
+    return out
+end
+
+function M:bookSpecialHighlights(file)
+    return self:bookHighlights(file, "special")
+end
+
+function M:openSpecialHighlights(file)
+    return self:openBookHighlights(file, "special")
+end
+
+function M:openBookHighlights(file, filter, page_num)
+    filter = filter or "all"
+    local list = self:bookHighlights(file, filter)
+    if #list == 0 then
+        return
+    end
+    local open = self:openReader(file)
+    local Button = require("ui/widget/button")
+    local Event = require("ui/event")
+    local Geom = require("ui/geometry")
+    local Size = require("ui/size")
+    local Blitbuffer = require("ffi/blitbuffer")
+    local LineWidget = require("ui/widget/linewidget")
+    local TextWidget = require("ui/widget/textwidget")
+    local VerticalGroup = require("ui/widget/verticalgroup")
+    local VerticalSpan = require("ui/widget/verticalspan")
+    local Screen = Device.screen
+
+    local function snippet(text, max)
+        local s = tostring(text or ""):gsub("%s*\n%s*", " "):gsub("^%s+", ""):gsub("%s+$", "")
+        if #s <= max then return s end
+        s = s:sub(1, max - 1)
+        while #s > 0 and s:byte(#s) >= 128 and s:byte(#s) < 192 do s = s:sub(1, -2) end
+        if #s > 0 and s:byte(#s) >= 192 then s = s:sub(1, -2) end
+        return s .. "…"
+    end
+
+    local function jumpToItem(item)
+        if not open or not item then return end
+        if type(item.pos0) == "string" and item.pos0:sub(1, 1) == "/" then
+            open:handleEvent(Event:new("GotoXPointer", item.pos0))
+        elseif type(item.page) == "string" and item.page:sub(1, 1) == "/" then
+            open:handleEvent(Event:new("GotoXPointer", item.page))
+        elseif tonumber(item.pageno or item.page) then
+            open:handleEvent(Event:new("GotoPage", tonumber(item.pageno or item.page)))
+        end
+    end
+
+    local function cardTitle(count)
+        if filter == "special" then
+            return "★ " .. _("Special highlights") .. " (" .. tostring(count) .. ")"
+        elseif filter == "notes" then
+            return _("Notes") .. " (" .. tostring(count) .. ")"
+        end
+        return _("Highlights") .. " (" .. tostring(count) .. ")"
+    end
+
+    -- Adapt items per page to screen height so Kindle/Kobo 6" (portrait & landscape) never overflow
+    local sw, sh = Screen:getWidth(), Screen:getHeight()
+    local per_page = sh >= Screen:scaleBySize(720) and 4 or 3
+    local total_pages = math.max(1, math.ceil(#list / per_page))
+    local cur_page = math.max(1, math.min(page_num or 1, total_pages))
+    local first_idx = (cur_page - 1) * per_page + 1
+    local last_idx = math.min(#list, first_idx + per_page - 1)
+
+    local frame_w = math.min(math.floor(sw * 0.88), Screen:scaleBySize(480))
+    local pad = Screen:scaleBySize(20)
+    local content_w = frame_w - pad * 2
+    local gap_s = Screen:scaleBySize(6)
+    local gap_m = Screen:scaleBySize(12)
+
+    local function divider()
+        return LineWidget:new{
+            dimen = Geom:new{ w = content_w, h = (Size.line and Size.line.thin) or 1 },
+            background = Blitbuffer.COLOR_LIGHT_GRAY,
+        }
+    end
+
+    local is_notes = (filter == "notes")
+    local column = VerticalGroup:new{ align = "center" }
+    column[#column + 1] = TextWidget:new{
+        text = cardTitle(#list),
+        face = Font:getFace("tfont", 20),
+        bold = true,
+    }
+    column[#column + 1] = VerticalSpan:new{ width = Screen:scaleBySize(3) }
+    local sub_parts = {}
+    if total_pages > 1 then
+        sub_parts[#sub_parts + 1] = string.format("%d / %d", cur_page, total_pages)
+    end
+    sub_parts[#sub_parts + 1] = is_notes
+        and _("Tap to jump · Hold to edit")
+        or _("Tap to jump · Hold for ★")
+    column[#column + 1] = TextWidget:new{
+        text = table.concat(sub_parts, "  ·  "),
+        face = Font:getFace("cfont", 12),
+        fgcolor = Blitbuffer.COLOR_DARK_GRAY,
+        max_width = content_w,
+    }
+    column[#column + 1] = VerticalSpan:new{ width = gap_m }
+    column[#column + 1] = divider()
+
+    local card_dialog
+    local row_buttons = {}
+    local list_group = VerticalGroup:new{ align = "left" }
+
+    for i = first_idx, last_idx do
+        local item = list[i]
+        if i > first_idx then
+            list_group[#list_group + 1] = divider()
+        end
+
+        local has_note = type(item.note) == "string" and item.note ~= ""
+        local prefix = item.tomedown_special and "★ " or "• "
+        if has_note then
+            prefix = prefix .. "✎ "
+        end
+
+        local loc = {}
+        if type(item.chapter) == "string" and item.chapter ~= "" then
+            loc[#loc + 1] = item.chapter
+        end
+        if item.pageno then
+            loc[#loc + 1] = "p. " .. tostring(item.pageno)
+        end
+        if is_notes and type(item.text) == "string" and item.text ~= "" then
+            loc[#loc + 1] = "“" .. snippet(item.text, 40) .. "”"
+        end
+
+        local row_label = is_notes
+            and ("✎ " .. snippet(item.note, 90))
+            or (prefix .. snippet(item.text, 85))
+
+        list_group[#list_group + 1] = VerticalSpan:new{ width = gap_s }
+        local row_btn = Button:new{
+            text = row_label,
+            align = "left",
+            width = content_w,
+            bordersize = 0,
+            padding_h = 0,
+            padding_v = Screen:scaleBySize(4),
+            text_font_face = "cfont",
+            text_font_size = 14,
+            text_font_bold = false,
+            callback = function()
+                if card_dialog then
+                    UIManager:close(card_dialog)
+                end
+                jumpToItem(item)
+            end,
+            hold_callback = function()
+                if is_notes then
+                    local edit_dlg
+                    edit_dlg = InputDialog:new{
+                        title = _("Edit note"),
+                        input = tostring(item.note or ""),
+                        allow_newline = true,
+                        buttons = {
+                            {
+                                {
+                                    text = _("Cancel"),
+                                    callback = function()
+                                        UIManager:close(edit_dlg)
+                                    end,
+                                },
+                                {
+                                    text = _("Save"),
+                                    is_enter_default = true,
+                                    callback = function()
+                                        local raw = tostring(edit_dlg:getInputText() or "")
+                                        local clean = raw:gsub("^%s+", ""):gsub("%s+$", "")
+                                        item.note = (clean ~= "") and clean or nil
+                                        item.datetime_updated = os.date("%Y-%m-%d %H:%M:%S")
+                                        if open and open.doc_settings and open.annotation then
+                                            open.doc_settings:saveSetting("annotations", open.annotation.annotations)
+                                            if type(open.doc_settings.flush) == "function" then
+                                                open.doc_settings:flush()
+                                            end
+                                        end
+                                        UIManager:close(edit_dlg)
+                                        if card_dialog then
+                                            UIManager:close(card_dialog)
+                                        end
+                                        self:openBookHighlights(file, filter, cur_page)
+                                    end,
+                                },
+                            },
+                        },
+                    }
+                    UIManager:show(edit_dlg)
+                    edit_dlg:onShowKeyboard()
+                    return
+                end
+                local marked = not item.tomedown_special
+                item.tomedown_special = marked or nil
+                if open and open.doc_settings and open.annotation then
+                    open.doc_settings:saveSetting("annotations", open.annotation.annotations)
+                end
+                UIManager:show(Notification:new{
+                    text = marked and _("Highlight marked as special")
+                        or _("Special mark removed"),
+                    timeout = 1.5,
+                })
+                if card_dialog then
+                    UIManager:close(card_dialog)
+                end
+                self:openBookHighlights(file, filter, cur_page)
+            end,
+        }
+        row_buttons[#row_buttons + 1] = row_btn
+        list_group[#list_group + 1] = row_btn
+        if #loc > 0 then
+            list_group[#list_group + 1] = TextWidget:new{
+                text = table.concat(loc, "  ·  "),
+                face = Font:getFace("cfont", 12),
+                fgcolor = Blitbuffer.COLOR_DARK_GRAY,
+                max_width = content_w,
+            }
+        end
+        list_group[#list_group + 1] = VerticalSpan:new{ width = gap_s }
+    end
+
+    column[#column + 1] = list_group
+
+    local btn_specs = {}
+    if total_pages > 1 then
+        btn_specs[#btn_specs + 1] = {
+            text = "◀",
+            callback = function(dlg)
+                if cur_page > 1 then
+                    UIManager:close(dlg)
+                    self:openBookHighlights(file, filter, cur_page - 1)
+                end
+            end,
+        }
+        btn_specs[#btn_specs + 1] = {
+            text = "▶",
+            callback = function(dlg)
+                if cur_page < total_pages then
+                    UIManager:close(dlg)
+                    self:openBookHighlights(file, filter, cur_page + 1)
+                end
+            end,
+        }
+    end
+    btn_specs[#btn_specs + 1] = {
+        text = _("Close"),
+        callback = function(dlg)
+            UIManager:close(dlg)
+        end,
+    }
+
+    card_dialog = buildTomedownCard(column, btn_specs, content_w, pad, row_buttons)
+    UIManager:show(card_dialog)
+end
+
 -- Per-book style and format overrides for the open book. Each option can
 -- either follow the global setting or be pinned for this book alone.
-function M:genBookStyleMenu(file)
-    local rows = {}
+function M:genBookStyleMenu(file, target_table)
+    local rows = target_table or {}
+    for i = #rows, 1, -1 do
+        rows[i] = nil
+    end
     if not file then
         return rows
     end
@@ -3918,11 +5153,14 @@ function M:genBookStyleMenu(file)
         }
         for __, opt in ipairs(options) do
             local val = opt.val
+            local opt_enabled_fn = opt.enabled_func
+            local opt_checked_fn = opt.checked_func
             sub[#sub + 1] = {
                 text = opt.text,
                 radio = true,
                 keep_menu_open = true,
-                checked_func = function()
+                enabled_func = opt_enabled_fn,
+                checked_func = opt_checked_fn or function()
                     return getBookStyleOverride(file, key) == val
                 end,
                 callback = function(touchmenu)
@@ -3951,6 +5189,22 @@ function M:genBookStyleMenu(file)
         }
     end
 
+    local function notifyMenuUpdated(touchmenu, tbl)
+        if not touchmenu or not touchmenu.updateItems then
+            return
+        end
+        if touchmenu.item_table == tbl then
+            touchmenu:updateItems()
+        elseif touchmenu.item_table_stack then
+            for _, entry in ipairs(touchmenu.item_table_stack) do
+                if entry == tbl or (type(entry) == "table" and entry.table == tbl) then
+                    touchmenu:updateItems()
+                    break
+                end
+            end
+        end
+    end
+
     rows[#rows + 1] = choiceRow(
         _("Export format: %1"),
         "export_format",
@@ -3964,202 +5218,645 @@ function M:genBookStyleMenu(file)
             { val = "md",   text = _("Markdown (.md)") },
             { val = "txt",  text = _("Plain text (.txt)") },
             { val = "both", text = _("Both (.md and .txt)") },
-        }
+        },
+        getExportFormat(file) == "txt",
+        function(touchmenu)
+            self:refreshBookStyleMenu(touchmenu, file, rows)
+        end
     )
 
-    rows[#rows + 1] = choiceRow(
-        _("Personal notes format: %1"),
-        "note_style",
-        getNoteStyle,
-        {
-            inline = _("Inline"),
-            footnote = _("Footnotes"),
-        },
-        {
-            { val = "inline",   text = _("Inline") },
-            { val = "footnote", text = _("Footnotes") },
-        }
-    )
+    if getExportFormat(file) ~= "txt" then
+        rows[#rows + 1] = choiceRow(
+            _("Markdown style: %1"),
+            "markdown_style",
+            shared.getMarkdownStyle,
+            {
+                obsidian   = _("Obsidian"),
+                standard   = _("Standard"),
+                commonmark = _("CommonMark"),
+            },
+            {
+                { val = "obsidian",   text = _("Obsidian") },
+                { val = "standard",   text = _("Standard (GitHub / HTML)") },
+                { val = "commonmark", text = _("CommonMark (no HTML)") },
+            },
+            true,
+            function(touchmenu)
+                setSetting("digest_dirty", true)
+                self:refreshBookStyleMenu(touchmenu, file, rows)
+            end
+        )
+    end
 
-    rows[#rows + 1] = choiceRow(
-        _("Highlight details: %1"),
-        "highlight_details",
-        getHighlightDetails,
-        {
-            page_date = _("Page and date"),
-            page_only = _("Page only"),
-            date_only = _("Date only"),
-            none = _("None"),
-        },
-        {
-            { val = "page_date", text = _("Page and date") },
-            { val = "page_only", text = _("Page only") },
-            { val = "date_only", text = _("Date only") },
-            { val = "none",      text = _("None") },
-        }
-    )
+    -- Group 1 in Current book -> Format & layout: Notes & highlights (100% parity with Global).
+    local nh_keys = {
+        "special_marker", "highlight_details", "highlight_context",
+        "block_ids", "callout", "note_style", "chapter_headings",
+        "include_bookmarks", "include_handwritten",
+    }
+    local book_nh_rows = {}
+    local function buildBookNotesHighlightsMenu(target)
+        local nh_rows = target or {}
+        for i = #nh_rows, 1, -1 do
+            nh_rows[i] = nil
+        end
+        local function refreshNHMenu(touchmenu)
+            buildBookNotesHighlightsMenu(nh_rows)
+            notifyMenuUpdated(touchmenu, nh_rows)
+        end
 
-    rows[#rows + 1] = choiceRow(
-        _("Chapter headings: %1"),
-        "chapter_headings",
-        getChapterHeadings,
-        {
-            h1 = _("Heading 1 (# Chapter)"),
-            h2 = _("Heading 2 (## Chapter)"),
-            h3 = _("Heading 3 (### Chapter)"),
-            none = _("None (continuous list)"),
-        },
-        {
-            { val = "h1",   text = _("Heading 1 (# Chapter)") },
-            { val = "h2",   text = _("Heading 2 (## Chapter)") },
-            { val = "h3",   text = _("Heading 3 (### Chapter)") },
-            { val = "none", text = _("None (continuous list)") },
-        }
-    )
+        local sp_row = choiceRow(
+            _("Special highlight style: %1"),
+            "special_marker",
+            function(f)
+                local cur = shared.getSpecialMarker(f)
+                if not shared.isObsidianStyle(f)
+                        and (cur == "callout" or cur == "alert"
+                            or cur == "highlight" or cur == "highlight_bold") then
+                    return "bold"
+                end
+                return cur
+            end,
+            {
+                callout        = _("Callout ([!highlight])"),
+                alert          = _("Alert ([!IMPORTANT])"),
+                highlight      = _("Highlight (==text==)"),
+                highlight_bold = _("Highlight & Bold (==**text**==)"),
+                star_bold      = _("Star & Bold (⭐ **text**)"),
+                bold           = _("Bold (**text**)"),
+            },
+            {
+                {
+                    val = "callout",
+                    text = _("Callout ([!highlight])"),
+                    enabled_func = function()
+                        return shared.isObsidianStyle(file)
+                    end,
+                },
+                {
+                    val = "alert",
+                    text = _("Alert ([!IMPORTANT])"),
+                    enabled_func = function()
+                        return shared.isObsidianStyle(file)
+                    end,
+                },
+                {
+                    val = "highlight",
+                    text = _("Highlight (==text==)"),
+                    enabled_func = function()
+                        return shared.isObsidianStyle(file)
+                    end,
+                },
+                {
+                    val = "highlight_bold",
+                    text = _("Highlight & Bold (==**text**==)"),
+                    enabled_func = function()
+                        return shared.isObsidianStyle(file)
+                    end,
+                },
+                { val = "star_bold", text = _("Star & Bold (⭐ **text**)") },
+                {
+                    val = "bold",
+                    text = _("Bold (**text**)"),
+                    checked_func = function()
+                        local ov = getBookStyleOverride(file, "special_marker")
+                        return ov == "bold"
+                            or (not shared.isObsidianStyle(file)
+                                and (ov == "callout" or ov == "alert"
+                                    or ov == "highlight" or ov == "highlight_bold"))
+                    end,
+                },
+            }
+        )
+        sp_row.enabled_func = function()
+            return not shared.isObsidianStyle(file)
+                or not shared.getEveryHighlightSpecial(file)
+        end
+        nh_rows[#nh_rows + 1] = sp_row
 
-    rows[#rows + 1] = choiceRow(
-        _("Highlight context: %1"),
-        "highlight_context",
-        getHighlightContext,
-        {
-            [true] = _("Enabled"),
-            [false] = _("Disabled"),
-        },
-        {
-            { val = true,  text = _("Enabled") },
-            { val = false, text = _("Disabled") },
-        }
-    )
+        nh_rows[#nh_rows + 1] = choiceRow(
+            _("Highlight details: %1"),
+            "highlight_details",
+            getHighlightDetails,
+            {
+                page_date = _("Page and date"),
+                page_only = _("Page only"),
+                date_only = _("Date only"),
+                none = _("None"),
+            },
+            {
+                { val = "page_date", text = _("Page and date") },
+                { val = "page_only", text = _("Page only") },
+                { val = "date_only", text = _("Date only") },
+                { val = "none",      text = _("None") },
+            }
+        )
 
-    rows[#rows + 1] = choiceRow(
-        _("Book cover: %1"),
-        "covers",
-        getBookCovers,
-        {
-            [true] = _("Enabled"),
-            [false] = _("Disabled"),
-        },
-        {
-            { val = true,  text = _("Enabled") },
-            { val = false, text = _("Disabled") },
-        }
-    )
+        nh_rows[#nh_rows + 1] = choiceRow(
+            _("Highlight context: %1"),
+            "highlight_context",
+            getHighlightContext,
+            {
+                [true] = _("Enabled"),
+                [false] = _("Disabled"),
+            },
+            {
+                { val = true,  text = _("Enabled") },
+                { val = false, text = _("Disabled") },
+            }
+        )
 
-    rows[#rows + 1] = choiceRow(
-        _("Page bookmarks: %1"),
-        "include_bookmarks",
-        getIncludeBookmarks,
-        {
-            [true] = _("Enabled"),
-            [false] = _("Disabled"),
-        },
-        {
-            { val = true,  text = _("Enabled") },
-            { val = false, text = _("Disabled") },
-        }
-    )
+        local block_ids_row = choiceRow(
+            _("Link IDs on highlights: %1"),
+            "block_ids",
+            function(f)
+                return shared.isObsidianStyle(f)
+                    and shared.getBlockIds(f) or false
+            end,
+            {
+                [true] = _("Enabled"),
+                [false] = _("Disabled"),
+            },
+            {
+                { val = true,  text = _("Enabled") },
+                { val = false, text = _("Disabled") },
+            },
+            false,
+            function()
+                setSetting("digest_dirty", true)
+            end
+        )
+        block_ids_row.enabled_func = function()
+            return shared.isObsidianStyle(file)
+        end
+        nh_rows[#nh_rows + 1] = block_ids_row
 
-    rows[#rows + 1] = choiceRow(
-        _("Handwritten notes: %1"),
-        "include_handwritten",
-        shared.getIncludeHandwritten,
-        {
-            [true] = _("Enabled"),
-            [false] = _("Disabled"),
-        },
-        {
-            { val = true,  text = _("Enabled") },
-            { val = false, text = _("Disabled") },
-        }
-    )
+        local every_special_row = choiceRow(
+            _("Every highlight is special: %1"),
+            "callout",
+            function(f)
+                return shared.isObsidianStyle(f)
+                    and shared.getEveryHighlightSpecial(f) or false
+            end,
+            {
+                [true] = _("Enabled"),
+                [false] = _("Disabled"),
+            },
+            {
+                { val = true,  text = _("Enabled") },
+                { val = false, text = _("Disabled") },
+            },
+            true,
+            refreshNHMenu
+        )
+        every_special_row.enabled_func = function()
+            return shared.isObsidianStyle(file)
+        end
+        nh_rows[#nh_rows + 1] = every_special_row
 
-    rows[#rows + 1] = choiceRow(
-        _("Book title in body: %1"),
-        "book_heading",
-        shared.getBookHeading,
-        {
-            [true] = _("Enabled"),
-            [false] = _("Disabled"),
-        },
-        {
-            { val = true,  text = _("Enabled") },
-            { val = false, text = _("Disabled") },
+        local note_style_opts = {
+            { val = "inline", text = _("Inline") },
         }
-    )
+        if shared.isObsidianStyle(file) then
+            note_style_opts[#note_style_opts + 1] = { val = "callout", text = _("Callout ([!note])") }
+        end
+        note_style_opts[#note_style_opts + 1] = { val = "footnote", text = _("Footnotes") }
+        nh_rows[#nh_rows + 1] = choiceRow(
+            _("Personal notes format: %1"),
+            "note_style",
+            function(f)
+                local cur = getNoteStyle(f)
+                if not shared.isObsidianStyle(f) and cur == "callout" then
+                    return "inline"
+                end
+                return cur
+            end,
+            {
+                inline = _("Inline"),
+                callout = _("Callout ([!note])"),
+                footnote = _("Footnotes"),
+            },
+            note_style_opts
+        )
 
-    rows[#rows + 1] = choiceRow(
-        _("Overview style: %1"),
-        "overview_style",
-        shared.getOverviewStyle,
-        {
-            inline     = _("Inline / Heading"),
-            blockquote = _("Classic blockquote"),
-            callout    = _("Callout ([!summary])"),
-            table      = _("Table"),
-        },
-        {
-            { val = "inline",     text = _("Inline / Heading") },
-            { val = "blockquote", text = _("Classic blockquote") },
-            { val = "callout",    text = _("Callout ([!summary])") },
-            { val = "table",      text = _("Table") },
-        }
-    )
+        nh_rows[#nh_rows + 1] = choiceRow(
+            _("Chapter headings: %1"),
+            "chapter_headings",
+            getChapterHeadings,
+            {
+                h1 = _("Heading 1 (# Chapter)"),
+                h2 = _("Heading 2 (## Chapter)"),
+                h3 = _("Heading 3 (### Chapter)"),
+                none = _("None (continuous list)"),
+            },
+            {
+                { val = "h1",   text = _("Heading 1 (# Chapter)") },
+                { val = "h2",   text = _("Heading 2 (## Chapter)") },
+                { val = "h3",   text = _("Heading 3 (### Chapter)") },
+                { val = "none", text = _("None (continuous list)") },
+            }
+        )
 
-    rows[#rows + 1] = choiceRow(
-        _("Reading dashboard: %1"),
-        "reading_dashboard",
-        shared.getReadingDashboard,
-        {
-            [true] = _("Enabled"),
-            [false] = _("Disabled"),
-        },
-        {
-            { val = true,  text = _("Enabled") },
-            { val = false, text = _("Disabled") },
-        }
-    )
+        nh_rows[#nh_rows + 1] = choiceRow(
+            _("Page bookmarks: %1"),
+            "include_bookmarks",
+            getIncludeBookmarks,
+            {
+                [true] = _("Enabled"),
+                [false] = _("Disabled"),
+            },
+            {
+                { val = true,  text = _("Enabled") },
+                { val = false, text = _("Disabled") },
+            }
+        )
 
-    rows[#rows + 1] = choiceRow(
-        _("Book synopsis: %1"),
-        "book_synopsis",
-        shared.getBookSynopsis,
-        {
-            [true] = _("Enabled"),
-            [false] = _("Disabled"),
-        },
-        {
-            { val = true,  text = _("Enabled") },
-            { val = false, text = _("Disabled") },
-        }
-    )
+        nh_rows[#nh_rows + 1] = choiceRow(
+            _("Handwritten notes: %1"),
+            "include_handwritten",
+            shared.getIncludeHandwritten,
+            {
+                [true] = _("Enabled"),
+                [false] = _("Disabled"),
+            },
+            {
+                { val = true,  text = _("Enabled") },
+                { val = false, text = _("Disabled") },
+            },
+            false,
+            function()
+                setSetting("digest_dirty", true)
+            end
+        )
 
-    rows[#rows + 1] = choiceRow(
-        _("Body tags: %1"),
-        "body_tags",
-        shared.getBodyTags,
-        {
-            [true] = _("Enabled"),
-            [false] = _("Disabled"),
-        },
-        {
-            { val = true,  text = _("Enabled") },
-            { val = false, text = _("Disabled") },
-        }
-    )
+        return nh_rows
+    end
+    buildBookNotesHighlightsMenu(book_nh_rows)
+    rows[#rows + 1] = {
+        key = "book_notes_highlights",
+        text = _("Notes & highlights"),
+        mandatory_func = function()
+            for __, k in ipairs(nh_keys) do
+                if getBookStyleOverride(file, k) ~= nil then
+                    return _("Custom")
+                end
+            end
+            return _("Global")
+        end,
+        sub_item_table = book_nh_rows,
+        sub_item_table_func = function()
+            return buildBookNotesHighlightsMenu(book_nh_rows)
+        end,
+    }
 
-    rows[#rows + 1] = choiceRow(
-        _("Special highlights showcase: %1"),
-        "special_showcase",
-        shared.getSpecialShowcase,
-        {
-            [true] = _("Enabled"),
-            [false] = _("Disabled"),
-        },
-        {
-            { val = true,  text = _("Enabled") },
-            { val = false, text = _("Disabled") },
+    -- Group 2 in Current book -> Format & layout: Book page (100% parity with Global).
+    local book_card_keys = {
+        "book_heading", "covers", "overview_style", "harmonize_book_style",
+        "book_visual_style", "reading_dashboard", "dashboard_style",
+        "book_synopsis", "synopsis_mode", "synopsis_style",
+        "body_tags", "body_tags_style", "special_showcase", "showcase_style",
+    }
+    local book_card_rows = {}
+    local function buildBookCardMenu(target)
+        local c_rows = target or {}
+        for i = #c_rows, 1, -1 do
+            c_rows[i] = nil
+        end
+        local function refreshCardMenu(touchmenu)
+            buildBookCardMenu(c_rows)
+            notifyMenuUpdated(touchmenu, c_rows)
+        end
+        local visual_style_labels = {
+            minimal   = _("Minimal symbols (● / ◐)"),
+            emoji     = _("Emoji (🟢 / 🟡)"),
+            badges    = _("Code badges (`READING`)"),
+            editorial = _("Editorial (Reading)"),
         }
-    )
+        local visual_style_options = {
+            { val = "minimal",   text = _("Minimal symbols (● / ◐)") },
+            { val = "emoji",     text = _("Emoji (🟢 / 🟡)") },
+            { val = "badges",    text = _("Code badges (`READING`)") },
+            { val = "editorial", text = _("Editorial (Reading)") },
+        }
+        local function makeBookVisualStyleRow(title_tmpl, key, getter, enabled_fn, sep)
+            local r = choiceRow(title_tmpl, key, getter, visual_style_labels, visual_style_options, sep)
+            if enabled_fn then
+                r.enabled_func = enabled_fn
+            end
+            return r
+        end
+
+        c_rows[#c_rows + 1] = choiceRow(
+            _("Book title in body: %1"),
+            "book_heading",
+            shared.getBookHeading,
+            {
+                [true] = _("Enabled"),
+                [false] = _("Disabled"),
+            },
+            {
+                { val = true,  text = _("Enabled") },
+                { val = false, text = _("Disabled") },
+            }
+        )
+
+        c_rows[#c_rows + 1] = choiceRow(
+            _("Book cover: %1"),
+            "covers",
+            getBookCovers,
+            {
+                [true] = _("Enabled"),
+                [false] = _("Disabled"),
+            },
+            {
+                { val = true,  text = _("Enabled") },
+                { val = false, text = _("Disabled") },
+            }
+        )
+
+        c_rows[#c_rows + 1] = choiceRow(
+            _("Overview style: %1"),
+            "overview_style",
+            function(f)
+                local cur = shared.getOverviewStyle(f)
+                if not shared.isObsidianStyle(f) and cur == "callout" then
+                    return "blockquote"
+                end
+                return cur
+            end,
+            {
+                inline     = _("Inline / Heading"),
+                blockquote = _("Classic blockquote"),
+                callout    = _("Callout ([!summary])"),
+                table      = _("Table"),
+            },
+            {
+                { val = "inline",     text = _("Inline / Heading") },
+                {
+                    val = "blockquote",
+                    text = _("Classic blockquote"),
+                    checked_func = function()
+                        local ov = getBookStyleOverride(file, "overview_style")
+                        return ov == "blockquote"
+                            or (not shared.isObsidianStyle(file) and ov == "callout")
+                    end,
+                },
+                {
+                    val = "callout",
+                    text = _("Callout ([!summary])"),
+                    enabled_func = function()
+                        return shared.isObsidianStyle(file)
+                    end,
+                    checked_func = function()
+                        return shared.isObsidianStyle(file)
+                            and getBookStyleOverride(file, "overview_style") == "callout"
+                    end,
+                },
+                { val = "table",      text = _("Table") },
+            },
+            true
+        )
+
+        c_rows[#c_rows + 1] = choiceRow(
+            _("Reading dashboard: %1"),
+            "reading_dashboard",
+            shared.getReadingDashboard,
+            {
+                [true] = _("Enabled"),
+                [false] = _("Disabled"),
+            },
+            {
+                { val = true,  text = _("Enabled") },
+                { val = false, text = _("Disabled") },
+            },
+            false,
+            refreshCardMenu
+        )
+
+        local syn_active = shared.getBookSynopsis(file)
+        c_rows[#c_rows + 1] = choiceRow(
+            _("Book synopsis: %1"),
+            "book_synopsis",
+            shared.getBookSynopsis,
+            {
+                [true] = _("Enabled"),
+                [false] = _("Disabled"),
+            },
+            {
+                { val = true,  text = _("Enabled") },
+                { val = false, text = _("Disabled") },
+            },
+            not syn_active,
+            refreshCardMenu
+        )
+        if syn_active then
+            c_rows[#c_rows + 1] = choiceRow(
+                _("Synopsis display: %1"),
+                "synopsis_mode",
+                function(f)
+                    local m = shared.getSynopsisMode(f)
+                    if shared.getMarkdownStyle(f) == "commonmark" then
+                        if m == "collapsed" then
+                            return "expanded"
+                        elseif m == "collapsed_short" then
+                            return "short"
+                        end
+                    end
+                    return m
+                end,
+                {
+                    collapsed       = _("Collapsed (foldable)"),
+                    short           = _("Short preview (~300 chars)"),
+                    collapsed_short = _("Collapsed + Short preview"),
+                    expanded        = _("Expanded (full text)"),
+                },
+                {
+                    {
+                        val = "collapsed",
+                        text = _("Collapsed (foldable)"),
+                        enabled_func = function()
+                            return shared.getMarkdownStyle(file) ~= "commonmark"
+                        end,
+                        checked_func = function()
+                            return shared.getMarkdownStyle(file) ~= "commonmark"
+                                and getBookStyleOverride(file, "synopsis_mode") == "collapsed"
+                        end,
+                    },
+                    {
+                        val = "short",
+                        text = _("Short preview (~300 chars)"),
+                        checked_func = function()
+                            local ov = getBookStyleOverride(file, "synopsis_mode")
+                            return ov == "short"
+                                or (shared.getMarkdownStyle(file) == "commonmark" and ov == "collapsed_short")
+                        end,
+                    },
+                    {
+                        val = "collapsed_short",
+                        text = _("Collapsed + Short preview"),
+                        enabled_func = function()
+                            return shared.getMarkdownStyle(file) ~= "commonmark"
+                        end,
+                        checked_func = function()
+                            return shared.getMarkdownStyle(file) ~= "commonmark"
+                                and getBookStyleOverride(file, "synopsis_mode") == "collapsed_short"
+                        end,
+                    },
+                    {
+                        val = "expanded",
+                        text = _("Expanded (full text)"),
+                        checked_func = function()
+                            local ov = getBookStyleOverride(file, "synopsis_mode")
+                            return ov == "expanded"
+                                or (shared.getMarkdownStyle(file) == "commonmark" and ov == "collapsed")
+                        end,
+                    },
+                },
+                true
+            )
+        end
+
+        c_rows[#c_rows + 1] = choiceRow(
+            _("Tags in body: %1"),
+            "body_tags",
+            shared.getBodyTags,
+            {
+                [true] = _("Enabled"),
+                [false] = _("Disabled"),
+            },
+            {
+                { val = true,  text = _("Enabled") },
+                { val = false, text = _("Disabled") },
+            },
+            false,
+            refreshCardMenu
+        )
+
+        c_rows[#c_rows + 1] = choiceRow(
+            _("Special highlights showcase: %1"),
+            "special_showcase",
+            shared.getSpecialShowcase,
+            {
+                [true] = _("Enabled"),
+                [false] = _("Disabled"),
+            },
+            {
+                { val = true,  text = _("Enabled") },
+                { val = false, text = _("Disabled") },
+            },
+            true,
+            refreshCardMenu
+        )
+
+        local sec_style_keys = {
+            "harmonize_book_style", "book_visual_style", "dashboard_style",
+            "synopsis_style", "body_tags_style", "showcase_style",
+        }
+        local book_sec_style_rows = {}
+        local function buildBookSecStyleMenu(st_target)
+            local s_rows = st_target or {}
+            for i = #s_rows, 1, -1 do
+                s_rows[i] = nil
+            end
+            local function refreshSecStyle(touchmenu)
+                buildBookSecStyleMenu(s_rows)
+                notifyMenuUpdated(touchmenu, s_rows)
+            end
+            local book_harmonized = shared.getHarmonizeBookStyle(file)
+            s_rows[#s_rows + 1] = choiceRow(
+                _("Harmonize book styles: %1"),
+                "harmonize_book_style",
+                shared.getHarmonizeBookStyle,
+                {
+                    [true] = _("Enabled"),
+                    [false] = _("Disabled"),
+                },
+                {
+                    { val = true,  text = _("Enabled") },
+                    { val = false, text = _("Disabled") },
+                },
+                true,
+                refreshSecStyle
+            )
+            if book_harmonized then
+                s_rows[#s_rows + 1] = makeBookVisualStyleRow(
+                    _("Book style: %1"),
+                    "book_visual_style",
+                    shared.getBookVisualStyle
+                )
+            else
+                s_rows[#s_rows + 1] = makeBookVisualStyleRow(
+                    _("Dashboard style: %1"),
+                    "dashboard_style",
+                    shared.getDashboardStyle,
+                    function()
+                        return shared.getReadingDashboard(file)
+                    end
+                )
+                s_rows[#s_rows + 1] = makeBookVisualStyleRow(
+                    _("Synopsis style: %1"),
+                    "synopsis_style",
+                    shared.getSynopsisStyle,
+                    function()
+                        return shared.getBookSynopsis(file)
+                    end
+                )
+                s_rows[#s_rows + 1] = makeBookVisualStyleRow(
+                    _("Tags style: %1"),
+                    "body_tags_style",
+                    shared.getBodyTagsStyle,
+                    function()
+                        return shared.getBodyTags(file)
+                    end
+                )
+                s_rows[#s_rows + 1] = makeBookVisualStyleRow(
+                    _("Showcase style: %1"),
+                    "showcase_style",
+                    shared.getShowcaseStyle,
+                    function()
+                        return shared.getSpecialShowcase(file)
+                    end
+                )
+            end
+            return s_rows
+        end
+        buildBookSecStyleMenu(book_sec_style_rows)
+        c_rows[#c_rows + 1] = {
+            key = "book_card_style",
+            text = _("Section styles"),
+            mandatory_func = function()
+                for __, k in ipairs(sec_style_keys) do
+                    if getBookStyleOverride(file, k) ~= nil then
+                        return _("Custom")
+                    end
+                end
+                return _("Global")
+            end,
+            sub_item_table = book_sec_style_rows,
+            sub_item_table_func = function()
+                return buildBookSecStyleMenu(book_sec_style_rows)
+            end,
+        }
+        return c_rows
+    end
+    buildBookCardMenu(book_card_rows)
+    rows[#rows + 1] = {
+        key = "book_card_sections",
+        text = _("Book page"),
+        separator = true,
+        mandatory_func = function()
+            for __, k in ipairs(book_card_keys) do
+                if getBookStyleOverride(file, k) ~= nil then
+                    return _("Custom")
+                end
+            end
+            return _("Global")
+        end,
+        sub_item_table = book_card_rows,
+        sub_item_table_func = function()
+            return buildBookCardMenu(book_card_rows)
+        end,
+    }
 
     rows[#rows + 1] = choiceRow(
         _("YAML frontmatter: %1"),
@@ -4175,7 +5872,7 @@ function M:genBookStyleMenu(file)
         },
         getFrontmatterEnabled(file) == false,
         function(touchmenu)
-            self:refreshBookStyleMenu(touchmenu, file)
+            self:refreshBookStyleMenu(touchmenu, file, rows)
         end
     )
 
@@ -4209,6 +5906,7 @@ function M:genBookStyleMenu(file)
         end,
         callback = function(touchmenu)
             clearBookStyleOverrides(file)
+            setSetting("digest_dirty", true)
             self:invalidateExportHash(file)
             self:refreshBookStyleMenu(touchmenu, file)
         end,
@@ -4372,19 +6070,13 @@ function M:refreshBookInfoMenu(touchmenu, file)
     end
 end
 
-function M:refreshBookStyleMenu(touchmenu, file)
-    if not touchmenu or not touchmenu.item_table then
+function M:refreshBookStyleMenu(touchmenu, file, target_table)
+    local live = target_table or (touchmenu and touchmenu.item_table)
+    if not live then
         return
     end
-    local live = touchmenu.item_table
-    local fresh = self:genBookStyleMenu(file or self:getCurrentFile())
-    for i = #live, 1, -1 do
-        live[i] = nil
-    end
-    for _, item in ipairs(fresh) do
-        live[#live + 1] = item
-    end
-    if touchmenu.updateItems then
+    self:genBookStyleMenu(file or self:getCurrentFile(), live)
+    if touchmenu and touchmenu.item_table == live and touchmenu.updateItems then
         touchmenu:updateItems()
     end
 end

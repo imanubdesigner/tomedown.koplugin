@@ -68,7 +68,7 @@ function lfs.mkdir(path)
 end
 
 function lfs.rmdir(path)
-    local ok = os.execute('rmdir "' .. path .. '"')
+    local ok = os.execute('rmdir "' .. path .. '" 2>/dev/null')
     if ok == true or ok == 0 then
         return true
     end

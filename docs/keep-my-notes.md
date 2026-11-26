@@ -4,7 +4,7 @@
 
 Your vault is the destination, not a cache. Since 1.0 an export can fold the
 new render into the file already in your vault instead of overwriting it.
-**Keep my notes: all books** is off by default (what every release up to 0.8
+**Keep my notes for all books** is off by default (what every release up to 0.8
 always did), so upgrading changes nothing: turn it on in
 *Settings → My notes* and the file becomes a shared document.
 
@@ -12,18 +12,16 @@ always did), so upgrading changes nothing: turn it on in
 
 ### All books
 
-*Keep my notes: all books* is the global switch, and while it is on there is
+*Keep my notes for all books* is the global switch, and while it is on there is
 nothing else to decide: it alone is in charge of every file, every file
 keeps its zone, and *Notes heading: %1* names all of them. The keep row in
 *Current book* is still there, off, with *On for all books* on the right, so
-the choice a book stored stays visible without being in charge. The
-per-book heading and the index rows leave the menus, and the choices behind
-them stay stored, waiting for the switch to go off again.
+the choice a book stored stays visible without being in charge. *Keep my notes in the index* also shows *On for all books* on the right, while the per-book heading and index heading rows are hidden and their stored choices wait for the global switch to go off again.
 
 ### One book
 
 Since 1.1 the choice is also **per book**, with the global switch off.
-*Keep my notes in this book*, in the open book's menu, keeps the zone for
+*Keep my notes in this book*, in the open book's menu (*Tomedown → Current book*), keeps the zone for
 that book alone, and the choice survives later flips of the global switch.
 Tapping it again asks first, saying the file goes back to a plain export;
 confirming stores an explicit off and writes that file plain there and then,
@@ -38,20 +36,20 @@ because a book's own choice lives in the book's own menu.
 ### The index
 
 `00 - Index.md` follows the same shape. With the global switch off, its own
-switch, *Keep my notes: index*, sits in *Settings → My notes* under the
+switch, *Keep my notes in the index*, sits in *Settings → My notes* under the
 global one, with *Index notes heading: %1* under it to name the zone. The
 index starts out the way the global switch is set, and no book turns it on
 behind your back any more, so exporting a book never takes the notes you
 wrote in the index away by surprise. Turn its switch off and the index
 exports plain from the next export on, with the one you had kept whole as
 `00 - Index.md.bak` first; turn it on again and that copy comes back. With
-the global switch on, both of its rows are hidden.
+the global switch on, *Keep my notes in the index* is disabled with *On for all books* on the right.
 
 ### Tags for one book
 
-*Tags: %1*, in the open book's menu, holds the tags of that book alone. The
+*Tags: %1*, inside *Tomedown → Current book → Book info*, holds the tags of that book alone. The
 dialog lists the tags already used in your library, most used first: tap one
-to add it, tap it again to remove it. *Other tags…* opens the comma separated
+to add it, tap it again to remove it. *Other tags…* opens the comma-separated
 field for a tag nobody has used yet, and *Clear all tags* empties the list.
 The chosen tags join `ebook`, `highlights` and the book's own keywords at the
 next export (right away when the book is exported on close). A tag made only
@@ -68,12 +66,12 @@ knows to drop the old ones.
 
 ### Where a book goes
 
-*Book visibility: %1*, in the same menu, chooses what the next exports do with
-that book: keep it in the index, export it but leave it out of the index, or
-stop exporting it. The note already written is never deleted, and the choice
+*Book visibility: %1 ▸*, in *Tomedown → Current book*, opens a radio submenu to choose what the next exports do with
+that book: **Export and show in the index** (*Normal*), **Export, but hide from the index** (*Hidden from index*), or
+**Do not export** (*Not exported*). The note already written is never deleted, and the choice
 belongs to the book, so it survives later exports of the rest of the library.
-*Export this book*, tapped on purpose, still works for a book set to *not
-exported*. The same row sits in KOReader's file dialog when you long-press a
+*Export this book*, tapped on purpose, still works for a book set to *Do not export*.
+The same row sits in KOReader's file dialog when you long-press a
 book in the file browser, in History or in Bookshelf, together with *Tags…*.
 
 ## The zone and the block
@@ -108,6 +106,18 @@ and outside the block is yours
 - **p. 10** · 02/09/2026
 <!-- tomedown:end body -->
 ```
+
+<figure class="doc-specimen">
+  <div class="doc-specimen-mat">
+    <div class="doc-specimen-head">
+      <span class="doc-specimen-label">Obsidian · Keep my notes workspace</span>
+    </div>
+    <div class="doc-specimen-viewport">
+      <img src="../assets/obsidian/keep-my-notes-obsidian.webp" alt="Keep my notes in Obsidian: personal reflections written above the marker survive every export" loading="lazy" decoding="async" />
+    </div>
+  </div>
+  <figcaption>Personal reflections written above the generated block survive every export without being overwritten.</figcaption>
+</figure>
 
 Obsidian and every Markdown renderer ignore the comments, so the file looks
 exactly the same. The begin comment carries the digest (`hash=…`) of the
@@ -168,8 +178,7 @@ takes its place. There is one `.bak` and it is always the latest: turning
 Keep my notes on again makes it the base of the next export, so your notes
 are back. On, off, on, off, on: every note you kept is back each time, and
 one you deleted stays deleted. A `.bak` is never copied twice and never grows
-a twin beside it. A card that ran the 1.1.0-beta.1 finds its two copies back
-in the right slots on the first export.
+a twin beside it.
 
 **`<name>.md.bak.1` (up to `.bak.3`) are the safety copies**, only for text
 that cannot come back by itself: something typed into the plain file while
@@ -182,19 +191,11 @@ place of the `.bak`.
 
 A file Tomedown itself wrote is never copied. When an export finds the very
 bytes the last run left there, nothing of yours sits in them, so no safety
-copy is taken (the first run after an upgrade has not seen your file yet and
-keeps one copy, just in case).
+copy is taken.
 
 If a copy cannot be written (a full card, a read-only folder) the file is
 **left as it is** and the export reports the error: a note is never traded
 for a rewrite. The next export tries again.
-
-A block you edited **inside** the comments is not a lost cause. The previous
-file is kept as `<name>.md.bak.1` before the rewrite, so your line waits in
-the safety copy while the fresh block joins in (the toast reports `N files
-backed up (.bak)`). A file that has to be rebuilt from scratch (markers
-broken beyond repair, an export from tomedown ≤ 0.8) comes with the same
-copy.
 
 ## Two devices on one folder
 
@@ -206,29 +207,25 @@ copy is read: if it is a plain file edited elsewhere, its text is kept as
 the file on the device is the one that counts. A cloud copy that has a zone
 is merged as usual; when this device also holds notes set aside in `.bak`
 that the cloud copy never got, they are folded into it, so neither side is
-left behind, and what the rewrite replaces is kept as `.bak.1` first (the
-plain file instead, when it holds text you typed yourself).
+left behind, and what the rewrite replaces is kept as `.bak.1` first.
 
 ## Editing in Obsidian while the device is away
 
 If you export to the cloud and keep the vault in sync (WebDAV, Dropbox, FTP,
 Nextcloud or Remotely Save), you can write in Obsidian on the desktop and
 keep reading on the device. The two sides write the same file, so the export
-has to know which copy is newer. Otherwise every export would fold the new
-highlights into the older copy on the device and push it over the notes you
-just wrote.
+has to know which copy is newer.
 
-With **Bring in edits made in Obsidian** on (the default, it lives in
+With **Bring in edits made in Obsidian** on (the default, in
 *Settings → My notes*), an export fetches the copy in the cloud before
 folding the render in, and uses it as the base when it has changed since the
 last upload Tomedown made. The notes you wrote in Obsidian survive, the fresh
 highlights join them, and the file goes back to the cloud with the device up
-to date. The fetch only happens for the files being exported, and only while
-there is a connection.
+to date.
 
 A few things worth knowing:
 
-- with *Keep my notes: all books* off (the default) every export overwrites
+- with *Keep my notes for all books* off (the default) every export overwrites
   the file, so the toggle has nothing to merge and does nothing. Turn Keep my
   notes on to let your notes ride along;
 - the first export into a folder that already has files adopts the cloud copy
@@ -240,34 +237,25 @@ A few things worth knowing:
   connection comes back, before that file is pushed, Tomedown fetches the
   cloud copy and compares it with the one it last sent. If you wrote in
   Obsidian in the meantime, that copy is folded into the file first, so the
-  notes ride along with the new highlights instead of being overwritten. If a
-  transient error stops the fetch, the file is held back and retried at the
-  next chance rather than pushed blind: nothing is lost in either direction;
-- the same guard runs while you are online. An export or an upload whose
-  cloud copy cannot be read keeps that file out of the push and queues it for
-  the retry, and *Upload all files again* runs the same comparison before
-  pushing. A server that cannot download has nothing to compare against and
-  receives the local copy as it is; with *Bring in edits made in Obsidian*
-  off, the copy on the device always wins.
+  notes ride along with the new highlights instead of being overwritten;
+- the same guard runs while you are online. *Settings → Cloud upload → Re-upload all files…* runs the same comparison before pushing.
 
 ## Backup copies
 
-Inside a book, **Backup copies** in the Tomedown menu (`Current book → Backup copies`) lists the copies that sit beside that book's file and allows you to inspect and delete them:
+Inside a book, **Backup copies** in the Tomedown menu (`Current book → Backup copies`) lists the copies that sit beside that book's file and allows you to inspect and delete them (and `Settings → Export → Backup copies` lists all backups across your entire library):
 
 ```text
 Current book
 └── Backup copies
     ├── Saved notes      → file .bak   (preserved personal notes)
-    ├── Safety copy      → file .bak.1 (latest emergency snapshot)
-    └── Safety copy      → file .bak.2 (previous snapshot in rotation)
+    ├── Latest snapshot  → file .bak.1 (latest emergency snapshot)
+    └── Snapshot 2       → file .bak.2 (previous snapshot in rotation)
 ```
 
 - **Saved notes (`.bak`)**: the zoned file parked when you turned *Keep my notes* off for this book. It restores your personal notes automatically when *Keep my notes* is turned back on.
 - **Safety copies (`.bak.1`, `.bak.2`, `.bak.3`)**: automatic snapshots created before an external overwrite, when merging incoming edits from Obsidian, or when recovering hand edits made inside the generated block. Tomedown keeps up to three generations in FIFO rotation (`.bak.1` newest, `.bak.2` earlier, `.bak.3` oldest).
 
-Tapping any copy opens KOReader's confirmation dialog displaying its modification date, exact time, file size, and a warning if the saved notes copy is the only place those notes exist right now. The menu row appears only while the book has a backup copy, and leaves with the last one.
-
-The result toast and the *Last export* popup report the backups of the last run: `%1 files backed up (.bak)`.
+Tapping any copy opens KOReader's confirmation dialog displaying its modification date, exact time, file size, and a warning if the saved notes copy is the only place those notes exist right now.
 
 ## Good to know
 
@@ -275,13 +263,8 @@ The result toast and the *Last export* popup report the backups of the last run:
   exist with Keep my notes on). A marker line you broke is repaired around
   your zone on the next export; a deleted one still recovers the zone (with a
   `.bak` alongside); a file with no markers at all is **adopted**: its text
-  becomes the zone above the block and the block joins in, nothing is lost
-  (an export from tomedown ≤ 0.8 is rebuilt once the same way, then behaves
-  like every other file);
+  becomes the zone above the block and the block joins in, nothing is lost;
 - files in the old three-region layout (preamble, highlights, bookmarks) are
   migrated once: your zones move above and below the new single block, the
   old generated content is dropped (the render has it again), and a region
-  you had edited survives only in the `.bak` written alongside;
-- markers from older builds carry no hash: for them the fingerprint from the
-  last export decides whether the block counts as edited (with none to
-  compare, the block counts as ours).
+  you had edited survives only in the `.bak` written alongside.

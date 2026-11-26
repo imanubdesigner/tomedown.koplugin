@@ -4,7 +4,7 @@
 # only: every test zip is made of commits, never of uncommitted work.
 set -euo pipefail
 branch="$(git rev-parse --abbrev-ref HEAD)"
-out="$HOME/Documents/Tomedown-Bidirectional/tomedown.zip"
+out="$HOME/Documents/TomedownBrain/tomedown.zip"
 mkdir -p "$(dirname "$out")"
 git archive --format=zip --prefix=tomedown.koplugin/ "$branch" -o "$out"
 echo "wrote $out ($branch, $(du -h "$out" | cut -f1))"

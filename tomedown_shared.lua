@@ -9,6 +9,7 @@ unchanged.
 ]]
 
 local _ = require("tomedown_i18n")
+local lfs = require("libs/libkoreader-lfs")
 local logger = require("logger")
 local md5 = require("ffi/sha2").md5
 local util = require("util")
@@ -473,34 +474,145 @@ end
 local function getNoteStyle(file)
     local override = file and getBookStyleOverride(file, "note_style")
     local style = override or getSetting("note_style", "inline")
-    if style == "footnote" then
-        return "footnote"
+    if style == "footnote" or style == "callout" then
+        return style
     end
     return "inline"
 end
 
 local function setNoteStyle(style)
-    if style == "footnote" then
-        setSetting("note_style", "footnote")
+    if style == "footnote" or style == "callout" then
+        setSetting("note_style", style)
     else
         setSetting("note_style", nil)
     end
 end
 
-local function sanitizeCoversFolder(name)
+-- Folder settings (covers, drawings) accept a nested vault-relative path
+-- such as "assets/covers": every segment is made filesystem-safe on its own
+-- ("/" is the only separator, "\" is accepted too), "." and ".." segments
+-- and empty ones are dropped so the path can never leave the export folder,
+-- and the depth is capped. Nothing usable left: the default.
+local MAX_FOLDER_DEPTH = 3
+
+local function sanitizeFolderPath(name, default)
     if type(name) ~= "string" then
-        return DEFAULT_COVERS_FOLDER
+        return default
     end
-    local trimmed = name:gsub("^%s+", ""):gsub("%s+$", ""):gsub("^[/\\]+", ""):gsub("[/\\]+$", "")
-    if trimmed == "" then
-        return DEFAULT_COVERS_FOLDER
+    local segments = {}
+    for part in name:gmatch("[^/\\]+") do
+        local seg = part:gsub("^%s+", ""):gsub("%s+$", "")
+        if seg ~= "" and seg ~= "." and seg ~= ".." then
+            local safe = util.getSafeFilename(seg, nil, nil, -1) or ""
+            safe = safe:gsub("^%s+", ""):gsub("%s+$", "")
+            if safe ~= "" and safe ~= "." and safe ~= ".." then
+                segments[#segments + 1] = safe
+                if #segments >= MAX_FOLDER_DEPTH then
+                    break
+                end
+            end
+        end
     end
-    local safe = util.getSafeFilename(trimmed, nil, nil, -1) or ""
-    safe = safe:gsub("^%s+", ""):gsub("%s+$", "")
-    if safe == "" or safe == "." or safe == ".." then
-        return DEFAULT_COVERS_FOLDER
+    if #segments == 0 then
+        return default
     end
-    return safe
+    return table.concat(segments, "/")
+end
+
+--- First segment of a folder path: the top-level directory it lives in.
+local function folderRoot(path)
+    return (tostring(path or ""):match("^([^/]+)")) or ""
+end
+
+local function pruneEmptyParents(dir, old_folder, keep_folder)
+    local rel = tostring(old_folder or ""):match("^(.*)/[^/]+$")
+    while rel and rel ~= "" do
+        if keep_folder and (rel == keep_folder
+                or keep_folder:sub(1, #rel + 1) == rel .. "/") then
+            break
+        end
+        if not lfs.rmdir(dir .. "/" .. rel) then
+            break
+        end
+        rel = rel:match("^(.*)/[^/]+$")
+    end
+end
+
+--- Move matching asset files from `dir/old_folder` to `dir/new_folder`,
+-- safely handling flat<->nested, parent<->child, and shared asset directories,
+-- then remove `old_folder` and any now-empty ancestor directories.
+local function migrateAssetFolder(dir, old_folder, new_folder, is_match, copy_fallback)
+    if not dir or not old_folder or not new_folder or old_folder == new_folder then
+        return false
+    end
+    local old_path = dir .. "/" .. old_folder
+    local new_path = dir .. "/" .. new_folder
+    if lfs.attributes(old_path, "mode") ~= "directory" then
+        return false
+    end
+    local entries = {}
+    local ok_iter, iter, obj = pcall(lfs.dir, old_path)
+    if ok_iter and iter then
+        for entry in iter, obj do
+            if entry ~= "." and entry ~= ".." then
+                local src = old_path .. "/" .. entry
+                if lfs.attributes(src, "mode") == "file"
+                        and (not is_match or is_match(entry)) then
+                    entries[#entries + 1] = entry
+                end
+            end
+        end
+    end
+    util.makePath(new_path)
+    for __, entry in ipairs(entries) do
+        local src = old_path .. "/" .. entry
+        local dst = new_path .. "/" .. entry
+        if not os.rename(src, dst) and copy_fallback then
+            if copy_fallback(src, dst) then
+                os.remove(src)
+            end
+        end
+    end
+    if new_folder:sub(1, #old_folder + 1) ~= old_folder .. "/" then
+        pcall(lfs.rmdir, old_path)
+    end
+    pcall(pruneEmptyParents, dir, old_folder, new_folder)
+    return lfs.attributes(new_path, "mode") == "directory"
+end
+
+--- Update queued offline upload paths when an asset folder is migrated.
+local function remapPendingFolder(dir, old_folder, new_folder)
+    if not dir or not old_folder or not new_folder or old_folder == new_folder then
+        return
+    end
+    local pending = getSetting("pending_uploads", nil)
+    if type(pending) ~= "table" or next(pending) == nil then
+        return
+    end
+    local old_prefix = dir .. "/" .. old_folder .. "/"
+    local new_prefix = dir .. "/" .. new_folder .. "/"
+    local remapped = {}
+    local changed = false
+    for path, flag in pairs(pending) do
+        if flag and type(path) == "string" and path:sub(1, #old_prefix) == old_prefix then
+            local candidate = new_prefix .. path:sub(#old_prefix + 1)
+            if lfs.attributes(candidate, "mode") == "file" then
+                remapped[candidate] = true
+                changed = true
+            else
+                remapped[path] = flag
+            end
+        else
+            remapped[path] = flag
+        end
+    end
+    if changed then
+        setSetting("pending_uploads", remapped)
+    end
+end
+
+local function sanitizeCoversFolder(name)
+    return sanitizeFolderPath(name, DEFAULT_COVERS_FOLDER)
 end
 
 local function getCoversFolder()
@@ -518,19 +630,7 @@ local function setCoversFolder(folder)
 end
 
 local function sanitizeDrawingsFolder(name)
-    if type(name) ~= "string" then
-        return DEFAULT_DRAWINGS_FOLDER
-    end
-    local trimmed = name:gsub("^%s+", ""):gsub("%s+$", ""):gsub("^[/\\]+", ""):gsub("[/\\]+$", "")
-    if trimmed == "" then
-        return DEFAULT_DRAWINGS_FOLDER
-    end
-    local safe = util.getSafeFilename(trimmed, nil, nil, -1) or ""
-    safe = safe:gsub("^%s+", ""):gsub("%s+$", "")
-    if safe == "" or safe == "." or safe == ".." then
-        return DEFAULT_DRAWINGS_FOLDER
-    end
-    return safe
+    return sanitizeFolderPath(name, DEFAULT_DRAWINGS_FOLDER)
 end
 
 local function getDrawingsFolder()
@@ -830,7 +930,9 @@ local function setFrontmatterKeyEnabled(key, enabled, file)
         else
             next_map[lk] = true
         end
-        setBookStyleOverride(file, "fm_hidden", next(next_map) and next_map or nil)
+        local store_val = next(next_map) and next_map
+            or (getFrontmatterHidden(nil) ~= nil and {} or nil)
+        setBookStyleOverride(file, "fm_hidden", store_val)
         return
     end
     local current = getSetting("fm_hidden", nil)
@@ -893,6 +995,39 @@ local function setFrontmatterOrder(raw, file)
     return clean
 end
 
+local function splitCustomPairs(line)
+    local pairs_out = {}
+    local start_idx = 1
+    local in_dq, in_sq = false, false
+    local bracket_depth = 0
+    local len = #line
+    local i = 1
+    while i <= len do
+        local ch = line:sub(i, i)
+        if ch == "\\" and (in_dq or in_sq) then
+            i = i + 1
+        elseif ch == '"' and not in_sq then
+            in_dq = not in_dq
+        elseif ch == "'" and not in_dq then
+            in_sq = not in_sq
+        elseif not in_dq and not in_sq then
+            if ch == "[" then
+                bracket_depth = bracket_depth + 1
+            elseif ch == "]" and bracket_depth > 0 then
+                bracket_depth = bracket_depth - 1
+            elseif ch == "," and bracket_depth == 0 then
+                if line:sub(i + 1):match("^%s*[%w_%-]+%s*:") then
+                    pairs_out[#pairs_out + 1] = line:sub(start_idx, i - 1)
+                    start_idx = i + 1
+                end
+            end
+        end
+        i = i + 1
+    end
+    pairs_out[#pairs_out + 1] = line:sub(start_idx)
+    return pairs_out
+end
+
 local function parseCustomFields(raw)
     if type(raw) ~= "string" or raw:match("^%s*$") then
         return nil
@@ -900,14 +1035,14 @@ local function parseCustomFields(raw)
     local fields = {}
     local seen = {}
     -- Support both newline-separated lines and comma-separated pairs
-    -- e.g. "genre: sci-fi, project: thesis" or lines
+    -- e.g. "genre: sci-fi, project: thesis" without breaking commas inside values
     local normalized = raw:gsub("\r\n", "\n"):gsub("\r", "\n")
     local lines = {}
     for line in normalized:gmatch("[^\n]+") do
         lines[#lines + 1] = line
     end
     for __, line in ipairs(lines) do
-        for pair in line:gmatch("[^,]+") do
+        for __, pair in ipairs(splitCustomPairs(line)) do
             local k, v = pair:match("^%s*([%w_%-]+)%s*:%s*(.-)%s*$")
             if k and k ~= "" then
                 local lk = k:lower()
@@ -1136,6 +1271,36 @@ local function setHighlightContext(enabled)
     end
 end
 
+local function getSpecialMarker(file)
+    local override = file and getBookStyleOverride(file, "special_marker")
+    local marker = override or getSetting("special_marker", "callout")
+    if marker == "alert" or marker == "highlight" or marker == "highlight_bold"
+            or marker == "star_bold" or marker == "bold" then
+        return marker
+    end
+    return "callout"
+end
+
+local function getBlockIds(file)
+    if file then
+        local override = getBookStyleOverride(file, "block_ids")
+        if override ~= nil then
+            return override == true
+        end
+    end
+    return getSetting("block_ids", false) == true
+end
+
+local function getEveryHighlightSpecial(file)
+    if file then
+        local override = getBookStyleOverride(file, "callout")
+        if override ~= nil then
+            return override == true
+        end
+    end
+    return getSetting("callout", false) == true
+end
+
 local function getExportFormat(file)
     local override = file and getBookStyleOverride(file, "export_format")
     local fmt = override or getSetting("export_format", "md")
@@ -1150,6 +1315,203 @@ local function setExportFormat(fmt)
         setSetting("export_format", fmt)
     else
         setSetting("export_format", nil)
+    end
+end
+
+local function getMarkdownStyle(file)
+    local override = file and getBookStyleOverride(file, "markdown_style")
+    local style = override or getSetting("markdown_style", "obsidian")
+    if style == "standard" or style == "commonmark" then
+        return style
+    end
+    return "obsidian"
+end
+
+local function isObsidianStyle(file)
+    return getMarkdownStyle(file) == "obsidian"
+end
+
+local function setMarkdownStyle(style)
+    if style == "standard" or style == "commonmark" then
+        setSetting("markdown_style", style)
+    else
+        setSetting("markdown_style", nil)
+    end
+end
+
+local function getIndexStyle()
+    local style = getSetting("index_style", "minimal")
+    if style == "emoji" or style == "badges" or style == "editorial" then
+        return style
+    end
+    return "minimal"
+end
+
+local function setIndexStyle(style)
+    if style == "emoji" or style == "badges" or style == "editorial" then
+        setSetting("index_style", style)
+    else
+        setSetting("index_style", nil)
+    end
+end
+
+local function validVisualStyle(style)
+    if style == "emoji" or style == "badges" or style == "editorial" then
+        return style
+    end
+    return "minimal"
+end
+
+-- Index owns a visual style. By default it follows the Book style (so one
+-- choice themes the library); switching "Follow book style" off in Index style
+-- lets 00 - Index.md keep its own style, independent from the books.
+local function getIndexFollowBook()
+    return getSetting("index_follow_book", true) ~= false
+end
+
+local function setIndexFollowBook(follow)
+    if follow then
+        setSetting("index_follow_book", nil)
+    else
+        setSetting("index_follow_book", false)
+    end
+end
+
+local function getHarmonizeBookStyle(file)
+    if file then
+        local override = getBookStyleOverride(file, "harmonize_book_style")
+        if override ~= nil then
+            return override == true
+        end
+    end
+    return getSetting("harmonize_book_style", true) ~= false
+end
+
+local function setHarmonizeBookStyle(enabled)
+    if enabled == false then
+        setSetting("harmonize_book_style", false)
+    else
+        setSetting("harmonize_book_style", nil)
+    end
+end
+
+local function getBookVisualStyle(file)
+    local override = file and getBookStyleOverride(file, "book_visual_style")
+    return validVisualStyle(override or getSetting("book_visual_style", "minimal"))
+end
+
+local function setBookVisualStyle(style)
+    if style == "emoji" or style == "badges" or style == "editorial" then
+        setSetting("book_visual_style", style)
+    else
+        setSetting("book_visual_style", nil)
+    end
+end
+
+local function getEffectiveIndexStyle()
+    if getIndexFollowBook() then
+        return getBookVisualStyle()
+    end
+    return getIndexStyle()
+end
+
+local function getDigestStyle()
+    return validVisualStyle(getSetting("digest_style", "minimal"))
+end
+
+local function setDigestStyle(style)
+    if style == "emoji" or style == "badges" or style == "editorial" then
+        setSetting("digest_style", style)
+    else
+        setSetting("digest_style", nil)
+    end
+end
+
+local function getDigestFollowBook()
+    return getSetting("digest_follow_book", true) ~= false
+end
+
+local function setDigestFollowBook(follow)
+    if follow then
+        setSetting("digest_follow_book", nil)
+    else
+        setSetting("digest_follow_book", false)
+    end
+end
+
+local function getEffectiveDigestStyle()
+    if getDigestFollowBook() then
+        return getBookVisualStyle()
+    end
+    return getDigestStyle()
+end
+
+local function getDashboardStyle(file)
+    local override = file and getBookStyleOverride(file, "dashboard_style")
+    return validVisualStyle(override or getSetting("dashboard_style", "minimal"))
+end
+
+local function setDashboardStyle(style)
+    if style == "emoji" or style == "badges" or style == "editorial" then
+        setSetting("dashboard_style", style)
+    else
+        setSetting("dashboard_style", nil)
+    end
+end
+
+local function getSynopsisStyle(file)
+    local override = file and getBookStyleOverride(file, "synopsis_style")
+    return validVisualStyle(override or getSetting("synopsis_style", "minimal"))
+end
+
+local function setSynopsisStyle(style)
+    if style == "emoji" or style == "badges" or style == "editorial" then
+        setSetting("synopsis_style", style)
+    else
+        setSetting("synopsis_style", nil)
+    end
+end
+
+local function getBodyTagsStyle(file)
+    local override = file and getBookStyleOverride(file, "body_tags_style")
+    return validVisualStyle(override or getSetting("body_tags_style", "minimal"))
+end
+
+local function setBodyTagsStyle(style)
+    if style == "emoji" or style == "badges" or style == "editorial" then
+        setSetting("body_tags_style", style)
+    else
+        setSetting("body_tags_style", nil)
+    end
+end
+
+local function getShowcaseStyle(file)
+    local override = file and getBookStyleOverride(file, "showcase_style")
+    return validVisualStyle(override or getSetting("showcase_style", "minimal"))
+end
+
+local function setShowcaseStyle(style)
+    if style == "emoji" or style == "badges" or style == "editorial" then
+        setSetting("showcase_style", style)
+    else
+        setSetting("showcase_style", nil)
+    end
+end
+
+local function getSynopsisMode(file)
+    local override = file and getBookStyleOverride(file, "synopsis_mode")
+    local mode = override or getSetting("synopsis_mode", "collapsed")
+    if mode == "short" or mode == "collapsed_short" or mode == "expanded" then
+        return mode
+    end
+    return "collapsed"
+end
+
+local function setSynopsisMode(mode)
+    if mode == "short" or mode == "collapsed_short" or mode == "expanded" then
+        setSetting("synopsis_mode", mode)
+    else
+        setSetting("synopsis_mode", nil)
     end
 end
 
@@ -1391,6 +1753,9 @@ return {
     DEFAULT_COVERS_FOLDER = DEFAULT_COVERS_FOLDER,
     DEFAULT_DRAWINGS_FOLDER = DEFAULT_DRAWINGS_FOLDER,
     sanitizeCoversFolder = sanitizeCoversFolder,
+    folderRoot = folderRoot,
+    migrateAssetFolder = migrateAssetFolder,
+    remapPendingFolder = remapPendingFolder,
     getCoversFolder = getCoversFolder,
     setCoversFolder = setCoversFolder,
     sanitizeDrawingsFolder = sanitizeDrawingsFolder,
@@ -1443,8 +1808,38 @@ return {
     setChapterHeadings = setChapterHeadings,
     getHighlightContext = getHighlightContext,
     setHighlightContext = setHighlightContext,
+    getSpecialMarker = getSpecialMarker,
+    getBlockIds = getBlockIds,
+    getEveryHighlightSpecial = getEveryHighlightSpecial,
     getExportFormat = getExportFormat,
     setExportFormat = setExportFormat,
+    getMarkdownStyle = getMarkdownStyle,
+    isObsidianStyle = isObsidianStyle,
+    setMarkdownStyle = setMarkdownStyle,
+    getIndexStyle = getIndexStyle,
+    setIndexStyle = setIndexStyle,
+    getIndexFollowBook = getIndexFollowBook,
+    setIndexFollowBook = setIndexFollowBook,
+    getEffectiveIndexStyle = getEffectiveIndexStyle,
+    getDigestStyle = getDigestStyle,
+    setDigestStyle = setDigestStyle,
+    getDigestFollowBook = getDigestFollowBook,
+    setDigestFollowBook = setDigestFollowBook,
+    getEffectiveDigestStyle = getEffectiveDigestStyle,
+    getHarmonizeBookStyle = getHarmonizeBookStyle,
+    setHarmonizeBookStyle = setHarmonizeBookStyle,
+    getBookVisualStyle = getBookVisualStyle,
+    setBookVisualStyle = setBookVisualStyle,
+    getDashboardStyle = getDashboardStyle,
+    setDashboardStyle = setDashboardStyle,
+    getSynopsisStyle = getSynopsisStyle,
+    setSynopsisStyle = setSynopsisStyle,
+    getBodyTagsStyle = getBodyTagsStyle,
+    setBodyTagsStyle = setBodyTagsStyle,
+    getShowcaseStyle = getShowcaseStyle,
+    setShowcaseStyle = setShowcaseStyle,
+    getSynopsisMode = getSynopsisMode,
+    setSynopsisMode = setSynopsisMode,
     getTopbarIcon = getTopbarIcon,
     setTopbarIcon = setTopbarIcon,
     getBookStyleOverride = getBookStyleOverride,

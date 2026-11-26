@@ -68,6 +68,14 @@ local getHighlightDetails = shared.getHighlightDetails
 local getChapterHeadings = shared.getChapterHeadings
 local getHighlightContext = shared.getHighlightContext
 local getExportFormat = shared.getExportFormat
+local getMarkdownStyle = shared.getMarkdownStyle
+
+local function effectiveIndexLinks(file)
+    if getMarkdownStyle(file) ~= "obsidian" then
+        return "markdown"
+    end
+    return getIndexLinks()
+end
 local readIfExists = shared.readIfExists
 local ownCopy = shared.ownCopy
 local isZoned = shared.isZoned
@@ -545,10 +553,12 @@ function M:bookSubdir(props, status)
     end
     raw = tostring(raw):gsub("\r?\n", "; ")
     local safe = util.getSafeFilename(raw, nil, nil, -1)
-    local covers_folder = getCoversFolder()
-    local drawings_folder = getDrawingsFolder()
-    if safe == "" or safe:lower() == "covers" or safe:lower() == covers_folder:lower()
-            or safe:lower() == "drawings" or safe:lower() == drawings_folder:lower() then
+    -- a nested folder ("assets/covers") occupies its first segment
+    local covers_root = shared.folderRoot(getCoversFolder()):lower()
+    local drawings_root = shared.folderRoot(getDrawingsFolder()):lower()
+    local low = safe:lower()
+    if safe == "" or low == "covers" or low == covers_root
+            or low == "drawings" or low == drawings_root then
         return nil
     end
     return safe
@@ -576,17 +586,21 @@ end
 --- The vault-relative path of a book's cover, extracting the image the
 -- first time it is needed. nil when "Include book covers" is off or the
 -- book has no cover at all; the markdown then simply omits it.
-function M:ensureCover(file, base, dir)
+function M:ensureCover(file, base, dir, opts)
     if not getBookCovers(file) then
         return nil
     end
     local leaf = tostring(base or ""):match("([^/]+)$") or tostring(base or "")
     local rel = Cover.relPath(leaf, getCoversFolder())
+    local is_cm = (getMarkdownStyle(file) == "commonmark")
+    local rec = file and getSetting("exports", {})[file]
+    local prev_cm = type(rec) == "table" and (rec.cover_cm == true) or false
+    local force = (opts and opts.force) or (is_cm ~= prev_cm)
     local document
     if self.ui and self.ui.document and self.ui.document.file == file then
         document = self.ui.document
     end
-    if Cover.extract(document, file, dir .. "/" .. rel) then
+    if Cover.extract(document, file, dir .. "/" .. rel, { compact = is_cm, force = force }) then
         return rel
     end
     return nil
@@ -854,11 +868,20 @@ function M:buildIndexEntries(dir, export_records)
             else
                 local cover_leaf = book.base:match("([^/]+)$") or book.base
                 local cover_rel = Cover.relPath(cover_leaf, getCoversFolder())
-                local has_cover = lfs.attributes(dir .. "/" .. cover_rel, "mode") == "file"
-                if not has_cover and with_covers then
-                    -- backfill: books exported before the option was turned on
-                    has_cover = self:ensureCover(file, book.base, dir)
+                local wants_cover = getBookCovers(file)
+                local is_cm_book = (getMarkdownStyle(file) == "commonmark")
+                local rec_entry = export_records and export_records[file]
+                local prev_cm_entry = type(rec_entry) == "table" and (rec_entry.cover_cm == true) or false
+                local stale_cover_size = wants_cover and (is_cm_book ~= prev_cm_entry)
+                local has_cover = wants_cover and not stale_cover_size
+                    and (lfs.attributes(dir .. "/" .. cover_rel, "mode") == "file")
+                if not has_cover and with_covers and wants_cover then
+                    -- backfill (or resize when switching CommonMark <-> Standard/Obsidian)
+                    has_cover = self:ensureCover(file, book.base, dir, { force = stale_cover_size }) ~= nil
                     if has_cover then
+                        if type(rec_entry) == "table" then
+                            rec_entry.cover_cm = is_cm_book or nil
+                        end
                         new_covers[#new_covers + 1] = dir .. "/" .. cover_rel
                     end
                 end
@@ -922,6 +945,8 @@ end
 
 function M:buildDigestBooks()
     local list = {}
+    local drawings = {}
+    local seen_drawings = {}
     local dir = self:getLocalDir()
     local drawings_folder = getDrawingsFolder()
     for __, file in ipairs(self:listBookFiles()) do
@@ -931,18 +956,26 @@ function M:buildDigestBooks()
             local book = self:buildBook(file, live)
             if book and book.annotations and #book.annotations > 0 then
                 if getIncludeHandwritten(file) then
-                    Handwritten.ensureDrawings(book, dir, drawings_folder)
+                    local hw = Handwritten.ensureDrawings(book, dir, drawings_folder)
+                    for __, p in ipairs(hw or {}) do
+                        if not seen_drawings[p] then
+                            seen_drawings[p] = true
+                            drawings[#drawings + 1] = p
+                        end
+                    end
                 end
                 list[#list + 1] = {
                     link = book.base,
                     title = book.title,
                     author = book.author,
+                    has_block_ids = shared.getBlockIds(file)
+                        and getMarkdownStyle(file) == "obsidian",
                     annotations = book.annotations,
                 }
             end
         end
     end
-    return list
+    return list, drawings
 end
 
 function M:exportDigest(touchmenu)
@@ -953,13 +986,21 @@ function M:exportDigest(touchmenu)
     local dir = self:getLocalDir()
     util.makePath(dir)
     local digest_path = dir .. "/" .. DIGEST_FILENAME
-    local digest_books = self:buildDigestBooks()
+    local digest_books, digest_drawings = self:buildDigestBooks()
+    local digest_is_std = (getMarkdownStyle() ~= "obsidian")
+    local digest_raw_marker = getSetting("special_marker", "callout")
     local digest_md = render.buildDigestMd(digest_books, {
         title = _("Reading digest"),
         exported = os.date("%Y-%m-%d"),
-        index_links = getIndexLinks(),
-        callout = getSetting("callout", false),
-        special_marker = getSetting("special_marker", "callout"),
+        index_links = effectiveIndexLinks(),
+        markdown_style = getMarkdownStyle(),
+        visual_style = shared.getEffectiveDigestStyle(),
+        with_index = getSetting("with_index", true),
+        block_ids = not digest_is_std and getSetting("block_ids", false) or false,
+        callout = not digest_is_std and getSetting("callout", false) or false,
+        special_marker = (digest_is_std and (digest_raw_marker == "callout"
+            or digest_raw_marker == "alert" or digest_raw_marker == "highlight"
+            or digest_raw_marker == "highlight_bold")) and "bold" or digest_raw_marker,
         note_style = getNoteStyle(),
         overview_style = getOverviewStyle(),
     })
@@ -970,12 +1011,17 @@ function M:exportDigest(touchmenu)
         })
         return false
     end
+    setSetting("digest_dirty", false)
+    local upload_files = { digest_path }
+    for __, p in ipairs(digest_drawings or {}) do
+        upload_files[#upload_files + 1] = p
+    end
     local server = self:getServer()
     local has_upload = getSetting("upload", false) and server ~= nil
     if has_upload and not NetworkMgr:isConnected() then
-        self:markPendingUploads({ digest_path })
+        self:markPendingUploads(upload_files)
         UIManager:show(Notification:new{
-            text = T(_("%1 files exported — upload when online"), 1),
+            text = T(_("%1 files exported — upload when online"), #upload_files),
             timeout = 3,
         })
         return true
@@ -985,16 +1031,27 @@ function M:exportDigest(touchmenu)
         timeout = 3,
     })
     if has_upload then
-        local upload_info = self:showProgress(T(_("Uploading %1 files to the cloud…"), 1))
-        self:uploadPaths(server, { digest_path }, function(ok_count, fail_count, failed)
+        local upload_info = self:showProgress(T(_("Uploading %1 files to the cloud…"), #upload_files))
+        self:uploadPaths(server, upload_files, function(ok_count, fail_count, failed)
             UIManager:close(upload_info)
+            local failed_set = {}
+            for __, fpath in ipairs(failed) do
+                failed_set[fpath] = true
+            end
+            local ok_paths = {}
+            for __, fpath in ipairs(upload_files) do
+                if not failed_set[fpath] then
+                    ok_paths[#ok_paths + 1] = fpath
+                end
+            end
+            self:clearPendingUploads(ok_paths)
+            self:cleanupUploadedAssets(ok_paths, dir, false)
             if #failed > 0 then
                 self:markPendingUploads(failed)
                 UIManager:show(InfoMessage:new{
                     text = T(_("Cloud: %1 uploaded, %2 errors"), ok_count, fail_count),
                 })
             else
-                self:clearPendingUploads({ digest_path })
                 UIManager:show(Notification:new{
                     text = T(_("Cloud: %1 files uploaded"), ok_count),
                     timeout = 3,
@@ -1022,11 +1079,15 @@ function M:runExport(files, opts)
     util.makePath(dir)
     local current_covers = getCoversFolder()
     if current_covers ~= "covers" and lfs.attributes(dir .. "/covers", "mode") == "directory" then
-        Cover.migrateFolder(dir, "covers", current_covers)
+        if Cover.migrateFolder(dir, "covers", current_covers) then
+            shared.remapPendingFolder(dir, "covers", current_covers)
+        end
     end
     local current_drawings = getDrawingsFolder()
     if current_drawings ~= "drawings" and lfs.attributes(dir .. "/drawings", "mode") == "directory" then
-        Handwritten.migrateFolder(dir, "drawings", current_drawings)
+        if Handwritten.migrateFolder(dir, "drawings", current_drawings) then
+            shared.remapPendingFolder(dir, "drawings", current_drawings)
+        end
     end
     local with_index = getSetting("with_index", true)
 
@@ -1135,6 +1196,7 @@ function M:runExport(files, opts)
         return remote, true
     end
 
+    local exported_titles = {}
     for __, file in ipairs(files) do
         local open = self:openReader(file)
         local live = open and open.annotation and open.annotation.annotations
@@ -1176,12 +1238,16 @@ function M:runExport(files, opts)
                     end
                     local hw_written = (write_md and getIncludeHandwritten(file))
                         and Handwritten.ensureDrawings(book, dir, current_drawings) or {}
+                    local is_std_book = (getMarkdownStyle(file) ~= "obsidian")
+                    local raw_marker = shared.getSpecialMarker(file)
                     local render_opts = {
                         no_chapter_label = _("No chapter"),
                         cover = book_cover,
-                        callout = getSetting("callout", false),
-                        block_ids = getSetting("block_ids", false),
-                        special_marker = getSetting("special_marker", "callout"),
+                        callout = not is_std_book and shared.getEveryHighlightSpecial(file) or false,
+                        block_ids = not is_std_book and shared.getBlockIds(file) or false,
+                        special_marker = (is_std_book and (raw_marker == "callout"
+                            or raw_marker == "alert" or raw_marker == "highlight"
+                            or raw_marker == "highlight_bold")) and "bold" or raw_marker,
                         note_style = getNoteStyle(file),
                         notes_title = getNotesTitle(file),
                         markers = preserve,
@@ -1195,10 +1261,23 @@ function M:runExport(files, opts)
                         book_heading = getBookHeading(file),
                         overview_style = getOverviewStyle(file),
                         reading_dashboard = getReadingDashboard(file),
+                        with_index = with_index,
+                        with_digest = getSetting("with_digest", false),
+                        book_visual_style = shared.getBookVisualStyle(file),
+                        dashboard_style = shared.getHarmonizeBookStyle(file)
+                            and shared.getBookVisualStyle(file) or shared.getDashboardStyle(file),
+                        synopsis_style = shared.getHarmonizeBookStyle(file)
+                            and shared.getBookVisualStyle(file) or shared.getSynopsisStyle(file),
+                        body_tags_style = shared.getHarmonizeBookStyle(file)
+                            and shared.getBookVisualStyle(file) or shared.getBodyTagsStyle(file),
+                        showcase_style = shared.getHarmonizeBookStyle(file)
+                            and shared.getBookVisualStyle(file) or shared.getShowcaseStyle(file),
+                        synopsis_mode = shared.getSynopsisMode(file),
                         book_synopsis = getBookSynopsis(file),
                         body_tags = getBodyTags(file),
                         special_showcase = getSpecialShowcase(file),
-                        index_links = getIndexLinks(),
+                        index_links = effectiveIndexLinks(file),
+                        markdown_style = getMarkdownStyle(file),
                     }
                     local md = render.buildBookMd(book, render_opts)
                     -- fold the file on disk into the render: the reader's
@@ -1369,6 +1448,9 @@ function M:runExport(files, opts)
                     end
                     if written_ok then
                         exported = exported + 1
+                        if #exported_titles < 10 and book.title and tostring(book.title) ~= "" then
+                            exported_titles[#exported_titles + 1] = tostring(book.title)
+                        end
                         if write_md then
                             written[#written + 1] = md_path
                         end
@@ -1385,6 +1467,7 @@ function M:runExport(files, opts)
                             hash = book.hash,
                             base = book.base,
                             date = os.date("%Y-%m-%d"),
+                            cover_cm = (cover_rel and getMarkdownStyle(file) == "commonmark") or nil,
                             -- what we would have generated: the proof the
                             -- next export compares the regions against
                             regions = merge.fingerprints(merge.split(md)),
@@ -1434,13 +1517,16 @@ function M:runExport(files, opts)
                 markers = index_preserve,
                 index_order = getSetting("index_order", "author"),
                 index_layout = getSetting("index_layout", "tags_below"),
-                index_links = getIndexLinks(),
+                index_links = effectiveIndexLinks(),
+                markdown_style = getMarkdownStyle(),
+                index_style = shared.getEffectiveIndexStyle(),
                 index_tags_mode = getIndexTagsMode(),
                 hidden_books = hidden,
                 reading_now = getSetting("reading_now", true),
                 completed_books = getCompletedBooks(),
                 index_dashboard = getIndexDashboard(),
                 index_tag_cloud = getIndexTagCloud(),
+                with_digest = getSetting("with_digest", false),
             })
             -- the index is a region too: the reader may have annotated it
             local content = index_md
@@ -1542,21 +1628,43 @@ function M:runExport(files, opts)
     end
     if getSetting("with_digest", false) then
         local digest_path = dir .. "/" .. DIGEST_FILENAME
-        if exported > 0 or not lfs.attributes(digest_path) then
-            local digest_books = self:buildDigestBooks()
+        if exported > 0 or not lfs.attributes(digest_path)
+                or getSetting("digest_dirty", false) then
+            local digest_books, digest_drawings = self:buildDigestBooks()
+            local digest_is_std = (getMarkdownStyle() ~= "obsidian")
+            local digest_raw_marker = getSetting("special_marker", "callout")
             local digest_md = render.buildDigestMd(digest_books, {
                 title = _("Reading digest"),
                 exported = os.date("%Y-%m-%d"),
-                index_links = getIndexLinks(),
-                callout = getSetting("callout", false),
-                special_marker = getSetting("special_marker", "callout"),
+                index_links = effectiveIndexLinks(),
+                markdown_style = getMarkdownStyle(),
+                visual_style = shared.getEffectiveDigestStyle(),
+                with_index = with_index,
+                block_ids = not digest_is_std and getSetting("block_ids", false) or false,
+                callout = not digest_is_std and getSetting("callout", false) or false,
+                special_marker = (digest_is_std and (digest_raw_marker == "callout"
+                    or digest_raw_marker == "alert" or digest_raw_marker == "highlight"
+                    or digest_raw_marker == "highlight_bold")) and "bold" or digest_raw_marker,
                 note_style = getNoteStyle(),
                 overview_style = getOverviewStyle(),
             })
             local digest_ok, digest_err =
                 util.writeToFile(digest_md, digest_path, true, false, true)
             if digest_ok then
+                setSetting("digest_dirty", false)
                 written[#written + 1] = digest_path
+                if digest_drawings and #digest_drawings > 0 then
+                    local seen_written = {}
+                    for __, wp in ipairs(written) do
+                        seen_written[wp] = true
+                    end
+                    for __, dp in ipairs(digest_drawings) do
+                        if not seen_written[dp] then
+                            seen_written[dp] = true
+                            written[#written + 1] = dp
+                        end
+                    end
+                end
             else
                 errors[#errors + 1] = DIGEST_FILENAME .. ": "
                     .. tostring(digest_err)
@@ -1573,6 +1681,7 @@ function M:runExport(files, opts)
         skipped = skipped,
         errors = #errors,
         backups = backups,
+        titles = exported_titles,
     })
     if info then
         UIManager:close(info)
@@ -1649,6 +1758,7 @@ function M:runExport(files, opts)
             UIManager:show(InfoMessage:new{
                 text = T(_("Cloud: %1 files kept back, will retry"), #held),
             })
+            self:finishDeferredFlush()
             return
         end
         -- stays open for the whole upload phase, retries included
@@ -1673,20 +1783,11 @@ function M:runExport(files, opts)
             -- the vault copy is now the master one: drop the transferred
             -- covers from the device (the .md files stay local, they are
             -- the library this plugin reads its history from)
-            if getSetting("covers", false) then
-                Cover.deleteUploaded(ok_paths, dir, getCoversFolder())
-                if getCoversFolder() ~= "covers" then
-                    Cover.deleteUploaded(ok_paths, dir, "covers")
-                end
-            end
-            if getSetting("include_handwritten", true) ~= false then
-                Handwritten.deleteUploaded(ok_paths, dir, getDrawingsFolder())
-                if getDrawingsFolder() ~= "drawings" then
-                    Handwritten.deleteUploaded(ok_paths, dir, "drawings")
-                end
-            end
+            self:cleanupUploadedAssets(ok_paths, dir, true)
             reportUpload(ok_count, fail_count)
         end)
+    elseif not silent then
+        self:finishDeferredFlush()
     end
 end
 

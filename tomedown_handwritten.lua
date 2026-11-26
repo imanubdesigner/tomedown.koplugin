@@ -22,6 +22,7 @@ local DocSettings = require("docsettings")
 local ffiUtil = require("ffi/util")
 local lfs = require("libs/libkoreader-lfs")
 local logger = require("logger")
+local shared = require("tomedown_shared")
 local util = require("util")
 
 local handwritten = {}
@@ -593,39 +594,23 @@ end
 
 --- Move an old drawings folder to the new folder name and remove the old directory.
 function handwritten.migrateFolder(dir, old_folder, new_folder)
-    if not dir or not old_folder or not new_folder or old_folder == new_folder then
-        return false
-    end
-    local old_path = dir .. "/" .. old_folder
-    local new_path = dir .. "/" .. new_folder
-    if lfs.attributes(old_path, "mode") ~= "directory" then
-        return false
-    end
-    if lfs.attributes(new_path, "mode") ~= "directory" then
-        if os.rename(old_path, new_path) then
-            logger.info("tomedown: renamed drawings folder from", old_folder, "to", new_folder)
-            return true
-        end
-    end
-    util.makePath(new_path)
-    local ok_iter, iter, obj = pcall(lfs.dir, old_path)
-    if ok_iter and iter then
-        for entry in iter, obj do
-            if entry ~= "." and entry ~= ".." then
-                local src = old_path .. "/" .. entry
-                local dst = new_path .. "/" .. entry
-                if lfs.attributes(src, "mode") == "file" then
-                    if not os.rename(src, dst) then
-                        if copyBinaryFile(src, dst) then
-                            os.remove(src)
-                        end
-                    end
-                end
+    local shared_with_covers = (old_folder == shared.getCoversFolder())
+    local ok = shared.migrateAssetFolder(dir, old_folder, new_folder,
+        function(entry)
+            local ext = entry:lower():match("%.([^%.]+)$")
+            if ext == "png" or ext == "svg" then
+                return true
             end
-        end
+            if not shared_with_covers and (ext == "jpg" or ext == "jpeg") then
+                return true
+            end
+            return false
+        end,
+        copyBinaryFile)
+    if ok then
+        logger.info("tomedown: migrated drawings folder from", old_folder, "to", new_folder)
     end
-    pcall(lfs.rmdir, old_path)
-    return lfs.attributes(old_path, "mode") ~= "directory"
+    return ok
 end
 
 return handwritten

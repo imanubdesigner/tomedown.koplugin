@@ -360,7 +360,7 @@ if md then
     T.check(T.contains(md, "\n# Capitolo I"), "chapter 1")
     T.check(T.contains(md, "\n# Capitolo II"), "chapter 2")
     T.check(T.contains(md, "> Prima frase."), "quote")
-    T.check(T.contains(md, "- **p. 10** · 2 Sep 2026 | 10:00\n  - **NOTE:** *nota utente*"), "meta with note")
+    T.check(T.contains(md, "- **p. 10** · 2 Sep 2026 | 10:00\n  - **Note** — *nota utente*"), "meta with note")
     T.check(T.contains(md, "nota utente"), "note present")
     T.check(not T.contains(md, "Segnalibro"), "page bookmark excluded")
     T.check(not T.contains(md, "Cancellato"), "deleted highlight excluded")
@@ -519,7 +519,7 @@ local legacy_md = T.readFile(DIR .. "/N_A - LibroVecchio.md")
 T.check(legacy_md ~= nil, "export of the book with the old .sdr")
 if legacy_md then
     T.check(T.contains(legacy_md, "> Vecchio evidenziato"), "highlight from a legacy .sdr")
-    T.check(T.contains(legacy_md, "**NOTE:** *nota vecchia*"), "note from legacy bookmarks")
+    T.check(T.contains(legacy_md, "**Note** — *nota vecchia*"), "note from legacy bookmarks")
     T.check(T.contains(legacy_md, "**p. 3**"), "legacy page")
 end
 
@@ -577,8 +577,15 @@ do
     store.tomedown.index_layout = "tags_column"
     ui.document = { file = FILE }
     local current_book = plugin:genCurrentBookMenu()
-    T.check(#current_book == 4,
-        "the open book has keep, book info, visibility and style rows: " .. #current_book)
+    T.check(#current_book == 5,
+        "the open book has summary, book info, visibility, keep and format & layout rows: " .. #current_book)
+    T.check(current_book[1].text == "Book summary",
+        "Book summary row sits first in Current book")
+    local before_summary = #UIManager.shown
+    plugin:showBookSummaryCard(FILE)
+    T.check(#UIManager.shown == before_summary + 1
+            and UIManager.shown[#UIManager.shown].__widget == "InputContainer",
+        "showBookSummaryCard renders custom rounded card")
     T.check(current_book[2].text == "Book info",
         "the Book info submenu sits second in Current book")
     local book_info = current_book[2].sub_item_table_func()
@@ -909,7 +916,7 @@ end
 -- the index reads what the book record carries: series, status,
 -- progress and when it was last opened
 local rich_index = T.readFile(INDEX_PATH)
-T.check(T.contains(rich_index or "", "| The Three Impostors #4 | Complete<br>"),
+T.check(T.contains(rich_index or "", "| The Three Impostors #4 | ● Complete<br>"),
     "the index row carries the series and the status")
 T.check(T.contains(rich_index or "", "▰▰▰▰▰&nbsp;96% |"),
     "the reading bar with the percent glued to it")
@@ -917,8 +924,8 @@ T.check(T.contains(rich_index or "", "| Status | Last read | Highlights |"),
     "the date sits in a column of its own")
 T.check(T.contains(rich_index or "", os.date("%d/%m/%Y")),
     "the index row carries the last read date")
-T.check(T.contains(rich_index or "", "### Series books")
-        and T.contains(rich_index or "", "### My books"),
+T.check(T.contains(rich_index or "", "### § Series books (")
+        and T.contains(rich_index or "", "### ▪ My books ("),
     "the series books and the rest sit under their own headings")
 T.check(not T.contains(rich_index or "", "Last export"),
     "no export date column in the rich index either")
@@ -965,22 +972,23 @@ T.check(menu_items.tomedown ~= nil, "menu entry registered")
 T.check(type(menu_items.tomedown.sub_item_table_func) == "function",
     "the book menu builds its rows on open")
 local sub = menu_items.tomedown.sub_item_table_func()
-T.check(#sub == 10, "main menu entries: " .. #sub)
+T.check(#sub == 6, "main menu entries: " .. #sub)
 T.check(sub[1].text == "\xEE\x89\xBC  Export this book", "menu item 1")
-T.check(sub[2].text == "\xEE\xA4\xB5  Export new and changed books", "menu item 2")
-T.check(sub[3].text == "\xEE\xA7\x99  Repair all files", "menu item 3")
-T.check(sub[4].text == "\xEF\x87\xAA  Export reading digest", "menu item 4")
-T.check(sub[5].text == "\xEE\xB9\x94  Choose books…", "menu item 5")
-T.check(sub[5].separator == true, "separator after Choose books")
-T.check(sub[6].text == "\xEF\x81\x80  Current book",
-    "menu item 6, the per book submenu")
-T.check(sub[6].separator == true, "separator after Current book")
-T.check(sub[7].text == "\xEE\xB4\xBE  Upload all files again", "menu item 7")
-T.check(sub[8].text == "\xEF\x83\xA4  Last export", "menu item 8")
-T.check(sub[8].separator == true, "separator before Settings")
-T.check(sub[9].text == "\xEF\x80\x93  Settings", "menu item 9 with the cog")
-T.check(sub[9].separator ~= true, "no separator before About")
-T.check(sub[10].text == "\xEE\xA7\xBC  About", "menu item 10")
+T.check(sub[2].text == "\xEE\xA4\xB5  All books" and sub[2].separator == true, "menu item 2: All books submenu")
+local all_books = sub[2].sub_item_table
+T.check(#all_books == 4, "All books submenu entries: " .. #all_books)
+T.check(all_books[1].text == "\xEE\xA4\xB5  Export changed books", "all_books 1")
+T.check(all_books[2].text == "\xEE\xA7\x99  Export all books again…", "all_books 2")
+T.check(all_books[3].text == "\xEE\xB9\x94  Select books…", "all_books 3")
+T.check(all_books[4].text == "\xEF\x87\xAA  Export reading digest", "all_books 4")
+T.check(sub[3].text == "\xEF\x81\x80  Current book",
+    "menu item 3, the per book submenu")
+T.check(sub[3].separator == true, "separator after Current book")
+T.check(sub[4].text == "\xEF\x83\xA4  Last export", "menu item 4")
+T.check(sub[4].separator == true, "separator before Settings")
+T.check(sub[5].text == "\xEF\x80\x93  Settings", "menu item 5 with the cog")
+T.check(sub[5].separator ~= true, "no separator before About")
+T.check(sub[6].text == "\xEE\xA7\xBC  About", "menu item 6")
 
 local cover_entry = false
 local function scanCover(items)
@@ -1004,24 +1012,16 @@ ui.document = nil
 -- last one read, and must not bring either row back onto the dashboard
 store.lastfile = FILE
 local dashboard = menu_items.tomedown.sub_item_table_func()
-T.check(#dashboard == 8,
+T.check(#dashboard == 4,
     "no book rows on the dashboard: " .. #dashboard)
-T.check(dashboard[1].text == "\xEE\xA4\xB5  Export new and changed books",
-    "the dashboard menu starts on the first row that needs no book")
-T.check(dashboard[2].text == "\xEE\xA7\x99  Repair all files",
-    "Repair all files sits second")
-T.check(dashboard[3].text == "\xEF\x87\xAA  Export reading digest",
-    "the dashboard includes Export reading digest")
-T.check(dashboard[4].text == "\xEE\xB9\x94  Choose books…"
-        and dashboard[4].separator == true,
-    "Choose books closes the first group on the dashboard")
-T.check(dashboard[5].text == "\xEE\xB4\xBE  Upload all files again",
-    "the dashboard skips Current book")
-T.check(dashboard[6].text == "\xEF\x83\xA4  Last export"
-        and dashboard[6].separator == true,
+T.check(dashboard[1].text == "\xEE\xA4\xB5  All books"
+        and dashboard[1].separator == true,
+    "the dashboard menu starts on All books")
+T.check(dashboard[2].text == "\xEF\x83\xA4  Last export"
+        and dashboard[2].separator == true,
     "Last export sits where the book rows were")
-T.check(dashboard[7].text == "\xEF\x80\x93  Settings", "settings follows")
-T.check(dashboard[8].text == "\xEE\xA7\xBC  About", "about closes the dashboard menu")
+T.check(dashboard[3].text == "\xEF\x80\x93  Settings", "settings follows")
+T.check(dashboard[4].text == "\xEE\xA7\xBC  About", "about closes the dashboard menu")
 local offered_current = false
 for __, item in ipairs(dashboard) do
     if item.text and item.text:find("Current book", 1, true) then
@@ -1034,7 +1034,7 @@ store.lastfile = nil
 ui.document = { file = nil }
 T.check(sub[1].enabled_func() == false, "export this book disabled without a file")
 ui.document = { file = nil }
-T.check(sub[3].enabled_func() == true, "export all books enabled")
+T.check(all_books[2].enabled_func() == true, "export all books enabled")
 
 -- Current book: the keep row is always there while a book is open, so
 -- the stored per book choice stays reachable when the global switch in
@@ -1042,17 +1042,17 @@ T.check(sub[3].enabled_func() == true, "export all books enabled")
 -- reason on the right, since the switch is disabled but not hidden.
 do
     ui.document = { file = FILE }
-    local current = sub[6].sub_item_table_func()
-    T.check(#current == 4, "Current book starts with keep, Book info, visibility and style: "
+    local current = sub[3].sub_item_table_func()
+    T.check(#current == 5, "Current book starts with summary, Book info, visibility, keep and format & layout: "
         .. #current)
-    T.check(current[1].text == "Keep my notes in this book",
+    T.check(current[4].text == "Keep my notes in this book",
         "the per book keep row")
-    T.check(current[1].enabled_func() == true, "keep row enabled with the book open")
-    T.check(current[1].checked_func() == false,
+    T.check(current[4].enabled_func() == true, "keep row enabled with the book open")
+    T.check(current[4].checked_func() == false,
         "the row shows the global default until the book chooses")
-    T.check(current[1].mandatory_func() == nil,
+    T.check(current[4].mandatory_func() == nil,
         "no reason on the right while the row is in charge")
-    T.check(current[1].keep_menu_open == true,
+    T.check(current[4].keep_menu_open == true,
         "the keep row keeps the menu open for its tick")
     T.check(current[2].text == "Book info",
         "the Book info submenu row")
@@ -1060,38 +1060,33 @@ do
     T.check(book_info[1].text_func() == "Tags: none",
         "the tags row starts empty: " .. book_info[1].text_func())
 
-    -- The visibility row opens the three states and stores the choice.
+    -- The visibility row opens the three radio states and stores the choice.
     local shared = require("tomedown_shared")
-    T.check(current[3].text_func() == "Book visibility: normal",
+    T.check(current[3].text_func() == "Book visibility: Normal",
         "the visibility row starts normal: " .. current[3].text_func())
-    current[3].callback()
-    T.check(ButtonDialog.last_opts ~= nil
-            and ButtonDialog.last_opts.title == "Book visibility",
-        "the visibility dialog opened")
-    local visibility_rows = ButtonDialog.last_opts.buttons
-    T.check(#visibility_rows == 4, "three states plus Cancel: "
+    local visibility_rows = current[3].sub_item_table_func()
+    T.check(#visibility_rows == 3, "three radio states in visibility submenu: "
         .. #visibility_rows)
-    visibility_rows[2][1].callback()
+    T.check(visibility_rows[1].radio == true and visibility_rows[1].checked_func() == true,
+        "normal radio checked by default")
+    visibility_rows[2].callback()
     T.check(shared.getBookExclusion(FILE) == "index",
         "hide from the index stored for this book")
     T.check(store.tomedown.index_dirty == true,
         "only the index has to be rebuilt")
-    T.check(current[3].text_func() == "Book visibility: hidden from the index",
+    T.check(current[3].text_func() == "Book visibility: Hidden from index",
         "the row names the new state: " .. current[3].text_func())
-    current[3].callback()
-    visibility_rows = ButtonDialog.last_opts.buttons
-    T.check(visibility_rows[2][1].text:sub(1, #"✓ ") == "✓ ",
-        "the chosen state carries the check mark")
-    visibility_rows[3][1].callback()
+    T.check(visibility_rows[2].checked_func() == true,
+        "the chosen state carries the radio check")
+    visibility_rows[3].callback()
     T.check(shared.getBookExclusion(FILE) == "none",
         "Do not export stored for this book")
-    T.check(current[3].text_func() == "Book visibility: not exported",
+    T.check(current[3].text_func() == "Book visibility: Not exported",
         "the row names the state: " .. current[3].text_func())
-    current[3].callback()
-    ButtonDialog.last_opts.buttons[1][1].callback()
+    visibility_rows[1].callback()
     T.check(shared.getBookExclusion(FILE) == nil,
         "normal clears the stored state")
-    T.check(current[3].text_func() == "Book visibility: normal",
+    T.check(current[3].text_func() == "Book visibility: Normal",
         "and the row comes back to normal")
     store.tomedown.index_dirty = nil
 
@@ -1159,7 +1154,7 @@ do
 
     ui.document = nil
     store.lastfile = FILE
-    T.check(#menu_items.tomedown.sub_item_table_func() == 8,
+    T.check(#menu_items.tomedown.sub_item_table_func() == 4,
         "the keep row stays off the dashboard")
     store.lastfile = nil
     ui.document = { file = nil }
@@ -1167,40 +1162,56 @@ end
 
 local settings = plugin:genSettingsMenu()
 T.check(#settings == 7, "settings groups: " .. #settings)
-T.check(settings[1].text == "\xEF\x83\xB6  Files", "files group with icon")
-T.check(settings[1].sub_item_table ~= nil, "Files is a static group")
-T.check(settings[2].text == "\xEE\xBC\xB4  Index", "index group with icon")
-T.check(settings[2].sub_item_table ~= nil, "Index is a static group")
-T.check(settings[3].text == "\xEE\x9F\xA2  Style", "style group with icon")
-T.check(settings[3].sub_item_table ~= nil, "Style is a static group")
+T.check(settings[1].text == "\xEF\x83\xB6  Export", "export group with icon")
+T.check(settings[1].sub_item_table ~= nil, "Export is a static group")
+T.check(settings[2].text == "\xEE\xBC\xB4  Index & library", "index & library group with icon")
+T.check(settings[2].sub_item_table ~= nil, "Index & library is a static group")
+T.check(settings[3].text == "\xEE\x9F\xA2  Notes & highlights", "notes & highlights group with icon")
+T.check(settings[3].sub_item_table ~= nil, "Notes & highlights is a static group")
 T.check(settings[4].text == "\xEF\x81\x9A  Book info", "book info group with icon")
-T.check(settings[5].text == "\xEE\xB4\xBE  Cloud", "cloud group with icon")
+T.check(settings[5].text == "\xEE\xB4\xBE  Cloud upload", "cloud upload group with icon")
 T.check(settings[6].text == "\xEF\x89\x89  My notes", "my notes group with icon")
-T.check(settings[7].text == "\xEE\xB6\xAE  Updates", "updates group with icon")
--- Cloud: three fixed rows since 1.1. The row that brings the cloud copy
--- back now lives in My notes, where the notes are.
+T.check(settings[7].text == "\xEE\xB6\xAE  App & updates", "app & updates group with icon")
+-- Cloud upload: three fixed rows (Upload to cloud, Destination, Re-upload all files…).
 local cloud = settings[5].sub_item_table
 local updates = settings[7].sub_item_table
 T.check(#cloud == 3, "cloud rows without a server: " .. #cloud)
-T.check(#updates == 4, "updates rows: " .. #updates)
+T.check(#updates == 5, "app & updates rows: " .. #updates)
 T.check(cloud[1].text == "Upload to cloud", "upload entry")
-T.check(cloud[2].text_func() == "Server and folder: not set", "server not set")
-T.check(T.contains(cloud[3].text_func(), "Remote folder: not set"), "remote folder not set")
--- Files: six static rows
+T.check(cloud[2].text_func() == "Destination: Not set", "destination not set")
+T.check(cloud[3].text == "\xEE\xB4\xBE  Re-upload all files…", "re-upload entry")
+-- Export: 10 rows when Reading digest is off; 11 when Reading digest is checked
 local files = settings[1].sub_item_table
-T.check(#files == 9, "files rows: " .. #files)
-T.check(T.contains(files[1].text_func(), "clipboard/tomedown"), "default local folder")
-T.check(files[2].text_func() == "File name template: Author - Title", "filename template entry")
-T.check(files[3].text_func() == "Folder organization: Single folder", "folder organization entry")
-T.check(files[4].text == "Create a reading digest (00 - Reading Digest.md)", "reading digest entry")
-T.check(files[5].text == "Export when I close a book", "auto-export entry")
-T.check(files[5].checked_func() == false, "auto-export off by default")
+T.check(#files == 10, "export rows when digest off: " .. #files)
+T.check(files[1].text_func() == "Export format: Markdown (.md)", "export format entry")
+T.check(files[2].text_func() == "Markdown style: Obsidian", "markdown style entry")
+T.check(T.contains(files[3].text_func(), "clipboard/tomedown"), "default local folder")
+T.check(files[4].text == "File names & folders", "file names & folders submenu")
+local fn_folders = files[4].sub_item_table
+T.check(#fn_folders == 4, "file names & folders rows: " .. #fn_folders)
+T.check(fn_folders[1].text_func() == "File name template: Author - Title", "filename template entry")
+T.check(fn_folders[2].text_func() == "Folder organization: Single folder", "folder organization entry")
+T.check(fn_folders[3].text_func() == "Covers folder: covers", "covers folder entry")
+T.check(fn_folders[3].enabled_func() == false, "covers folder disabled when covers off")
+store.tomedown.covers = true
+T.check(fn_folders[3].enabled_func() == true, "covers folder enabled when covers on")
+store.tomedown.covers = nil
+T.check(fn_folders[4].text_func() == "Drawings folder: drawings", "drawings folder entry")
+T.check(files[5].text == "Frontmatter fields", "frontmatter fields entry")
+T.check(files[6].text == "Export when I close a book", "auto-export entry")
+T.check(files[6].checked_func() == false, "auto-export off by default")
+T.check(files[7].text == "Reading digest (00 - Reading Digest.md)", "reading digest entry")
+files[7].callback()
+T.check(#files == 11 and files[8].text_func() == "Digest style: Follow book style",
+    "Digest style appears dynamically right below Reading digest when checked")
+files[7].callback()
+T.check(#files == 10, "Digest style hides again when Reading digest is unchecked")
 
--- Index: nine static rows
+-- Index & library: ten static rows
 do
     local index_group = settings[2].sub_item_table
-    T.check(#index_group == 9, "index rows: " .. #index_group)
-    T.check(index_group[1].text == "Create an index note (00 - Index.md)",
+    T.check(#index_group == 10, "index rows: " .. #index_group)
+    T.check(index_group[1].text == "Index note (00 - Index.md)",
         "index entry with the file name")
     T.check(index_group[2].text_func() == "Index order: Author",
         "index order entry: " .. index_group[2].text_func())
@@ -1272,32 +1283,31 @@ do
     end
     T.check(index_group[4].text_func() == "Index links: Obsidian wikilink",
         "index links entry")
-    T.check(index_group[5].text == "Show Reading now in the index",
+    T.check(index_group[7].text == "Reading now section",
         "Reading now entry")
-    T.check(index_group[5].checked_func() == true, "Reading now on by default")
+    T.check(index_group[7].checked_func() == true, "Reading now on by default")
 end
 
--- Style: twenty static rows
+-- Notes & highlights: 10 static rows
 do
     local style_group = settings[3].sub_item_table
-    T.check(#style_group == 20, "style rows: " .. #style_group)
-    T.check(style_group[1].text_func() == "Personal notes format: Inline", "note style entry")
-    T.check(type(style_group[2].text_func) == "function", "special marker row present")
-    T.check(T.contains(style_group[2].text_func(), "Callout"),
+    T.check(#style_group == 10, "notes & highlights rows: " .. #style_group)
+    T.check(type(style_group[1].text_func) == "function", "special marker row present")
+    T.check(T.contains(style_group[1].text_func(), "Callout"),
         "special marker default Callout")
-    T.check(style_group[3].text == "Treat every highlight as special", "callout entry")
-    T.check(style_group[3].checked_func() == false, "callout off by default")
-    T.check(style_group[4].text == "Add link IDs to highlights", "block ids entry")
+    T.check(style_group[2].text_func() == "Highlight details: Page and date", "highlight details entry")
+    T.check(style_group[3].text == "Highlight context", "highlight context entry")
+    T.check(style_group[4].text == "Link IDs on highlights", "block ids entry")
     T.check(style_group[4].checked_func() == false, "block ids off by default")
-    T.check(style_group[5].text == "Include book covers", "covers entry")
-    T.check(style_group[5].checked_func() == false, "covers off by default")
-    T.check(style_group[6].text_func() == "Covers folder: covers", "covers folder entry")
-    T.check(style_group[6].enabled_func() == false, "covers folder disabled when covers off")
-    store.tomedown.covers = true
-    T.check(style_group[6].enabled_func() == true, "covers folder enabled when covers on")
-    store.tomedown.covers = nil
-    T.check(style_group[7].text == "Include page bookmarks", "page bookmarks entry")
-    T.check(style_group[7].checked_func() == false, "page bookmarks off by default")
+    T.check(style_group[5].text == "Every highlight is special", "callout entry")
+    T.check(style_group[5].checked_func() == false, "callout off by default")
+    T.check(style_group[6].text_func() == "Personal notes format: Inline", "note style entry")
+    T.check(style_group[8].text == "Page bookmarks", "page bookmarks entry")
+    T.check(style_group[8].checked_func() == false, "page bookmarks off by default")
+    T.check(style_group[10].text == "Book page", "book page submenu")
+    local book_page = style_group[10].sub_item_table
+    T.check(book_page[2].text == "Book cover image" and book_page[2].checked_func() == false,
+        "book cover image sits in Book page and starts off")
 end
 
 -- ------------------------------- 5a3. deleting tags from every book
@@ -1485,44 +1495,44 @@ end
 -- and in place when a switch in it flips.
 local notes = settings[6].sub_item_table_func()
 T.check(#notes == 2, "notes rows with preserve off: " .. #notes)
-T.check(notes[1].text == "Keep my notes: all books", "global switch entry")
+T.check(notes[1].text == "Keep my notes for all books", "global switch entry")
 T.check(notes[1].checked_func() == false,
     "manual edits off by default (the tomedown <= 0.8 behaviour)")
-T.check(notes[2].text == "Keep my notes: index",
+T.check(notes[2].text == "Keep my notes in the index",
     "the index keep entry")
 T.check(notes[2].checked_func() == false,
     "the index follows the global switch by default")
 T.check(notes[3] == nil,
     "no heading row while preserve is off and the index is plain")
 
--- Style: note formatting and highlights
+-- Notes & highlights: note formatting and highlights
 local highlights = settings[3].sub_item_table
-T.check(#highlights == 20, "style rows: " .. #highlights)
-T.check(highlights[3].text == "Treat every highlight as special",
+T.check(#highlights == 10, "notes & highlights rows: " .. #highlights)
+T.check(highlights[5].text == "Every highlight is special",
     "callout entry")
-T.check(highlights[3].checked_func() == false, "callout off by default")
-T.check(type(highlights[2].text_func) == "function", "special marker row present")
-T.check(T.contains(highlights[2].text_func(), "Callout"),
+T.check(highlights[5].checked_func() == false, "callout off by default")
+T.check(type(highlights[1].text_func) == "function", "special marker row present")
+T.check(T.contains(highlights[1].text_func(), "Callout"),
     "special marker default Callout")
-T.check(highlights[2].enabled_func() == true,
+T.check(highlights[1].enabled_func() == true,
     "special marker enabled while every highlight is not a callout yet")
-T.check(highlights[2].sub_item_table
-        and #highlights[2].sub_item_table == 6,
+T.check(highlights[1].sub_item_table
+        and #highlights[1].sub_item_table == 6,
     "special marker submenu has 6 items")
-local marker_items = highlights[2].sub_item_table
+local marker_items = highlights[1].sub_item_table
 T.check(marker_items[1].text == "Callout ([!highlight])" and marker_items[1].checked_func(),
     "the callout choice is the one on")
 T.check(marker_items[6].text == "Bold (**text**)" and marker_items[6].checked_func() == false,
     "the bold choice starts off")
-T.check(highlights[4].text == "Add link IDs to highlights", "block ids entry")
+T.check(highlights[4].text == "Link IDs on highlights", "block ids entry")
 T.check(highlights[4].checked_func() == false, "block ids off by default")
 -- with every highlight becoming a callout the marker row has nothing
 -- left to choose, and graying it out is the only way to say so
-highlights[3].callback()
-T.check(highlights[2].enabled_func() == false,
+highlights[5].callback()
+T.check(highlights[1].enabled_func() == false,
     "special marker row disabled while every highlight is a callout")
-highlights[3].callback()
-T.check(highlights[2].enabled_func() == true,
+highlights[5].callback()
+T.check(highlights[1].enabled_func() == true,
     "special marker row back once the callout option is off")
 
 -- flipping preserve shows the heading row in the open group, without
@@ -1563,7 +1573,7 @@ T.check(notes_row.text_func() == "Notes heading: My notes...",
 live[1].callback(open_menu)
 T.check(store.tomedown.preserve == false, "preserve toggled back off")
 T.check(#live == 2, "heading row disappears with preserve off: " .. #live)
-T.check(live[2].text == "Keep my notes: index",
+T.check(live[2].text == "Keep my notes in the index",
     "the index switch is back, with no heading row under it")
 T.check(notes[1].checked_func() == false, "the toggle reflects the setting")
 store.tomedown.preserve = nil
@@ -1642,47 +1652,47 @@ store.tomedown.preserve = nil
 end
 
 -- the rows that used to sit in the Style and Behaviour submenus, kept
--- under the names the sections below toggle: auto-export in Files and
+-- under the names the sections below toggle: auto-export in Export and
 -- the global switch in My notes
-local behaviour = { [1] = files[5], [2] = notes[1] }
-T.check(updates[1].text_func() == "Check for updates (v"
+local behaviour = { [1] = files[6], [2] = notes[1] }
+T.check(updates[1].text == "Top bar icon" and updates[1].separator == true,
+    "top bar icon sits first in App & updates")
+T.check(updates[2].text_func() == "Check for updates (v"
         .. Update.getInstalledVersion() .. ")",
-    "check row carries the installed version: " .. updates[1].text_func())
-T.check(updates[2].text == "View changelog", "changelog entry")
-T.check(updates[2].separator == true, "separator after the changelog entry")
-T.check(updates[3].text == "Check for updates in background", "background entry")
-T.check(updates[4].text == "\xEF\x84\xA6  Beta versions",
-    "beta versions entry with icon")
-local developer = updates[4].sub_item_table_func()
-T.check(#developer == 3, "beta check hidden by default: " .. #developer)
-T.check(developer[1].text == "Receive beta versions", "beta versions entry")
-T.check(developer[1].checked_func() == false, "beta versions off by default")
-T.check(developer[1].separator == true, "separator under the beta toggle")
-T.check(developer[2].text == "\xEE\xB6\x8F  Go back to the stable version",
+    "check row carries the installed version: " .. updates[2].text_func())
+T.check(updates[3].text_func() == "Release channel: Stable",
+    "release channel row")
+T.check(updates[4].text == "Check for updates in background", "background entry")
+T.check(updates[5].text == "View changelog", "changelog entry")
+local developer = updates[3].sub_item_table_func()
+T.check(#developer == 4, "beta check hidden by default: " .. #developer)
+T.check(developer[1].text == "Stable" and developer[1].radio == true and developer[1].checked_func() == true, "stable channel entry")
+T.check(developer[2].text == "Beta" and developer[2].radio == true and developer[2].checked_func() == false, "beta channel entry")
+T.check(developer[2].separator == true, "separator under the beta radio")
+T.check(developer[3].text == "\xEE\xB6\x8F  Go back to the stable version…",
     "reset entry with the bomb icon")
 local installed_version = Update.getInstalledVersion()
-T.check(developer[3].text_func() == "Installed: v" .. installed_version
+T.check(developer[4].text_func() == "Installed: v" .. installed_version
         .. (installed_version:find("-", 1, true) and " (Beta)" or " (Release)"),
-    "installed row: " .. developer[3].text_func())
-T.check(developer[3].enabled == false, "installed row is a plain label")
+    "installed row: " .. developer[4].text_func())
+T.check(developer[4].enabled == false, "installed row is a plain label")
 
--- ticking Receive beta versions reveals the check in the open submenu at
+-- switching to Beta channel reveals the check in the open submenu at
 -- once (the callback receives the TouchMenu, whose item_table is this
 -- very table; it is rebuilt in place and redrawn by KOReader)
 local fake_menu = { item_table = developer }
-developer[1].callback(fake_menu)
+developer[2].callback(fake_menu)
 T.check(store.tomedown.beta_releases == true, "beta versions toggled on")
-T.check(#developer == 4, "beta check shown after ticking: " .. #developer)
-T.check(developer[2].text == "Check for beta updates", "beta check entry")
-T.check(developer[2].separator == true,
+T.check(#developer == 5, "beta check shown after ticking: " .. #developer)
+T.check(developer[3].text == "Check for beta updates", "beta check entry")
+T.check(developer[3].separator == true,
     "separator between the beta check and the reset")
-T.check(developer[1].separator ~= true, "no separator under the toggle")
-T.check(developer[2].callback ~= nil, "beta check row is tappable")
--- unticking hides it again, in the same open menu
+T.check(developer[3].callback ~= nil, "beta check row is tappable")
+-- switching back to Stable hides it again, in the same open menu
 developer[1].callback(fake_menu)
 T.check(store.tomedown.beta_releases == false, "beta releases off again")
-T.check(#developer == 3, "beta check hidden again: " .. #developer)
-T.check(developer[1].separator == true, "separator back under the toggle")
+T.check(#developer == 4, "beta check hidden again: " .. #developer)
+T.check(developer[2].separator == true, "separator under the Beta radio")
 
 -- checkable rows must keep the menu open so KOReader refreshes them
 for _, group in ipairs({ sub, cloud, files, notes, highlights,
@@ -1697,7 +1707,7 @@ end
 -- the About row opens the Bookshelf-style popup
 local shown_before = #UIManager.shown
 TextWidget.all = {}
-sub[10].callback()
+sub[6].callback()
 T.check(#UIManager.shown == shown_before + 1, "about popup shown")
 local dialog = UIManager.shown[#UIManager.shown]
 T.check(dialog ~= nil and dialog.__widget == "InputContainer",
@@ -1767,36 +1777,46 @@ settings[2].sub_item_table[1].callback()
 T.check(store.tomedown.with_index == false, "index disabled")
 settings[2].sub_item_table[1].callback()
 T.check(store.tomedown.with_index == true, "index re-enabled")
-settings[3].sub_item_table[7].callback()
+settings[3].sub_item_table[8].callback()
 T.check(store.tomedown.include_bookmarks == true, "page bookmarks enabled")
-settings[3].sub_item_table[7].callback()
+settings[3].sub_item_table[8].callback()
 T.check(store.tomedown.include_bookmarks == false, "page bookmarks disabled")
-developer[1].callback()
+developer[2].callback()
 T.check(store.tomedown.beta_releases == true, "beta releases enabled")
 developer[1].callback()
 T.check(store.tomedown.beta_releases == false, "beta releases disabled")
 
--- server picked from the Cloud storage list
-plugin:chooseCloudFolder(nil)
-T.check(cloud_list_callback ~= nil, "cloud list opened")
-cloud_list_callback({ name = "Koofr", type = "webdav", url = "/Bookshelf/Kindle" })
-T.check(store.tomedown.server and store.tomedown.server.name == "Koofr", "server saved")
-T.check(cloud[2].text_func() == "Server and folder: Koofr (webdav) → /Bookshelf/Kindle",
-    "server text updated: " .. cloud[2].text_func())
-T.check(plugin:hasServer() == true, "hasServer true with server and cloud")
+-- server picked from the Cloud storage list via Destination submenu
+do
+    local dest_rows = cloud[2].sub_item_table_func()
+    T.check(#dest_rows == 2
+            and dest_rows[1].text == "Choose in cloud storage…"
+            and dest_rows[2].text == "Enter remote path…",
+        "destination submenu starts with 2 rows")
+    dest_rows[1].callback(nil)
+    T.check(cloud_list_callback ~= nil, "cloud list opened")
+    cloud_list_callback({ name = "Koofr", type = "webdav", url = "/Bookshelf/Kindle" })
+    T.check(store.tomedown.server and store.tomedown.server.name == "Koofr", "server saved")
+    T.check(cloud[2].text_func() == "Destination: Koofr (webdav) → /Bookshelf/Kindle",
+        "destination text updated: " .. cloud[2].text_func())
+    T.check(plugin:hasServer() == true, "hasServer true with server and cloud")
 
--- remote folder dialog
-plugin:editRemoteFolder(nil)
-local dialog = InputDialog.last
-T.check(dialog ~= nil and dialog.title == "Remote folder on the server", "remote dialog opened")
-dialog.input_text = "  /Cartella mia  "
-dialog:simulateSave()
-T.check(store.tomedown.remote_folder == "/Cartella mia", "remote folder saved and trimmed")
-T.check(T.contains(cloud[3].text_func(), "/Cartella mia"), "menu entry updated")
-plugin:editRemoteFolder(nil)
-InputDialog.last.input_text = ""
-InputDialog.last:simulateSave()
-T.check(store.tomedown.remote_folder == "", "remote folder cleared")
+    -- remote folder dialog
+    dest_rows[2].callback(nil)
+    local dialog = InputDialog.last
+    T.check(dialog ~= nil and dialog.title == "Remote folder on the server", "remote dialog opened")
+    dialog.input_text = "  /Cartella mia  "
+    dialog:simulateSave()
+    T.check(store.tomedown.remote_folder == "/Cartella mia", "remote folder saved and trimmed")
+    T.check(T.contains(cloud[2].text_func(), "/Cartella mia"), "destination entry updated")
+    dest_rows = cloud[2].sub_item_table_func()
+    T.check(#dest_rows == 3 and dest_rows[3].text == "Clear remote path…",
+        "Clear remote path… appears when remote_folder is set")
+    plugin:editRemoteFolder(nil)
+    InputDialog.last.input_text = ""
+    InputDialog.last:simulateSave()
+    T.check(store.tomedown.remote_folder == "", "remote folder cleared")
+end
 
 -- local folder picker (KOReader PathChooser: long-press a folder to choose it)
 plugin:editLocalDir(nil)
@@ -1943,36 +1963,22 @@ T.check(T.contains(table.concat(plugin:statusLines(), "\n"),
         "Next upload: disabled in settings"),
     "status: next upload honours the setting")
 
--- the panel is shown as an InfoMessage, in the smallest info face so
--- every entry fits on its own line without wrapping
+-- the panel is shown as a custom FrameContainer dashboard card with KPI stats and action buttons
 local shown_before_status = #UIManager.shown
 plugin:showStatus()
 T.check(#UIManager.shown == shown_before_status + 1, "status panel shown")
-T.check(InfoMessage.last_face and InfoMessage.last_face.name == "xx_smallinfofont",
-    "status popup uses the small face: "
-        .. tostring(InfoMessage.last_face and InfoMessage.last_face.name))
-T.check(InfoMessage.last_width == math.floor(600 * 0.9),
-    "status popup widened to 90% of the screen: "
-        .. tostring(InfoMessage.last_width))
-T.check(InfoMessage.last_text
-        and InfoMessage.last_text:find(TextBoxWidget.PTF_HEADER, 1, true) == 1,
-    "styled status text opens with the PTF header")
-T.check(InfoMessage.last_text
-        and InfoMessage.last_text:find(TextBoxWidget.PTF_BOLD_START
-            .. "Network:" .. TextBoxWidget.PTF_BOLD_END, 1, true),
-    "the Network label is wrapped in bold")
-T.check(InfoMessage.last_text
-        and InfoMessage.last_text:find(TextBoxWidget.PTF_BOLD_START
-            .. "Last export:" .. TextBoxWidget.PTF_BOLD_END, 1, true),
-    "the Last export label is wrapped in bold")
+local status_dialog = UIManager.shown[#UIManager.shown]
+T.check(status_dialog ~= nil and status_dialog.__widget == "InputContainer",
+    "status panel renders custom centered card container")
 
--- runExport records its outcome for the panel (upload off: no cloud)
+-- runExport records its outcome (including exported book titles) for the panel
 store.tomedown.upload = false
 plugin:runExport({ FILE }, {})
 UIManager:runPending()
 local recorded = store.tomedown.last_export
 T.check(recorded ~= nil and recorded.at ~= nil and recorded.exported == 1
-        and recorded.skipped == 0,
+        and recorded.skipped == 0
+        and type(recorded.titles) == "table" and #recorded.titles == 1,
     "runExport records last_export: " .. tostring(recorded and recorded.exported))
 T.check(T.contains(table.concat(plugin:statusLines(), "\n"),
         "Last export: "),
@@ -2002,7 +2008,7 @@ store.tomedown = { import_prompt_done = true }
 
 -- ----------------------------------------------- 5b. page bookmarks
 
-settings[3].sub_item_table[7].callback() -- enable "Include page bookmarks"
+settings[3].sub_item_table[8].callback() -- enable "Page bookmarks"
 T.check(store.tomedown.include_bookmarks == true, "page bookmarks enabled for the export")
 plugin:runExport({ FILE }, {})
 UIManager:runPending()
@@ -2038,7 +2044,7 @@ if onlyBmMd then
 end
 
 -- disabled again: the section disappears
-settings[3].sub_item_table[7].callback()
+settings[3].sub_item_table[8].callback()
 T.check(store.tomedown.include_bookmarks == false, "page bookmarks disabled again")
 plugin:runExport({ FILE }, {})
 UIManager:runPending()
@@ -2579,19 +2585,19 @@ NetworkMgr.connected = true
 uploadSetup()
 plugin:runExport({ FILE }, {})
 T.check(store.tomedown.exports[FILE].hash ~= nil, "hash stored by the export")
-settings[3].sub_item_table[5].callback()
+settings[3].sub_item_table[10].sub_item_table[2].callback()
 T.check(store.tomedown.covers == true, "covers toggled on")
 T.check(store.tomedown.exports[FILE].hash == nil,
     "the covers toggle invalidates the stored hash")
-settings[3].sub_item_table[5].callback()
+settings[3].sub_item_table[10].sub_item_table[2].callback()
 T.check(store.tomedown.covers == false, "covers toggled off again")
 plugin:runExport({ FILE }, {})
 T.check(store.tomedown.exports[FILE].hash ~= nil, "hash back after the export")
-highlights[3].callback()
+highlights[5].callback()
 T.check(store.tomedown.callout == true, "callout toggled on")
 T.check(store.tomedown.exports[FILE].hash == nil,
     "the callout toggle invalidates the stored hash too")
-highlights[3].callback()
+highlights[5].callback()
 
 -- the same for the two rows the Highlights group took over: neither
 -- special_marker nor block_ids is part of hashBook, so choosing one has
@@ -2613,8 +2619,8 @@ T.check(store.tomedown.exports[FILE].hash == nil,
 marker_items[1].callback()
 T.check(store.tomedown.special_marker == "callout",
     "back to the default callout marker")
-T.check(highlights[2].text_func() == "How special highlights look: Callout ([!highlight])",
-    "the row label follows the choice: " .. highlights[2].text_func())
+T.check(highlights[1].text_func() == "Special highlight style: Callout ([!highlight])",
+    "the row label follows the choice: " .. highlights[1].text_func())
 
 -- extraction: capped to the 800x1200 box, quality 50, colours kept
 uploadSetup()
@@ -3044,27 +3050,27 @@ do
     behaviour[2].callback() -- global preserve off, the tomedown 0.8 way
     T.check(store.tomedown.preserve == false, "15b: the global switch is off")
     sub = menu_items.tomedown.sub_item_table_func()
-    local current_book = sub[6].sub_item_table_func()
-    current_book[1].callback() -- the open book asks for its own zone
+    local current_book = sub[3].sub_item_table_func()
+    current_book[4].callback() -- the open book asks for its own zone
     T.check(store.tomedown.preserve_books
             and store.tomedown.preserve_books[FILE] == true,
         "15b: the choice is stored for this book")
-    T.check(current_book[1].checked_func() == true,
+    T.check(current_book[4].checked_func() == true,
         "15b: the row shows the book's own choice")
     T.check(store.tomedown.preserve == false,
         "15b: the global default is untouched")
     -- the Current book submenu is built on open: a book that keeps a
     -- zone gets its own heading row, right under the switch that keeps
     -- it, and the copies left by the sections above sit under that
-    current_book = sub[6].sub_item_table_func()
-    T.check(#current_book == 6,
+    current_book = sub[3].sub_item_table_func()
+    T.check(#current_book == 7,
         "15b: the heading and the copies join the submenu: "
             .. #current_book)
-    T.check(current_book[4].text_func()
+    T.check(current_book[5].text_func()
             == "Notes heading: My notes...",
         "15b: the heading row names this book's zone: "
-            .. current_book[4].text_func())
-    T.check(current_book[5].text == "\xEF\x83\x87  Backup copies",
+            .. current_book[5].text_func())
+    T.check(current_book[6].text == "\xEF\x83\x87  Backup copies",
         "15b: the copies row follows the heading")
     plugin:runExport({ FILE, FILE2 }, {})
     UIManager:runPending()
@@ -3099,19 +3105,19 @@ do
     -- stays where it is, and comes back when the switch goes off again)
     behaviour[2].callback()
     T.check(store.tomedown.preserve == true, "15b: the global switch is on")
-    current_book = sub[6].sub_item_table_func()
-    T.check(current_book[1].enabled_func() == false,
+    current_book = sub[3].sub_item_table_func()
+    T.check(current_book[4].enabled_func() == false,
         "15b: the keep row is off while the global switch covers every book")
-    T.check(current_book[1].checked_func() == false,
+    T.check(current_book[4].checked_func() == false,
         "15b: and it shows no book's choice")
-    T.check(current_book[1].mandatory_func() == "On for all books",
+    T.check(current_book[4].mandatory_func() == "On for all books",
         "15b: the reason sits on the right")
-    T.check(current_book[4].text == "\xEF\x83\x87  Backup copies",
+    T.check(current_book[5].text == "\xEF\x83\x87  Backup copies",
         "15b: the heading leaves with the global switch, the copies stay")
     behaviour[2].callback()
     T.check(store.tomedown.preserve == false, "15b: and off again")
-    current_book = sub[6].sub_item_table_func()
-    T.check(#current_book == 6,
+    current_book = sub[3].sub_item_table_func()
+    T.check(#current_book == 7,
         "15b: the heading is back with the switch off: " .. #current_book)
     plugin:runExport({ FILE }, {})
     UIManager:runPending()
@@ -3123,8 +3129,8 @@ do
     -- A book that keeps a zone names it itself: the row under the
     -- switch opens the dialog, and the title is stored for that book
     -- alone. The index, when it has a zone, keeps the global heading.
-    current_book = sub[6].sub_item_table_func()
-    current_book[4].callback()
+    current_book = sub[3].sub_item_table_func()
+    current_book[5].callback()
     T.check(InputDialog.last ~= nil
             and InputDialog.last.title == "Notes heading",
         "15c: the heading dialog opened")
@@ -3137,19 +3143,19 @@ do
         "15c: the global heading is left alone")
     T.check(store.tomedown.exports[FILE].hash == nil,
         "15c: the book's hash goes: its file has to be rewritten")
-    T.check(current_book[4].text_func()
+    T.check(current_book[5].text_func()
             == "Notes heading: The Witch theory",
-        "15c: the row shows the new name: " .. current_book[4].text_func())
+        "15c: the row shows the new name: " .. current_book[5].text_func())
     -- a book that never named its zone, saved back with the global title
     -- still in the field, keeps following the global one: a copy of it
     -- would freeze the book on today's heading, and a later rename in
     -- Settings would leave it behind for good
     ui.document = { file = FILE2 }
     sub = menu_items.tomedown.sub_item_table_func()
-    current_book = sub[6].sub_item_table_func()
-    current_book[1].callback({ item_table = current_book })
-    current_book = sub[6].sub_item_table_func()
-    current_book[4].callback()
+    current_book = sub[3].sub_item_table_func()
+    current_book[4].callback({ item_table = current_book })
+    current_book = sub[3].sub_item_table_func()
+    current_book[5].callback()
     T.check(InputDialog.last ~= nil
             and InputDialog.last.input_text == "My notes...",
         "15c: the field starts on the heading the book exports today: "
@@ -3192,7 +3198,7 @@ do
     -- the notes in it do not survive the rewrite.
     local index_row
     for __, row in ipairs(plugin:genSettingsMenu()[6].sub_item_table_func()) do
-        if row.text == "Keep my notes: index" then
+        if row.text == "Keep my notes in the index" then
             index_row = row
             break
         end
@@ -3273,7 +3279,7 @@ do
     -- with the index written plain there is no zone left to name: the
     -- row under its switch goes away with it
     live = plugin:genSettingsMenu()[6].sub_item_table_func()
-    T.check(#live == 2 and live[2].text == "Keep my notes: index",
+    T.check(#live == 2 and live[2].text == "Keep my notes in the index",
         "15d: the heading row leaves when the index is plain: " .. #live)
     plugin:runExport({ FILE }, {})
     UIManager:runPending()
@@ -3295,8 +3301,8 @@ do
     os.remove(MD_PATH .. ".bak")
     os.remove(MD_PATH .. ".bak.1")
     ConfirmBox.last = nil
-    current_book = sub[6].sub_item_table_func()
-    current_book[1].callback()
+    current_book = sub[3].sub_item_table_func()
+    current_book[4].callback()
     UIManager:runPending()
     T.check(ConfirmBox.last ~= nil,
         "15b: turning preserve off asks for confirmation first")
@@ -3321,8 +3327,8 @@ do
     -- confirming stores the off, rewrites the file plain there and then,
     -- and keeps what it held as .bak
     ConfirmBox.last = nil
-    current_book = sub[6].sub_item_table_func()
-    current_book[1].callback()
+    current_book = sub[3].sub_item_table_func()
+    current_book[4].callback()
     UIManager:runPending()
     T.check(ConfirmBox.last ~= nil, "15b: the box comes back")
     ConfirmBox.last.ok_callback()
@@ -3509,8 +3515,8 @@ do
     -- the settings rows speak about the global switch only: a book's
     -- own choice lives in the book's own menu, so a preserved book
     -- brings no heading row while the global toggle is off
-    current_book = sub[6].sub_item_table_func()
-    current_book[1].callback() -- the book keeps its zone again
+    current_book = sub[3].sub_item_table_func()
+    current_book[4].callback() -- the book keeps its zone again
     live = plugin:genSettingsMenu()[6].sub_item_table_func()
     T.check(#live == 2,
         "15b: a preserved book brings no heading row: "
@@ -3682,6 +3688,7 @@ do
     plugin.book_cache = nil
 
     -- ------------- 17. the cloud copy edited elsewhere (v1.0)
+    do
     -- The reader edits an exported file in Obsidian, synced back through
     -- the same cloud folder: the next export has to fold that text in,
     -- instead of overwriting the cloud copy with a merge made against the
@@ -3779,8 +3786,10 @@ do
         "the same destination keeps the hashes")
     T.check(plugin:cloudBase({ name = "Other", type = "webdav",
             url = "/Other/Folder" }) == nil, "another folder starts clean")
+    end
 
     -- ------------- 18. pending uploads folded at the flush (v1.0)
+    do
     -- The reader exports with no connection: the new highlights land in the
     -- local file, the copy in the cloud still holds whatever was typed in
     -- Obsidian. When the connection comes back the flush must not push the
@@ -3978,6 +3987,7 @@ do
             .. tostring(seen_rescheduled))
     T.check(next(store.tomedown.pending_uploads or {}) == nil,
         "18b: the flush still pushes what it reconciled")
+    end
 end
 
 -- --------------------------------- 19. "Upload everything" reconciles
@@ -4799,9 +4809,9 @@ do
     T.check(T.contains(imported, "rating: 4"), "26: the rating is written")
     T.check(T.contains(imported, 'review: "Bello e davvero intenso."'),
         "26: the review is folded to one line")
-    T.check(T.contains(imported, 'date_started: "' .. START_DATE .. '"'),
+    T.check(T.contains(imported, "date_started: " .. START_DATE),
         "26: the start date comes from the statistics")
-    T.check(T.contains(imported, 'date_finished: "2026-10-01"'),
+    T.check(T.contains(imported, "date_finished: 2026-10-01"),
         "26: the finish date comes from the completed summary")
     T.check(T.contains(imported,
             "collections:\n  - Fantascienza\n  - Preferiti"),
@@ -4908,7 +4918,7 @@ do
     T.check(bookinfo_rows[1].text == "Update book info automatically"
             and bookinfo_rows[1].checked_func() == true,
         "26: automatic updates are on by default")
-    T.check(bookinfo_rows[2].text == "\xEF\x80\xAD  Import book info for all books",
+    T.check(bookinfo_rows[2].text == "\xEF\x80\xAD  Import book info for all books…",
         "26: the bulk import has its own glyph: "
             .. bookinfo_rows[2].text)
     local closed = false
@@ -5091,6 +5101,7 @@ do
     plugin:runExport({ FILE }, {})
     UIManager:runPending()
 
+    do
     -- Edit 1 inside generated region -> saved to .bak.1
     local md1 = T.readFile(MD_PATH):gsub("> Prima frase%.", "> Edit dentro blocco 1.", 1)
     wr(MD_PATH, md1)
@@ -5122,11 +5133,11 @@ do
     local copies = plugin:bookBackups(FILE)
     T.check(#copies == 3, "28: bookBackups lists all three safety slots")
 
-    -- Frontmatter customization via Style -> Frontmatter fields menu
+    -- Frontmatter customization via Export -> Frontmatter fields menu
     local settings_menu = plugin:genSettingsMenu()
-    local fm_menu = settings_menu[3].sub_item_table[8]
+    local fm_menu = settings_menu[1].sub_item_table[5]
     T.check(fm_menu and fm_menu.text == "Frontmatter fields",
-        "28: Frontmatter fields submenu in Settings -> Style")
+        "28: Frontmatter fields submenu in Settings -> Export")
     local fm_rows = fm_menu.sub_item_table
     T.check(#fm_rows == 12,
         "28: 1 YAML toggle + 9 hideable field checkboxes + Custom fields (off by default) + order entry")
@@ -5234,36 +5245,61 @@ do
     shared.setHighlightDetails("page_date")
     T.check(shared.getFrontmatterHidden() == nil and shared.getFrontmatterOrder() == nil,
         "28: frontmatter settings reset cleanly to nil")
+    end
 
-    -- Per-book style overrides via Current book -> Style & format
+    -- Per-book style overrides via Current book -> Format & layout
     ui.document = { file = FILE }
     local cur_menu = plugin:genCurrentBookMenu()
     local style_row = cur_menu[#cur_menu]
-    T.check(style_row and style_row.text == "Style & format",
-        "28: Style & format is the last row in Current book menu")
+    T.check(style_row and style_row.text == "Format & layout",
+        "28: Format & layout is the last row in Current book menu")
     local bstyle = style_row.sub_item_table_func()
-    T.check(#bstyle == 17, "28: 15 per-book style choices + 1 frontmatter fields + 1 reset row")
-    T.check(bstyle[4].mandatory_func() == "Global",
-        "28: chapter_headings starts on Global")
-    T.check(bstyle[16].text == "Frontmatter fields" and bstyle[16].mandatory_func() == "Global",
+    T.check(#bstyle == 7,
+        "28: Format & layout fits on 1 Kindle page (7 rows: format, md style, Notes & highlights, Book page, YAML, Frontmatter fields, Reset)")
+    T.check(bstyle[2].mandatory_func() == "Global",
+        "28: markdown_style starts on Global")
+    T.check(bstyle[3].key == "book_notes_highlights" and bstyle[3].text == "Notes & highlights" and bstyle[3].mandatory_func() == "Global",
+        "28: Notes & highlights group is present and starts on Global")
+    T.check(bstyle[4].key == "book_card_sections" and bstyle[4].text == "Book page" and bstyle[4].mandatory_func() == "Global",
+        "28: Book page group is present and starts on Global")
+    T.check(bstyle[6].text == "Frontmatter fields" and bstyle[6].mandatory_func() == "Global",
         "28: Frontmatter fields row is present and starts on Global")
-    T.check(bstyle[17].enabled_func() == false,
+    T.check(bstyle[7].enabled_func() == false,
         "28: Reset to global style settings disabled when no overrides exist")
 
-    -- Pin FILE to chapter_headings = "none", highlight_details = "none", include_bookmarks = true via submenu callbacks
-    bstyle[4].sub_item_table[5].callback() -- "none"
-    bstyle[3].sub_item_table[5].callback() -- "none"
-    bstyle[7].sub_item_table[2].callback() -- include_bookmarks = true
+    local bnh = bstyle[3].sub_item_table_func()
+    T.check(#bnh == 9
+            and bnh[1].key == "special_marker"
+            and bnh[2].key == "highlight_details"
+            and bnh[3].key == "highlight_context"
+            and bnh[4].key == "block_ids"
+            and bnh[5].key == "callout"
+            and bnh[6].key == "note_style"
+            and bnh[7].key == "chapter_headings"
+            and bnh[8].key == "include_bookmarks"
+            and bnh[9].key == "include_handwritten",
+        "28: Current book -> Notes & highlights mirrors all 9 Global visual options")
+
+    -- Pin FILE to chapter_headings = "none", highlight_details = "none", include_bookmarks = true,
+    -- block_ids = true, and special_marker = "highlight" via submenu callbacks
+    bnh[7].sub_item_table[5].callback() -- chapter_headings = "none"
+    bnh[2].sub_item_table[5].callback() -- highlight_details = "none"
+    bnh[8].sub_item_table[2].callback() -- include_bookmarks = true
+    bnh[4].sub_item_table[2].callback() -- block_ids = true
+    bnh[1].sub_item_table[4].callback() -- special_marker = "highlight" (==text==)
     -- Pin FILE to hide progress in frontmatter via Frontmatter fields
-    bstyle[16].sub_item_table[10].callback() -- progress toggled off
+    bstyle[6].sub_item_table[10].callback() -- progress toggled off
     T.check(shared.isFrontmatterKeyEnabled("progress", FILE) == false
             and shared.isFrontmatterKeyEnabled("progress") == true,
         "28: progress hidden for FILE only, global still enabled")
-    T.check(bstyle[4].mandatory_func() == "Custom"
-            and bstyle[7].mandatory_func() == "Custom"
-            and bstyle[16].mandatory_func() == "Custom"
-            and bstyle[17].enabled_func() == true,
-        "28: mandatory shows Custom and Reset is enabled after setting per-book override")
+    T.check(bstyle[3].mandatory_func() == "Custom"
+            and bnh[7].mandatory_func() == "Custom"
+            and bnh[8].mandatory_func() == "Custom"
+            and bnh[4].mandatory_func() == "Custom"
+            and bnh[1].mandatory_func() == "Custom"
+            and bstyle[6].mandatory_func() == "Custom"
+            and bstyle[7].enabled_func() == true,
+        "28: mandatory shows Custom on Notes & highlights + Frontmatter fields and Reset is enabled")
 
     plugin:runExport({ FILE, FILE2 }, { force = true })
     UIManager:runPending()
@@ -5273,31 +5309,63 @@ do
     T.check(not T.contains(file1_md, "# Capitolo I")
             and not T.contains(file1_md, "**p. 10**")
             and T.contains(file1_md, "Segnalibro di pagina")
+            and T.contains(file1_md, " ^hl-")
             and not T.contains(file1_md, "progress:"),
-        "28: FILE uses per-book override (no chapter headings, no highlight details, page bookmarks enabled, no progress)")
+        "28: FILE uses per-book override (no chapter headings, no highlight details, page bookmarks enabled, per-book block IDs, no progress)")
     T.check(T.contains(file2_md, "**p. 3**")
+            and not T.contains(file2_md, " ^hl-")
             and T.contains(file2_md, "status:"),
-        "28: FILE2 still uses global settings (page and date details, status enabled): base="
+        "28: FILE2 still uses global settings (page and date details, no block IDs, status enabled): base="
             .. tostring(file2_base) .. " md=" .. tostring(file2_md))
 
     -- If YAML frontmatter is set to Disabled, Frontmatter fields row disappears
-    bstyle[15].sub_item_table[3].callback() -- fm_enabled = false
+    bstyle[5].sub_item_table[3].callback() -- fm_enabled = false
     local bstyle_disabled = style_row.sub_item_table_func()
-    T.check(#bstyle_disabled == 16 and bstyle_disabled[16].key == "reset_book_style",
+    T.check(#bstyle_disabled == 6 and bstyle_disabled[6].key == "reset_book_style",
         "28: Frontmatter fields row disappears when YAML frontmatter is disabled")
-    bstyle[15].sub_item_table[1].callback() -- reset to global (enabled)
+    bstyle[5].sub_item_table[1].callback() -- reset to global (enabled)
 
     -- Reset FILE back to global settings
-    bstyle[17].callback()
-    T.check(bstyle[4].mandatory_func() == "Global"
-            and bstyle[7].mandatory_func() == "Global"
-            and bstyle[16].mandatory_func() == "Global"
-            and bstyle[17].enabled_func() == false,
+    bstyle[7].callback()
+    T.check(bstyle[3].mandatory_func() == "Global"
+            and bstyle[4].mandatory_func() == "Global"
+            and bstyle[6].mandatory_func() == "Global"
+            and bstyle[7].enabled_func() == false,
         "28: Reset to global style settings clears all overrides for FILE")
 
     do
+        -- Markdown style row in Global Export is disabled with mandatory reason whenever Export format is 'txt', enabled for 'md' and 'both'
+        local g_files = plugin:genSettingsMenu()[1].sub_item_table_func()
+        T.check(#g_files == 10
+                and g_files[2].text_func():find("Markdown style", 1, true)
+                and g_files[2].enabled_func() == true
+                and g_files[2].mandatory_func() == nil,
+            "28: Global Export menu enables Markdown style when export_format is md")
+        g_files[1].sub_item_table[2].callback() -- txt
+        T.check(#g_files == 10
+                and g_files[2].enabled_func() == false
+                and g_files[2].mandatory_func() == "Not used with .txt",
+            "28: Global Export menu disables Markdown style with reason when export_format switches to txt")
+        g_files[1].sub_item_table[3].callback() -- both
+        T.check(#g_files == 10
+                and g_files[2].enabled_func() == true
+                and g_files[2].mandatory_func() == nil,
+            "28: Global Export menu re-enables Markdown style when export_format switches to both")
+        g_files[1].sub_item_table[1].callback() -- back to md
+
+        -- Per-book: export_format = txt hides markdown_style; 'both' shows it again
+        bstyle[1].sub_item_table[3].callback() -- txt
+        T.check(#bstyle == 6 and bstyle[2].key ~= "markdown_style",
+            "28: Per-book Format & layout hides markdown_style when export_format is txt")
+        bstyle[1].sub_item_table[4].callback() -- both
+        T.check(#bstyle == 7 and bstyle[2].key == "markdown_style",
+            "28: Per-book Format & layout shows markdown_style when export_format is both")
+        bstyle[7].callback() -- reset FILE overrides
+    end
+
+    do
         -- Test Custom Frontmatter fields: progressive disclosure, global -> per-book checkboxes, and book-only custom fields
-        local global_fm_rows = plugin:genSettingsMenu()[3].sub_item_table[8].sub_item_table
+        local global_fm_rows = plugin:genSettingsMenu()[1].sub_item_table[5].sub_item_table
         T.check(#global_fm_rows == 12 and global_fm_rows[11].key == "custom"
                 and global_fm_rows[11].checked_func() == false,
             "28: Custom fields starts unchecked with 12 rows")
@@ -5315,8 +5383,8 @@ do
                 and global_fm_rows[13].key == "project",
             "28: saving global custom fields adds individual checkboxes in Global menu")
 
-        -- Open Current book -> Style & format -> Frontmatter fields: global custom keys appear as checkboxes
-        local book_fm_rows = plugin:genBookStyleMenu(FILE)[16].sub_item_table
+        -- Open Current book -> Format & layout -> Frontmatter fields: global custom keys appear as checkboxes
+        local book_fm_rows = plugin:genBookStyleMenu(FILE)[6].sub_item_table
         T.check(book_fm_rows[11].key == "genre" and book_fm_rows[11].checked_func() == true
                 and book_fm_rows[12].key == "project" and book_fm_rows[12].checked_func() == true,
             "28: global custom keys appear as checkboxes in Current book -> Frontmatter fields")
@@ -5339,7 +5407,7 @@ do
         T.check(book_fm_rows[14].key == "doi" and book_fm_rows[14].checked_func() == true,
             "28: book-specific custom key appears as checkbox in Current book")
         -- Verify 'doi' does NOT appear in Global or FILE2
-        local file2_fm_rows = plugin:genBookStyleMenu(FILE2)[16].sub_item_table
+        local file2_fm_rows = plugin:genBookStyleMenu(FILE2)[6].sub_item_table
         for __, r in ipairs(file2_fm_rows) do
             T.check(r.key ~= "doi", "28: book-only custom key doi does not leak to FILE2")
         end
@@ -5373,7 +5441,8 @@ do
         shared.setFrontmatterOrder(nil, FILE)
     end
 
-    -- Top bar icon toggle (Settings -> Style -> Show Tomedown icon in the top bar)
+    -- Top bar icon toggle (Settings -> App & updates -> Top bar icon)
+    do
     T.check(shared.getTopbarIcon() == false,
         "28: topbar_icon is off by default")
     local mock_reader_order = {
@@ -5397,9 +5466,9 @@ do
     ui.menu.tab_item_table = mock_tabs
 
     local s_menu = plugin:genSettingsMenu()
-    local topbar_row = s_menu[3].sub_item_table[20]
-    T.check(topbar_row and topbar_row.text == "Show Tomedown icon in the top bar",
-        "28: Show Tomedown icon in the top bar is row 20 of Style")
+    local topbar_row = s_menu[7].sub_item_table[1]
+    T.check(topbar_row and topbar_row.text == "Top bar icon",
+        "28: Top bar icon is row 1 of App & updates")
     T.check(topbar_row.checked_func() == false,
         "28: topbar row unchecked by default")
 
@@ -5456,6 +5525,7 @@ do
     package.loaded["ui/elements/reader_menu_order"] = nil
     package.loaded["ui/elements/filemanager_menu_order"] = nil
     ui.menu.tab_item_table = nil
+    end
 
     -- Pillars 7 & 8: C3 backup labels, global backup cleanup (including Index .bak),
     -- and Export / Restore settings to file
@@ -5509,7 +5579,745 @@ do
                 and shared.getCompletedBooks() == true,
             "29: restoreSettingsFromFile restores all saved settings")
         os.remove(backup_file)
+
+        -- 30: Index menu options enabled_func respects with_index toggle
+        shared.setSetting("with_index", true)
+        for i = 2, #plugin:genSettingsMenu()[2].sub_item_table do
+            T.check(plugin:genSettingsMenu()[2].sub_item_table[i].enabled_func() == true,
+                "30: Index item " .. i .. " is enabled when with_index is true")
+        end
+        shared.setMarkdownStyle("standard")
+        T.check(plugin:genSettingsMenu()[2].sub_item_table[3].enabled_func() == false
+                and plugin:genSettingsMenu()[2].sub_item_table[4].enabled_func() == false,
+            "30: Index layout and Index links rows are disabled in Standard Markdown mode")
+        T.check(plugin:genSettingsMenu()[2].sub_item_table[10].enabled_func() == true,
+            "30: Index style row is enabled in Standard Markdown mode too")
+        local tags_row = plugin:genSettingsMenu()[2].sub_item_table[6]
+        local std_tags_sub = tags_row.sub_item_table_func()
+        T.check(#std_tags_sub == 2,
+            "30: Index tags display hides Collapsible in Standard Markdown mode")
+        shared.setIndexTagsMode("collapsible")
+        T.check(T.contains(tags_row.text_func(), "First 3 (+N)")
+                and std_tags_sub[2].checked_func() == true,
+            "30: Collapsible setting reflects as First 3 (+N) in Standard Markdown mode")
+        shared.setMarkdownStyle("obsidian")
+        local obs_tags_sub = tags_row.sub_item_table_func()
+        T.check(#obs_tags_sub == 3 and obs_tags_sub[3].checked_func() == true,
+            "30: Index tags display shows Collapsible in Obsidian mode")
+        shared.setIndexTagsMode("all")
+        shared.setSetting("with_index", false)
+        for i = 2, #plugin:genSettingsMenu()[2].sub_item_table do
+            T.check(plugin:genSettingsMenu()[2].sub_item_table[i].enabled_func() == false,
+                "30: Index item " .. i .. " is disabled when with_index is false")
+        end
+        shared.setSetting("with_index", true)
+
+        -- 31: Special highlights and Book page -> Section styles submenu
+        do
+        shared.setMarkdownStyle("standard")
+        local g_style = plugin:genSettingsMenu()[3].sub_item_table_func()
+        local sp_sub = g_style[1].sub_item_table
+        T.check(sp_sub[1].enabled_func() == false
+                and sp_sub[2].enabled_func() == false
+                and sp_sub[3].enabled_func() == false
+                and sp_sub[4].enabled_func() == false,
+            "31: Callout, Alert, ==text== and ==**text**== are disabled in Standard Markdown mode")
+        local card_group = g_style[10].sub_item_table
+        T.check(g_style[10].text == "Book page"
+                and #card_group == 9
+                and card_group[9].text == "Section styles",
+            "31: Book page has 9 fixed rows with Section styles submenu at the bottom")
+        local sec_style = card_group[9].sub_item_table_func()
+        T.check(#sec_style == 2
+                and sec_style[1].text == "Harmonize book styles"
+                and sec_style[1].checked_func() == true
+                and T.contains(sec_style[2].text_func(), "Book style:"),
+            "31: When Harmonize book styles is on, Section styles submenu has ONLY Harmonize + Book style (2 rows)")
+        -- Toggle off Harmonize book styles -> Book style is replaced by the 4 section style rows (5 rows)
+        sec_style[1].callback()
+        T.check(shared.getHarmonizeBookStyle() == false and #sec_style == 5
+                and T.contains(sec_style[2].text_func(), "Dashboard style:")
+                and T.contains(sec_style[3].text_func(), "Synopsis style:")
+                and T.contains(sec_style[4].text_func(), "Tags style:")
+                and T.contains(sec_style[5].text_func(), "Showcase style:"),
+            "31: disabling Harmonize book styles reveals the 4 individual section style rows inside Section styles submenu")
+        T.check(sec_style[2].enabled_func() == false,
+            "31: Dashboard style is disabled when Reading dashboard is off")
+        shared.setReadingDashboard(true)
+        T.check(sec_style[2].enabled_func() == true,
+            "31: Dashboard style is enabled when Reading dashboard is on")
+        local bstyle_std = plugin:genBookStyleMenu(FILE)
+        local bcard_std = bstyle_std[4].sub_item_table_func()
+        T.check(bstyle_std[4].key == "book_card_sections"
+                and bstyle_std[4].text == "Book page"
+                and #bcard_std == 8
+                and bcard_std[2].key == "covers"
+                and bcard_std[3].key == "overview_style"
+                and bcard_std[3].sub_item_table[4].enabled_func() == false,
+            "31: Current book -> Book page has 8 rows when synopsis is off (includes Book cover) and disables Callout ([!summary]) in Standard Markdown mode")
+        -- Enable Book synopsis for FILE -> Synopsis display appears conditionally (9 rows)
+        bcard_std[5].sub_item_table[2].callback() -- book_synopsis = true
+        T.check(#bcard_std == 9 and bcard_std[6].key == "synopsis_mode",
+            "31: Current book -> Book page reveals Synopsis display only when Book synopsis is enabled")
+        bcard_std[5].sub_item_table[1].callback() -- reset book_synopsis to global (false)
+        T.check(#bcard_std == 8 and bcard_std[6].key == "body_tags",
+            "31: Current book -> Book page hides Synopsis display again when Book synopsis is off")
+        local bsec_style = bcard_std[8].sub_item_table_func()
+        T.check(bcard_std[8].key == "book_card_style"
+                and bcard_std[8].text == "Section styles"
+                and #bsec_style == 5
+                and bsec_style[1].key == "harmonize_book_style"
+                and bsec_style[2].key == "dashboard_style"
+                and bsec_style[2].enabled_func() == true,
+            "31: Current book -> Book page -> Section styles submenu places style rows below Harmonize book styles")
+        sec_style[1].callback() -- re-enable Harmonize book styles
+        shared.setReadingDashboard(false)
+        -- Verify Book style in Current book is ALWAYS selectable under Harmonize even when all 4 optional modules are off
+        local bsec_harmonized = bcard_std[8].sub_item_table_func()
+        T.check(#bsec_harmonized == 2
+                and bsec_harmonized[2].key == "book_visual_style"
+                and bsec_harmonized[2].enabled_func == nil,
+            "31: Current book -> Book style under Harmonize is always selectable even when optional header modules are off")
+        T.check(shared.getHarmonizeBookStyle() == true and #sec_style == 2
+                and T.contains(sec_style[2].text_func(), "Book style:"),
+            "31: re-enabling Harmonize book styles leaves only Book style inside Section styles submenu (2 rows)")
+        shared.setMarkdownStyle("obsidian")
+        end
+
+        -- 32: Index style can follow Book style (default) or keep its own independent style
+        do
+            shared.setSetting("with_index", true)
+            shared.setReadingDashboard(true)
+            shared.setHarmonizeBookStyle(true)
+            shared.setBookVisualStyle("emoji")
+            shared.setIndexFollowBook(true)
+            shared.setIndexStyle("minimal")
+            shared.setMarkdownStyle("obsidian")
+            plugin:runExport({ FILE }, { force = true })
+            local h_book_md = T.readFile(MD_PATH) or ""
+            local h_idx_md = T.readFile(INDEX_PATH) or ""
+            T.check(T.contains(h_book_md, "> [!book] 📊 Reading dashboard"),
+                "32: Book style = emoji styles Book Reading dashboard in Obsidian")
+            T.check(T.contains(h_idx_md, "### 📚 Series books (") or T.contains(h_idx_md, "### 📖 My books ("),
+                "32: Index style with Follow book style on tracks Book style (emoji)")
+
+            -- Switch Index style to an independent choice (badges) while Book style stays emoji
+            shared.setIndexStyle("badges")
+            shared.setIndexFollowBook(false)
+            T.check(shared.getEffectiveIndexStyle() == "badges"
+                    and shared.getBookVisualStyle() == "emoji",
+                "32: Follow book style off keeps Index style independent from Book style")
+            plugin:runExport({ FILE }, { force = true })
+            local ind_book = T.readFile(MD_PATH) or ""
+            local ind_idx = T.readFile(INDEX_PATH) or ""
+            T.check(T.contains(ind_book, "> [!book] 📊 Reading dashboard"),
+                "32: Book keeps its own emoji style while Index is independent")
+            T.check(T.contains(ind_idx, "`(") and not T.contains(ind_idx, "### 📖 "),
+                "32: Index renders its own independent badges style")
+
+            shared.setIndexFollowBook(true)
+            T.check(shared.getEffectiveIndexStyle() == "emoji",
+                "32: Follow book style on makes Index track Book style again")
+
+            -- Custom frontmatter values containing commas and Digest visual_style parity
+            shared.setSetting("fm_custom_enabled", true)
+            shared.setSetting("fm_custom_fields", "subtitle: Crime, Mystery, and Horror, related: [[Other Note]], genre: gothic")
+            plugin:runExport({ FILE }, { force = true })
+            local cfm_md = T.readFile(MD_PATH) or ""
+            T.check(T.contains(cfm_md, 'subtitle: "Crime, Mystery, and Horror"')
+                    and T.contains(cfm_md, 'related: "[[Other Note]]"')
+                    and T.contains(cfm_md, 'genre: "gothic"'),
+                "32: parseCustomFields preserves commas inside values and quotes wikilinks end-to-end")
+            shared.setSetting("fm_custom_enabled", nil)
+            shared.setSetting("fm_custom_fields", nil)
+
+            shared.setBookVisualStyle("emoji")
+            shared.setDigestFollowBook(true)
+            shared.setDigestStyle("minimal")
+            plugin:exportDigest(nil)
+            local dig_emoji = T.readFile(DIR .. "/00 - Reading Digest.md") or ""
+            T.check(T.contains(dig_emoji, "📚 **") and T.contains(dig_emoji, "✍️ **"),
+                "32: Digest style with Follow book style on tracks Book style (emoji)")
+
+            shared.setDigestStyle("badges")
+            shared.setDigestFollowBook(false)
+            T.check(shared.getEffectiveDigestStyle() == "badges"
+                    and shared.getBookVisualStyle() == "emoji",
+                "32: Follow book style off keeps Digest style independent from Book style")
+            plugin:exportDigest(nil)
+            local dig_badges = T.readFile(DIR .. "/00 - Reading Digest.md") or ""
+            T.check(T.contains(dig_badges, "BOOK") and T.contains(dig_badges, "HIGHLIGHT")
+                    and not T.contains(dig_badges, "📚 **"),
+                "32: Digest renders its own independent badges style")
+            shared.setDigestFollowBook(true)
+            shared.setDigestStyle("minimal")
+
+            -- restore defaults
+            shared.setMarkdownStyle("obsidian")
+            shared.setBookVisualStyle("minimal")
+            shared.setIndexStyle("minimal")
+            shared.setReadingDashboard(false)
+        end
+
+        -- 33: Strict Current book isolation across graphical & structural/code options
+        do
+            -- Global baseline: covers = true, note_style = inline, fm_hidden hides 'status',
+            -- reading_dashboard = true, book_visual_style = minimal, preserve = false
+            local saved_global_preserve = store.tomedown.preserve
+            store.tomedown.preserve = false
+            store.tomedown.covers = true
+            BookInfo.cover_bb = fakeBB(800, 1200)
+            shared.setNoteStyle("inline")
+            shared.setFrontmatterKeyEnabled("status", false)
+            shared.setReadingDashboard(true)
+            shared.setHarmonizeBookStyle(true)
+            shared.setBookVisualStyle("minimal")
+            shared.setOverviewStyle("inline")
+            shared.setBookPreserve(FILE, false)
+            shared.setBookPreserve(FILE2, false)
+
+            -- Export both books once so covers exist on disk and both hashes are stored
+            plugin:runExport({ FILE, FILE2 }, { force = true })
+            UIManager:runPending()
+            local file2_hash_before = (store.tomedown.exports[FILE2] or {}).hash
+            T.check(file2_hash_before ~= nil, "33: FILE2 has stored export hash before Current book edits on FILE")
+
+            -- Customize FILE ONLY via Current book:
+            -- 1) Re-enable globally-hidden 'status' frontmatter key on FILE (regression check for empty fm_hidden override)
+            shared.setFrontmatterKeyEnabled("status", true, FILE)
+            T.check(shared.isFrontmatterKeyEnabled("status", FILE) == true
+                    and shared.isFrontmatterKeyEnabled("status", FILE2) == false
+                    and shared.isFrontmatterKeyEnabled("status") == false,
+                "33: re-enabling globally-hidden frontmatter key works for FILE without affecting FILE2 or global")
+
+            -- 2) Disable Book cover on FILE while global covers stays true; customize note_style, visual style, overview, preserve, heading, tags
+            local fm_menu = plugin:genBookStyleMenu(FILE)
+            local nh_sub = fm_menu[3].sub_item_table_func()
+            local card_sub = fm_menu[4].sub_item_table_func()
+            nh_sub[6].sub_item_table[3].callback() -- Personal notes format = Callout ([!note]) for FILE
+            card_sub[2].sub_item_table[3].callback() -- Book cover = Disabled for FILE
+            card_sub[3].sub_item_table[5].callback() -- Overview style = Table for FILE
+            local sec_sub = card_sub[8].sub_item_table_func()
+            sec_sub[2].sub_item_table[4].callback() -- Book style = Code badges for FILE
+            shared.setBookPreserve(FILE, true)
+            shared.setBookNotesTitle(FILE, "Solo questo libro")
+            plugin:saveBookTags(FILE, { "isolato" })
+
+            -- Verify FILE2's export hash was NEVER invalidated by FILE's Current book edits
+            T.check((store.tomedown.exports[FILE2] or {}).hash == file2_hash_before,
+                "33: Current book edits on FILE never invalidate FILE2 export hash")
+            -- Verify global settings remain untouched
+            T.check(store.tomedown.covers == true
+                    and shared.getNoteStyle() == "inline"
+                    and shared.getBookVisualStyle() == "minimal"
+                    and shared.getEffectiveIndexStyle() == "minimal"
+                    and shared.getOverviewStyle() == "inline"
+                    and shared.getBookPreserve(FILE2) == false
+                    and shared.getNotesTitle(FILE2) == "My notes...",
+                "33: Current book edits on FILE leave all global settings and FILE2 getters untouched")
+
+            -- Re-export both books and verify isolation in generated Markdown + 00 - Index.md
+            plugin:runExport({ FILE, FILE2 }, { force = true })
+            UIManager:runPending()
+            local iso_md1 = T.readFile(MD_PATH) or ""
+            local iso_base2 = (store.tomedown.exports[FILE2] or {}).base
+            local iso_md2 = T.readFile(DIR .. "/" .. iso_base2 .. ".md") or ""
+            local iso_idx = T.readFile(INDEX_PATH) or ""
+            local file1_cover_rel = "covers/" .. BASE .. ".jpg"
+            local file2_cover_rel = "covers/" .. tostring(iso_base2) .. ".jpg"
+
+            T.check(not T.contains(iso_md1, file1_cover_rel)
+                    and T.contains(iso_md1, "status:")
+                    and T.contains(iso_md1, "> [!note]")
+                    and T.contains(iso_md1, "> [!book] `READING DASHBOARD`")
+                    and T.contains(iso_md1, "| Highlights")
+                    and T.contains(iso_md1, "## Solo questo libro <!-- tomedown:notes -->")
+                    and T.contains(iso_md1, "isolato"),
+                "33: FILE renders all per-book graphical and code overrides (no cover, status re-enabled, [!note], badges, table overview, custom zone, tag)")
+
+            T.check(T.contains(iso_md2, file2_cover_rel)
+                    and not T.contains(iso_md2, "\nstatus:")
+                    and not T.contains(iso_md2, "> [!note]")
+                    and not T.contains(iso_md2, "`READING DASHBOARD`")
+                    and not T.contains(iso_md2, "Solo questo libro")
+                    and not T.contains(iso_md2, "isolato"),
+                "33: FILE2 keeps global cover, omits globally-hidden status, keeps inline notes and minimal style")
+
+            T.check(not T.contains(iso_idx, file1_cover_rel)
+                    and T.contains(iso_idx, file2_cover_rel),
+                "33: 00 - Index.md respects FILE per-book cover disabled while keeping FILE2 cover")
+
+            -- Clean up section 33 state
+            shared.clearBookStyleOverrides(FILE)
+            shared.setFrontmatterKeyEnabled("status", true)
+            shared.setReadingDashboard(false)
+            shared.setBookPreserve(FILE, false)
+            shared.setBookNotesTitle(FILE, nil)
+            shared.clearBookTags(FILE)
+            store.tomedown.covers = nil
+            store.tomedown.preserve = saved_global_preserve
+        end
     end
+end
+
+-- ------- 34. concurrent close export + pending flush race (Kindle bug)
+do
+    local saved_anns1 = BookList.registry[FILE].annotations
+    local saved_cover_bb = BookInfo.cover_bb
+    local orig_upload_file = provider.uploadFile
+    -- Real WebDavApi:uploadFile opens local_path on disk and returns
+    -- "<path>: No such file or directory" when a concurrent job deleted it.
+    provider.uploadFile = function(url, local_path, etag, overwrite)
+        if lfs.attributes(local_path, "mode") ~= "file" then
+            local n = (attempt_count[local_path] or 0) + 1
+            attempt_count[local_path] = n
+            uploads[#uploads + 1] = { url = url, path = local_path, attempt = n, missing = true }
+            return local_path .. ": No such file or directory"
+        end
+        return orig_upload_file(url, local_path, etag, overwrite)
+    end
+
+    -- 34a. Exact Kindle sequence:
+    -- 1) Library exported online with covers=true (covers uploaded & deleted locally)
+    -- 2) Suspend while reading FILE queues MD_PATH, INDEX_PATH, COVER_PATH + backfilled COVER2_PATH
+    -- 3) Closing FILE fires ReaderUI:onCloseDocument() AND creates FileManager's Tomedown:init()
+    do
+        uploadSetup()
+        cleanDir()
+        NetworkMgr.connected = true
+        BookInfo.cover_bb = fakeBB(400, 600)
+        store.tomedown.covers = true
+        store.tomedown.auto_export = true
+        BookList.registry[FILE].annotations = modernAnnotations()
+
+        plugin:runExport({ FILE, FILE2 }, { force = true })
+        UIManager:runPending()
+        local base2 = (store.tomedown.exports[FILE2] or {}).base
+        local cover2_path = DIR .. "/covers/" .. tostring(base2) .. ".jpg"
+        T.check(not T.fileExists(COVER_PATH) and not T.fileExists(cover2_path),
+            "34a: initial online export uploaded and removed both covers")
+
+        -- Reader adds a highlight and suspends Kindle: silent offline export queues 4 files
+        local anns_suspend = modernAnnotations()
+        anns_suspend[#anns_suspend + 1] = {
+            drawer = "underline",
+            text = "Highlight prima della sospensione.",
+            pageno = 42,
+            datetime = "2026-11-25 14:50:00",
+            chapter = "Capitolo III",
+        }
+        BookList.registry[FILE].annotations = anns_suspend
+        resetUpload()
+        ui.document = { file = FILE }
+        plugin:onSuspend()
+        T.check(store.tomedown.pending_uploads[MD_PATH] == true
+                and store.tomedown.pending_uploads[INDEX_PATH] == true
+                and store.tomedown.pending_uploads[COVER_PATH] == true
+                and store.tomedown.pending_uploads[cover2_path] == true,
+            "34a: suspend queued book md, index, and both covers")
+
+        -- Reader adds one more highlight and closes the book:
+        -- ReaderUI schedules close export (1s) AND FileManager creates a fresh Tomedown instance
+        local anns_close = modernAnnotations()
+        anns_close[#anns_close + 1] = {
+            drawer = "underline",
+            text = "Highlight prima della sospensione.",
+            pageno = 42,
+            datetime = "2026-11-25 14:50:00",
+            chapter = "Capitolo III",
+        }
+        anns_close[#anns_close + 1] = {
+            drawer = "underline",
+            text = "Highlight prima della chiusura.",
+            pageno = 45,
+            datetime = "2026-11-25 15:14:00",
+            chapter = "Capitolo III",
+        }
+        BookList.registry[FILE].annotations = anns_close
+        resetUpload()
+        plugin:onCloseDocument()
+        ui.document = nil
+
+        local fm_ui = {
+            cloudstorage = cloud,
+            menu = { registerToMainMenu = function() end },
+            bookinfo = {},
+            addFileDialogButtons = function() end,
+        }
+        local fm_plugin = Tomedown:new { ui = fm_ui }
+        T.check(fm_plugin ~= plugin, "34a: FileManager uses a distinct plugin instance")
+
+        UIManager:runPending()
+
+        local log_all = table.concat(logger.history, "\n")
+        local had_error_modal = false
+        for __, w in ipairs(UIManager.shown) do
+            if w.__widget == "InfoMessage" and T.contains(w.text or "", "errors") then
+                had_error_modal = true
+            end
+        end
+        T.check(not had_error_modal,
+            "34a: closing book with pending cover uploads shows no error modal")
+        T.check(not T.contains(log_all, "No such file or directory")
+                and not T.contains(log_all, "upload failed"),
+            "34a: no missing-cover upload failure in crash.log: " .. log_all)
+        T.check(next(store.tomedown.pending_uploads or {}) == nil,
+            "34a: all pending uploads (including other books' covers) flushed cleanly")
+        T.check(not T.fileExists(COVER_PATH) and not T.fileExists(cover2_path),
+            "34a: both transient covers cleaned up after upload")
+        T.check(#uploads == 4
+                and attempt_count[MD_PATH] == 1
+                and attempt_count[INDEX_PATH] == 1
+                and attempt_count[COVER_PATH] == 1
+                and attempt_count[cover2_path] == 1,
+            "34a: zero duplicate cloud uploads — each of the 4 files uploaded once: " .. #uploads)
+    end
+
+    -- 34d. Closing an unchanged book (exported == 0) still flushes deferred pending uploads
+    do
+        uploadSetup()
+        cleanDir()
+        NetworkMgr.connected = true
+        BookInfo.cover_bb = fakeBB(400, 600)
+        store.tomedown.covers = true
+        store.tomedown.auto_export = true
+        BookList.registry[FILE].annotations = modernAnnotations()
+
+        -- Offline suspend queues MD_PATH, INDEX_PATH, COVER_PATH
+        ui.document = { file = FILE }
+        plugin:onSuspend()
+        T.check(store.tomedown.pending_uploads[COVER_PATH] == true,
+            "34d: suspend queued COVER_PATH")
+
+        -- Book closed with zero changes while FileManager initializes
+        resetUpload()
+        plugin:onCloseDocument()
+        ui.document = nil
+        local fm_ui = {
+            cloudstorage = cloud,
+            menu = { registerToMainMenu = function() end },
+            bookinfo = {},
+            addFileDialogButtons = function() end,
+        }
+        Tomedown:new { ui = fm_ui }
+        UIManager:runPending()
+
+        T.check(#uploads == 3
+                and next(store.tomedown.pending_uploads or {}) == nil
+                and not T.fileExists(COVER_PATH),
+            "34d: deferred flush runs after unchanged close export finishes: " .. #uploads)
+    end
+
+    -- 34b. Flush already mid-flight when a new export starts uploading overlapping cover
+    do
+        uploadSetup()
+        cleanDir()
+        NetworkMgr.connected = true
+        BookInfo.cover_bb = fakeBB(400, 600)
+        store.tomedown.covers = true
+        BookList.registry[FILE].annotations = modernAnnotations()
+
+        -- Offline export creates MD_PATH, INDEX_PATH, COVER_PATH in pending_uploads
+        NetworkMgr.connected = false
+        plugin:runExport({ FILE }, { force = true })
+        T.check(T.fileExists(COVER_PATH) and store.tomedown.pending_uploads[COVER_PATH] == true,
+            "34b: offline export queued COVER_PATH")
+
+        -- Flush starts online and pauses on transient retries on INDEX_PATH
+        NetworkMgr.connected = true
+        resetUpload()
+        upload_script[INDEX_PATH] = { 500, 500, 200 }
+        plugin:flushPendingUploads()
+        T.check(UIManager:pendingCount() > 0, "34b: flush is mid-flight awaiting retry")
+
+        -- While flush is mid-flight, a new export runs and wants to upload MD_PATH + COVER_PATH + INDEX_PATH
+        plugin:runExport({ FILE }, { force = true })
+        UIManager:runPending()
+
+        local log_b = table.concat(logger.history, "\n")
+        local had_err_b = false
+        for __, w in ipairs(UIManager.shown) do
+            if w.__widget == "InfoMessage" and T.contains(w.text or "", "errors") then
+                had_err_b = true
+            end
+        end
+        T.check(not had_err_b and not T.contains(log_b, "No such file or directory"),
+            "34b: overlapping export during active flush serializes without missing-cover error")
+        T.check(next(store.tomedown.pending_uploads or {}) == nil,
+            "34b: pending_uploads empty after serialized batches complete")
+        T.check(not T.fileExists(COVER_PATH),
+            "34b: cover removed after final queued upload completes")
+    end
+
+    -- 34c. Missing local file is never retried with exponential backoff
+    do
+        uploadSetup()
+        cleanDir()
+        NetworkMgr.connected = true
+        local ghost = DIR .. "/covers/ghost.jpg"
+        plugin:uploadPaths(SERVER, { ghost }, function() end)
+        UIManager:runPending()
+        T.check((attempt_count[ghost] or 0) == 0 and #positives() == 0,
+            "34c: missing local file fails fast without network retries or backoff")
+    end
+
+    provider.uploadFile = orig_upload_file
+    BookInfo.cover_bb = saved_cover_bb
+    BookList.registry[FILE].annotations = saved_anns1
+    store.tomedown.covers = nil
+    store.tomedown.auto_export = nil
+    -- Re-bind active_instance to primary test `plugin`
+    plugin:init()
+    UIManager:reset()
+end
+
+-- ------- 35. 3-profile Markdown style: Obsidian, Standard (HTML), CommonMark (pure)
+do
+    local shared = require("tomedown_shared")
+
+    -- 35a. Shared getters/setters, isObsidianStyle, per-book override, and settings backup round-trip
+    T.check(shared.getMarkdownStyle() == "obsidian" and shared.isObsidianStyle() == true,
+        "35a: default Markdown style is obsidian")
+    shared.setMarkdownStyle("commonmark")
+    T.check(shared.getMarkdownStyle() == "commonmark" and shared.isObsidianStyle() == false,
+        "35a: setMarkdownStyle('commonmark') persists commonmark and marks non-Obsidian")
+    shared.setBookStyleOverride(FILE, "markdown_style", "standard")
+    T.check(shared.getMarkdownStyle(FILE) == "standard"
+            and shared.getMarkdownStyle(FILE2) == "commonmark"
+            and shared.isObsidianStyle(FILE) == false,
+        "35a: per-book markdown_style override isolates FILE from global commonmark")
+
+    local cm_backup = DIR .. "/cm_settings_backup.lua"
+    T.check(shared.exportSettingsToFile(cm_backup) == true, "35a: backup written")
+    shared.setMarkdownStyle("obsidian")
+    shared.clearBookStyleOverrides(FILE)
+    T.check(shared.restoreSettingsFromFile(cm_backup) == true, "35a: backup restored")
+    T.check(shared.getMarkdownStyle() == "commonmark"
+            and shared.getMarkdownStyle(FILE) == "standard",
+        "35a: settings backup/restore preserves global commonmark and per-book standard")
+    os.remove(cm_backup)
+    shared.clearBookStyleOverrides(FILE)
+
+    -- 35b. Global & Per-Book menus expose 3 profiles and adapt Synopsis display in CommonMark
+    local g_export = plugin:genSettingsMenu()[1].sub_item_table_func()
+    local md_style_row = g_export[2]
+    T.check(#md_style_row.sub_item_table == 3
+            and T.contains(md_style_row.text_func(), "CommonMark")
+            and md_style_row.sub_item_table[3].checked_func() == true,
+        "35b: Global Markdown style row offers 3 profiles and checks CommonMark")
+
+    shared.setBookSynopsis(true)
+    shared.setSynopsisMode("collapsed")
+    local g_style = plugin:genSettingsMenu()[3].sub_item_table_func()
+    local g_card = g_style[10].sub_item_table
+    local g_syn_disp = g_card[6]
+    T.check(T.contains(g_syn_disp.text_func(), "Expanded")
+            and g_syn_disp.sub_item_table[1].enabled_func() == false
+            and g_syn_disp.sub_item_table[3].enabled_func() == false
+            and g_syn_disp.sub_item_table[4].checked_func() == true,
+        "35b: In CommonMark mode, Global Synopsis display disables Collapsed options and reflects Expanded")
+
+    local bstyle = plugin:genBookStyleMenu(FILE)
+    T.check(#bstyle[2].sub_item_table == 4,
+        "35b: Per-book Markdown style offers Follow global + 3 profiles (4 items)")
+    local bcard = bstyle[4].sub_item_table_func()
+    T.check(bcard[6].key == "synopsis_mode"
+            and T.contains(bcard[6].text_func(), "Expanded")
+            and bcard[6].sub_item_table[2].enabled_func() == false
+            and bcard[6].sub_item_table[4].enabled_func() == false,
+        "35b: Per-book Synopsis display disables Collapsed options when effective profile is CommonMark")
+
+    -- 35c. End-to-end export in CommonMark produces zero HTML tags + compact 260x390 cover,
+    -- and switching back to Standard/Obsidian automatically re-extracts 800x1200 cover
+    store.tomedown.upload = false
+    store.tomedown.covers = true
+    BookInfo.cover_bb = fakeBB(800, 1200)
+    BookList.registry[FILE].doc_props.description = "<p>Una sinossi gotica misteriosa.</p>"
+    plugin:runExport({ FILE }, { force = true })
+    UIManager:runPending()
+    local out_book = T.readFile(MD_PATH) or ""
+    local out_idx = T.readFile(INDEX_PATH) or ""
+    local cm_jpg = T.readFile(COVER_PATH) or ""
+    T.check(not out_book:find("<details>")
+            and not out_book:find("<img ")
+            and T.contains(out_book, "### § Book synopsis")
+            and T.contains(out_book, "![The Three Impostors](covers/"),
+        "35c: CommonMark end-to-end book export has pure Markdown cover and synopsis without HTML")
+    T.check(cm_jpg == "JPG:260x390:jpg:75",
+        "35c: CommonMark extracts compact 260x390 @ q75 cover: " .. tostring(cm_jpg))
+    T.check(not out_idx:find("<img ")
+            and not out_idx:find("<br>")
+            and not T.contains(out_idx, "&nbsp;"),
+        "35c: CommonMark end-to-end 00 - Index.md has zero HTML tags and zero &nbsp;")
+
+    -- Switch back to Standard (GitHub / HTML) and re-export -> cover automatically upgrades back to 800x1200
+    g_export[2].sub_item_table[2].callback() -- standard
+    plugin:runExport({ FILE }, { only_updated = true })
+    local std_jpg = T.readFile(COVER_PATH) or ""
+    T.check(std_jpg == "JPG:800x1200:jpg:50",
+        "35c: switching from CommonMark to Standard re-extracts full 800x1200 cover automatically: " .. tostring(std_jpg))
+
+    -- Switch back to CommonMark -> cover shrinks back to 260x390 on normal re-export
+    g_export[2].sub_item_table[3].callback() -- commonmark
+    plugin:runExport({ FILE }, { only_updated = true })
+    local cm_jpg_again = T.readFile(COVER_PATH) or ""
+    T.check(cm_jpg_again == "JPG:260x390:jpg:75",
+        "35c: switching back to CommonMark shrinks existing cover back to 260x390 automatically: " .. tostring(cm_jpg_again))
+
+    -- Restore clean state
+    BookList.registry[FILE].doc_props.description = nil
+    store.tomedown.covers = nil
+    store.tomedown.upload = true
+    shared.setBookSynopsis(false)
+    shared.setSynopsisMode("collapsed")
+    shared.setMarkdownStyle("obsidian")
+    UIManager:reset()
+end
+
+-- ------- 36. Nested asset folders (assets/covers, assets/drawings, Logseq/Obsidian)
+do
+    local shared = require("tomedown_shared")
+
+    -- 36a. Sanitization & folderRoot
+    T.check(shared.sanitizeCoversFolder("assets/covers") == "assets/covers",
+        "36a: nested 2-level path preserved")
+    T.check(shared.sanitizeCoversFolder(" \\media\\books\\covers\\ ") == "media/books/covers",
+        "36a: Windows backslashes and outer spaces normalized up to 3 levels")
+    T.check(shared.sanitizeCoversFolder("l1/l2/l3/l4") == "l1/l2/l3",
+        "36a: depth capped at 3 segments")
+    T.check(shared.sanitizeCoversFolder("../assets/./covers/..") == "assets/covers",
+        "36a: dot and dot-dot segments dropped safely")
+    T.check(shared.folderRoot("assets/covers") == "assets"
+            and shared.folderRoot("covers") == "covers",
+        "36a: folderRoot extracts top-level directory segment")
+
+    -- 36b. migrateFolder across all 4 topologies + shared assets/ directory safety
+    local function putFile(p, c)
+        local fh = assert(io.open(p, "wb"))
+        fh:write(c)
+        fh:close()
+    end
+    cleanDir()
+    os.execute('mkdir -p "' .. DIR .. '/covers"')
+    putFile(DIR .. "/covers/c1.jpg", "JPG1")
+    T.check(Cover.migrateFolder(DIR, "covers", "assets/covers") == true
+            and T.fileExists(DIR .. "/assets/covers/c1.jpg")
+            and lfs.attributes(DIR .. "/covers", "mode") == nil,
+        "36b: covers -> assets/covers")
+    T.check(Cover.migrateFolder(DIR, "assets/covers", "assets") == true
+            and T.fileExists(DIR .. "/assets/c1.jpg")
+            and lfs.attributes(DIR .. "/assets/covers", "mode") == nil,
+        "36b: child -> parent (assets/covers -> assets)")
+    -- Put a stylus .svg inside shared assets/ and migrate covers to img/covers -> .svg MUST stay in assets/!
+    putFile(DIR .. "/assets/sketch.svg", "<svg/>")
+    T.check(Cover.migrateFolder(DIR, "assets", "img/covers") == true
+            and T.fileExists(DIR .. "/img/covers/c1.jpg")
+            and T.fileExists(DIR .. "/assets/sketch.svg"),
+        "36b: migrating covers out of shared assets/ preserves non-cover .svg drawings")
+    os.remove(DIR .. "/assets/sketch.svg")
+    os.execute('rmdir "' .. DIR .. '/assets"')
+    T.check(Cover.migrateFolder(DIR, "img/covers", "assets") == true
+            and lfs.attributes(DIR .. "/img", "mode") == nil,
+        "36b: img/covers -> assets prunes empty img/")
+    T.check(Cover.migrateFolder(DIR, "assets", "assets/covers") == true
+            and T.fileExists(DIR .. "/assets/covers/c1.jpg")
+            and not T.fileExists(DIR .. "/assets/c1.jpg"),
+        "36b: parent -> child (assets -> assets/covers) succeeds and returns true")
+    T.check(Cover.migrateFolder(DIR, "assets/covers", "covers") == true
+            and T.fileExists(DIR .. "/covers/c1.jpg")
+            and lfs.attributes(DIR .. "/assets", "mode") == nil,
+        "36b: nested -> flat (assets/covers -> covers) prunes empty assets/")
+
+    -- Empty child -> parent (assets/covers -> assets) must NOT delete destination assets/
+    os.execute('mkdir -p "' .. DIR .. '/assets/covers"')
+    T.check(Cover.migrateFolder(DIR, "assets/covers", "assets") == true
+            and lfs.attributes(DIR .. "/assets", "mode") == "directory"
+            and lfs.attributes(DIR .. "/assets/covers", "mode") == nil,
+        "36b: empty child -> parent keeps target parent directory intact")
+
+    -- 36c. Step-by-step WebDAV MKCOL, author subfolder ../assets/covers, Index, reuploadAll, and pending remap
+    uploadSetup()
+    cleanDir()
+    NetworkMgr.connected = true
+    BookInfo.cover_bb = fakeBB(400, 600)
+    store.tomedown.covers = true
+    shared.setCoversFolder("assets/covers")
+    shared.setDrawingsFolder("assets/drawings")
+    shared.setFolderLayout("author")
+
+    plugin:runExport({ FILE }, { force = true })
+    UIManager:runPending()
+
+    -- Verify step-by-step MKCOL created "assets" at root and "covers" inside "/Bookshelf/Kindle/assets"
+    local saw_assets_mkcol, saw_covers_mkcol = false, false
+    for __, cf in ipairs(created_folders) do
+        if cf.url == "/Bookshelf/Kindle" and cf.name == "assets" then
+            saw_assets_mkcol = true
+        elseif cf.url == "/Bookshelf/Kindle/assets" and cf.name == "covers" then
+            saw_covers_mkcol = true
+        end
+    end
+    T.check(saw_assets_mkcol and saw_covers_mkcol,
+        "36c: WebDAV MKCOL builds nested folder step-by-step (assets, then assets/covers)")
+
+    -- Verify ../assets/covers in author-subfolder book .md and root-relative assets/covers in 00 - Index.md
+    local author_md_path = DIR .. "/Arthur Machen/" .. BASE .. ".md"
+    local author_md = T.readFile(author_md_path) or ""
+    local root_idx = T.readFile(INDEX_PATH) or ""
+    T.check(T.contains(author_md, 'cover: "../assets/covers/' .. BASE .. '.jpg"')
+            and T.contains(author_md, 'src="../assets/covers/' .. BASE .. '.jpg"'),
+        "36c: book inside author subfolder links cover via ../assets/covers/")
+    T.check(T.contains(root_idx, 'src="assets/covers/' .. BASE .. '.jpg"'),
+        "36c: 00 - Index.md links cover via root-relative assets/covers/")
+
+    -- Verify reuploadAll ignores stray .md inside assets/ root while uploading nested cover
+    putFile(DIR .. "/assets/stray_readme.md", "should not be treated as a book note")
+    os.execute('mkdir -p "' .. DIR .. '/assets/covers"')
+    putFile(DIR .. "/assets/covers/" .. BASE .. ".jpg", "JPGDATA")
+    resetUpload()
+    plugin:reuploadAll(nil)
+    UIManager:runPending()
+    local uploaded_stray = false
+    local uploaded_nested_cover = false
+    for __, u in ipairs(uploads) do
+        if T.contains(u.path, "stray_readme.md") then
+            uploaded_stray = true
+        end
+        if u.path == DIR .. "/assets/covers/" .. BASE .. ".jpg"
+                and u.url == "/Bookshelf/Kindle/assets/covers" then
+            uploaded_nested_cover = true
+        end
+    end
+    T.check(not uploaded_stray and uploaded_nested_cover,
+        "36c: reuploadAll skips assets/ root for note scan and uploads nested cover to /assets/covers")
+    os.remove(DIR .. "/assets/stray_readme.md")
+
+    -- Verify offline pending_uploads remap when folder is renamed via InputDialog
+    NetworkMgr.connected = false
+    plugin:runExport({ FILE }, { force = true })
+    local old_pending_cover = DIR .. "/assets/covers/" .. BASE .. ".jpg"
+    T.check(store.tomedown.pending_uploads[old_pending_cover] == true,
+        "36c: offline export queued nested cover in pending_uploads")
+    plugin:editCoversFolder(nil)
+    InputDialog.last.input_text = "covers"
+    InputDialog.last:simulateSave()
+    local new_pending_cover = DIR .. "/covers/" .. BASE .. ".jpg"
+    T.check(store.tomedown.pending_uploads[old_pending_cover] == nil
+            and store.tomedown.pending_uploads[new_pending_cover] == true
+            and T.fileExists(new_pending_cover),
+        "36c: renaming covers folder remaps pending_uploads to the migrated file path")
+
+    -- Clean up section 36 state
+    NetworkMgr.connected = true
+    shared.setCoversFolder("covers")
+    shared.setDrawingsFolder("drawings")
+    shared.setFolderLayout("flat")
+    store.tomedown.covers = nil
+    store.tomedown.pending_uploads = {}
+    cleanDir()
+    plugin:runExport({ FILE }, { force = true })
+    UIManager:runPending()
+    UIManager:reset()
 end
 
 T.finish("test_main")

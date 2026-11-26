@@ -12,3 +12,7 @@ crash.log
 
 # Website build artifact
 site/dist/
+
+# Agent indexes and project memory
+.codegraph/
+.projectmem/

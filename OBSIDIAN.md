@@ -8,28 +8,34 @@ For full technical specifications of the generated Markdown, YAML properties, an
 
 Every exported book note is a self-contained Markdown file ready for Obsidian.
 
-![01 — The book note in Obsidian: full YAML frontmatter, cover art, chapter headings, and quotes](assets/obsidian-guide/01-the-book-file.svg)
-
-<figure class="doc-shot">
-  <div class="doc-shot-frame">
-    <img class="zoom-modules" src="assets/obsidian/book_modules_v210.webp" alt="Book note header modules in Obsidian: Reading dashboard, collapsible synopsis, tags, Overview callout, and Special highlights" />
+<figure class="doc-specimen">
+  <div class="doc-specimen-mat">
+    <div class="doc-specimen-head">
+      <span class="doc-specimen-label">Obsidian · Book note header modules</span>
+    </div>
+    <div class="doc-specimen-viewport">
+      <img src="assets/obsidian/book-header-modules.webp" alt="Book note header modules in Obsidian: Reading dashboard, collapsible synopsis, tags, Overview callout, and Special highlights" loading="lazy" decoding="async" />
+    </div>
   </div>
   <figcaption>Book layout in Obsidian: Reading dashboard, collapsible Book synopsis, clickable tags, Overview callout, and Special highlights showcase.</figcaption>
 </figure>
 
 - **Reading View vs. Live Preview**: in Reading View, YAML frontmatter renders cleanly as Obsidian Properties, and internal Tomedown hashes stay out of sight.
-- **Embedded Covers**: when *Include book covers* is enabled, covers are stored in your vault folder (default `covers/`) and render natively in Obsidian (requires Obsidian 1.8.1 or newer).
+- **Embedded Covers**: when *Settings → Notes & highlights → Book page → Book cover* is enabled, covers are stored in your vault folder (default `covers/`, configurable in *Settings → Export → File names & folders*) and render natively in Obsidian (requires Obsidian 1.8.1 or newer).
 - **Wikilinks**: internal references connect book titles directly across your notes.
 
 ## Personal notes with *Keep my notes*
 
-Enable **Tomedown → Settings → My notes → Keep my notes: all books** (or per book in the book menu) to turn exported files into shared workspaces.
+Enable **Tomedown → Settings → My notes → Keep my notes for all books** (or per book in **Tomedown → Current book → Keep my notes in this book**) to turn exported files into shared workspaces.
 
-![02 — Keep my notes: your thoughts above the marker survive every export, updates merge below it](assets/obsidian-guide/02-preserve-on.svg)
-
-<figure class="doc-shot">
-  <div class="doc-shot-frame">
-    <img class="zoom-keep-notes" src="assets/keep-my-notes-obsidian.webp" alt="Keep my notes in Obsidian: your reflections written above the marker survive every export" />
+<figure class="doc-specimen">
+  <div class="doc-specimen-mat">
+    <div class="doc-specimen-head">
+      <span class="doc-specimen-label">Obsidian · Keep my notes workspace</span>
+    </div>
+    <div class="doc-specimen-viewport">
+      <img src="assets/obsidian/keep-my-notes-obsidian.webp" alt="Keep my notes in Obsidian: personal thoughts written above the marker survive every export" loading="lazy" decoding="async" />
+    </div>
   </div>
   <figcaption>Personal notes written in <code>## My notes...</code> survive every export — the boundary marker protects your writing.</figcaption>
 </figure>
@@ -42,51 +48,57 @@ Enable **Tomedown → Settings → My notes → Keep my notes: all books** (or p
 
 `00 - Index.md` acts as your personal bookshelf dashboard in Obsidian.
 
-![03 — The index: one 00 - Index.md with the stats line, two tables of wiki links, its own write zone, and the toggle that generates it](assets/obsidian-guide/03-the-index.svg)
-
-- **Interactive table**: click any book title or cover to navigate straight to that book note.
-- **Visual reading progress**: 5-cell Unicode indicators (`▰▰▰▰▰`) display exact completion percentages without breaking columns.
-- **Stacked tag pills**: subject tags stack vertically as clean pills, preventing table widening.
-- **Customizable views**: choose between *Tags under the title*, *Tags column*, or *Tags column, compact* in *Settings → Index*.
-
-<figure class="doc-shot">
-  <div class="doc-shot-frame">
-    <img class="zoom-index" src="assets/obsidian/index_v210_trophy_dashboard.webp" alt="00 - Index.md in Obsidian showing Library dashboard, Tag cloud, and Completed books trophy room" />
+<figure class="doc-specimen is-fade-bottom">
+  <div class="doc-specimen-mat">
+    <div class="doc-specimen-head">
+      <span class="doc-specimen-label">Obsidian · 00 - Index.md</span>
+    </div>
+    <div class="doc-specimen-viewport">
+      <img src="assets/obsidian/index-dashboard-trophy.webp" alt="00 - Index.md in Obsidian showing Library dashboard, Tag cloud, and Completed books trophy room" loading="lazy" decoding="async" />
+    </div>
   </div>
   <figcaption><code>00 - Index.md</code> in Obsidian: Library dashboard, Tag cloud, and Completed books trophy room.</figcaption>
 </figure>
 
-## Reading Digest (00 - Reading Digest.md)
+- **Interactive table**: click any book title or cover to navigate straight to that book note.
+- **Visual reading progress**: 5-cell Unicode indicators (`▰▰▰▰▰`) display exact completion percentages without breaking columns.
+- **Stacked tag pills**: subject tags stack vertically as clean pills, preventing table widening.
+- **Customizable views**: choose between *Tags under the title*, *Tags column*, or *Tags column, compact* in **Settings → Index & library → Index layout**.
+
+## Reading Digest (`00 - Reading Digest.md`)
 
 A consolidated chronological reading journal grouping all highlights across your whole library by day:
 
-<figure class="doc-shot">
-  <div class="doc-shot-frame">
-    <img class="zoom-digest" src="assets/obsidian/reading_digest_v210.webp" alt="00 - Reading Digest.md in Obsidian showing literary date headings, horizontal book dividers, and clean quote times" />
+<figure class="doc-specimen">
+  <div class="doc-specimen-mat">
+    <div class="doc-specimen-head">
+      <span class="doc-specimen-label">Obsidian · 00 - Reading Digest.md</span>
+    </div>
+    <div class="doc-specimen-viewport">
+      <img src="assets/obsidian/reading-digest-timeline.webp" alt="00 - Reading Digest.md in Obsidian showing literary date headings, horizontal book dividers, and clean quote times" loading="lazy" decoding="async" />
+    </div>
   </div>
   <figcaption><code>00 - Reading Digest.md</code> in Obsidian: literary day headings, thin book dividers, and clean quote times.</figcaption>
 </figure>
 
 ## Handwritten notes & Stylus drawings
 
-For stylus devices, handwritten notes are rendered as pure SVG vector strokes or PNGs in `drawings/` and embedded seamlessly inside your book notes:
-
-<figure class="doc-shot">
-  <div class="doc-shot-frame">
-    <img src="assets/obsidian/handwritten_drawing_embed.webp" alt="Handwritten SVG stylus drawing embedded inside an Obsidian book note with block ID and literary timestamp" />
-  </div>
-  <figcaption>Pure-Lua vector SVG drawing extracted from KOReader and embedded natively in Obsidian.</figcaption>
-</figure>
+For stylus devices, handwritten notes are rendered as pure SVG vector strokes or PNGs in `drawings/` and embedded seamlessly inside your book notes when **Settings → Notes & highlights → Handwritten notes** is enabled.
 
 ## Link to a single highlight
 
-Enable **Settings → Style → Add link IDs to highlights** to attach stable block IDs (`^hl-xxxxxxxx`) to every quote:
+Enable **Settings → Notes & highlights → Link IDs on highlights** to attach stable block IDs (`^hl-xxxxxxxx`) to every quote:
 
-<figure class="doc-shot">
-  <div class="doc-shot-frame">
-    <img class="zoom-link-ids" src="assets/link-ids-obsidian.webp" alt="Single highlight IDs in Obsidian: ^hl-xxxxxxxx at the end of each quote" />
+<figure class="doc-specimen">
+  <div class="doc-specimen-mat">
+    <div class="doc-specimen-head">
+      <span class="doc-specimen-label">Obsidian · Granular block ID (^hl-)</span>
+    </div>
+    <div class="doc-specimen-viewport doc-specimen-zoom-hl">
+      <img src="assets/obsidian/hightlights_context.webp" alt="Single highlight block IDs in Obsidian: ^hl-30d0c4b7 at the end of the quote" loading="lazy" decoding="async" />
+    </div>
   </div>
-  <figcaption>Each quote gets a stable <code>^hl-xxxxxxxx</code> block ID in Obsidian.</figcaption>
+  <figcaption>Each quote gets a stable <code>^hl-xxxxxxxx</code> block ID for direct deep linking and transclusion in Obsidian.</figcaption>
 </figure>
 
 Because block IDs are tied to quote hashes, they persist across future re-exports:

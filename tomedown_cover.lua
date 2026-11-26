@@ -17,6 +17,7 @@ local CanvasContext = require("document/canvascontext")
 local Device = require("device")
 local lfs = require("libs/libkoreader-lfs")
 local logger = require("logger")
+local shared = require("tomedown_shared")
 local util = require("util")
 
 local cover = {}
@@ -24,6 +25,11 @@ local cover = {}
 -- export box: the shorter side wins, the aspect ratio is preserved
 local MAX_W, MAX_H = 800, 1200
 local JPEG_QUALITY = 50
+-- CommonMark has no image dimension syntax (![alt](src) renders at 1:1 natural
+-- pixel width in Zettlr/Logseq/Pandoc), so pure CommonMark exports a compact
+-- book-sized cover at higher JPEG quality to stay crisp without HTML <img>.
+local CM_MAX_W, CM_MAX_H = 260, 390
+local CM_JPEG_QUALITY = 75
 
 --- The relative path a cover occupies inside the vault (POSIX, the
 -- markdown always uses "/" even on Windows KOReader builds).
@@ -51,8 +57,9 @@ end
 -- @string file the book's file path
 -- @string path absolute target .jpg path
 -- @treturn boolean true when the file is there after the call
-function cover.extract(document, file, path)
-    if lfs.attributes(path, "mode") == "file" then
+function cover.extract(document, file, path, opts)
+    opts = opts or {}
+    if not opts.force and lfs.attributes(path, "mode") == "file" then
         return true
     end
     local saved_has_color_screen = Device.hasColorScreen
@@ -76,7 +83,10 @@ function cover.extract(document, file, path)
         pcall(bb.free, bb)
         return false
     end
-    local scale = math.min(MAX_W / w, MAX_H / h, 1)
+    local max_w = opts.compact and CM_MAX_W or (opts.max_w or MAX_W)
+    local max_h = opts.compact and CM_MAX_H or (opts.max_h or MAX_H)
+    local quality = opts.compact and CM_JPEG_QUALITY or (opts.quality or JPEG_QUALITY)
+    local scale = math.min(max_w / w, max_h / h, 1)
     if scale < 1 then
         -- lazy: the real module pulls in ffi/mupdf, the tests only load
         -- their stub when a scaled cover is actually written
@@ -94,7 +104,7 @@ function cover.extract(document, file, path)
     if target_dir then
         util.makePath(target_dir)
     end
-    local ok_w = bb:writeToFile(path, "jpg", JPEG_QUALITY, false)
+    local ok_w = bb:writeToFile(path, "jpg", quality, false)
     pcall(bb.free, bb)
     if not ok_w then
         logger.err("tomedown: cannot write cover", path)
@@ -123,41 +133,18 @@ end
 -- Reuses existing extracted covers so they don't have to be re-extracted,
 -- and leaves no orphaned folder behind on the device.
 function cover.migrateFolder(dir, old_folder, new_folder)
-    if not dir or not old_folder or not new_folder or old_folder == new_folder then
-        return false
+    local ok = shared.migrateAssetFolder(dir, old_folder, new_folder,
+        function(entry)
+            return entry:lower():sub(-4) == ".jpg"
+        end,
+        function(src, dst)
+            local ffiUtil = require("ffi/util")
+            return ffiUtil.copyFile(src, dst)
+        end)
+    if ok then
+        logger.info("tomedown: migrated covers folder from", old_folder, "to", new_folder)
     end
-    local old_path = dir .. "/" .. old_folder
-    local new_path = dir .. "/" .. new_folder
-    if lfs.attributes(old_path, "mode") ~= "directory" then
-        return false
-    end
-    if lfs.attributes(new_path, "mode") ~= "directory" then
-        local ok = os.rename(old_path, new_path)
-        if ok then
-            logger.info("tomedown: renamed covers folder from", old_folder, "to", new_folder)
-            return true
-        end
-    end
-    util.makePath(new_path)
-    local ok_iter, iter, obj = pcall(lfs.dir, old_path)
-    if ok_iter and iter then
-        for entry in iter, obj do
-            if entry ~= "." and entry ~= ".." then
-                local src = old_path .. "/" .. entry
-                local dst = new_path .. "/" .. entry
-                if lfs.attributes(src, "mode") == "file" then
-                    if not os.rename(src, dst) then
-                        local ffiUtil = require("ffi/util")
-                        if ffiUtil.copyFile(src, dst) then
-                            os.remove(src)
-                        end
-                    end
-                end
-            end
-        end
-    end
-    pcall(lfs.rmdir, old_path)
-    return lfs.attributes(old_path, "mode") ~= "directory"
+    return ok
 end
 
 return cover

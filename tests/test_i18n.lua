@@ -30,7 +30,7 @@ T.check(i18n("No chapter") == "Senza capitolo", "it: No chapter")
 T.check(i18n("Export in progress…") == "Esportazione in corso…", "it: progress message")
 T.check(i18n("%1 files exported locally") == "%1 file esportati localmente",
     "it: notification with placeholder")
-T.check(i18n("Check for updates (v%1)") == "Controlla aggiornamenti (v%1)",
+T.check(i18n("Check for updates (v%1)") == "Cerca aggiornamenti (v%1)",
     "it: check for updates row")
 T.check(i18n("Update available!") == "Aggiornamento disponibile!", "it: update dialog title")
 T.check(i18n("stringa non presente") == "stringa non presente", "it: falls back to msgid")
@@ -45,8 +45,9 @@ T.check(i18n("Tags made only of numbers are ignored: %1")
         == "I tag composti solo da numeri vengono ignorati: %1",
     "it: numeric-only tags notice")
 T.check(i18n("Reading now") == "In lettura ora", "it: Reading now heading")
-T.check(i18n("Book visibility: not exported")
-        == "Visibilità del libro: non esportato",
+T.check(i18n("Book visibility: %1")
+        == "Visibilità del libro: %1"
+        and i18n("Not exported") == "Non esportato",
     "it: visibility state")
 T.check(i18n("%1 files excluded from the export")
         == "%1 file esclusi dall'esportazione",

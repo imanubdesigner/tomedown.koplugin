@@ -176,27 +176,27 @@ T.check(#settings == 7, "settings groups: " .. #settings)
 local files = settings[1].sub_item_table
 local cloud = settings[5].sub_item_table
 local updates = settings[7].sub_item_table
-T.check(files[5].text == "Export when I close a book", "auto export row")
+T.check(files[6].text == "Export when I close a book", "auto export row")
 T.check(#cloud == 3, "cloud rows without a server: " .. #cloud)
-T.check(updates[1].text_func() == "Check for updates (v" .. INSTALLED .. ")",
-    "check row: " .. updates[1].text_func())
-T.check(updates[2].text == "View changelog", "changelog row")
-T.check(updates[3].text == "Check for updates in background",
+T.check(updates[2].text_func() == "Check for updates (v" .. INSTALLED .. ")",
+    "check row: " .. updates[2].text_func())
+T.check(updates[5].text == "View changelog", "changelog row")
+T.check(updates[4].text == "Check for updates in background",
     "background toggle row")
-T.check(updates[3].checked_func() == false, "background check off by default")
-T.check(updates[4].text == "\xEF\x84\xA6  Beta versions",
-    "beta versions row with icon")
-local developer = updates[4].sub_item_table_func()
-T.check(developer[1].text == "Receive beta versions", "beta versions row")
-T.check(developer[1].checked_func() == false, "beta versions off by default")
+T.check(updates[4].checked_func() == false, "background check off by default")
+T.check(updates[3].text_func() == "Release channel: Stable",
+    "release channel row")
+local developer = updates[3].sub_item_table_func()
+T.check(developer[1].text == "Stable" and developer[1].checked_func() == true, "stable channel on by default")
+T.check(developer[2].text == "Beta" and developer[2].checked_func() == false, "beta channel off by default")
 
-updates[3].callback()
+updates[4].callback()
 T.check(store.tomedown and store.tomedown.update_check == true,
     "background check toggled on")
-T.check(updates[3].checked_func() == true, "toggle reflects the setting")
-updates[3].callback()
+T.check(updates[4].checked_func() == true, "toggle reflects the setting")
+updates[4].callback()
 T.check(store.tomedown.update_check == false, "background check toggled off")
-developer[1].callback()
+developer[2].callback()
 T.check(store.tomedown.beta_releases == true, "beta versions toggled on")
 developer[1].callback()
 T.check(store.tomedown.beta_releases == false, "beta versions toggled off")
@@ -266,7 +266,7 @@ T.check(T.contains(viewer.text, "issue #12"), "inline #12 kept: " .. tostring(vi
 T.check(Update.getAvailableVersion() == MAJOR,
     "cached available version: " .. tostring(Update.getAvailableVersion()))
 
-local check_row = plugin:genSettingsMenu()[7].sub_item_table[1]
+local check_row = plugin:genSettingsMenu()[7].sub_item_table[2]
 T.check(check_row.text_func() == "Update available: v" .. INSTALLED
         .. " → v" .. MAJOR,
     "check row shows the update: " .. check_row.text_func())
@@ -668,19 +668,19 @@ NetworkMgr.connected = true
 settings = plugin:genSettingsMenu()
 T.check(#settings == 7, "settings groups with the beta row: " .. #settings)
 updates = settings[7].sub_item_table
-developer = updates[4].sub_item_table_func()
-T.check(developer[1].text == "Receive beta versions", "beta versions row")
-T.check(developer[1].checked_func() == false, "beta versions off by default")
-T.check(#developer == 3, "no beta check while the toggle is off: " .. #developer)
+developer = updates[3].sub_item_table_func()
+T.check(developer[1].text == "Stable" and developer[1].checked_func() == true, "stable channel row")
+T.check(developer[2].text == "Beta" and developer[2].checked_func() == false, "beta channel off by default")
+T.check(#developer == 4, "no beta check while the channel is Stable: " .. #developer)
 
--- toggle on: the check row appears in the open submenu at once
+-- switch to Beta: the check row appears in the open submenu at once
 local fake_menu = { item_table = developer }
-developer[1].callback(fake_menu)
+developer[2].callback(fake_menu)
 T.check(store.tomedown.beta_releases == true, "beta versions toggled on")
-T.check(#developer == 4, "beta check row shown: " .. #developer)
-T.check(developer[2].text == "Check for beta updates", "beta check entry")
-T.check(developer[2].separator == true, "separator before the reset row")
-T.check(developer[1].separator ~= true, "no separator under the toggle")
+T.check(#developer == 5, "beta check row shown: " .. #developer)
+T.check(developer[3].text == "Check for beta updates", "beta check entry")
+T.check(developer[3].separator == true, "separator before the reset row")
+T.check(developer[2].separator == true, "separator under the Beta radio")
 
 -- a release above the installed one (with its own prerelease): the
 -- numbers follow whatever _meta.lua says, they never repeat it
@@ -725,11 +725,11 @@ UIManager:runPending()
 T.check(Update.getAvailableVersion() == STABLE,
     "release check caches the stable version again")
 
--- toggle off: the row hides in place and the cached version goes away
+-- switch back to Stable: the row hides in place and the cached version goes away
 developer[1].callback(fake_menu)
 T.check(store.tomedown.beta_releases == false, "beta releases off again")
-T.check(#developer == 3, "beta check hidden again: " .. #developer)
-T.check(developer[1].separator == true, "separator back under the toggle")
+T.check(#developer == 4, "beta check hidden again: " .. #developer)
+T.check(developer[2].separator == true, "separator under the Beta radio")
 T.check(Update.getAvailableVersion() == nil, "toggle clears the cached version")
 
 -- the same releases with the toggle off: the prerelease is skipped

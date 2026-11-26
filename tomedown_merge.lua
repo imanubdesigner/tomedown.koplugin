@@ -483,6 +483,12 @@ local function regionEdited(db, stored_fp, alt_text)
 end
 
 local function canonicalQuoteKey(quote_lines)
+    if #quote_lines > 0 then
+        local first = quote_lines[1]:gsub("^>%s?", ""):gsub("%s+$", "")
+        if first:find("^%[![%w_%-]+%]") and first ~= "[!highlight]" and first ~= "[!IMPORTANT]" then
+            return nil
+        end
+    end
     local norm = {}
     for idx, raw in ipairs(quote_lines) do
         local s = raw:gsub("^>%s?", "")
@@ -513,10 +519,11 @@ local function isGeneratedBulletLine(lines, idx)
     if not line then
         return false
     end
-    if line:find("^%- ") or line:find("^  %- ") or line:find("^    %*") then
+    if line:find("^%- ") or line:find("^  %S") or line:find("^    %S") then
         return true
     end
-    if line:match("^%s*$") and lines[idx + 1] and lines[idx + 1]:find("^    %*") then
+    if line:match("^%s*$") and lines[idx + 1]
+            and (lines[idx + 1]:find("^  %S") or lines[idx + 1]:find("^    %S")) then
         return true
     end
     return false
@@ -548,16 +555,17 @@ local function preserveQuoteComments(disk_text, rendered_text)
                 idx = idx + 1
             end
             local qkey = canonicalQuoteKey(qlines)
-            if qkey then
-                seen_counts[qkey] = (seen_counts[qkey] or 0) + 1
-                qkey = qkey .. "#" .. tostring(seen_counts[qkey])
-            end
             -- copy optional blank line + generated metadata bullets
             local probe = idx
             while probe <= #dlines and dlines[probe]:match("^%s*$") do
                 probe = probe + 1
             end
-            if probe <= #dlines and dlines[probe]:find("^%- ") then
+            local has_bullet = probe <= #dlines and dlines[probe]:find("^%- ") ~= nil
+            if has_bullet then
+                if qkey then
+                    seen_counts[qkey] = (seen_counts[qkey] or 0) + 1
+                    qkey = qkey .. "#" .. tostring(seen_counts[qkey])
+                end
                 while idx < probe do
                     stripped[#stripped + 1] = dlines[idx]
                     idx = idx + 1
@@ -566,6 +574,22 @@ local function preserveQuoteComments(disk_text, rendered_text)
                     stripped[#stripped + 1] = dlines[idx]
                     idx = idx + 1
                 end
+                local np = idx
+                while np <= #dlines and dlines[np]:match("^%s*$") do
+                    np = np + 1
+                end
+                if np <= #dlines and dlines[np]:find("^>%s*%[!note%]") then
+                    while idx < np do
+                        stripped[#stripped + 1] = dlines[idx]
+                        idx = idx + 1
+                    end
+                    while idx <= #dlines and dlines[idx]:find("^>") do
+                        stripped[#stripped + 1] = dlines[idx]
+                        idx = idx + 1
+                    end
+                end
+            else
+                qkey = nil
             end
             -- anything before the next structural boundary that has non-blank
             -- text is a personal comment attached to this quote
@@ -633,15 +657,15 @@ local function preserveQuoteComments(disk_text, rendered_text)
                 ridx = ridx + 1
             end
             local qkey = canonicalQuoteKey(qlines)
-            if qkey then
-                rseen[qkey] = (rseen[qkey] or 0) + 1
-                qkey = qkey .. "#" .. tostring(rseen[qkey])
-            end
             local probe = ridx
             while probe <= #rlines and rlines[probe]:match("^%s*$") do
                 probe = probe + 1
             end
             if probe <= #rlines and rlines[probe]:find("^%- ") then
+                if qkey then
+                    rseen[qkey] = (rseen[qkey] or 0) + 1
+                    qkey = qkey .. "#" .. tostring(rseen[qkey])
+                end
                 while ridx < probe do
                     out[#out + 1] = rlines[ridx]
                     ridx = ridx + 1
@@ -650,6 +674,22 @@ local function preserveQuoteComments(disk_text, rendered_text)
                     out[#out + 1] = rlines[ridx]
                     ridx = ridx + 1
                 end
+                local np = ridx
+                while np <= #rlines and rlines[np]:match("^%s*$") do
+                    np = np + 1
+                end
+                if np <= #rlines and rlines[np]:find("^>%s*%[!note%]") then
+                    while ridx < np do
+                        out[#out + 1] = rlines[ridx]
+                        ridx = ridx + 1
+                    end
+                    while ridx <= #rlines and rlines[ridx]:find("^>") do
+                        out[#out + 1] = rlines[ridx]
+                        ridx = ridx + 1
+                    end
+                end
+            else
+                qkey = nil
             end
             local entry = qkey and by_key[qkey]
             if entry then

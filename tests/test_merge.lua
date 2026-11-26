@@ -946,6 +946,54 @@ do
     T.check(T.contains(q_out, "Il mio pensiero su questa citazione specifica.")
             and T.contains(q_out, "> Seconda frase."),
         "inline comment stays attached under its quote when new highlights arrive")
+
+    -- Body tags below synopsis/dashboard callouts are never mistaken for personal quote comments
+    local syn_book = {
+        title = "The Three Impostors",
+        author = "Arthur Machen",
+        status = "reading",
+        progress = "40%",
+        description = "<p>A strange London tale.</p>",
+        tags = { "Horror", "Weird-fiction" },
+        tags_managed = true,
+        exported = "2026-09-26",
+        annotations = {
+            { text = "Nuova frase.", chapter = "Capitolo I", page = "12", date = "03/09/2026" },
+        },
+    }
+    local syn_opts = {
+        notes_title = "Le mie note",
+        reading_dashboard = true,
+        book_synopsis = true,
+        body_tags = true,
+    }
+    local syn_disk = render.buildBookMd(syn_book, syn_opts)
+    syn_book.tags = { "Horror", "Gothic" }
+    local syn_next = render.buildBookMd(syn_book, syn_opts)
+    local syn_merged, syn_info = merge.apply(syn_disk, syn_next,
+        merge.fingerprints(merge.split(syn_disk)),
+        { mode = "preserve", notes_title = "Le mie note" })
+    T.check(syn_info.reason == "merged" and syn_info.backup == false
+            and not T.contains(syn_merged, "Weird-fiction")
+            and T.contains(syn_merged, "▪ *#Horror* · *#Gothic*"),
+        "body_tags under synopsis callout update cleanly without duplication or stale copies")
+
+    -- Callout personal note (> [!note] Note) coexists cleanly with Obsidian quote comments
+    local cn_ann = {
+        { text = "Citazione con callout.", chapter = "Cap I", page = "8", date = "03/09/2026", note = "Nota da KOReader" },
+    }
+    local cn_base = renderBook(cn_ann, { notes_title = "Le mie note", note_style = "callout" })
+    local cn_disk = cn_base .. ""
+    cn_disk = cn_disk:gsub("(> Nota da KOReader\n)", "%1\nCommento aggiunto in Obsidian sotto il callout.\n", 1)
+    cn_ann[1].note = "Nota aggiornata da KOReader"
+    local cn_next = renderBook(cn_ann, { notes_title = "Le mie note", note_style = "callout" })
+    local cn_merged, cn_info = merge.apply(cn_disk, cn_next,
+        merge.fingerprints(merge.split(cn_base)),
+        { mode = "preserve", notes_title = "Le mie note" })
+    T.check(cn_info.reason == "merged" and cn_info.backup == false
+            and T.contains(cn_merged, "> [!note] Note\n> Nota aggiornata da KOReader")
+            and T.contains(cn_merged, "Commento aggiunto in Obsidian sotto il callout."),
+        "callout personal notes update cleanly while preserving Obsidian quote comments below them")
 end
 
 T.finish("test_merge")

@@ -30,22 +30,26 @@ You do **not** need a cloud account or Obsidian to use Tomedown. Everything work
 3. Unzip it **into** your KOReader `plugins/` folder (for example `/mnt/us/koreader/plugins/` on Kindle). The zip already contains the `tomedown.koplugin/` folder.
 4. Eject and restart KOReader (or enable *Tomedown* in **☰ → Plugin management**).
 
-<figure class="doc-device-figure">
-  <img src="{{base}}/assets/img/quickstart-menu-kindle.svg" alt="KOReader top menu showing Tomedown as the first entry" />
-</figure>
+<div class="doc-device-figure">
+  <div class="doc-device-frame">
+    <img src="{{base}}/assets/img/docs-01-main-menu.svg" alt="Tomedown main menu in KOReader" width="463" height="647" loading="lazy" decoding="async" />
+  </div>
+</div>
 
 ## 2. Run your first export
 
-1. Open **☰ → Tomedown**.
-2. On a fresh install, Tomedown offers to export your entire reading history in one tap. You can also pick from several flexible export actions:
-   - **Export this book**: exports only the volume currently open.
-   - **Export new and changed books**: exports books where highlights, progress, or tags were added or updated.
-   - **Choose books…**: opens an interactive multi-selection checklist to tick exactly which books you want to export.
-   - **Repair all files**: regenerates every note cleanly from KOReader's reading history (ideal if a file was deleted accidentally or a sync had issues).
+1. Open **☰ → Tomedown** (or tap the dedicated Tomedown icon in the top bar).
+2. On a fresh install, Tomedown offers to export your entire reading history in one tap. You can also use **Export this book** for the open volume, or open **All books ▸** for library-wide actions:
+   - **Export changed books**: exports books where highlights, progress, or tags were added or updated.
+   - **Export all books again…**: regenerates every note cleanly from KOReader's reading history.
+   - **Select books…**: opens an interactive multi-selection checklist to tick which books you want to export.
+   - **Export reading digest**: compiles `00 - Reading Digest.md` across your library.
 
-<figure class="doc-device-figure">
-  <img src="{{base}}/assets/img/picker-menu-kindle.svg" alt="KOReader Tomedown Choose books checklist menu" />
-</figure>
+<div class="doc-device-figure">
+  <div class="doc-device-frame">
+    <img src="{{base}}/assets/img/docs-02-all-books-menu.svg" alt="Tomedown All books submenu in KOReader" width="463" height="647" loading="lazy" decoding="async" />
+  </div>
+</div>
 
 3. Your notes are written immediately to your device:
 
@@ -56,7 +60,7 @@ koreader/clipboard/tomedown/
 └── ...
 ```
 
-> **Tip:** Enable **Settings → Files → Export when I close a book** if you want Tomedown to update the file automatically whenever you close a book or put your device to sleep. You can also long-press any book in KOReader's **File Manager**, **History**, or **Bookshelf** to export or manage its tags directly.
+> **Tip:** Enable **Settings → Export → Export when I close a book** if you want Tomedown to update the file automatically whenever you close a book or put your device to sleep. You can also long-press any book in KOReader's **File Manager**, **History**, or **Bookshelf** to export or manage its tags directly.
 
 ## 3. Read or sync (when you're ready)
 

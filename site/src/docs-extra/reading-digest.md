@@ -2,11 +2,16 @@
 
 **`00 - Reading Digest.md`** is a single chronological journal that brings together every highlight you take across all your books, grouped by day.
 
-<figure class="doc-shot">
-  <div class="doc-shot-frame">
-    <img src="{{base}}/assets/img/digest-obsidian.webp" alt="00 - Reading Digest.md in Obsidian showing highlights grouped by book with wikilinks and callouts" />
+<figure class="doc-specimen">
+  <div class="doc-specimen-mat">
+    <div class="doc-specimen-head">
+      <span class="doc-specimen-label">Obsidian · 00 - Reading Digest.md</span>
+    </div>
+    <div class="doc-specimen-viewport">
+      <img src="../assets/obsidian/reading-digest-timeline.webp" alt="00 - Reading Digest.md rendered inside Obsidian showing literary date headings and clean quote times" loading="lazy" decoding="async" />
+    </div>
   </div>
-  <figcaption><code>00 - Reading Digest.md</code> in Obsidian: each book links straight to its note.</figcaption>
+  <figcaption><code>00 - Reading Digest.md</code> in Obsidian: literary day headings, horizontal book dividers, and clean quote times.</figcaption>
 </figure>
 
 ## What is it?
@@ -17,21 +22,23 @@ While each book gets its own note (e.g. `Arthur Machen - The Three Impostors.md`
 - **Clean Timestamps**: each quote displays its exact time of capture (`09:41`) without repetitive dates.
 - **Divider Between Books**: multiple books read on the same calendar day are cleanly separated by a subtle horizontal rule (`---`).
 - **Direct wikilinks**: each book heading links straight to its book note in your vault.
-- **Configurable Overview**: library summary stats at the top adapt to your configured *Overview style* (Inline, Blockquote, Callout, or Table).
+- **Configurable Overview & Visual Style**: library summary stats adapt to your *Overview style*, while **Settings → Export → Digest style** follows your *Book style* automatically (or lets you pick an independent style among *Minimal symbols*, *Emoji*, *Code badges*, and *Editorial*).
 - **Consistent styling**: quotes keep your chosen highlight style (callouts, alerts, bold, or stars), with page numbers and timestamps.
 
 ## How to export it
 
 ### 1. Automatic Export
-Enable **Settings → Files → Create a reading digest (00 - Reading Digest.md)**. Whenever you run a regular export or close a book with auto-export enabled, the digest is kept up to date automatically alongside your library.
+Enable **Settings → Export → Reading digest (00 - Reading Digest.md)**. Whenever you run a regular export or close a book with auto-export enabled, the digest is kept up to date automatically alongside your library.
 
 ### 2. On-demand Export
 1. Open KOReader's top menu (from the file browser or inside a book).
-2. Tap **Tomedown**.
+2. Tap **Tomedown → All books**.
 3. Tap **Export reading digest**.
 
-<figure class="doc-device-figure">
-  <img src="{{base}}/assets/img/digest-menu-kindle.svg" alt="Tomedown menu in KOReader showing Export reading digest" />
-</figure>
+<div class="doc-device-figure">
+  <div class="doc-device-frame">
+    <img src="{{base}}/assets/img/docs-04-digest-menu-koreader.svg" alt="Export reading digest in KOReader" width="463" height="647" loading="lazy" decoding="async" />
+  </div>
+</div>
 
 The file is written to your local Tomedown folder (`clipboard/tomedown/00 - Reading Digest.md` by default) and uploaded automatically if cloud upload is enabled.

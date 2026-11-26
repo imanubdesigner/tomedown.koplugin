@@ -8,6 +8,7 @@ on the plugin class.
 ]]
 
 local Cover = require("tomedown_cover")
+local Handwritten = require("tomedown_handwritten")
 local Device = require("device")
 local Font = require("ui/font")
 local InfoMessage = require("ui/widget/infomessage")
@@ -23,15 +24,18 @@ local lfs = require("libs/libkoreader-lfs")
 local T = ffiUtil.template
 local _ = require("tomedown_i18n")
 local merge = require("tomedown_merge")
+local render = require("tomedown_render")
 local shared = require("tomedown_shared")
 
 local INDEX_FILENAME = shared.INDEX_FILENAME
+local DIGEST_FILENAME = shared.DIGEST_FILENAME
 local getSetting = shared.getSetting
 local setSetting = shared.setSetting
 local getNotesTitle = shared.getNotesTitle
 local getBookPreserve = shared.getBookPreserve
 local getIndexPreserve = shared.getIndexPreserve
 local getCoversFolder = shared.getCoversFolder
+local getDrawingsFolder = shared.getDrawingsFolder
 local readIfExists = shared.readIfExists
 local ownCopy = shared.ownCopy
 local isZoned = shared.isZoned
@@ -49,12 +53,121 @@ local UPLOAD_RETRY_BASE_DELAY = 2 -- seconds
 -- only transient failures are worth retrying: network errors (code
 -- not a number), temporarily unavailable resources (5xx), timeouts and
 -- too many requests from the server. 4xx (wrong credentials, missing
--- folder) fail on the first shot: retrying them only wastes time.
+-- folder) and missing local files fail on the first shot: retrying them
+-- only wastes time.
 local function isTransient(code)
+    if type(code) == "string" and code:find("No such file or directory", 1, true) then
+        return false
+    end
     if type(code) ~= "number" then
         return true
     end
     return code >= 500 or code == 408 or code == 429
+end
+
+-- Shared upload coordination across plugin instances (ReaderUI and
+-- FileManager each hold their own Tomedown table during book close/open).
+local upload_state = {
+    flushing = false,
+    flush_fn = nil,
+    flush_scheduled = false,
+    flush_deferred = false,
+    uploading = false,
+    in_sync = false,
+    active_fn = nil,
+    close_pending = false,
+    close_fn = nil,
+    queue = {},
+}
+
+local function isScheduledAlive(fn)
+    if not fn then
+        return false
+    end
+    if type(UIManager.scheduled) == "table" then
+        for __, item in ipairs(UIManager.scheduled) do
+            if item.fn == fn then
+                return true
+            end
+        end
+        return false
+    end
+    return true
+end
+
+local function syncUploadState()
+    if upload_state.uploading and not upload_state.in_sync
+            and not isScheduledAlive(upload_state.active_fn) then
+        upload_state.uploading = false
+        upload_state.active_fn = nil
+        upload_state.queue = {}
+    end
+    if upload_state.flushing and not upload_state.in_sync
+            and not upload_state.uploading then
+        upload_state.flushing = false
+    end
+    if upload_state.flush_scheduled and not isScheduledAlive(upload_state.flush_fn) then
+        upload_state.flush_scheduled = false
+        upload_state.flush_fn = nil
+    end
+    if upload_state.close_pending and not isScheduledAlive(upload_state.close_fn) then
+        upload_state.close_pending = false
+        upload_state.close_fn = nil
+    end
+end
+
+function M:setCloseExportPending(active, fn)
+    if active then
+        upload_state.close_pending = true
+        upload_state.close_fn = fn
+    else
+        upload_state.close_pending = false
+        upload_state.close_fn = nil
+    end
+end
+
+function M:finishDeferredFlush()
+    syncUploadState()
+    if upload_state.flush_deferred and not upload_state.uploading
+            and not upload_state.flushing and not upload_state.close_pending then
+        upload_state.flush_deferred = false
+        self:schedulePendingFlush()
+    end
+end
+
+function M:cleanupUploadedAssets(ok_paths, dir, include_covers)
+    if type(ok_paths) ~= "table" or #ok_paths == 0 then
+        return
+    end
+    local queued_paths = {}
+    for __, job in ipairs(upload_state.queue) do
+        for ___, p in ipairs(job.paths or {}) do
+            queued_paths[p] = true
+        end
+    end
+    local deletable = {}
+    for __, p in ipairs(ok_paths) do
+        if not queued_paths[p] then
+            deletable[#deletable + 1] = p
+        end
+    end
+    if #deletable == 0 then
+        return
+    end
+    if include_covers and getSetting("covers", false) then
+        local cf = getCoversFolder()
+        Cover.deleteUploaded(deletable, dir, cf)
+        if cf ~= "covers" then
+            Cover.deleteUploaded(deletable, dir, "covers")
+        end
+    end
+    if getSetting("include_handwritten", true) ~= false then
+        local df = getDrawingsFolder()
+        Handwritten.deleteUploaded(deletable, dir, df)
+        if df ~= "drawings" then
+            Handwritten.deleteUploaded(deletable, dir, "drawings")
+        end
+    end
 end
 
 
@@ -175,7 +288,7 @@ end
 -- permanent failure. It absorbs transient network blips (WiFi reconnecting,
 -- slow DNS, etc.) without needing an "Upload all files again"
 -- by hand every time.
-function M:uploadPaths(server, paths, callback)
+local function runUploadJob(self, server, paths, callback)
     local provider = self:cloudProvider(server)
     -- remembered for the Status panel; every upload path funnels here
     local function recordUpload(uploaded, errors)
@@ -189,13 +302,26 @@ function M:uploadPaths(server, paths, callback)
             })
         end
     end
+    local function finishJob(ok_count, fail_count, failed)
+        recordUpload(ok_count, fail_count)
+        if callback then
+            callback(ok_count, fail_count, failed)
+        end
+        local next_job = table.remove(upload_state.queue, 1)
+        if next_job then
+            runUploadJob(next_job.plugin, next_job.server, next_job.paths, next_job.callback)
+        else
+            upload_state.uploading = false
+            upload_state.active_fn = nil
+            self:finishDeferredFlush()
+        end
+    end
     if #paths > 0 then
         logger.info(string.format("tomedown: upload start: %d files -> %s",
             #paths, server.name or server.type or "?"))
     end
     if not (provider and provider.uploadFile and provider.run) then
-        recordUpload(0, #paths)
-        if callback then callback(0, #paths, paths) end
+        finishJob(0, #paths, paths)
         return
     end
     local i, ok_count, fail_count, failed = 0, 0, 0, {}
@@ -203,6 +329,11 @@ function M:uploadPaths(server, paths, callback)
     local made_folders = {}
 
     local function attemptUpload(path, attempt, on_done)
+        if lfs.attributes(path, "mode") ~= "file" then
+            logger.warn("tomedown: upload failed (local file missing, not retryable):", path)
+            on_done(false)
+            return
+        end
         local srv = util.tableDeepCopy(server)
         local remote_folder = getSetting("remote_folder")
         if remote_folder and remote_folder ~= "" then
@@ -227,10 +358,21 @@ function M:uploadPaths(server, paths, callback)
             upload_url = (base_url:gsub("/+$", "")) .. "/" .. subdir
         end
         provider.run(function()
+            -- MKCOL does not create parents (409): a nested subfolder such
+            -- as assets/covers is built one level at a time
             if subdir and provider.createFolder
-                    and not made_folders[base_url .. "/" .. subdir] then
-                made_folders[base_url .. "/" .. subdir] = true
-                pcall(provider.createFolder, base_url, subdir)
+                    and (attempt > 1 or not made_folders[base_url .. "/" .. subdir]) then
+                local parent = (base_url:gsub("/+$", ""))
+                local walked
+                for seg in subdir:gmatch("[^/]+") do
+                    walked = walked and (walked .. "/" .. seg) or seg
+                    local key = base_url .. "/" .. walked
+                    if attempt > 1 or not made_folders[key] then
+                        made_folders[key] = true
+                        pcall(provider.createFolder, parent, seg)
+                    end
+                    parent = parent .. "/" .. seg
+                end
             end
             local ok_call, code = pcall(provider.uploadFile, upload_url, path, nil, true)
             local success = ok_call and type(code) == "number" and code >= 200 and code < 300
@@ -245,9 +387,14 @@ function M:uploadPaths(server, paths, callback)
                 local delay = UPLOAD_RETRY_BASE_DELAY * (2 ^ (attempt - 1))
                 logger.warn("tomedown: upload failed (attempt", attempt, "of", UPLOAD_MAX_ATTEMPTS,
                     "), retrying in", delay, "s:", path, tostring(code))
-                UIManager:scheduleIn(delay, function()
+                local retry_fn
+                retry_fn = function()
+                    upload_state.in_sync = true
                     attemptUpload(path, attempt + 1, on_done)
-                end)
+                    upload_state.in_sync = false
+                end
+                upload_state.active_fn = retry_fn
+                UIManager:scheduleIn(delay, retry_fn)
             else
                 logger.warn("tomedown: upload failed after", attempt,
                     isTransient(code) and "attempts:" or "attempt (error not retryable):",
@@ -257,11 +404,13 @@ function M:uploadPaths(server, paths, callback)
         end)
     end
 
-    local function step()
+    local step
+    step = function()
+        upload_state.in_sync = true
         i = i + 1
         if i > #paths then
-            recordUpload(ok_count, fail_count)
-            if callback then callback(ok_count, fail_count, failed) end
+            upload_state.in_sync = false
+            finishJob(ok_count, fail_count, failed)
             return
         end
         local path = paths[i]
@@ -272,10 +421,27 @@ function M:uploadPaths(server, paths, callback)
                 fail_count = fail_count + 1
                 failed[#failed + 1] = path
             end
+            upload_state.active_fn = step
             UIManager:scheduleIn(0, step)
         end)
+        upload_state.in_sync = false
     end
     step()
+end
+
+function M:uploadPaths(server, paths, callback)
+    syncUploadState()
+    if upload_state.uploading then
+        upload_state.queue[#upload_state.queue + 1] = {
+            plugin = self,
+            server = server,
+            paths = paths,
+            callback = callback,
+        }
+        return
+    end
+    upload_state.uploading = true
+    runUploadJob(self, server, paths, callback)
 end
 
 -- export
@@ -379,7 +545,7 @@ function M:statusLines()
             lines[#lines + 1] = _("Next upload: disabled in settings")
         elseif not NetworkMgr:isConnected() then
             lines[#lines + 1] = _("Next upload: at the next connection")
-        elseif self._flushing then
+        elseif self._flushing or upload_state.flushing or upload_state.uploading then
             lines[#lines + 1] = _("Next upload: in progress")
         else
             lines[#lines + 1] = _("Next upload: any moment now")
@@ -389,33 +555,290 @@ function M:statusLines()
 end
 
 function M:showStatus()
-    -- KOReader's own inline styling, "Poor Text Formatting": the header
-    -- char must open the text and the two private-use chars wrap what
-    -- gets the bold face. Applied to the already translated lines, so
-    -- the msgids stay plain.
-    local styled = TextBoxWidget.PTF_HEADER
-    for i, line in ipairs(self:statusLines()) do
-        -- every line is "Label: value"; bold the label, up to the first
-        -- colon (values may well contain colons: times, paths)
-        local label, rest = line:match("^(.-:)(.*)$")
-        if label then
-            line = TextBoxWidget.PTF_BOLD_START .. label
-                .. TextBoxWidget.PTF_BOLD_END .. rest
-        end
-        if i > 1 then
-            styled = styled .. "\n"
-        end
-        styled = styled .. line
+    local Screen = Device.screen
+    local Geom = require("ui/geometry")
+    local Size = require("ui/size")
+    local Blitbuffer = require("ffi/blitbuffer")
+    local Button = require("ui/widget/button")
+    local CenterContainer = require("ui/widget/container/centercontainer")
+    local FrameContainer = require("ui/widget/container/framecontainer")
+    local GestureRange = require("ui/gesturerange")
+    local HorizontalGroup = require("ui/widget/horizontalgroup")
+    local HorizontalSpan = require("ui/widget/horizontalspan")
+    local InputContainer = require("ui/widget/container/inputcontainer")
+    local LineWidget = require("ui/widget/linewidget")
+    local MovableContainer = require("ui/widget/container/movablecontainer")
+    local TextWidget = require("ui/widget/textwidget")
+    local VerticalGroup = require("ui/widget/verticalgroup")
+    local VerticalSpan = require("ui/widget/verticalspan")
+
+    local sw, sh = Screen:getWidth(), Screen:getHeight()
+    local frame_w = math.min(math.floor(sw * 0.86), Screen:scaleBySize(460))
+    local pad = Screen:scaleBySize(22)
+    local content_w = frame_w - pad * 2
+    local gap_s = Screen:scaleBySize(8)
+    local gap_m = Screen:scaleBySize(14)
+
+    local function divider()
+        return LineWidget:new{
+            dimen = Geom:new{ w = content_w, h = (Size.line and Size.line.thin) or 1 },
+            background = Blitbuffer.COLOR_LIGHT_GRAY,
+        }
     end
-    UIManager:show(InfoMessage:new{
-        -- the smallest info face (18pt vs the default 24): every entry
-        -- stays on a single line instead of wrapping into a wall of text
-        face = Font:getFace("xx_smallinfofont"),
-        -- 90% of the screen (the default is 2/3): bold labels plus long
-        -- dates and outcomes still fit on one line
-        width = math.floor(Device.screen:getWidth() * 0.9),
-        text = styled,
-    })
+
+    local function ptfRow(label, value)
+        return TextBoxWidget:new{
+            text = TextBoxWidget.PTF_HEADER
+                .. TextBoxWidget.PTF_BOLD_START .. label .. TextBoxWidget.PTF_BOLD_END
+                .. " " .. tostring(value or ""),
+            face = Font:getFace("cfont", 14),
+            width = content_w,
+        }
+    end
+
+    local last_export = getSetting("last_export")
+    local column = VerticalGroup:new{ align = "center" }
+
+    -- 1. Header: Title + timestamp
+    column[#column + 1] = TextWidget:new{
+        text = _("Last export"),
+        face = Font:getFace("tfont", 22),
+        bold = true,
+    }
+    column[#column + 1] = VerticalSpan:new{ width = Screen:scaleBySize(4) }
+    local subtitle = _("Last export: never")
+    if last_export and last_export.at then
+        subtitle = render.fmtDateLiterary(os.date("%Y-%m-%d", last_export.at))
+            .. "  ·  " .. os.date("%H:%M", last_export.at)
+    end
+    column[#column + 1] = TextWidget:new{
+        text = subtitle,
+        face = Font:getFace("cfont", 14),
+        fgcolor = Blitbuffer.COLOR_DARK_GRAY,
+    }
+
+    -- 2. 3-column KPI stat bar (Exported | Skipped | Errors or Backups)
+    if last_export and last_export.at then
+        column[#column + 1] = VerticalSpan:new{ width = gap_m }
+        column[#column + 1] = divider()
+        column[#column + 1] = VerticalSpan:new{ width = gap_m }
+
+        local col_w = math.floor(content_w / 3)
+        local function kpiTile(num, caption)
+            return CenterContainer:new{
+                dimen = Geom:new{ w = col_w, h = Screen:scaleBySize(54) },
+                VerticalGroup:new{
+                    align = "center",
+                    TextWidget:new{
+                        text = tostring(num or 0),
+                        face = Font:getFace("tfont", 24),
+                        bold = true,
+                    },
+                    VerticalSpan:new{ width = Screen:scaleBySize(2) },
+                    TextWidget:new{
+                        text = caption,
+                        face = Font:getFace("cfont", 12),
+                        fgcolor = Blitbuffer.COLOR_DARK_GRAY,
+                    },
+                },
+            }
+        end
+
+        local third_num = last_export.errors or 0
+        local third_lbl = _("Errors")
+        if third_num == 0 and (last_export.backups or 0) > 0 then
+            third_num = last_export.backups
+            third_lbl = _("Backups")
+        end
+
+        column[#column + 1] = HorizontalGroup:new{
+            align = "center",
+            kpiTile(last_export.exported or 0, _("Exported")),
+            kpiTile(last_export.skipped or 0, _("Skipped")),
+            kpiTile(third_num, third_lbl),
+        }
+    end
+
+    column[#column + 1] = VerticalSpan:new{ width = gap_m }
+    column[#column + 1] = divider()
+    column[#column + 1] = VerticalSpan:new{ width = gap_m }
+
+    -- 3. Details block (left-aligned)
+    local details = VerticalGroup:new{ align = "left" }
+    local fmt_labels = {
+        md = _("Markdown (.md)"),
+        txt = _("Plain text (.txt)"),
+        both = _("Both (.md and .txt)"),
+    }
+    local style_labels = {
+        obsidian   = _("Obsidian"),
+        standard   = _("Standard"),
+        commonmark = _("CommonMark"),
+    }
+    local cur_fmt = shared.getExportFormat()
+    local fmt_desc = fmt_labels[cur_fmt] or fmt_labels.md
+    if cur_fmt ~= "txt" then
+        fmt_desc = fmt_desc .. " · " .. (style_labels[shared.getMarkdownStyle()] or style_labels.obsidian)
+    end
+    details[#details + 1] = ptfRow(_("Format:"), fmt_desc)
+    details[#details + 1] = VerticalSpan:new{ width = gap_s }
+    details[#details + 1] = ptfRow(_("Folder:"), self:getLocalDir())
+
+    -- Cloud summary
+    local server = self:getServer()
+    local upload_on = getSetting("upload", false) == true
+    local pending_count = 0
+    for __ in pairs(getSetting("pending_uploads", {})) do
+        pending_count = pending_count + 1
+    end
+    details[#details + 1] = VerticalSpan:new{ width = gap_s }
+    if not upload_on and not server and pending_count == 0 then
+        details[#details + 1] = ptfRow(_("Cloud") .. ":", _("Disabled"))
+    else
+        local cloud_parts = {}
+        cloud_parts[#cloud_parts + 1] = NetworkMgr:isConnected() and _("online") or _("offline")
+        if server then
+            cloud_parts[#cloud_parts + 1] = server.name or server.url or server.type
+        end
+        if pending_count > 0 then
+            cloud_parts[#cloud_parts + 1] = T(_("Upload pending: %1 files"), pending_count)
+        end
+        details[#details + 1] = ptfRow(_("Cloud") .. ":", table.concat(cloud_parts, " · "))
+    end
+
+    -- 4. Recently exported books (up to 5 titles so the card stays crisp on 6" e-readers)
+    if last_export and type(last_export.titles) == "table" and #last_export.titles > 0 then
+        details[#details + 1] = VerticalSpan:new{ width = gap_m }
+        details[#details + 1] = TextBoxWidget:new{
+            text = TextBoxWidget.PTF_HEADER
+                .. TextBoxWidget.PTF_BOLD_START .. _("Exported books") .. TextBoxWidget.PTF_BOLD_END,
+            face = Font:getFace("cfont", 14),
+            width = content_w,
+        }
+        details[#details + 1] = VerticalSpan:new{ width = Screen:scaleBySize(4) }
+        local shown_n = math.min(#last_export.titles, 5)
+        local book_lines = {}
+        for i = 1, shown_n do
+            book_lines[#book_lines + 1] = "• " .. tostring(last_export.titles[i])
+        end
+        local extra = (last_export.exported or 0) - shown_n
+        if extra > 0 then
+            book_lines[#book_lines + 1] = T(_("+ %1 more"), extra)
+        end
+        details[#details + 1] = TextBoxWidget:new{
+            text = table.concat(book_lines, "\n"),
+            face = Font:getFace("cfont", 13),
+            width = content_w,
+        }
+    end
+
+    column[#column + 1] = details
+    column[#column + 1] = VerticalSpan:new{ width = gap_m }
+    column[#column + 1] = divider()
+    column[#column + 1] = VerticalSpan:new{ width = gap_m }
+
+    -- 5. Action buttons
+    local dialog
+    local btn_specs = {
+        {
+            text = _("Export updated"),
+            callback = function()
+                UIManager:close(dialog)
+                self:runExport(self:listBookFiles(), { only_updated = true })
+            end,
+        },
+    }
+    if pending_count > 0 and upload_on then
+        btn_specs[#btn_specs + 1] = {
+            text = _("Upload now"),
+            callback = function()
+                UIManager:close(dialog)
+                self:flushPendingUploads()
+            end,
+        }
+    end
+    btn_specs[#btn_specs + 1] = {
+        text = _("Close"),
+        callback = function()
+            UIManager:close(dialog)
+        end,
+    }
+
+    local btn_gap = Screen:scaleBySize(10)
+    local btn_w = math.floor((content_w - btn_gap * (#btn_specs - 1)) / #btn_specs)
+    local btn_row = HorizontalGroup:new{ align = "center" }
+    local created_btns = {}
+    for idx, spec in ipairs(btn_specs) do
+        if idx > 1 then
+            btn_row[#btn_row + 1] = HorizontalSpan:new{ width = btn_gap }
+        end
+        local b = Button:new{
+            text = spec.text,
+            width = btn_w,
+            bordersize = (Size.border and Size.border.button) or 1,
+            radius = (Size.radius and Size.radius.button) or 4,
+            text_font_face = "cfont",
+            text_font_size = 15,
+            callback = spec.callback,
+        }
+        created_btns[#created_btns + 1] = b
+        btn_row[#btn_row + 1] = b
+    end
+    column[#column + 1] = btn_row
+
+    local frame = FrameContainer:new{
+        radius = Size.radius.window,
+        padding = pad,
+        margin = 0,
+        background = Blitbuffer.COLOR_WHITE,
+        column,
+    }
+    local movable = MovableContainer:new{ frame }
+
+    dialog = InputContainer:new{
+        align = "center",
+        dimen = Geom:new{ x = 0, y = 0, w = sw, h = sh },
+        CenterContainer:new{
+            dimen = Geom:new{ w = sw, h = sh },
+            movable,
+        },
+    }
+    for __, b in ipairs(created_btns) do
+        b.show_parent = dialog
+    end
+    dialog.onShow = function()
+        UIManager:setDirty(dialog, function()
+            return "ui", movable.dimen or frame.dimen
+        end)
+    end
+    dialog.onCloseWidget = function()
+        UIManager:setDirty(nil, function()
+            return "flashui", movable.dimen or frame.dimen
+        end)
+    end
+    if Device:isTouchDevice() then
+        dialog.ges_events = {
+            TapClose = { GestureRange:new{
+                ges = "tap",
+                range = Geom:new{ x = 0, y = 0, w = sw, h = sh },
+            } },
+        }
+        dialog.onTapClose = function(self_d, _arg, ges_ev)
+            if not frame.dimen or ges_ev.pos:notIntersectWith(frame.dimen) then
+                UIManager:close(self_d)
+            end
+            return true
+        end
+    end
+    if Device:hasKeys() then
+        dialog.key_events = { Close = { { Device.input.group.Back } } }
+        dialog.onClose = function(self_d)
+            UIManager:close(self_d)
+            return true
+        end
+    end
+
+    UIManager:show(dialog)
 end
 
 -- pending uploads: flushed when the connection comes back (NetworkConnected),
@@ -423,7 +846,12 @@ end
 -- the network at the next opportunity without any prompt
 
 function M:schedulePendingFlush()
-    if self._flush_scheduled or self._flushing then
+    syncUploadState()
+    if self._flush_scheduled == false then
+        upload_state.flush_scheduled = false
+        upload_state.flush_fn = nil
+    end
+    if self._flushing or upload_state.flushing then
         return
     end
     if not getSetting("upload", false) then
@@ -435,11 +863,24 @@ function M:schedulePendingFlush()
     if not NetworkMgr:isConnected() then
         return
     end
+    if upload_state.uploading or upload_state.close_pending then
+        upload_state.flush_deferred = true
+        return
+    end
+    if self._flush_scheduled or upload_state.flush_scheduled then
+        return
+    end
     self._flush_scheduled = true
-    UIManager:scheduleIn(1, function()
+    upload_state.flush_scheduled = true
+    local fn
+    fn = function()
         self._flush_scheduled = false
+        upload_state.flush_scheduled = false
+        upload_state.flush_fn = nil
         self:flushPendingUploads()
-    end)
+    end
+    upload_state.flush_fn = fn
+    UIManager:scheduleIn(1, fn)
 end
 
 --- Decide what a push may do before it sends anything: the flush of the
@@ -490,6 +931,9 @@ function M:reconcilePending(server, paths, dir)
         end
         if rel == INDEX_FILENAME then
             return getIndexPreserve()
+        end
+        if rel == DIGEST_FILENAME then
+            return false
         end
         -- a path with no book behind it follows the default, the same
         -- way the export decides for a file it does not know
@@ -621,7 +1065,14 @@ function M:reconcilePending(server, paths, dir)
 end
 
 function M:flushPendingUploads()
-    if self._flushing or not getSetting("upload", false) then
+    syncUploadState()
+    if self._flushing or upload_state.flushing or not getSetting("upload", false) then
+        return
+    end
+    if upload_state.uploading or upload_state.close_pending then
+        if next(getSetting("pending_uploads", {})) ~= nil then
+            upload_state.flush_deferred = true
+        end
         return
     end
     local pending = getSetting("pending_uploads", {})
@@ -659,10 +1110,14 @@ function M:flushPendingUploads()
     -- error one included, so a failure inside the reconcile cannot leave
     -- the flush switched off for good.
     self._flushing = true
+    upload_state.flushing = true
+    upload_state.in_sync = true
     local call_ok, ready, held = pcall(self.reconcilePending, self,
         server, paths, dir)
+    upload_state.in_sync = false
     if not call_ok then
         self._flushing = false
+        upload_state.flushing = false
         logger.warn("tomedown: reconcile failed, nothing pushed:",
             tostring(ready))
         return
@@ -671,6 +1126,7 @@ function M:flushPendingUploads()
         -- everything is held back: the notes stay in the cloud and the
         -- highlights stay on the device, nothing to push right now
         self._flushing = false
+        upload_state.flushing = false
         if #held > 0 then
             UIManager:show(InfoMessage:new{
                 text = T(_("Cloud: %1 files kept back, will retry"), #held),
@@ -683,6 +1139,7 @@ function M:flushPendingUploads()
     self:uploadPaths(server, ready, function(ok_count, fail_count, failed)
         UIManager:close(upload_info)
         self._flushing = false
+        upload_state.flushing = false
         local failed_set = {}
         for __, path in ipairs(failed) do
             failed_set[path] = true
@@ -694,12 +1151,7 @@ function M:flushPendingUploads()
             end
         end
         self:clearPendingUploads(ok_paths)
-        if getSetting("covers", false) then
-            Cover.deleteUploaded(ok_paths, self:getLocalDir(), getCoversFolder())
-            if getCoversFolder() ~= "covers" then
-                Cover.deleteUploaded(ok_paths, self:getLocalDir(), "covers")
-            end
-        end
+        self:cleanupUploadedAssets(ok_paths, self:getLocalDir(), true)
         if fail_count > 0 then
             UIManager:show(InfoMessage:new{
                 text = T(_("Cloud: %1 uploaded, %2 errors"), ok_count, fail_count),
@@ -741,23 +1193,33 @@ function M:reuploadAll(touchmenu)
             end
         end
     end
-    listDir(dir, function(entry)
-        return entry:sub(-3) == ".md"
-    end)
+    local function isNoteFile(entry)
+        return entry:sub(-3) == ".md" or entry:sub(-4) == ".txt"
+    end
+    local function isDrawingFile(entry)
+        local lower = entry:lower()
+        return lower:sub(-4) == ".svg" or lower:sub(-4) == ".png"
+            or lower:sub(-4) == ".jpg" or lower:sub(-5) == ".jpeg"
+    end
+    listDir(dir, isNoteFile)
     local covers_folder = getCoversFolder()
+    local drawings_folder = getDrawingsFolder()
+    local covers_root = shared.folderRoot(covers_folder):lower()
+    local drawings_root = shared.folderRoot(drawings_folder):lower()
     local ok_sub, iter_sub, obj_sub = pcall(lfs.dir, dir)
     if ok_sub and iter_sub then
         for entry in iter_sub, obj_sub do
-            if entry ~= "." and entry ~= ".." and entry ~= "covers" and entry ~= covers_folder
+            local low = entry:lower()
+            if entry ~= "." and entry ~= ".."
+                    and low ~= "covers" and low ~= covers_root
+                    and low ~= "drawings" and low ~= drawings_root
                     and lfs.attributes(dir .. "/" .. entry, "mode") == "directory" then
-                listDir(dir .. "/" .. entry, function(sub_entry)
-                    return sub_entry:sub(-3) == ".md"
-                end)
+                listDir(dir .. "/" .. entry, isNoteFile)
             end
         end
     end
-    -- covers still sitting on the device (upload was off, or the upload
-    -- failed earlier) ride along with "Upload all files again"
+    -- covers and drawings still sitting on the device (upload was off, or
+    -- the upload failed earlier) ride along with "Upload all files again"
     listDir(dir .. "/" .. covers_folder, function(entry)
         return entry:sub(-4) == ".jpg"
     end)
@@ -765,6 +1227,10 @@ function M:reuploadAll(touchmenu)
         listDir(dir .. "/covers", function(entry)
             return entry:sub(-4) == ".jpg"
         end)
+    end
+    listDir(dir .. "/" .. drawings_folder, isDrawingFile)
+    if drawings_folder ~= "drawings" then
+        listDir(dir .. "/drawings", isDrawingFile)
     end
     if #paths == 0 then
         UIManager:show(Notification:new{
@@ -816,12 +1282,7 @@ function M:reuploadAll(touchmenu)
             -- the next chance, the way it already does for the export
             self:markPendingUploads(failed)
         end
-        if getSetting("covers", false) then
-            Cover.deleteUploaded(ok_paths, dir, getCoversFolder())
-            if getCoversFolder() ~= "covers" then
-                Cover.deleteUploaded(ok_paths, dir, "covers")
-            end
-        end
+        self:cleanupUploadedAssets(ok_paths, dir, true)
         if fail_count > 0 then
             UIManager:show(InfoMessage:new{
                 text = T(_("Cloud: %1/%2 files uploaded, %3 errors"), ok_count, #ready, fail_count),
