@@ -9,6 +9,7 @@ unchanged.
 ]]
 
 local _ = require("tomedown_i18n")
+local lfs = require("libs/libkoreader-lfs")
 local logger = require("logger")
 local md5 = require("ffi/sha2").md5
 local util = require("util")
@@ -487,20 +488,131 @@ local function setNoteStyle(style)
     end
 end
 
-local function sanitizeCoversFolder(name)
+-- Folder settings (covers, drawings) accept a nested vault-relative path
+-- such as "assets/covers": every segment is made filesystem-safe on its own
+-- ("/" is the only separator, "\" is accepted too), "." and ".." segments
+-- and empty ones are dropped so the path can never leave the export folder,
+-- and the depth is capped. Nothing usable left: the default.
+local MAX_FOLDER_DEPTH = 3
+
+local function sanitizeFolderPath(name, default)
     if type(name) ~= "string" then
-        return DEFAULT_COVERS_FOLDER
+        return default
     end
-    local trimmed = name:gsub("^%s+", ""):gsub("%s+$", ""):gsub("^[/\\]+", ""):gsub("[/\\]+$", "")
-    if trimmed == "" then
-        return DEFAULT_COVERS_FOLDER
+    local segments = {}
+    for part in name:gmatch("[^/\\]+") do
+        local seg = part:gsub("^%s+", ""):gsub("%s+$", "")
+        if seg ~= "" and seg ~= "." and seg ~= ".." then
+            local safe = util.getSafeFilename(seg, nil, nil, -1) or ""
+            safe = safe:gsub("^%s+", ""):gsub("%s+$", "")
+            if safe ~= "" and safe ~= "." and safe ~= ".." then
+                segments[#segments + 1] = safe
+                if #segments >= MAX_FOLDER_DEPTH then
+                    break
+                end
+            end
+        end
     end
-    local safe = util.getSafeFilename(trimmed, nil, nil, -1) or ""
-    safe = safe:gsub("^%s+", ""):gsub("%s+$", "")
-    if safe == "" or safe == "." or safe == ".." then
-        return DEFAULT_COVERS_FOLDER
+    if #segments == 0 then
+        return default
     end
-    return safe
+    return table.concat(segments, "/")
+end
+
+--- First segment of a folder path: the top-level directory it lives in.
+local function folderRoot(path)
+    return (tostring(path or ""):match("^([^/]+)")) or ""
+end
+
+local function pruneEmptyParents(dir, old_folder, keep_folder)
+    local rel = tostring(old_folder or ""):match("^(.*)/[^/]+$")
+    while rel and rel ~= "" do
+        if keep_folder and (rel == keep_folder
+                or keep_folder:sub(1, #rel + 1) == rel .. "/") then
+            break
+        end
+        if not lfs.rmdir(dir .. "/" .. rel) then
+            break
+        end
+        rel = rel:match("^(.*)/[^/]+$")
+    end
+end
+
+--- Move matching asset files from `dir/old_folder` to `dir/new_folder`,
+-- safely handling flat<->nested, parent<->child, and shared asset directories,
+-- then remove `old_folder` and any now-empty ancestor directories.
+local function migrateAssetFolder(dir, old_folder, new_folder, is_match, copy_fallback)
+    if not dir or not old_folder or not new_folder or old_folder == new_folder then
+        return false
+    end
+    local old_path = dir .. "/" .. old_folder
+    local new_path = dir .. "/" .. new_folder
+    if lfs.attributes(old_path, "mode") ~= "directory" then
+        return false
+    end
+    local entries = {}
+    local ok_iter, iter, obj = pcall(lfs.dir, old_path)
+    if ok_iter and iter then
+        for entry in iter, obj do
+            if entry ~= "." and entry ~= ".." then
+                local src = old_path .. "/" .. entry
+                if lfs.attributes(src, "mode") == "file"
+                        and (not is_match or is_match(entry)) then
+                    entries[#entries + 1] = entry
+                end
+            end
+        end
+    end
+    util.makePath(new_path)
+    for __, entry in ipairs(entries) do
+        local src = old_path .. "/" .. entry
+        local dst = new_path .. "/" .. entry
+        if not os.rename(src, dst) and copy_fallback then
+            if copy_fallback(src, dst) then
+                os.remove(src)
+            end
+        end
+    end
+    if new_folder:sub(1, #old_folder + 1) ~= old_folder .. "/" then
+        pcall(lfs.rmdir, old_path)
+    end
+    pcall(pruneEmptyParents, dir, old_folder, new_folder)
+    return lfs.attributes(new_path, "mode") == "directory"
+end
+
+--- Update queued offline upload paths when an asset folder is migrated.
+local function remapPendingFolder(dir, old_folder, new_folder)
+    if not dir or not old_folder or not new_folder or old_folder == new_folder then
+        return
+    end
+    local pending = getSetting("pending_uploads", nil)
+    if type(pending) ~= "table" or next(pending) == nil then
+        return
+    end
+    local old_prefix = dir .. "/" .. old_folder .. "/"
+    local new_prefix = dir .. "/" .. new_folder .. "/"
+    local remapped = {}
+    local changed = false
+    for path, flag in pairs(pending) do
+        if flag and type(path) == "string" and path:sub(1, #old_prefix) == old_prefix then
+            local candidate = new_prefix .. path:sub(#old_prefix + 1)
+            if lfs.attributes(candidate, "mode") == "file" then
+                remapped[candidate] = true
+                changed = true
+            else
+                remapped[path] = flag
+            end
+        else
+            remapped[path] = flag
+        end
+    end
+    if changed then
+        setSetting("pending_uploads", remapped)
+    end
+end
+
+local function sanitizeCoversFolder(name)
+    return sanitizeFolderPath(name, DEFAULT_COVERS_FOLDER)
 end
 
 local function getCoversFolder()
@@ -518,19 +630,7 @@ local function setCoversFolder(folder)
 end
 
 local function sanitizeDrawingsFolder(name)
-    if type(name) ~= "string" then
-        return DEFAULT_DRAWINGS_FOLDER
-    end
-    local trimmed = name:gsub("^%s+", ""):gsub("%s+$", ""):gsub("^[/\\]+", ""):gsub("[/\\]+$", "")
-    if trimmed == "" then
-        return DEFAULT_DRAWINGS_FOLDER
-    end
-    local safe = util.getSafeFilename(trimmed, nil, nil, -1) or ""
-    safe = safe:gsub("^%s+", ""):gsub("%s+$", "")
-    if safe == "" or safe == "." or safe == ".." then
-        return DEFAULT_DRAWINGS_FOLDER
-    end
-    return safe
+    return sanitizeFolderPath(name, DEFAULT_DRAWINGS_FOLDER)
 end
 
 local function getDrawingsFolder()
@@ -1653,6 +1753,9 @@ return {
     DEFAULT_COVERS_FOLDER = DEFAULT_COVERS_FOLDER,
     DEFAULT_DRAWINGS_FOLDER = DEFAULT_DRAWINGS_FOLDER,
     sanitizeCoversFolder = sanitizeCoversFolder,
+    folderRoot = folderRoot,
+    migrateAssetFolder = migrateAssetFolder,
+    remapPendingFolder = remapPendingFolder,
     getCoversFolder = getCoversFolder,
     setCoversFolder = setCoversFolder,
     sanitizeDrawingsFolder = sanitizeDrawingsFolder,

@@ -358,10 +358,21 @@ local function runUploadJob(self, server, paths, callback)
             upload_url = (base_url:gsub("/+$", "")) .. "/" .. subdir
         end
         provider.run(function()
+            -- MKCOL does not create parents (409): a nested subfolder such
+            -- as assets/covers is built one level at a time
             if subdir and provider.createFolder
-                    and not made_folders[base_url .. "/" .. subdir] then
-                made_folders[base_url .. "/" .. subdir] = true
-                pcall(provider.createFolder, base_url, subdir)
+                    and (attempt > 1 or not made_folders[base_url .. "/" .. subdir]) then
+                local parent = (base_url:gsub("/+$", ""))
+                local walked
+                for seg in subdir:gmatch("[^/]+") do
+                    walked = walked and (walked .. "/" .. seg) or seg
+                    local key = base_url .. "/" .. walked
+                    if attempt > 1 or not made_folders[key] then
+                        made_folders[key] = true
+                        pcall(provider.createFolder, parent, seg)
+                    end
+                    parent = parent .. "/" .. seg
+                end
             end
             local ok_call, code = pcall(provider.uploadFile, upload_url, path, nil, true)
             local success = ok_call and type(code) == "number" and code >= 200 and code < 300
@@ -1193,12 +1204,15 @@ function M:reuploadAll(touchmenu)
     listDir(dir, isNoteFile)
     local covers_folder = getCoversFolder()
     local drawings_folder = getDrawingsFolder()
+    local covers_root = shared.folderRoot(covers_folder):lower()
+    local drawings_root = shared.folderRoot(drawings_folder):lower()
     local ok_sub, iter_sub, obj_sub = pcall(lfs.dir, dir)
     if ok_sub and iter_sub then
         for entry in iter_sub, obj_sub do
+            local low = entry:lower()
             if entry ~= "." and entry ~= ".."
-                    and entry ~= "covers" and entry ~= covers_folder
-                    and entry ~= "drawings" and entry ~= drawings_folder
+                    and low ~= "covers" and low ~= covers_root
+                    and low ~= "drawings" and low ~= drawings_root
                     and lfs.attributes(dir .. "/" .. entry, "mode") == "directory" then
                 listDir(dir .. "/" .. entry, isNoteFile)
             end

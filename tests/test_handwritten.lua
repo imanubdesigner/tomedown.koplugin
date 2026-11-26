@@ -293,8 +293,44 @@ do
     T.check(shared.getDrawingsFolder() == "drawings", "default drawings folder is 'drawings'")
     shared.setDrawingsFolder("  /my_sketches/ ")
     T.check(shared.getDrawingsFolder() == "my_sketches", "custom drawings folder sanitized and saved")
+    shared.setDrawingsFolder("  \\assets\\drawings/ ")
+    T.check(shared.getDrawingsFolder() == "assets/drawings", "nested drawings folder with backslashes normalized to POSIX")
+    shared.setDrawingsFolder("a/b/c/d/e")
+    T.check(shared.getDrawingsFolder() == "a/b/c", "nested drawings folder capped at 3 levels")
+    shared.setDrawingsFolder("../../assets/drawings")
+    T.check(shared.getDrawingsFolder() == "assets/drawings", "parent traversal segments stripped safely")
     shared.setDrawingsFolder("drawings")
     T.check(store.tomedown.drawings_folder == nil, "setting default folder clears key to nil")
+
+    -- Nested drawings migration edge cases: flat -> nested, parent -> child, child -> parent, nested -> flat (prunes empty parent)
+    local function putFile(p, c)
+        local fh = assert(io.open(p, "wb"))
+        fh:write(c)
+        fh:close()
+    end
+    local MIG_DIR = VAULT_DIR .. "_mig"
+    T.rmrf(MIG_DIR)
+    os.execute('mkdir -p "' .. MIG_DIR .. '/drawings"')
+    putFile(MIG_DIR .. "/drawings/s1.svg", "<svg/>")
+    putFile(MIG_DIR .. "/drawings/s2.jpeg", "JPEGDATA")
+    T.check(Handwritten.migrateFolder(MIG_DIR, "drawings", "assets/drawings") == true
+            and T.fileExists(MIG_DIR .. "/assets/drawings/s1.svg")
+            and T.fileExists(MIG_DIR .. "/assets/drawings/s2.jpeg")
+            and lfs.attributes(MIG_DIR .. "/drawings", "mode") == nil,
+        "handwritten migrateFolder moves .svg and .jpeg from drawings -> assets/drawings")
+    T.check(Handwritten.migrateFolder(MIG_DIR, "assets/drawings", "assets") == true
+            and T.fileExists(MIG_DIR .. "/assets/s1.svg")
+            and lfs.attributes(MIG_DIR .. "/assets/drawings", "mode") == nil,
+        "handwritten migrateFolder moves child -> parent (assets/drawings -> assets) without deleting assets/")
+    T.check(Handwritten.migrateFolder(MIG_DIR, "assets", "assets/drawings") == true
+            and T.fileExists(MIG_DIR .. "/assets/drawings/s1.svg")
+            and not T.fileExists(MIG_DIR .. "/assets/s1.svg"),
+        "handwritten migrateFolder moves parent -> child (assets -> assets/drawings) and returns true")
+    T.check(Handwritten.migrateFolder(MIG_DIR, "assets/drawings", "drawings") == true
+            and T.fileExists(MIG_DIR .. "/drawings/s1.svg")
+            and lfs.attributes(MIG_DIR .. "/assets", "mode") == nil,
+        "handwritten migrateFolder nested -> flat prunes empty parent assets/")
+    T.rmrf(MIG_DIR)
 
     T.check(shared.getIncludeHandwritten() == true, "include_handwritten is enabled by default")
     shared.setBookStyleOverride("/book.epub", "include_handwritten", false)

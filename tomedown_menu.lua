@@ -991,7 +991,7 @@ function M:editCoversFolder(touchmenu)
     dialog = InputDialog:new{
         title = _("Covers folder name"),
         input = getCoversFolder(),
-        hint = _("e.g. covers, _covers, assets"),
+        hint = _("e.g. covers, assets/covers"),
         buttons = {
             {
                 {
@@ -1013,6 +1013,7 @@ function M:editCoversFolder(touchmenu)
                         if new_folder ~= old then
                             local Cover = require("tomedown_cover")
                             Cover.migrateFolder(self:getLocalDir(), old, new_folder)
+                            shared.remapPendingFolder(self:getLocalDir(), old, new_folder)
                             self:invalidateExportHashes()
                             setSetting("index_dirty", true)
                         end
@@ -1034,7 +1035,7 @@ function M:editDrawingsFolder(touchmenu)
     dialog = InputDialog:new{
         title = _("Drawings folder name"),
         input = shared.getDrawingsFolder(),
-        hint = _("e.g. drawings, attachments, assets"),
+        hint = _("e.g. drawings, assets/drawings"),
         buttons = {
             {
                 {
@@ -1056,7 +1057,9 @@ function M:editDrawingsFolder(touchmenu)
                         if new_folder ~= old then
                             local Handwritten = require("tomedown_handwritten")
                             Handwritten.migrateFolder(self:getLocalDir(), old, new_folder)
+                            shared.remapPendingFolder(self:getLocalDir(), old, new_folder)
                             self:invalidateExportHashes()
+                            setSetting("digest_dirty", true)
                         end
                         UIManager:close(dialog)
                         if touchmenu and touchmenu.updateItems then

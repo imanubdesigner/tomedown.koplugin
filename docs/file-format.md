@@ -319,7 +319,7 @@ Outside Obsidian, you can choose between two portable profiles (globally in *Set
 
 ## Covers
 
-With *Settings → Notes & highlights → Book page → Book cover* (or *Current book → Format & layout → Book page → Book cover*) enabled, Tomedown extracts the cover image into your vault (`covers/` by default, configurable in *Settings → Export → File names & folders → Covers folder*) as an `800×1200` JPEG in **Obsidian** / **Standard** modes (or a compact `260×390` JPEG with pure `![Title](covers/...)` syntax in **CommonMark** mode, resizing automatically whenever you switch profiles and re-export):
+With *Settings → Notes & highlights → Book page → Book cover* (or *Current book → Format & layout → Book page → Book cover*) enabled, Tomedown extracts the cover image into your vault (`covers/` by default, or any flat or nested path up to 3 levels such as `assets/covers` for Logseq/Obsidian in *Settings → Export → File names & folders → Covers folder*) as an `800×1200` JPEG in **Obsidian** / **Standard** modes (or a compact `260×390` JPEG with pure `![Title](covers/...)` syntax in **CommonMark** mode, resizing automatically whenever you switch profiles and re-export). When books are organized into subfolders (*By author*, *By series*, or *By reading status*), relative links (`../assets/covers/...`) and cloud WebDAV directories are resolved automatically:
 
 ```markdown
 ---
@@ -379,7 +379,7 @@ For devices equipped with a stylus (Kindle Scribe, Kobo Sage/Elipsa, Android e-i
 1. **Drawing Extraction**:
    - Vector drawings (point-sequence strokes) are transformed into scalable, sharp **SVG** vector files via a pure Lua vector generator.
    - Raster drawings (e.g. pencil PNGs) are extracted with transparent borders.
-   - Images are placed into the `drawings/` folder inside your vault (customizable via *Settings → Export → File names & folders → Drawings folder*).
+   - Images are placed into the `drawings/` folder inside your vault (customizable via *Settings → Export → File names & folders → Drawings folder*, including nested paths up to 3 levels such as `assets/drawings` with automatic file migration).
 2. **Standard Markdown Embeds**:
    - In the book note, drawings are embedded natively using standard Markdown image syntax.
    - Each drawing receives an Obsidian block ID (`^hl-...`), allowing you to link directly to or embed the handwritten drawing anywhere in your vault: `![[Book Title#^hl-3a8f19bc]]`.

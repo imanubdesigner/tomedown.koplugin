@@ -799,8 +799,8 @@ msgstr "Cover-Ordner: %1"
 msgid "Covers folder name"
 msgstr "Name des Cover-Ordners"
 
-msgid "e.g. covers, _covers, assets"
-msgstr "z. B. covers, _covers, assets"
+msgid "e.g. covers, assets/covers"
+msgstr "z. B. covers, assets/covers"
 
 msgid "Frontmatter fields"
 msgstr "Frontmatter-Felder"
@@ -943,8 +943,8 @@ msgstr "Handschriftliche Notiz"
 msgid "Drawings folder name"
 msgstr "Name des Zeichnungsordners"
 
-msgid "e.g. drawings, attachments, assets"
-msgstr "z. B. drawings, attachments, assets"
+msgid "e.g. drawings, assets/drawings"
+msgstr "z. B. drawings, assets/drawings"
 
 msgid "Drawings folder: %1"
 msgstr "Zeichnungsordner: %1"

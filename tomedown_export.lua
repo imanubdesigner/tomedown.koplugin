@@ -553,10 +553,12 @@ function M:bookSubdir(props, status)
     end
     raw = tostring(raw):gsub("\r?\n", "; ")
     local safe = util.getSafeFilename(raw, nil, nil, -1)
-    local covers_folder = getCoversFolder()
-    local drawings_folder = getDrawingsFolder()
-    if safe == "" or safe:lower() == "covers" or safe:lower() == covers_folder:lower()
-            or safe:lower() == "drawings" or safe:lower() == drawings_folder:lower() then
+    -- a nested folder ("assets/covers") occupies its first segment
+    local covers_root = shared.folderRoot(getCoversFolder()):lower()
+    local drawings_root = shared.folderRoot(getDrawingsFolder()):lower()
+    local low = safe:lower()
+    if safe == "" or low == "covers" or low == covers_root
+            or low == "drawings" or low == drawings_root then
         return nil
     end
     return safe
@@ -1077,11 +1079,15 @@ function M:runExport(files, opts)
     util.makePath(dir)
     local current_covers = getCoversFolder()
     if current_covers ~= "covers" and lfs.attributes(dir .. "/covers", "mode") == "directory" then
-        Cover.migrateFolder(dir, "covers", current_covers)
+        if Cover.migrateFolder(dir, "covers", current_covers) then
+            shared.remapPendingFolder(dir, "covers", current_covers)
+        end
     end
     local current_drawings = getDrawingsFolder()
     if current_drawings ~= "drawings" and lfs.attributes(dir .. "/drawings", "mode") == "directory" then
-        Handwritten.migrateFolder(dir, "drawings", current_drawings)
+        if Handwritten.migrateFolder(dir, "drawings", current_drawings) then
+            shared.remapPendingFolder(dir, "drawings", current_drawings)
+        end
     end
     local with_index = getSetting("with_index", true)
 

@@ -799,8 +799,8 @@ msgstr "Cartella copertine: %1"
 msgid "Covers folder name"
 msgstr "Nome cartella copertine"
 
-msgid "e.g. covers, _covers, assets"
-msgstr "es. covers, _covers, assets"
+msgid "e.g. covers, assets/covers"
+msgstr "es. covers, assets/covers"
 
 msgid "Frontmatter fields"
 msgstr "Campi del frontmatter"
@@ -943,8 +943,8 @@ msgstr "Nota a mano libera"
 msgid "Drawings folder name"
 msgstr "Nome cartella disegni"
 
-msgid "e.g. drawings, attachments, assets"
-msgstr "es. drawings, attachments, assets"
+msgid "e.g. drawings, assets/drawings"
+msgstr "es. drawings, assets/drawings"
 
 msgid "Drawings folder: %1"
 msgstr "Cartella disegni: %1"

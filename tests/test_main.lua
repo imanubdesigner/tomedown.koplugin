@@ -6174,4 +6174,150 @@ do
     UIManager:reset()
 end
 
+-- ------- 36. Nested asset folders (assets/covers, assets/drawings, Logseq/Obsidian)
+do
+    local shared = require("tomedown_shared")
+
+    -- 36a. Sanitization & folderRoot
+    T.check(shared.sanitizeCoversFolder("assets/covers") == "assets/covers",
+        "36a: nested 2-level path preserved")
+    T.check(shared.sanitizeCoversFolder(" \\media\\books\\covers\\ ") == "media/books/covers",
+        "36a: Windows backslashes and outer spaces normalized up to 3 levels")
+    T.check(shared.sanitizeCoversFolder("l1/l2/l3/l4") == "l1/l2/l3",
+        "36a: depth capped at 3 segments")
+    T.check(shared.sanitizeCoversFolder("../assets/./covers/..") == "assets/covers",
+        "36a: dot and dot-dot segments dropped safely")
+    T.check(shared.folderRoot("assets/covers") == "assets"
+            and shared.folderRoot("covers") == "covers",
+        "36a: folderRoot extracts top-level directory segment")
+
+    -- 36b. migrateFolder across all 4 topologies + shared assets/ directory safety
+    local function putFile(p, c)
+        local fh = assert(io.open(p, "wb"))
+        fh:write(c)
+        fh:close()
+    end
+    cleanDir()
+    os.execute('mkdir -p "' .. DIR .. '/covers"')
+    putFile(DIR .. "/covers/c1.jpg", "JPG1")
+    T.check(Cover.migrateFolder(DIR, "covers", "assets/covers") == true
+            and T.fileExists(DIR .. "/assets/covers/c1.jpg")
+            and lfs.attributes(DIR .. "/covers", "mode") == nil,
+        "36b: covers -> assets/covers")
+    T.check(Cover.migrateFolder(DIR, "assets/covers", "assets") == true
+            and T.fileExists(DIR .. "/assets/c1.jpg")
+            and lfs.attributes(DIR .. "/assets/covers", "mode") == nil,
+        "36b: child -> parent (assets/covers -> assets)")
+    -- Put a stylus .svg inside shared assets/ and migrate covers to img/covers -> .svg MUST stay in assets/!
+    putFile(DIR .. "/assets/sketch.svg", "<svg/>")
+    T.check(Cover.migrateFolder(DIR, "assets", "img/covers") == true
+            and T.fileExists(DIR .. "/img/covers/c1.jpg")
+            and T.fileExists(DIR .. "/assets/sketch.svg"),
+        "36b: migrating covers out of shared assets/ preserves non-cover .svg drawings")
+    os.remove(DIR .. "/assets/sketch.svg")
+    os.execute('rmdir "' .. DIR .. '/assets"')
+    T.check(Cover.migrateFolder(DIR, "img/covers", "assets") == true
+            and lfs.attributes(DIR .. "/img", "mode") == nil,
+        "36b: img/covers -> assets prunes empty img/")
+    T.check(Cover.migrateFolder(DIR, "assets", "assets/covers") == true
+            and T.fileExists(DIR .. "/assets/covers/c1.jpg")
+            and not T.fileExists(DIR .. "/assets/c1.jpg"),
+        "36b: parent -> child (assets -> assets/covers) succeeds and returns true")
+    T.check(Cover.migrateFolder(DIR, "assets/covers", "covers") == true
+            and T.fileExists(DIR .. "/covers/c1.jpg")
+            and lfs.attributes(DIR .. "/assets", "mode") == nil,
+        "36b: nested -> flat (assets/covers -> covers) prunes empty assets/")
+
+    -- Empty child -> parent (assets/covers -> assets) must NOT delete destination assets/
+    os.execute('mkdir -p "' .. DIR .. '/assets/covers"')
+    T.check(Cover.migrateFolder(DIR, "assets/covers", "assets") == true
+            and lfs.attributes(DIR .. "/assets", "mode") == "directory"
+            and lfs.attributes(DIR .. "/assets/covers", "mode") == nil,
+        "36b: empty child -> parent keeps target parent directory intact")
+
+    -- 36c. Step-by-step WebDAV MKCOL, author subfolder ../assets/covers, Index, reuploadAll, and pending remap
+    uploadSetup()
+    cleanDir()
+    NetworkMgr.connected = true
+    BookInfo.cover_bb = fakeBB(400, 600)
+    store.tomedown.covers = true
+    shared.setCoversFolder("assets/covers")
+    shared.setDrawingsFolder("assets/drawings")
+    shared.setFolderLayout("author")
+
+    plugin:runExport({ FILE }, { force = true })
+    UIManager:runPending()
+
+    -- Verify step-by-step MKCOL created "assets" at root and "covers" inside "/Bookshelf/Kindle/assets"
+    local saw_assets_mkcol, saw_covers_mkcol = false, false
+    for __, cf in ipairs(created_folders) do
+        if cf.url == "/Bookshelf/Kindle" and cf.name == "assets" then
+            saw_assets_mkcol = true
+        elseif cf.url == "/Bookshelf/Kindle/assets" and cf.name == "covers" then
+            saw_covers_mkcol = true
+        end
+    end
+    T.check(saw_assets_mkcol and saw_covers_mkcol,
+        "36c: WebDAV MKCOL builds nested folder step-by-step (assets, then assets/covers)")
+
+    -- Verify ../assets/covers in author-subfolder book .md and root-relative assets/covers in 00 - Index.md
+    local author_md_path = DIR .. "/Arthur Machen/" .. BASE .. ".md"
+    local author_md = T.readFile(author_md_path) or ""
+    local root_idx = T.readFile(INDEX_PATH) or ""
+    T.check(T.contains(author_md, 'cover: "../assets/covers/' .. BASE .. '.jpg"')
+            and T.contains(author_md, 'src="../assets/covers/' .. BASE .. '.jpg"'),
+        "36c: book inside author subfolder links cover via ../assets/covers/")
+    T.check(T.contains(root_idx, 'src="assets/covers/' .. BASE .. '.jpg"'),
+        "36c: 00 - Index.md links cover via root-relative assets/covers/")
+
+    -- Verify reuploadAll ignores stray .md inside assets/ root while uploading nested cover
+    putFile(DIR .. "/assets/stray_readme.md", "should not be treated as a book note")
+    os.execute('mkdir -p "' .. DIR .. '/assets/covers"')
+    putFile(DIR .. "/assets/covers/" .. BASE .. ".jpg", "JPGDATA")
+    resetUpload()
+    plugin:reuploadAll(nil)
+    UIManager:runPending()
+    local uploaded_stray = false
+    local uploaded_nested_cover = false
+    for __, u in ipairs(uploads) do
+        if T.contains(u.path, "stray_readme.md") then
+            uploaded_stray = true
+        end
+        if u.path == DIR .. "/assets/covers/" .. BASE .. ".jpg"
+                and u.url == "/Bookshelf/Kindle/assets/covers" then
+            uploaded_nested_cover = true
+        end
+    end
+    T.check(not uploaded_stray and uploaded_nested_cover,
+        "36c: reuploadAll skips assets/ root for note scan and uploads nested cover to /assets/covers")
+    os.remove(DIR .. "/assets/stray_readme.md")
+
+    -- Verify offline pending_uploads remap when folder is renamed via InputDialog
+    NetworkMgr.connected = false
+    plugin:runExport({ FILE }, { force = true })
+    local old_pending_cover = DIR .. "/assets/covers/" .. BASE .. ".jpg"
+    T.check(store.tomedown.pending_uploads[old_pending_cover] == true,
+        "36c: offline export queued nested cover in pending_uploads")
+    plugin:editCoversFolder(nil)
+    InputDialog.last.input_text = "covers"
+    InputDialog.last:simulateSave()
+    local new_pending_cover = DIR .. "/covers/" .. BASE .. ".jpg"
+    T.check(store.tomedown.pending_uploads[old_pending_cover] == nil
+            and store.tomedown.pending_uploads[new_pending_cover] == true
+            and T.fileExists(new_pending_cover),
+        "36c: renaming covers folder remaps pending_uploads to the migrated file path")
+
+    -- Clean up section 36 state
+    NetworkMgr.connected = true
+    shared.setCoversFolder("covers")
+    shared.setDrawingsFolder("drawings")
+    shared.setFolderLayout("flat")
+    store.tomedown.covers = nil
+    store.tomedown.pending_uploads = {}
+    cleanDir()
+    plugin:runExport({ FILE }, { force = true })
+    UIManager:runPending()
+    UIManager:reset()
+end
+
 T.finish("test_main")

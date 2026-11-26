@@ -799,8 +799,8 @@ msgstr "Carpeta de portadas: %1"
 msgid "Covers folder name"
 msgstr "Nombre de la carpeta de portadas"
 
-msgid "e.g. covers, _covers, assets"
-msgstr "ej. covers, _covers, assets"
+msgid "e.g. covers, assets/covers"
+msgstr "ej. covers, assets/covers"
 
 msgid "Frontmatter fields"
 msgstr "Campos del frontmatter"
@@ -943,8 +943,8 @@ msgstr "Nota manuscrita"
 msgid "Drawings folder name"
 msgstr "Nombre de la carpeta de dibujos"
 
-msgid "e.g. drawings, attachments, assets"
-msgstr "p. ej. drawings, attachments, assets"
+msgid "e.g. drawings, assets/drawings"
+msgstr "p. ej. drawings, assets/drawings"
 
 msgid "Drawings folder: %1"
 msgstr "Carpeta de dibujos: %1"
