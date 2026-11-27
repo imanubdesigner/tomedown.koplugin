@@ -10,6 +10,45 @@ local _ = require("tomedown_i18n")
 local md5 = require("ffi/sha2").md5
 local render = {}
 
+local COLOR_LABELS = {
+    yellow = function() return _("Yellow") end,
+    red = function() return _("Red") end,
+    orange = function() return _("Orange") end,
+    green = function() return _("Green") end,
+    blue = function() return _("Blue") end,
+    purple = function() return _("Purple") end,
+    pink = function() return _("Pink") end,
+    gray = function() return _("Gray") end,
+    grey = function() return _("Gray") end,
+    olive = function() return _("Olive") end,
+    cyan = function() return _("Cyan") end,
+}
+
+local function formatHighlightColor(color, aliases)
+    if type(color) ~= "string" then
+        return nil
+    end
+    local trimmed = color:gsub("^%s+", ""):gsub("%s+$", "")
+    if trimmed == "" then
+        return nil
+    end
+    local key = trimmed:lower()
+    if type(aliases) == "table" then
+        local mapped = aliases[key]
+        if type(mapped) == "string" then
+            mapped = mapped:gsub("^%s+", ""):gsub("%s+$", "")
+            if mapped ~= "" then
+                return mapped
+            end
+        end
+    end
+    local label_fn = COLOR_LABELS[key]
+    if label_fn then
+        return label_fn()
+    end
+    return key:sub(1, 1):upper() .. key:sub(2)
+end
+
 -- Generated blocks are wrapped in HTML comments, invisible in every
 -- Markdown renderer (Obsidian included, reading view and live preview
 -- alike): the export re-merges new content into these regions and leaves
@@ -1252,6 +1291,8 @@ function render.buildBookMd(book, opts)
     local show_page = details_mode == "page_date" or details_mode == "page_only"
     local show_date = details_mode == "page_date" or details_mode == "date_only"
     local show_context = opts.highlight_context == true
+    local show_color = opts.highlight_color == true
+    local color_aliases = opts.color_aliases
     local footnotes = {}
 
     local function formatContext(a)
@@ -1359,6 +1400,11 @@ function render.buildBookMd(book, opts)
         end
         if a.handwritten then
             meta[#meta + 1] = "✍️ " .. _("Handwritten note")
+        elseif show_color then
+            local col_label = formatHighlightColor(a.color, color_aliases)
+            if col_label then
+                meta[#meta + 1] = col_label
+            end
         end
         local ctx_line = show_context and formatContext(a) or nil
         local note_lines
@@ -2380,6 +2426,8 @@ function render.buildDigestMd(books, opts)
                 time = time_only,
                 special = a.special,
                 handwritten = a.handwritten,
+                color = a.color,
+                highlight_color = b.highlight_color,
                 drawing = a.drawing_vault_rel or a.drawing,
                 sort_time = raw_dt,
                 sort_page = tonumber(a.sort_page) or 0,
@@ -2653,6 +2701,12 @@ function render.buildDigestMd(books, opts)
         end
         if item.handwritten then
             meta[#meta + 1] = "✍️ " .. _("Handwritten note")
+        elseif (item.highlight_color ~= nil and item.highlight_color == true)
+                or (item.highlight_color == nil and opts.highlight_color == true) then
+            local col_label = formatHighlightColor(item.color, opts.color_aliases)
+            if col_label then
+                meta[#meta + 1] = col_label
+            end
         end
 
         local note_lines
@@ -2827,6 +2881,12 @@ function render.buildBookTxt(book, opts)
         end
         if show_date and a.date and tostring(a.date) ~= "" then
             meta[#meta + 1] = tostring(a.date)
+        end
+        if not a.handwritten and opts.highlight_color == true then
+            local col_label = formatHighlightColor(a.color, opts.color_aliases)
+            if col_label then
+                meta[#meta + 1] = col_label
+            end
         end
         if #meta > 0 then
             add("[" .. table.concat(meta, " · ") .. "]")

@@ -274,6 +274,7 @@ function M:cleanAnnotations(raw)
                     text = text,
                     note = trim(item.note),
                     chapter = trim(item.chapter),
+                    color = trim(item.color),
                     page = pageLabel(item),
                     date = render.fmtDateTime(datetime),
                     sort_pos = pos and posTokens(pos) or nil,
@@ -444,6 +445,7 @@ local function hashBook(title, author, annotations, meta, bookmarks)
             tostring(a.sort_time or ""),
             tostring(a.page or ""),
             tostring(a.chapter or ""),
+            tostring(a.color or ""),
             a.text,
             tostring(a.note or ""),
             -- the Special Highlight mark changes the rendering, the hash
@@ -970,6 +972,7 @@ function M:buildDigestBooks()
                     author = book.author,
                     has_block_ids = shared.getBlockIds(file)
                         and getMarkdownStyle(file) == "obsidian",
+                    highlight_color = shared.getHighlightColor(file),
                     annotations = book.annotations,
                 }
             end
@@ -1003,6 +1006,8 @@ function M:exportDigest(touchmenu)
             or digest_raw_marker == "highlight_bold")) and "bold" or digest_raw_marker,
         note_style = getNoteStyle(),
         overview_style = getOverviewStyle(),
+        highlight_color = shared.getHighlightColor(),
+        color_aliases = shared.getHighlightColorAliases(),
     })
     local ok, err = util.writeToFile(digest_md, digest_path, true, false, true)
     if not ok then
@@ -1258,6 +1263,8 @@ function M:runExport(files, opts)
                         highlight_details = getHighlightDetails(file),
                         chapter_headings = getChapterHeadings(file),
                         highlight_context = getHighlightContext(file),
+                        highlight_color = shared.getHighlightColor(file),
+                        color_aliases = shared.getHighlightColorAliases(),
                         book_heading = getBookHeading(file),
                         overview_style = getOverviewStyle(file),
                         reading_dashboard = getReadingDashboard(file),
@@ -1647,6 +1654,8 @@ function M:runExport(files, opts)
                     or digest_raw_marker == "highlight_bold")) and "bold" or digest_raw_marker,
                 note_style = getNoteStyle(),
                 overview_style = getOverviewStyle(),
+                highlight_color = shared.getHighlightColor(),
+                color_aliases = shared.getHighlightColorAliases(),
             })
             local digest_ok, digest_err =
                 util.writeToFile(digest_md, digest_path, true, false, true)

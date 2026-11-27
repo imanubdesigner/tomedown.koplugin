@@ -89,6 +89,7 @@ Every row inside **Current book → Format & layout** displays `Global` on the r
    - **Special highlight style**: Choose any of the 6 highlight styles (`[!highlight]`, `[!IMPORTANT]`, `==text==`, `==**text**==`, `⭐ **text**`, or `**text**`) for this volume.
    - **Highlight details**: **Page and date**, **Page only**, **Date only**, or **None**.
    - **Highlight context**: Enable or disable surrounding sentence extraction (ideal for study essays and textbooks).
+   - **Highlight color**: Enable or disable highlight colour / semantic alias labels on metadata lines for this book alone.
    - **Link IDs on highlights**: Enable or disable `^hl-xxxxxxxx` block anchors for this book alone.
    - **Every highlight is special**: Render every highlight in this book with your special marker.
    - **Personal notes format**: **Inline**, **Callout ([!note])**, or **Footnotes** (`[^1]`).
