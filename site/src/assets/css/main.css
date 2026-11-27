@@ -3803,12 +3803,6 @@ dialog.guide-lightbox::backdrop {
   font-size: 1rem;
   color: var(--ink);
 }
-.dl-store-title svg {
-  color: var(--hl-ink);
-}
-:root[data-theme="dark"] .dl-store-title svg {
-  color: var(--hl);
-}
 .dl-store-card p,
 .docs .prose .dl-store-card p {
   margin: 0;
@@ -3906,6 +3900,13 @@ dialog.guide-lightbox::backdrop {
   background: color-mix(in srgb, var(--hl) 20%, #252420);
   border-color: color-mix(in srgb, var(--hl) 45%, transparent);
   color: var(--hl);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .dl-check-bullet {
+    background: color-mix(in srgb, var(--hl) 20%, #252420);
+    border-color: color-mix(in srgb, var(--hl) 45%, transparent);
+    color: var(--hl);
+  }
 }
 .inline-menu-icon {
   display: inline-flex;
