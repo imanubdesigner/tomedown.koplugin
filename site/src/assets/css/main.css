@@ -1673,6 +1673,7 @@ mark { background: var(--hl); color: var(--hl-ink); padding: 0 0.15em; }
   color: var(--hl);
 }
 .doc-device-figure {
+  width: 100%;
   max-width: 440px;
   margin: 32px auto;
 }
@@ -1877,10 +1878,20 @@ dialog.guide-lightbox::backdrop {
   aspect-ratio: auto;
 }
 .doc-spotlight .doc-device-figure {
+  width: 100%;
+  max-width: 540px;
   margin: 12px auto 0;
 }
-.doc-spotlight .doc-device-figure img {
+.doc-spotlight .doc-device-figure.doc-device-figure-wide {
+  max-width: 760px;
+}
+.docs .prose .doc-spotlight .doc-device-figure img {
+  width: 100%;
+  max-width: 540px;
   margin: 0 auto;
+}
+.docs .prose .doc-spotlight .doc-device-figure.doc-device-figure-wide img {
+  max-width: 760px;
 }
 .docs .prose .doc-spotlight .spotlight-frame img,
 .docs .prose .doc-shot-frame img,
