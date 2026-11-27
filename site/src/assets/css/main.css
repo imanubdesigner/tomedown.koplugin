@@ -1,4 +1,4 @@
-/* hallmark: system=Editorial Monograph palette=Warm E-Ink Amber type=Instrument Serif + Instrument Sans + JetBrains Mono */
+/* Tomedown — Editorial Monograph theme (Warm E-Ink Amber palette) */
 @import url("./tokens.css");
 @import url("./base.css");
 
@@ -4763,7 +4763,7 @@ mark.editorial-highlight {
   }
 }
 
-/* 8. Emil Design Eng Micro-interactions (200ms Mobile Drawer & Tactile Buttons) */
+/* 8. Mobile Drawer & Tactile Buttons (200ms Micro-interactions) */
 .site-menu-backdrop {
   transition: opacity 200ms cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -5694,7 +5694,7 @@ h1, h2, h3, .logo, .hub-quote, .footer-brand {
 }
 
 /* ==========================================================================
-   12. Tomedown 3.0 Homepage Redesign (Emil Design Eng + Modern Web Guidance)
+   12. Tomedown 3.0 Homepage Redesign
    ========================================================================== */
 
 /* Responsive fluid typography adhering to WCAG 1.4.4 (max <= 2.5x min, rem + vw) */
@@ -5791,7 +5791,7 @@ h1, h2, h3, .logo, .hub-quote, .footer-brand {
   font-weight: 700;
 }
 
-/* Emil Design Eng: Subtle staggered hero entrance (opted-in only for no-preference) */
+/* Subtle staggered hero entrance (opted-in only for no-preference) */
 @media (prefers-reduced-motion: no-preference) {
   .hero-stagger-1,
   .hero-stagger-2,
@@ -5860,7 +5860,7 @@ h1, h2, h3, .logo, .hub-quote, .footer-brand {
   margin-bottom: 8px;
 }
 
-/* Emil Design Eng clip-path segmented switch (zero mid-transition text contrast flicker) */
+/* Clip-path segmented switch (zero mid-transition text contrast flicker) */
 .spec-mode-switch {
   position: relative;
   display: inline-grid;

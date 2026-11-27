@@ -340,4 +340,215 @@ do
     shared.clearBookStyleOverrides("/book.epub")
 end
 
+-- ---------------------------------------------------------------------------
+-- 4. InkAway (`ink-away.koplugin`) support: PDF paging, shapes, alpha/RGB,
+--    text ops, mutation digest, `.old` fallback, sandbox, EPUB rolling & notebooks
+-- ---------------------------------------------------------------------------
+do
+    local INK_WORK = WORK .. "/inkaway"
+    T.rmrf(INK_WORK)
+    util.makePath(INK_WORK .. "/books")
+    util.makePath(INK_WORK .. "/vault")
+
+    -- 4a. PDF (`paging`) with ONLY InkAway annotations (no KOReader text highlights)
+    local pdf_path = INK_WORK .. "/books/LinearAlgebra.pdf"
+    local pdf_sdr = pdf_path .. ".sdr"
+    util.makePath(pdf_sdr)
+
+    local inkaway_pdf_v1 = [[return {
+        ["version"]=1,
+        ["items"]={
+            {
+                ["op"]={["kind"]="ink",["width"]=3,["alpha"]=255,["color"]={210,45,30,},["pts"]={0,0,40,12,85,5,},},
+                ["a"]={["page"]=7,["x"]=120,["y"]=240,},
+            },
+            {
+                ["op"]={["kind"]="ink",["width"]=14,["alpha"]=90,["color"]={255,220,0,},["pts"]={0,0,110,0,},},
+                ["a"]={["page"]=7,["x"]=115,["y"]=255,},
+            },
+            {
+                ["op"]={["kind"]="shape",["shape"]="rect",["fill"]=false,["width"]=2,["alpha"]=255,["color"]={30,90,200,},["pts"]={0,0,90,40,},},
+                ["a"]={["page"]=7,["x"]=110,["y"]=230,},
+            },
+            {
+                ["op"]={["kind"]="shape",["shape"]="line",["arrow"]="end",["width"]=2,["pts"]={0,0,50,30,},},
+                ["a"]={["page"]=7,["x"]=210,["y"]=250,},
+            },
+            {
+                ["op"]={["kind"]="erase",["width"]=20,["pts"]={0,0,30,30,},},
+                ["a"]={["page"]=7,["x"]=600,["y"]=600,},
+            },
+            {
+                ["op"]={["kind"]="ink",["hidden"]=true,["width"]=4,["pts"]={0,0,70,70,},},
+                ["a"]={["page"]=7,["x"]=700,["y"]=700,},
+            },
+            {
+                ["op"]={["kind"]="text",["x"]=0,["y"]=0,["paras"]={{["spans"]={{["t"]="Key theorem",},},},},},
+                ["a"]={["page"]=7,["x"]=120,["y"]=280,},
+            },
+            {
+                ["op"]={["kind"]="shape",["shape"]="ellipse",["fill"]=true,["width"]=2,["color"]={40,160,80,},["pts"]={0,0,24,24,},},
+                ["a"]={["page"]=19,["x"]=60,["y"]=300,},
+            },
+        },
+    }]]
+    writeBytes(pdf_sdr .. "/inkaway.lua", inkaway_pdf_v1)
+
+    local pdf_hw = Export:cleanHandwritten(pdf_path, nil, nil)
+    T.check(#pdf_hw == 2,
+        "4a: InkAway PDF collects 2 page annotations (p. 7 and p. 19): got " .. tostring(#pdf_hw))
+    T.check(pdf_hw[1] and pdf_hw[1].page == "7" and pdf_hw[1].drawing_ext == "svg"
+            and pdf_hw[1].note == "Key theorem",
+        "4a: page 7 InkAway item has page '7', svg ext, and extracted text-box note")
+    T.check(pdf_hw[2] and pdf_hw[2].page == "19" and pdf_hw[2].drawing_ext == "svg",
+        "4a: page 19 InkAway item has page '19' and svg ext")
+
+    local pdf_book = {
+        title = "Linear Algebra",
+        author = "Gilbert Strang",
+        base = "Gilbert Strang - Linear Algebra",
+        exported = "2026-11-26",
+        count = #pdf_hw,
+        annotations = pdf_hw,
+        bookmarks = {},
+    }
+    local pdf_written = Handwritten.ensureDrawings(pdf_book, INK_WORK .. "/vault", "drawings")
+    T.check(#pdf_written == 2, "4a: ensureDrawings writes 2 InkAway SVG files")
+
+    local p7_svg = T.readFile(pdf_written[1] or "") or ""
+    T.check(T.contains(p7_svg, "M 120 240 L 160 252 L 205 245"),
+        "4a: page 7 freehand stroke translated by anchor (a.x, a.y)")
+    T.check(T.contains(p7_svg, 'stroke="#d22d1e"'),
+        "4a: InkAway {r,g,b} color converted to hex #d22d1e")
+    T.check(T.contains(p7_svg, 'opacity="0.35"'),
+        "4a: InkAway alpha=90 marker stroke rendered with SVG opacity")
+    T.check(T.contains(p7_svg, "M 110 230 L 200 230 L 200 270 L 110 270 Z"),
+        "4a: InkAway rect shape rendered as closed SVG path")
+    T.check(not T.contains(p7_svg, "600") and not T.contains(p7_svg, "700"),
+        "4a: erase and hidden ops excluded from SVG")
+
+    local p19_svg = T.readFile(pdf_written[2] or "") or ""
+    T.check(T.contains(p19_svg, 'fill="#28a050"') and T.contains(p19_svg, " Z\""),
+        "4a: InkAway filled ellipse rendered as closed filled SVG path")
+
+    -- 4b. Adding a new stroke on page 7 updates drawing_digest and overwrites SVG while keeping drawing_id stable
+    local old_id = pdf_hw[1].drawing_id
+    local old_digest = pdf_hw[1].drawing_digest
+    local inkaway_pdf_v2 = inkaway_pdf_v1:gsub(
+        '%["items"%]=%{',
+        '["items"]={{["op"]={["kind"]="ink",["width"]=2,["pts"]={0,0,25,25,},},["a"]={["page"]=7,["x"]=140,["y"]=260,},},',
+        1)
+    writeBytes(pdf_sdr .. "/inkaway.lua", inkaway_pdf_v2)
+    local pdf_hw_v2 = Export:cleanHandwritten(pdf_path, nil, nil)
+    T.check(pdf_hw_v2[1].drawing_id == old_id
+            and pdf_hw_v2[1].drawing_digest ~= nil
+            and pdf_hw_v2[1].drawing_digest ~= old_digest,
+        "4b: adding stroke on same PDF page preserves drawing_id (block ID stability) while changing drawing_digest")
+    pdf_book.annotations = pdf_hw_v2
+    Handwritten.ensureDrawings(pdf_book, INK_WORK .. "/vault", "drawings")
+    local p7_svg_v2 = T.readFile(pdf_written[1] or "") or ""
+    T.check(T.contains(p7_svg_v2, "M 140 260 L 165 285"),
+        "4b: ensureDrawings updates existing SVG file on disk when strokes change")
+
+    -- 4c. Sandbox safety, split-function (>65k constants) chunk format, and `.old` backup fallback
+    local sec_book = INK_WORK .. "/books/Sandbox.pdf"
+    local sec_sdr = sec_book .. ".sdr"
+    util.makePath(sec_sdr)
+    writeBytes(sec_sdr .. "/inkaway.lua", 'os.execute("touch ' .. INK_WORK .. '/pwned"); return { items = {} }')
+    writeBytes(sec_sdr .. "/inkaway.lua.old",
+        'return (function() local t={}; (function() t["version"]=1; t["items"]={{["op"]={["kind"]="ink",["width"]=2,["pts"]={0,0,10,10}},["a"]={["page"]=3,["x"]=5,["y"]=5}}}; end)(); return t end)()')
+    local sec_hw = Export:cleanHandwritten(sec_book, nil, nil)
+    T.check(lfs.attributes(INK_WORK .. "/pwned", "mode") == nil,
+        "4c: sandbox blocks global access in tampered inkaway.lua")
+    T.check(#sec_hw == 1 and sec_hw[1].page == "3",
+        "4c: falls back to inkaway.lua.old and decodes InkAway split-function format")
+
+    -- 4d. EPUB rolling anchors (xp0 + pinned pg) + linked `.inkaway` notebook (highlight note + chapter note)
+    local epub_path = INK_WORK .. "/books/ReflowBook.epub"
+    local epub_sdr = epub_path .. ".sdr"
+    local nb_path = INK_WORK .. "/Book notes/ReflowBook.inkaway"
+    util.makePath(epub_sdr)
+    writeBytes(nb_path, [[return {
+        ["v"]=2,["w"]=600,["h"]=800,
+        ["pages"]={
+            {
+                ["title"]="Chapter I",
+                ["book"]={["toc"]=1,},
+                ["ops"]={
+                    {["kind"]="ink",["width"]=2.5,["pts"]={10,20,60,40,},},
+                },
+            },
+            {
+                ["title"]="“Important quote”",
+                ["book"]={["toc"]=1,["hl"]={["dt"]="2026-11-20 14:00:00",["pos0"]="/body/DocFragment[2]/body/p[3]/text().0",},},
+                ["ops"]={
+                    {["kind"]="ink",["width"]=3,["color"]={180,20,90,},["pts"]={15,15,45,35,80,15,},},
+                },
+            },
+        },
+    }]])
+    writeBytes(epub_sdr .. "/inkaway.lua", string.format([[return {
+        ["version"]=1,
+        ["notes"]=%q,
+        ["hl_notes"]={["2026-11-20 14:00:00"]="(Handwritten note)",},
+        ["items"]={
+            {
+                ["op"]={["kind"]="ink",["width"]=2,["pts"]={0,0,30,10,},},
+                ["a"]={["xp0"]="/body/DocFragment[2]/body/p[1]/text().0",["xp1"]="/body/DocFragment[2]/body/p[1]/text().5",["dx"]=12,["dy"]=-4,},
+            },
+            {
+                ["op"]={["kind"]="ink",["width"]=2,["pts"]={0,0,20,8,},},
+                ["a"]={["xp0"]="/body/DocFragment[2]/body/p[1]/text().0",["xp1"]="/body/DocFragment[2]/body/p[1]/text().5",["dx"]=50,["dy"]=-4,},
+            },
+            {
+                ["op"]={["kind"]="ink",["width"]=2,["pts"]={0,0,40,40,},},
+                ["a"]={["pg"]=22,["fx"]=0.25,["fy"]=0.5,},
+            },
+        },
+    }]], nb_path))
+
+    local epub_raw = {
+        {
+            drawer = "lighten",
+            text = "Important quote",
+            note = "(Handwritten note)",
+            chapter = "Chapter I",
+            page = "/body/DocFragment[2]/body/p[3]/text().0",
+            pos0 = "/body/DocFragment[2]/body/p[3]/text().0",
+            pos1 = "/body/DocFragment[2]/body/p[3]/text().15",
+            pageno = 11,
+            pageref = "11",
+            datetime = "2026-11-20 14:00:00",
+        },
+    }
+    local mock_doc = {
+        getPageFromXPointer = function(_, xp)
+            if xp:find("p%[1%]") then return 9 end
+            if xp:find("p%[3%]") then return 11 end
+            return nil
+        end,
+    }
+    local epub_hw = Export:cleanHandwritten(epub_path, nil, epub_raw, mock_doc)
+    T.check(#epub_hw == 4,
+        "4d: EPUB collects 4 InkAway items (grouped xp0 margin note, pinned pg=22, chapter notebook page, highlight notebook page): got " .. tostring(#epub_hw))
+    local by_page = {}
+    local saw_chap_nb = false
+    for __, h in ipairs(epub_hw) do
+        if h.page then
+            by_page[h.page] = h
+        elseif h.chapter == "Chapter I" then
+            saw_chap_nb = true
+        end
+    end
+    T.check(saw_chap_nb, "4d: chapter notebook page extracted with Chapter I heading")
+    T.check(by_page["9"] and #by_page["9"].drawing_strokes == 2,
+        "4d: two strokes on same xp0 grouped into 1 SVG resolved via document:getPageFromXPointer to page 9")
+    T.check(by_page["11"] and by_page["11"].chapter == "Chapter I",
+        "4d: highlight handwritten note page matched to highlight p. 11 and Chapter I")
+    T.check(by_page["22"] ~= nil,
+        "4d: pinned reflowable page pg=22 extracted")
+
+    T.rmrf(INK_WORK)
+end
+
 T.finish("test_handwritten")

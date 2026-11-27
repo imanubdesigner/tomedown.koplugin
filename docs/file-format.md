@@ -374,16 +374,16 @@ Under *Settings → Index & library*, you can enable modular components in `00 -
 
 ## Handwritten notes & Stylus drawings
 
-For devices equipped with a stylus (Kindle Scribe, Kobo Sage/Elipsa, Android e-ink, or via KOReader's `pencil.koplugin`), Tomedown automatically discovers handwritten annotations in the book's `.sdr` directory:
+For devices equipped with a stylus (Kindle Scribe, Kobo Sage/Elipsa, Onyx Boox, Android e-ink, or via KOReader plugins like `ink-away.koplugin`, `pencil.koplugin`, and `stylus-annotations`), Tomedown automatically discovers handwritten annotations across both EPUB reflowable books and fixed-page documents like PDF:
 
 1. **Drawing Extraction**:
-   - Vector drawings (point-sequence strokes) are transformed into scalable, sharp **SVG** vector files via a pure Lua vector generator.
+   - Vector drawings, stylus strokes, and shapes (including InkAway freehand lines, rectangles, circles, arrows, and highlighters) are transformed into scalable, sharp **SVG** vector files via a pure Lua vector generator.
    - Raster drawings (e.g. pencil PNGs) are extracted with transparent borders.
    - Images are placed into the `drawings/` folder inside your vault (customizable via *Settings → Export → File names & folders → Drawings folder*, including nested paths up to 3 levels such as `assets/drawings` with automatic file migration).
 2. **Standard Markdown Embeds**:
    - In the book note, drawings are embedded natively using standard Markdown image syntax.
    - Each drawing receives an Obsidian block ID (`^hl-...`), allowing you to link directly to or embed the handwritten drawing anywhere in your vault: `![[Book Title#^hl-3a8f19bc]]`.
-   - Any text note attached to the stylus annotation in KOReader appears right below as a formatted user note.
+   - Any text note attached to the stylus annotation in KOReader (or InkAway text boxes) appears right below as a formatted user note.
 
 ```markdown
 ![Handwritten note · p. 25](drawings/Author%20-%20Title%20-%20note-1.svg) ^hl-3a8f19bc

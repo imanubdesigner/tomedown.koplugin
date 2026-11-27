@@ -70,7 +70,7 @@ Changing any option in **Index & library** marks the index as stale, so the next
 | *Personal notes format: %1* | **Inline** (smart indented bullet under the quote: italic for brief plain notes, clean roman text with preserved sub-lists and Markdown for rich/multi-line notes, default), **Callout ([!note])** (renders personal notes inside a dedicated `> [!note]` callout in Obsidian), or **Footnotes** (appends notes as numbered Markdown footnotes `[^1]` at the end of the file) |
 | *Chapter headings: %1* | Defaults to **Heading 1 (`# Chapter`)**; can be set to **Heading 2 (`## Chapter`)**, **Heading 3 (`### Chapter`)**, or **None (continuous list)** |
 | *Page bookmarks* | Off by default: adds a `# Page bookmarks` section (bookmarked page + note) after the highlights |
-| *Handwritten notes* | On by default: extracts stylus/pencil drawings from `.sdr` folders, renders them as pure vector SVG or PNG images into `drawings/`, and embeds them into your Markdown notes |
+| *Handwritten notes* | On by default: extracts stylus and pencil drawings from `.sdr` folders (including `ink-away.koplugin` on PDFs and EPUBs, and `pencil.koplugin`), renders them as pure vector SVG or PNG images into `drawings/`, and embeds them into your Markdown notes |
 | *Book page ▸* | Opens the submenu for the book note header and visual modules (see [Book page & Section styles](#book-page-section-styles) below) |
 
 ### Book page & Section styles
