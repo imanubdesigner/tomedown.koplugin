@@ -116,12 +116,65 @@ def parse_front(text):
     return meta, text
 
 
+def plain_html(fragment):
+    cleaned = re.sub(r"<(script|style|svg)\b[^>]*>.*?</\1>", " ", fragment, flags=re.S | re.I)
+    text = html.unescape(re.sub(r"<[^>]+>", " ", cleaned))
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def index_sections(url_base, page_title, body, category="Docs"):
+    """One search entry per h2/h3 section (plus intro), with plain text."""
+    parts = re.split(r'(<h[23][^>]*\bid="[^"]*"[^>]*>.*?</h[23]>)', body, flags=re.S)
+    out = []
+    heading, anchor = page_title, ""
+    for i, part in enumerate(parts):
+        if i % 2 == 1:
+            m = re.search(r'\bid="([^"]*)"', part)
+            anchor = f"#{m.group(1)}" if m else ""
+            heading = plain_html(part).rstrip("#").strip() or page_title
+            text = ""
+        else:
+            text = plain_html(part)
+        if i % 2 == 1 or (i == 0 and text):
+            out.append({"c": category, "p": page_title, "h": heading, "u": f"{url_base}{anchor}", "t": ""})
+        if text and out:
+            out[-1]["t"] = text[:1500]
+    return [e for e in out if e["t"] or e["h"]]
+
+
+def index_html_page(url, page_title, body, category):
+    """Index standalone HTML pages by <section id=...> or h2/h3 headings."""
+    entries = []
+    sec_re = re.compile(r'<section\b[^>]*\bid="([^"]+)"[^>]*>(.*?)</section>', re.S | re.I)
+    for m in sec_re.finditer(body):
+        sid, inner = m.group(1), m.group(2)
+        hm = re.search(r'<h[123]\b[^>]*>(.*?)</h[123]>', inner, re.S | re.I)
+        heading = plain_html(hm.group(1)) if hm else sid.replace("-", " ").title()
+        text = plain_html(inner)
+        if text:
+            entries.append({"c": category, "p": page_title, "h": heading, "u": f"{url}#{sid}", "t": text[:1500]})
+    if not entries:
+        entries = index_sections(url, page_title, body, category=category)
+    return entries
+
+
 def build_pages(site):
+    page_index = []
+    labels = {
+        "index": ("Home", "Home"),
+        "download": ("Download", "Download"),
+        "changelog": ("Changelog", "Changelog"),
+        "about": ("About", "About"),
+    }
     for f in sorted((SRC / "pages").glob("*.html")):
         meta, body = parse_front(f.read_text(encoding="utf-8"))
         name = f.stem
         url = "/" if name == "index" else f"/{name}/"
         site.render(url, meta.get("title", "Tomedown"), meta.get("description", ""), body)
+        if name in labels:
+            ptitle, cat = labels[name]
+            page_index.extend(index_html_page(url, ptitle, body, cat))
+    return page_index
 
 
 def first_heading(md, fallback):
@@ -134,33 +187,8 @@ def doc_path(docs_root, name):
     return SRC / "docs-extra" / name[6:] if name.startswith("extra/") else docs_root / name
 
 
-def index_sections(slug, page_title, body):
-    """One search entry per h2/h3 section of a rendered doc page (plus the
-    intro before the first heading), with the section's plain text."""
-    def plain(fragment):
-        text = html.unescape(re.sub(r"<[^>]+>", " ", fragment))
-        return re.sub(r"\s+", " ", text).strip()
-
-    parts = re.split(r'(<h[23] id="[^"]*"[^>]*>.*?</h[23]>)', body, flags=re.S)
-    out = []
-    heading, anchor = page_title, ""
-    for i, part in enumerate(parts):
-        if i % 2 == 1:
-            m = re.match(r'<h[23] id="([^"]*)"', part)
-            anchor = f"#{m.group(1)}"
-            heading = plain(part).rstrip("#").strip() or page_title
-            text = ""
-        else:
-            text = plain(part)
-        if i % 2 == 1 or (i == 0 and text):
-            out.append({"p": page_title, "h": heading, "u": f"/docs/{slug}/{anchor}", "t": ""})
-        if text and out:
-            out[-1]["t"] = text[:1500]
-    return out
-
-
-def build_docs(site, docs_root, slugmap, nav):
-    search_index = []
+def build_docs(site, docs_root, slugmap, nav, extra_index=None):
+    search_index = list(extra_index or [])
     entries = []
     for section in nav["sections"]:
         for item in section["items"]:
@@ -243,7 +271,7 @@ def build_docs(site, docs_root, slugmap, nav):
         md.reset()
         body = fix_links(md.convert(text))
         body = re.sub(r'(<a class="header-anchor"[^>]*>)#</a>', r'\1' + anchor_svg + '</a>', body)
-        search_index.extend(index_sections(item["slug"], item["title"], body))
+        search_index.extend(index_sections(f'/docs/{item["slug"]}/', item["title"], body, category="Docs"))
         toc_html = render_toc(getattr(md, "toc_tokens", []))
         toc_mobile_btn = ('<button type="button" class="docs-mobile-btn docs-mobile-toc-toggle" id="docs-toc-toggle" aria-expanded="false" aria-label="Toggle section outline">'
                           '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>'
@@ -344,7 +372,7 @@ def build_docs(site, docs_root, slugmap, nav):
         f'    <search class="hub-search-wrap">'
         f'      <label for="hub-search-input" class="sr-only">Search documentation chapters</label>'
         f'      <svg class="hub-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>'
-        f'      <input type="search" id="hub-search-input" class="hub-search-input" placeholder="Jump to any chapter or keyword..." autocomplete="off" />'
+        f'      <input type="search" id="hub-search-input" class="hub-search-input" placeholder="Search the docs: any word, setting or section..." autocomplete="off" />'
         f'      <kbd class="hub-search-kbd" id="hub-search-kbd" aria-hidden="true">⌘K</kbd>'
         f'    </search>'
         f'    <p id="hub-search-status" class="sr-only" role="status" aria-live="polite"></p>'
@@ -469,8 +497,8 @@ def main():
             if p.exists():
                 i.setdefault("title", first_heading(p.read_text(encoding="utf-8"), i["slug"]))
 
-    build_pages(site)
-    build_docs(site, docs_root, slugmap, nav)
+    page_index = build_pages(site)
+    build_docs(site, docs_root, slugmap, nav, extra_index=page_index)
     copy_static(docs_root, args.offline_fonts)
     # 404 at the root of dist, as GitHub Pages expects
     shutil.move(DIST / "404" / "index.html", DIST / "404.html")

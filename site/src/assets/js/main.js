@@ -875,15 +875,21 @@
       }
     };
 
-    searchInput.addEventListener("input", filterDocs);
+    // typing or clicking here opens the full-text search (same modal as Ctrl+K)
+    // with what was typed, so /docs/ never shows a weaker, titles-only search
+    var openFullSearch = function () {
+      var q = searchInput.value;
+      searchInput.value = "";
+      filterDocs();
+      if (window.tomedownSearch) window.tomedownSearch.open(q);
+    };
+    searchInput.addEventListener("input", openFullSearch);
+    searchInput.addEventListener("click", openFullSearch);
 
     window.addEventListener("keydown", function (e) {
       if (e.key === "Escape" && document.activeElement === searchInput && searchInput.value) {
         searchInput.value = "";
         filterDocs();
-      } else if (e.key === "Enter" && document.activeElement === searchInput && searchInput.value.trim()) {
-        e.preventDefault();
-        if (window.tomedownSearch) window.tomedownSearch.open(searchInput.value.trim());
       }
     });
   }
@@ -1350,7 +1356,7 @@
       k.textContent = isApple ? "\u2318K" : "Ctrl K";
     });
 
-    var index = null, loading = null, dialog, input, list, status, lastFocus, results = [], active = -1;
+    var index = null, loading = null, dialog, input, clearBtn, list, status, lastFocus, results = [], active = -1;
 
     function norm(str) {
       return String(str).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -1414,7 +1420,7 @@
       if (!toks.length) {
         var seen = {};
         return index.filter(function (e) {
-          if (seen[e.p]) return false;
+          if (e.c !== "Docs" || seen[e.p]) return false;
           seen[e.p] = true; return true;
         }).slice(0, 8).map(function (e) { return { e: e, snippet: e.t.slice(0, 140) }; });
       }
@@ -1430,6 +1436,7 @@
           if (e.nh.indexOf(q) !== -1) total += 10;
           else if (e.nt.indexOf(q) !== -1) total += 5;
         }
+        if (e.c === "Docs") total += 1;
         out.push({ e: e, score: total, toks: toks });
       });
       out.sort(function (a, b) { return b.score - a.score; });
@@ -1477,8 +1484,9 @@
       list.innerHTML = results.map(function (r, i) {
         var e = r.e, sn = r.snippet || snippetFor(r);
         var crumb = e.h === e.p ? esc(e.p) : esc(e.p) + " \u203a " + highlight(e.h, toks);
+        var cat = e.c ? '<span class="search-cat">' + esc(e.c) + "</span>" : "";
         return '<li role="option" id="search-opt-' + i + '" data-i="' + i + '"' + (i === 0 ? ' aria-selected="true"' : "") + ">" +
-          '<a href="' + base + e.u + '" tabindex="-1"><span class="search-crumb">' + crumb + "</span>" +
+          '<a href="' + base + e.u + '" tabindex="-1"><span class="search-head-row"><span class="search-crumb">' + crumb + "</span>" + cat + "</span>" +
           '<span class="search-snippet">' + highlight(sn, toks) + "</span></a></li>";
       }).join("");
       status.textContent = results.length + (results.length === 1 ? " result." : " results.");
@@ -1496,6 +1504,10 @@
       if (cur) cur.scrollIntoView({ block: "nearest" });
     }
 
+    function syncClear() {
+      if (clearBtn) clearBtn.hidden = !input.value.length;
+    }
+
     function build() {
       dialog = document.createElement("div");
       dialog.className = "search-modal";
@@ -1504,13 +1516,15 @@
         '<div class="search-backdrop" data-close></div>' +
         '<div class="search-panel" role="dialog" aria-modal="true" aria-label="Search the documentation">' +
         '<div class="search-field"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>' +
-        '<input type="search" class="search-input" placeholder="Search the docs\u2026" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="true" aria-controls="search-list" aria-label="Search the documentation">' +
+        '<input type="search" class="search-input" placeholder="Search docs, settings, changelog\u2026" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="true" aria-controls="search-list" aria-label="Search the documentation">' +
+        '<button type="button" class="search-clear" aria-label="Clear search" hidden><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>' +
         '<kbd>Esc</kbd></div>' +
         '<ul class="search-list" id="search-list" role="listbox" aria-label="Search results"></ul>' +
-        '<p class="search-foot"><span><kbd>\u2191</kbd><kbd>\u2193</kbd> navigate</span><span><kbd>\u21b5</kbd> open</span></p>' +
+        '<p class="search-foot"><span><kbd>\u2191</kbd><kbd>\u2193</kbd> navigate</span><span><kbd>\u21b5</kbd> open</span><span><kbd>Esc</kbd> close</span></p>' +
         '<p class="sr-only" role="status" aria-live="polite" id="search-status"></p></div>';
       document.body.appendChild(dialog);
       input = dialog.querySelector(".search-input");
+      clearBtn = dialog.querySelector(".search-clear");
       list = dialog.querySelector(".search-list");
       status = dialog.querySelector("#search-status");
       dialog.addEventListener("click", function (e) {
@@ -1518,11 +1532,17 @@
         var a = e.target.closest && e.target.closest("a");
         if (a) close();
       });
+      clearBtn.addEventListener("click", function () {
+        input.value = "";
+        syncClear();
+        if (index) render("");
+        input.focus();
+      });
       list.addEventListener("mousemove", function (e) {
         var li = e.target.closest && e.target.closest("[role=option]");
         if (li && li.getAttribute("data-i") !== String(active)) setActive(parseInt(li.getAttribute("data-i"), 10));
       });
-      input.addEventListener("input", function () { if (index) render(input.value); });
+      input.addEventListener("input", function () { syncClear(); if (index) render(input.value); });
       input.addEventListener("keydown", function (e) {
         if (e.key === "ArrowDown") { e.preventDefault(); setActive(active + 1); }
         else if (e.key === "ArrowUp") { e.preventDefault(); setActive(active - 1); }
@@ -1537,8 +1557,10 @@
       dialog.hidden = false;
       document.body.style.overflow = "hidden";
       input.value = initial || "";
+      syncClear();
       input.focus();
-      input.select();
+      var len = input.value.length;
+      if (input.setSelectionRange) input.setSelectionRange(len, len);
       list.innerHTML = '<li class="search-empty" role="presentation">Loading\u2026</li>';
       load().then(function () { render(input.value); }).catch(function () {
         list.innerHTML = '<li class="search-empty" role="presentation">Search is unavailable right now.</li>';
