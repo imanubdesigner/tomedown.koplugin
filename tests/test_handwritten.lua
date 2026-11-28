@@ -992,6 +992,36 @@ do
     T.check(not paired[1].handwritten and paired[2].handwritten,
         "4g.6: text highlight sorts before linked handwritten note on same page/time")
 
+    -- 4g.7: Eraser op (kind="erase") inside Book notes removes prior strokes ("S") while keeping square and later strokes ("Hope")
+    local erase_pdf = INK_WORK .. "/books/EraseNote.pdf"
+    local erase_sdr = erase_pdf .. ".sdr"
+    local erase_nb = INK_WORK .. "/Book notes/EraseNote.inkaway"
+    util.makePath(erase_sdr)
+    writeBytes(erase_nb, [[return {
+        ["v"]=2,["w"]=400,["h"]=300,
+        ["pages"]={
+            {
+                ["title"]="Chapter 1",
+                ["book"]={["toc"]=1,},
+                ["ops"]={
+                    {["kind"]="shape",["shape"]="rect",["fill"]=false,["width"]=3,["pts"]={10,10,80,80},},
+                    {["kind"]="ink",["style"]="solid",["width"]=4,["pts"]={120,20,100,40,120,60},},
+                    {["kind"]="erase",["width"]=30,["pts"]={100,20,125,60},},
+                    {["kind"]="ink",["style"]="solid",["width"]=4,["pts"]={110,15,110,65},},
+                },
+            },
+        },
+    }]])
+    writeBytes(erase_sdr .. "/inkaway.lua", string.format([[return {
+        ["version"]=1,
+        ["notes"]=%q,
+        ["items"]={},
+    }]], erase_nb))
+    local erase_hw = Export:cleanHandwritten(erase_pdf, nil, {}, nil, nil)
+    T.check(#erase_hw == 1 and erase_hw[1].drawing_strokes and #erase_hw[1].drawing_strokes == 2,
+        "4g.7: eraser removes erased 'S' stroke while keeping prior rect and subsequent 'Hope' stroke (got " ..
+        tostring(erase_hw[1] and erase_hw[1].drawing_strokes and #erase_hw[1].drawing_strokes) .. ")")
+
     T.rmrf(INK_WORK)
 end
 

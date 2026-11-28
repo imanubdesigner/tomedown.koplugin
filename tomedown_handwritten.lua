@@ -749,12 +749,100 @@ local function inkAwayExtractText(op)
     return table.concat(lines, "\n")
 end
 
+local function ptToSegDist2(px, py, ax, ay, bx, by)
+    local dx, dy = bx - ax, by - ay
+    local len2 = dx * dx + dy * dy
+    if len2 <= 1e-6 then
+        local ex, ey = px - ax, py - ay
+        return ex * ex + ey * ey
+    end
+    local t = ((px - ax) * dx + (py - ay) * dy) / len2
+    if t < 0 then t = 0 elseif t > 1 then t = 1 end
+    local cx, cy = ax + t * dx, ay + t * dy
+    local ex, ey = px - cx, py - cy
+    return ex * ex + ey * ey
+end
+
+local function applyInkAwayErase(strokes, op, ox, oy)
+    local epts = flatPtsToPoints(op.pts, ox, oy)
+    if #epts == 0 or #strokes == 0 then
+        return
+    end
+    local erase_r = (tonumber(op.width) or 20) / 2
+    local next_strokes = {}
+    for __, s in ipairs(strokes) do
+        local pts = s.points
+        if s.fill or type(pts) ~= "table" or #pts == 0 then
+            next_strokes[#next_strokes + 1] = s
+        else
+            local reach = erase_r + ((tonumber(s.width) or 2.5) / 2)
+            local reach2 = reach * reach
+            local function isErased(pt)
+                if #epts == 1 then
+                    local ex, ey = pt.x - epts[1].x, pt.y - epts[1].y
+                    return (ex * ex + ey * ey) <= reach2
+                end
+                for i = 1, #epts - 1 do
+                    if ptToSegDist2(pt.x, pt.y, epts[i].x, epts[i].y, epts[i + 1].x, epts[i + 1].y) <= reach2 then
+                        return true
+                    end
+                end
+                return false
+            end
+            local any_erased = false
+            local run = {}
+            local runs = {}
+            for ___, pt in ipairs(pts) do
+                if isErased(pt) then
+                    any_erased = true
+                    if #run > 0 then
+                        runs[#runs + 1] = run
+                        run = {}
+                    end
+                else
+                    run[#run + 1] = pt
+                end
+            end
+            if #run > 0 then
+                runs[#runs + 1] = run
+            end
+            if not any_erased then
+                next_strokes[#next_strokes + 1] = s
+            else
+                for ___, rpts in ipairs(runs) do
+                    next_strokes[#next_strokes + 1] = {
+                        points = rpts,
+                        width = s.width,
+                        color = s.color,
+                        opacity = s.opacity,
+                        alpha = s.alpha,
+                        closed = (#runs == 1) and s.closed or false,
+                        fill = false,
+                    }
+                end
+            end
+        end
+    end
+    for i = 1, #strokes do
+        strokes[i] = nil
+    end
+    for i, s in ipairs(next_strokes) do
+        strokes[i] = s
+    end
+end
+
 local function inkAwayAppendOp(strokes, texts, op, ox, oy, cw, ch)
     if type(op) ~= "table" or op.hidden then
         return
     end
     local kind = op.kind
-    if kind == "erase" or kind == "smudge" or kind == "link" or kind == "image" then
+    if kind == "erase" then
+        if type(op.pts) == "table" and #op.pts >= 2 then
+            applyInkAwayErase(strokes, op, ox, oy)
+        end
+        return
+    end
+    if kind == "smudge" or kind == "link" or kind == "image" then
         return
     end
     if kind == "text" then
