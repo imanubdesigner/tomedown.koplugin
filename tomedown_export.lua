@@ -1012,7 +1012,7 @@ function M:buildDigestBooks()
             local book = self:buildBook(file, live)
             if book and book.annotations and #book.annotations > 0 then
                 if getIncludeHandwritten(file) then
-                    local hw = Handwritten.ensureDrawings(book, dir, drawings_folder)
+                    local hw = Handwritten.ensureDrawings(book, dir, drawings_folder, { prune = true })
                     for __, p in ipairs(hw or {}) do
                         if not seen_drawings[p] then
                             seen_drawings[p] = true
@@ -1296,7 +1296,7 @@ function M:runExport(files, opts)
                         book_cover = "../" .. book_cover
                     end
                     local hw_written = (write_md and getIncludeHandwritten(file))
-                        and Handwritten.ensureDrawings(book, dir, current_drawings) or {}
+                        and Handwritten.ensureDrawings(book, dir, current_drawings, { prune = true }) or {}
                     local is_std_book = (getMarkdownStyle(file) ~= "obsidian")
                     local raw_marker = shared.getSpecialMarker(file)
                     local render_opts = {

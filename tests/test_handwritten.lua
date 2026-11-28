@@ -802,6 +802,178 @@ do
         "4f.5: closed EPUB with zero highlights resolves chapters from cached xpointer TOC without opening CreDocument")
 
     package.loaded["document/documentregistry"] = prev_dr
+
+    -- 4g. Unified InkAway EPUB annotation grouping (arrow + box + multi-word "This"),
+    --     multi-word horizontal spacing, two-note vertical separation, stable IDs +
+    --     stale SVG cleanup, and full InkAway op fidelity (highlighter, breaks, fill_color, fill, sym, continuation pages)
+    local arrow_epub = INK_WORK .. "/books/ArrowThis.epub"
+    local arrow_sdr = arrow_epub .. ".sdr"
+    util.makePath(arrow_sdr)
+    writeBytes(arrow_sdr .. "/inkaway.lua", [[return {
+        ["version"]=1,
+        ["items"]={
+            {["a"]={["dx"]=132,["dy"]=-1,["xp0"]="/body/DocFragment[7]/body/section/p[48]/text().421",["xp1"]="/body/DocFragment[7]/body/section/p[48]/text().426",},["op"]={["alpha"]=255,["color"]={0,0,0},["fill"]=false,["kind"]="shape",["pts"]={9.6,9.5,69.0,54.5},["shape"]="rect",["width"]=9,},},
+            {["a"]={["dx"]=232,["dy"]=-25,["xp0"]="/body/DocFragment[7]/body/section/p[49]/text().28",["xp1"]="/body/DocFragment[7]/body/section/p[49]/text().38",},["op"]={["alpha"]=255,["arrow"]="end",["color"]={0,0,0},["fill"]=false,["head"]=39,["kind"]="shape",["pts"]={9.3,25.9,115.5,27.7},["shape"]="line",["width"]=9,},},
+            {["a"]={["dx"]=387,["dy"]=-20,["xp0"]="/body/DocFragment[7]/body/section/p[49]/text().28",["xp1"]="/body/DocFragment[7]/body/section/p[49]/text().38",},["op"]={["alpha"]=255,["color"]={0,0,0},["kind"]="ink",["pts"]={9.1,9.2,18.0,25.0,27.1,42.5},["style"]="solid",["width"]=9,},},
+            {["a"]={["dx"]=343,["dy"]=-5,["xp0"]="/body/DocFragment[7]/body/section/p[48]/text().421",["xp1"]="/body/DocFragment[7]/body/section/p[48]/text().426",},["op"]={["alpha"]=255,["color"]={0,0,0},["kind"]="ink",["pts"]={9.2,10.8,81.2,11.7},["style"]="solid",["width"]=9,},},
+            {["a"]={["dx"]=427,["dy"]=2,["xp0"]="/body/DocFragment[7]/body/section/p[48]/text().421",["xp1"]="/body/DocFragment[7]/body/section/p[48]/text().426",},["op"]={["alpha"]=255,["color"]={0,0,0},["kind"]="ink",["pts"]={8.9,9.2,28.7,42.5},["style"]="solid",["width"]=9,},},
+            {["a"]={["dy"]=-29,["mr"]=277,["xp0"]="/body/DocFragment[7]/body/section/p[49]/text().28",["xp1"]="/body/DocFragment[7]/body/section/p[49]/text().38",},["op"]={["alpha"]=255,["color"]={0,0,0},["kind"]="ink",["pts"]={29.8,9.2,22.6,40.7},["style"]="solid",["width"]=9,},},
+        },
+    }]])
+    local arrow_doc = {
+        loadDocument = function() return true end,
+        been_rendered = true,
+        info = { has_pages = false },
+        getPageFromXPointer = function() return 57 end,
+        gotoPage = function() end,
+        getCurrentPage = function() return 1 end,
+        getScreenWidth = function() return 1261 end,
+        getScreenBoxesFromPositions = function(_, xp0)
+            if xp0:find("p%[48%]") then
+                return { { x = 109, y = 554, w = 49, h = 26 } }
+            end
+            return { { x = 326, y = 580, w = 98, h = 26 } }
+        end,
+    }
+    local arrow_hw = Export:cleanHandwritten(arrow_epub, nil, {}, arrow_doc, nil)
+    T.check(#arrow_hw == 1,
+        "4g.1: rectangle + arrow + 'This' across p[48] & p[49] merge into 1 single annotation (got " .. tostring(#arrow_hw) .. ")")
+    if arrow_hw[1] and arrow_hw[1].drawing_strokes then
+        local st = arrow_hw[1].drawing_strokes
+        -- rect (1) + arrow shaft & 2 barbs (3) + 4 letter strokes = 8 strokes
+        T.check(#st == 8,
+            "4g.1: unified annotation keeps all 8 vector strokes (rect, arrow shaft + 2 barbs, 'This' letters): got " .. tostring(#st))
+        local rect_x = st[1].points[1].x
+        local s_x = st[#st].points[1].x
+        T.check(s_x > rect_x + 500,
+            "4g.1: right-margin stroke 's' (mr=277 on W=1261) placed to the right of rectangle (s_x=" .. tostring(s_x) .. ", rect_x=" .. tostring(rect_x) .. ")")
+    end
+    local arrow_offline = Export:cleanHandwritten(arrow_epub, nil, {}, nil, nil)
+    T.check(#arrow_offline == 1,
+        "4g.1b: offline fallback also merges rectangle + arrow + 'This' across p[48]/p[49] into 1 single annotation (got " .. tostring(#arrow_offline) .. ")")
+
+    -- 4g.2: Multi-word handwritten sentence across .16, .29, .39, .47 + h2 (dyb) merges into 1 annotation without piling letters at x=0
+    local word_epub = INK_WORK .. "/books/MultiWord.epub"
+    local word_sdr = word_epub .. ".sdr"
+    util.makePath(word_sdr)
+    writeBytes(word_sdr .. "/inkaway.lua", [[return {
+        ["version"]=1,
+        ["items"]={
+            {["a"]={["dx"]=27,["dy"]=-54,["xp0"]="/body/DocFragment[8]/body/section/p[1]/text().16",["xp1"]="/body/DocFragment[8]/body/section/p[1]/text().22",},["op"]={["kind"]="ink",["pts"]={9,31,45,9},["width"]=9,},},
+            {["a"]={["dx"]=-28,["dy"]=-61,["xp0"]="/body/DocFragment[8]/body/section/p[1]/text().29",["xp1"]="/body/DocFragment[8]/body/section/p[1]/text().34",},["op"]={["kind"]="ink",["pts"]={8,22,40,35},["width"]=9,},},
+            {["a"]={["dx"]=-1,["dy"]=-65,["xp0"]="/body/DocFragment[8]/body/section/p[1]/text().39",["xp1"]="/body/DocFragment[8]/body/section/p[1]/text().43",},["op"]={["kind"]="ink",["pts"]={18,9,9,28},["width"]=9,},},
+            {["a"]={["dx"]=0,["dy"]=-63,["xp0"]="/body/DocFragment[8]/body/section/p[1]/text().47",["xp1"]="/body/DocFragment[8]/body/section/p[1]/text().57",},["op"]={["kind"]="ink",["pts"]={9,9,58,44},["width"]=9,},},
+            {["a"]={["dx"]=85,["dyb"]=20,["xp0"]="/body/DocFragment[8]/body/section/h2/text().16",["xp1"]="/body/DocFragment[8]/body/section/h2/text().24",},["op"]={["kind"]="ink",["pts"]={9,9,78,44},["width"]=9,},},
+        },
+    }]])
+    local word_offline = Export:cleanHandwritten(word_epub, nil, {}, nil, nil)
+    T.check(#word_offline == 1,
+        "4g.2: multi-word sentence across .16/.29/.39/.47 + adjacent h2 merges into 1 annotation offline (got " .. tostring(#word_offline) .. ")")
+    if word_offline[1] and word_offline[1].drawing_strokes and #word_offline[1].drawing_strokes >= 4 then
+        local x_first = word_offline[1].drawing_strokes[1].points[1].x
+        local x_fourth = word_offline[1].drawing_strokes[4].points[1].x
+        T.check(x_fourth > x_first + 150,
+            "4g.2: offline char-offset estimator spaces .47 well to the right of .16 (x1=" .. tostring(x_first) .. ", x4=" .. tostring(x_fourth) .. ")")
+    end
+
+    -- 4g.3: Two distinct margin notes far apart vertically on same PDF page (y=60 vs y=900) stay 2 separate annotations
+    local two_pdf = INK_WORK .. "/books/TwoNotes.pdf"
+    local two_sdr = two_pdf .. ".sdr"
+    util.makePath(two_sdr)
+    writeBytes(two_sdr .. "/inkaway.lua", [[return {
+        ["version"]=1,
+        ["items"]={
+            {["a"]={["page"]=5,["x"]=40,["y"]=60,},["op"]={["kind"]="ink",["pts"]={0,0,50,15},["width"]=3,},},
+            {["a"]={["page"]=5,["x"]=40,["y"]=900,},["op"]={["kind"]="ink",["pts"]={0,0,50,15},["width"]=3,},},
+        },
+    }]])
+    local two_hw = Export:cleanHandwritten(two_pdf, nil, {}, nil, nil)
+    T.check(#two_hw == 2,
+        "4g.3: two notes 840px apart vertically on same page stay 2 separate compact annotations (got " .. tostring(#two_hw) .. ")")
+
+    -- 4g.4: Stable reflowable drawing_id across page-number changes & orphan SVG cleanup
+    local hw_p19 = Export:cleanHandwritten(arrow_epub, nil, {}, {
+        loadDocument = function() return true end,
+        been_rendered = true,
+        getPageFromXPointer = function() return 19 end,
+    }, nil)
+    local hw_p41 = Export:cleanHandwritten(arrow_epub, nil, {}, {
+        loadDocument = function() return true end,
+        been_rendered = true,
+        getPageFromXPointer = function() return 41 end,
+    }, nil)
+    local hw_closed = Export:cleanHandwritten(arrow_epub, nil, {}, nil, nil)
+    T.check(hw_p19[1] and hw_p41[1] and hw_closed[1]
+            and hw_p19[1].drawing_id == hw_p41[1].drawing_id
+            and hw_p19[1].drawing_id == hw_closed[1].drawing_id,
+        "4g.4: EPUB drawing_id stays identical across p.19 -> p.41 -> closed (" ..
+        tostring(hw_p19[1] and hw_p19[1].drawing_id) .. " vs " .. tostring(hw_closed[1] and hw_closed[1].drawing_id) .. ")")
+
+    local vault_dir = INK_WORK .. "/vault"
+    util.makePath(vault_dir .. "/drawings")
+    writeBytes(vault_dir .. "/drawings/ArrowThis - p19-1.svg", "<svg/>")
+    writeBytes(vault_dir .. "/drawings/ArrowThis - note-8.svg", "<svg/>")
+    writeBytes(vault_dir .. "/drawings/ArrowThis - Sequel - p1-1.svg", "<svg/>")
+    Handwritten.ensureDrawings({ base = "ArrowThis", annotations = hw_p41 }, vault_dir, "drawings")
+    T.check(lfs.attributes(vault_dir .. "/drawings/ArrowThis - p19-1.svg", "mode") == nil
+            and lfs.attributes(vault_dir .. "/drawings/ArrowThis - note-8.svg", "mode") == nil
+            and lfs.attributes(vault_dir .. "/drawings/ArrowThis - Sequel - p1-1.svg", "mode") == "file",
+        "4g.4b: ensureDrawings removes stale drawings of same book while preserving neighbouring book titles")
+
+    -- 4g.5: Highlighter translucency, eraser breaks, shape fill_color, paint-bucket fill, symmetry, and Book notes continuation page
+    local rich_pdf = INK_WORK .. "/books/RichOps.pdf"
+    local rich_sdr = rich_pdf .. ".sdr"
+    local rich_nb = INK_WORK .. "/Book notes/RichOps.inkaway"
+    util.makePath(rich_sdr)
+    writeBytes(rich_nb, [[return {
+        ["v"]=2,["w"]=200,["h"]=100,
+        ["pages"]={
+            {
+                ["title"]="Chapter One",
+                ["book"]={["toc"]=1,},
+                ["ops"]={
+                    {["kind"]="ink",["style"]="solid",["sym"]="vert",["width"]=3,["pts"]={10,10,30,30,},},
+                },
+            },
+            {
+                ["ops"]={
+                    {["kind"]="fill",["color"]={50,110,220},["alpha"]=255,["runs"]={10,20,15,10,21,15},},
+                },
+            },
+        },
+    }]])
+    writeBytes(rich_sdr .. "/inkaway.lua", string.format([[return {
+        ["version"]=1,
+        ["notes"]=%q,
+        ["items"]={
+            {["a"]={["page"]=1,["x"]=0,["y"]=0,},["op"]={["kind"]="ink",["style"]="highlighter",["color"]={255,235,59},["alpha"]=255,["width"]=28,["pts"]={10,20,120,20},},},
+            {["a"]={["page"]=1,["x"]=0,["y"]=40,},["op"]={["kind"]="ink",["style"]="solid",["color"]={0,0,0},["alpha"]=255,["width"]=4,["breaks"]={3},["pts"]={10,10,30,10,80,10,100,10},},},
+            {["a"]={["page"]=1,["x"]=0,["y"]=80,},["op"]={["kind"]="shape",["shape"]="rect",["fill"]=false,["fill_color"]={255,236,128},["color"]={38,38,38},["alpha"]=255,["width"]=3,["pts"]={10,10,60,40},},},
+        },
+    }]], rich_nb))
+    local rich_hw = Export:cleanHandwritten(rich_pdf, nil, {}, nil, nil)
+    Handwritten.ensureDrawings({ base = "RichOps", annotations = rich_hw }, vault_dir, "drawings")
+    local rich_by_id = {}
+    for __, rh in ipairs(rich_hw) do
+        rich_by_id[rh.drawing_id] = rh
+    end
+    local p1_item = rich_by_id["p1-1"]
+    local nb1_item = rich_by_id["nb-1"]
+    local nb2_item = rich_by_id["nb-2"]
+    local page1_svg = T.readFile(vault_dir .. "/" .. tostring(p1_item and p1_item.drawing))
+    T.check(page1_svg and page1_svg:find('opacity="0.42"', 1, true) ~= nil,
+        "4g.5a: highlighter stroke with alpha=255 renders with translucent opacity=0.42")
+    T.check(page1_svg and not page1_svg:find("L 30 50 L 80 50", 1, true)
+            and page1_svg:find("M 80 50", 1, true) ~= nil,
+        "4g.5b: eraser-cut stroke (breaks={3}) splits into separate subpaths without bridging erased gap")
+    T.check(page1_svg and page1_svg:find('fill="#ffec80"', 1, true) ~= nil
+            and page1_svg:find('stroke="#262626"', 1, true) ~= nil,
+        "4g.5c: sticker/bucket-filled shape renders both fill_color interior and stroke outline")
+    T.check(nb1_item and nb1_item.chapter == "Chapter One" and #nb1_item.drawing_strokes == 2,
+        "4g.5d: sym='vert' notebook stroke emits original + mirrored stroke")
+    T.check(nb2_item and nb2_item.chapter == "Chapter One" and #nb2_item.drawing_strokes >= 1,
+        "4g.5e: untagged Book notes continuation page inherits 'Chapter One' and exports flood-fill runs")
+
     T.rmrf(INK_WORK)
 end
 
