@@ -2,10 +2,12 @@
 Handwritten & stylus annotations support for tomedown.koplugin.
 
 Supports freehand notes, margin sketches, and stylus drawings created on
-e-readers (Kobo Libra Colour, Kobo Sage, Kobo Elipsa, Onyx Boox, Android)
-via KOReader stylus plugins such as `pencil.koplugin` (raster PNG previews
-and bookmark entries inside the book's `.sdr` sidecar directory) and
-`stylus-annotations.koplugin` (raw vector stroke coordinates).
+e-readers (Kindle Scribe, Kobo Libra Colour, Kobo Sage, Kobo Elipsa, Onyx Boox,
+Android) via KOReader stylus plugins such as `ink-away.koplugin` (`inkaway.lua`
+sidecar strokes, shapes, text boxes, and linked `.inkaway` book/highlight
+notebooks), `pencil.koplugin` (raster PNG previews and bookmark entries inside
+the book's `.sdr` sidecar directory), and `stylus-annotations.koplugin` (raw
+vector stroke coordinates).
 
 When an export runs:
 1. `handwritten.collect` inspects the document settings and `.sdr` folder
@@ -97,7 +99,23 @@ local function pointXY(pt)
     return nil, nil
 end
 
---- Normalize a stroke entry into `{ points = { {x, y}, ... }, width = number, color = string }`.
+local function formatColor(c)
+    if type(c) == "string" and c ~= "" then
+        return c
+    end
+    if type(c) == "table" then
+        local r, g, b = tonumber(c[1] or c.r), tonumber(c[2] or c.g), tonumber(c[3] or c.b)
+        if r and g and b then
+            r = math.max(0, math.min(255, math.floor(r + 0.5)))
+            g = math.max(0, math.min(255, math.floor(g + 0.5)))
+            b = math.max(0, math.min(255, math.floor(b + 0.5)))
+            return string.format("#%02x%02x%02x", r, g, b)
+        end
+    end
+    return "#1e1e1e"
+end
+
+--- Normalize a stroke entry into `{ points = { {x, y}, ... }, width = number, color = string, ... }`.
 local function normalizeStroke(stroke)
     if type(stroke) ~= "table" then
         return nil
@@ -119,11 +137,23 @@ local function normalizeStroke(stroke)
     if width <= 0 then
         width = 2.5
     end
-    local color = type(stroke.color) == "string" and stroke.color ~= "" and stroke.color or "#1e1e1e"
+    local opacity = tonumber(stroke.opacity)
+    if not opacity then
+        local alpha = tonumber(stroke.alpha)
+        if alpha and alpha > 0 and alpha < 255 then
+            opacity = alpha / 255
+        end
+    end
+    if opacity and (opacity <= 0 or opacity >= 0.995) then
+        opacity = nil
+    end
     return {
         points = pts,
         width = width,
-        color = color,
+        color = formatColor(stroke.color),
+        opacity = opacity,
+        closed = stroke.closed == true,
+        fill = stroke.fill == true,
     }
 end
 
@@ -133,6 +163,56 @@ local function fmtCoord(n)
         return tostring(math.floor(rounded))
     end
     return string.format("%.1f", rounded)
+end
+
+local function adler32Hex(s)
+    if type(s) ~= "string" or s == "" then
+        return nil
+    end
+    local s1, s2 = 1, 0
+    for i = 1, #s do
+        s1 = (s1 + s:byte(i)) % 65521
+        s2 = (s2 + s1) % 65521
+    end
+    return string.format("%04x%04x", s2, s1)
+end
+
+local function readFileBytes(path)
+    if type(path) ~= "string" or path == "" then
+        return nil
+    end
+    local f = io.open(path, "rb")
+    if not f then
+        return nil
+    end
+    local bytes = f:read("*a")
+    f:close()
+    return bytes
+end
+
+--- Load a serialized Lua data table (`return { ... }`) in an empty-env sandbox
+-- compatible with Lua 5.1, LuaJIT (including InkAway split-constant chunks), and Lua 5.4.
+local function loadLuaData(str)
+    if type(str) ~= "string" or str == "" or str:byte(1) == 27 then
+        return nil
+    end
+    local chunk
+    if setfenv and loadstring then
+        chunk = loadstring(str, "inkaway")
+        if chunk then
+            setfenv(chunk, {})
+        end
+    else
+        chunk = load(str, "inkaway", "t", {})
+    end
+    if not chunk then
+        return nil
+    end
+    local ok, data = pcall(chunk)
+    if ok and type(data) == "table" then
+        return data
+    end
+    return nil
 end
 
 --- Serialize a list of vector strokes into a standalone SVG string.
@@ -201,19 +281,29 @@ function handwritten.renderStrokesToSvg(strokes, width, height)
     for __, s in ipairs(norm_strokes) do
         local color = tostring(s.color):gsub('"', "")
         local w_str = fmtCoord(s.width)
+        local op_attr = s.opacity and string.format(' opacity="%.2f"', s.opacity) or ""
         if #s.points == 1 then
             local p = s.points[1]
             lines[#lines + 1] = string.format(
-                '  <circle cx="%s" cy="%s" r="%s" fill="%s"/>',
-                fmtCoord(p.x), fmtCoord(p.y), fmtCoord(s.width / 2), color)
+                '  <circle cx="%s" cy="%s" r="%s" fill="%s"%s/>',
+                fmtCoord(p.x), fmtCoord(p.y), fmtCoord(s.width / 2), color, op_attr)
         else
             local d = { "M " .. fmtCoord(s.points[1].x) .. " " .. fmtCoord(s.points[1].y) }
             for i = 2, #s.points do
                 d[#d + 1] = "L " .. fmtCoord(s.points[i].x) .. " " .. fmtCoord(s.points[i].y)
             end
-            lines[#lines + 1] = string.format(
-                '  <path d="%s" fill="none" stroke="%s" stroke-width="%s" stroke-linecap="round" stroke-linejoin="round"/>',
-                table.concat(d, " "), color, w_str)
+            if s.closed and #s.points >= 3 then
+                d[#d + 1] = "Z"
+            end
+            if s.fill and s.closed then
+                lines[#lines + 1] = string.format(
+                    '  <path d="%s" fill="%s" stroke="none"%s/>',
+                    table.concat(d, " "), color, op_attr)
+            else
+                lines[#lines + 1] = string.format(
+                    '  <path d="%s" fill="none" stroke="%s" stroke-width="%s" stroke-linecap="round" stroke-linejoin="round"%s/>',
+                    table.concat(d, " "), color, w_str, op_attr)
+            end
         end
     end
     lines[#lines + 1] = "</svg>\n"
@@ -312,14 +402,419 @@ function handwritten.isPencilBookmarkNote(text)
         or lower:match("^stylus annotation") ~= nil
 end
 
+--- Convert an InkAway `op` (`ink-away.koplugin`) at offset `(ox, oy)` into
+-- vector strokes or extracted text paragraphs.
+local function flatPtsToPoints(flat, ox, oy)
+    local pts = {}
+    if type(flat) ~= "table" then
+        return pts
+    end
+    for i = 1, #flat - 1, 2 do
+        local x, y = tonumber(flat[i]), tonumber(flat[i + 1])
+        if x and y then
+            pts[#pts + 1] = { x = x + ox, y = y + oy }
+        end
+    end
+    return pts
+end
+
+local function inkAwayShapeStrokes(op, ox, oy)
+    local p = op.pts
+    if type(p) ~= "table" or #p < 4 then
+        return {}
+    end
+    local x0, y0, x1, y1 = tonumber(p[1]), tonumber(p[2]), tonumber(p[3]), tonumber(p[4])
+    if not (x0 and y0 and x1 and y1) then
+        return {}
+    end
+    local kind = op.shape
+    local poly, closed = {}, true
+    if kind == "line" then
+        poly = { x0, y0, x1, y1 }
+        closed = false
+    elseif kind == "curve" then
+        local cx = tonumber(p[5]) or (x0 + x1) / 2
+        local cy = tonumber(p[6]) or (y0 + y1) / 2
+        for i = 0, 24 do
+            local t = i / 24
+            local mt = 1 - t
+            local a, b, c = mt * mt, 2 * mt * t, t * t
+            poly[#poly + 1] = a * x0 + b * cx + c * x1
+            poly[#poly + 1] = a * y0 + b * cy + c * y1
+        end
+        closed = false
+    elseif kind == "rect" then
+        local ax0, ay0 = math.min(x0, x1), math.min(y0, y1)
+        local ax1, ay1 = math.max(x0, x1), math.max(y0, y1)
+        poly = { ax0, ay0, ax1, ay0, ax1, ay1, ax0, ay1 }
+    elseif kind == "triangle" then
+        local ax0, ay0 = math.min(x0, x1), math.min(y0, y1)
+        local ax1, ay1 = math.max(x0, x1), math.max(y0, y1)
+        poly = { (ax0 + ax1) / 2, ay0, ax0, ay1, ax1, ay1 }
+    elseif kind == "ellipse" then
+        local cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+        local rx, ry = math.abs(x1 - x0) / 2, math.abs(y1 - y0) / 2
+        local steps = math.max(24, math.min(64, math.floor(rx + ry)))
+        for i = 0, steps - 1 do
+            local a = (i / steps) * 2 * math.pi
+            poly[#poly + 1] = cx + rx * math.cos(a)
+            poly[#poly + 1] = cy + ry * math.sin(a)
+        end
+    elseif kind == "poly" then
+        for i = 1, #p do
+            poly[i] = tonumber(p[i]) or 0
+        end
+        closed = op.closed == true
+    else
+        return {}
+    end
+
+    local ang = tonumber(op.angle)
+    if ang and ang ~= 0 and #poly >= 2 then
+        local cx, cy
+        if kind == "poly" then
+            local minx, miny, maxx, maxy = math.huge, math.huge, -math.huge, -math.huge
+            for i = 1, #poly - 1, 2 do
+                if poly[i] < minx then minx = poly[i] end
+                if poly[i] > maxx then maxx = poly[i] end
+                if poly[i + 1] < miny then miny = poly[i + 1] end
+                if poly[i + 1] > maxy then maxy = poly[i + 1] end
+            end
+            cx, cy = (minx + maxx) / 2, (miny + maxy) / 2
+        else
+            cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+        end
+        local ca, sa = math.cos(ang), math.sin(ang)
+        for i = 1, #poly - 1, 2 do
+            local dx, dy = poly[i] - cx, poly[i + 1] - cy
+            poly[i] = cx + dx * ca - dy * sa
+            poly[i + 1] = cy + dx * sa + dy * ca
+        end
+    end
+
+    local pts = flatPtsToPoints(poly, ox, oy)
+    if #pts == 0 then
+        return {}
+    end
+    local color = formatColor(op.color)
+    local width = tonumber(op.width) or 2
+    local filled = (op.fill == true and closed)
+    local out = {
+        {
+            points = pts,
+            width = width,
+            color = color,
+            alpha = op.alpha,
+            closed = closed,
+            fill = filled,
+        },
+    }
+    if not filled and (op.arrow == "end" or op.arrow == "both")
+            and (kind == "line" or kind == "curve") and #poly >= 4 then
+        local n = math.floor(#poly / 2)
+        local head = tonumber(op.head) or math.max(12, width * 3)
+        local ca, sa = math.cos(0.4887), math.sin(0.4887)
+        local function addTip(txi, tyi, fxi, fyi)
+            local tx, ty = poly[txi], poly[tyi]
+            local dx, dy = tx - poly[fxi], ty - poly[fyi]
+            local len = math.sqrt(dx * dx + dy * dy)
+            if len < 1e-3 then
+                return
+            end
+            dx, dy = dx / len, dy / len
+            out[#out + 1] = {
+                points = {
+                    { x = tx + ox, y = ty + oy },
+                    { x = tx - head * (dx * ca - dy * sa) + ox, y = ty - head * (dx * sa + dy * ca) + oy },
+                },
+                width = width,
+                color = color,
+                alpha = op.alpha,
+            }
+            out[#out + 1] = {
+                points = {
+                    { x = tx + ox, y = ty + oy },
+                    { x = tx - head * (dx * ca + dy * sa) + ox, y = ty + head * (dx * sa - dy * ca) + oy },
+                },
+                width = width,
+                color = color,
+                alpha = op.alpha,
+            }
+        end
+        addTip(2 * n - 1, 2 * n, 2 * n - 3, 2 * n - 2)
+        if op.arrow == "both" then
+            addTip(1, 2, 3, 4)
+        end
+    end
+    return out
+end
+
+local function inkAwayExtractText(op)
+    if type(op.paras) ~= "table" then
+        return nil
+    end
+    local lines = {}
+    for __, para in ipairs(op.paras) do
+        if type(para) == "table" and type(para.spans) == "table" then
+            local parts = {}
+            for ___, span in ipairs(para.spans) do
+                if type(span) == "table" and type(span.t) == "string" then
+                    parts[#parts + 1] = span.t
+                end
+            end
+            local line = trim(table.concat(parts))
+            if line then
+                lines[#lines + 1] = line
+            end
+        end
+    end
+    if #lines == 0 then
+        return nil
+    end
+    return table.concat(lines, "\n")
+end
+
+local function inkAwayAppendOp(strokes, texts, op, ox, oy)
+    if type(op) ~= "table" or op.hidden then
+        return
+    end
+    local kind = op.kind
+    if kind == "erase" or kind == "smudge" or kind == "link" or kind == "image" or kind == "fill" then
+        return
+    end
+    if kind == "text" then
+        local txt = inkAwayExtractText(op)
+        if txt then
+            texts[#texts + 1] = txt
+        end
+        return
+    end
+    if kind == "shape" then
+        for __, s in ipairs(inkAwayShapeStrokes(op, ox, oy)) do
+            strokes[#strokes + 1] = s
+        end
+        return
+    end
+    if (kind == nil or kind == "ink") and type(op.pts) == "table" and #op.pts >= 2 then
+        local pts = flatPtsToPoints(op.pts, ox, oy)
+        if #pts > 0 then
+            strokes[#strokes + 1] = {
+                points = pts,
+                width = tonumber(op.width) or 2.5,
+                color = formatColor(op.color),
+                alpha = op.alpha,
+            }
+        end
+    end
+end
+
+local function resolveInkAwayNotebookPath(path)
+    if type(path) ~= "string" or path == "" then
+        return nil
+    end
+    if lfs.attributes(path, "mode") == "file" then
+        return path
+    end
+    local roots = {}
+    if G_reader_settings and type(G_reader_settings.readSetting) == "function" then
+        local custom = G_reader_settings:readSetting("inkaway_library_dir")
+        if type(custom) == "string" and custom ~= "" then
+            roots[#roots + 1] = custom
+        end
+    end
+    local ok_ds, DataStorage = pcall(require, "datastorage")
+    if ok_ds and DataStorage then
+        if type(DataStorage.getDataDir) == "function" then
+            roots[#roots + 1] = DataStorage:getDataDir() .. "/ink away"
+        end
+        if type(DataStorage.getSettingsDir) == "function" then
+            roots[#roots + 1] = DataStorage:getSettingsDir() .. "/ink away"
+        end
+    end
+    local leaf = path:match("([^/\\]+)$")
+    for __, root in ipairs(roots) do
+        if leaf then
+            local in_bn = root .. "/Book notes/" .. leaf
+            if lfs.attributes(in_bn, "mode") == "file" then
+                return in_bn
+            end
+            local in_root = root .. "/" .. leaf
+            if lfs.attributes(in_root, "mode") == "file" then
+                return in_root
+            end
+        end
+    end
+    return nil
+end
+
+local function loadInkAwaySidecar(sdr_dir)
+    if not sdr_dir then
+        return nil, nil
+    end
+    for __, name in ipairs({ "inkaway.lua", "inkaway.lua.old" }) do
+        local p = sdr_dir .. "/" .. name
+        if lfs.attributes(p, "mode") == "file" then
+            local data = loadLuaData(readFileBytes(p))
+            if data and type(data.items) == "table" then
+                return data, p
+            end
+        end
+    end
+    return nil, nil
+end
+
+local function collectInkAway(sdr_dir, raw, document, addEntry)
+    local data, ink_path = loadInkAwaySidecar(sdr_dir)
+    if not data then
+        return
+    end
+    local mtime = ink_path and lfs.attributes(ink_path, "modification") or 0
+    local fallback_dt = (mtime and mtime > 0) and os.date("%Y-%m-%d %H:%M:%S", mtime) or nil
+
+    local groups, by_key = {}, {}
+    local function getGroup(key, pageno, pos0)
+        local g = by_key[key]
+        if not g then
+            g = { key = key, pageno = pageno or 0, pos0 = pos0, strokes = {}, texts = {} }
+            by_key[key] = g
+            groups[#groups + 1] = g
+        end
+        return g
+    end
+
+    for idx, item in ipairs(data.items) do
+        if type(item) == "table" and type(item.op) == "table" and type(item.a) == "table" then
+            local a = item.a
+            local key, pageno, pos0, ox, oy = nil, 0, nil, 0, 0
+            if type(a.page) == "number" then
+                pageno = a.page
+                key = "page:" .. tostring(pageno)
+                ox = tonumber(a.x) or 0
+                oy = tonumber(a.y) or 0
+            elseif type(a.pg) == "number" then
+                pageno = a.pg
+                key = "pg:" .. tostring(pageno)
+                ox = (tonumber(a.fx) or 0) * 800
+                oy = (tonumber(a.fy) or 0) * 1200
+            elseif a.room and not a.xp0 then
+                key = "room:" .. tostring(a.room)
+                ox = tonumber(a.rx) or 0
+                oy = tonumber(a.ry) or 0
+            elseif type(a.pxp) == "string" then
+                pos0 = a.pxp
+                key = "pxp:" .. pos0
+                ox = tonumber(a.dx) or 0
+                oy = tonumber(a.dy) or 0
+            elseif type(a.xp0) == "string" then
+                pos0 = ((tonumber(a.seg) or 1) > 1 and type(a.xp1) == "string") and a.xp1 or a.xp0
+                key = "xp:" .. a.xp0
+                ox = tonumber(a.dx) or tonumber(a.ml)
+                    or (tonumber(a.mr) and (800 - tonumber(a.mr)))
+                    or tonumber(a.rx) or 0
+                oy = tonumber(a.dy)
+                    or (tonumber(a.dyb) and (24 + tonumber(a.dyb)))
+                    or tonumber(a.ry) or 0
+            else
+                key = "idx:" .. tostring(idx)
+            end
+            if pageno == 0 and pos0 and document and type(document.getPageFromXPointer) == "function" then
+                local ok_p, rp = pcall(document.getPageFromXPointer, document, pos0)
+                if ok_p and tonumber(rp) and tonumber(rp) > 0 then
+                    pageno = tonumber(rp)
+                end
+            end
+            local g = getGroup(key, pageno, pos0)
+            if g.pageno == 0 and pageno > 0 then
+                g.pageno = pageno
+            end
+            inkAwayAppendOp(g.strokes, g.texts, item.op, ox, oy)
+        end
+    end
+
+    for __, g in ipairs(groups) do
+        if #g.strokes > 0 or #g.texts > 0 then
+            local note = #g.texts > 0 and table.concat(g.texts, "\n") or nil
+            addEntry({
+                pageno = g.pageno,
+                pos0 = g.pos0,
+                datetime = fallback_dt,
+                note = note,
+            }, nil, #g.strokes > 0 and g.strokes or nil)
+        end
+    end
+
+    -- Linked `.inkaway` book notebook (`data.notes`: chapter pages + highlight handwritten notes)
+    local nb_path = resolveInkAwayNotebookPath(data.notes)
+    if nb_path then
+        local nb = loadLuaData(readFileBytes(nb_path))
+        local pages = nb and (type(nb.pages) == "table" and nb.pages
+            or (type(nb.ops) == "table" and { { ops = nb.ops } }))
+        if type(pages) == "table" then
+            local nb_mtime = lfs.attributes(nb_path, "modification") or 0
+            local nb_dt = (nb_mtime and nb_mtime > 0) and os.date("%Y-%m-%d %H:%M:%S", nb_mtime) or fallback_dt
+            local hl_by_dt, hl_by_pos = {}, {}
+            if type(raw) == "table" then
+                for __, r in ipairs(raw) do
+                    if type(r) == "table" and not r.deleted then
+                        if type(r.datetime) == "string" then
+                            hl_by_dt[r.datetime] = r
+                        end
+                        if type(r.pos0) == "string" then
+                            hl_by_pos[r.pos0] = r
+                        end
+                    end
+                end
+            end
+            for __, pg in ipairs(pages) do
+                if type(pg) == "table" and type(pg.ops) == "table" then
+                    local strokes, texts = {}, {}
+                    for ___, op in ipairs(pg.ops) do
+                        inkAwayAppendOp(strokes, texts, op, 0, 0)
+                    end
+                    if #strokes > 0 or #texts > 0 then
+                        local tag = type(pg.book) == "table" and pg.book or nil
+                        local hl_tag = tag and type(tag.hl) == "table" and tag.hl or nil
+                        local matched_hl = hl_tag and ((hl_tag.dt and hl_by_dt[hl_tag.dt])
+                            or (hl_tag.pos0 and hl_by_pos[hl_tag.pos0])) or nil
+                        local pos0 = (matched_hl and matched_hl.pos0)
+                            or (hl_tag and type(hl_tag.pos0) == "string" and hl_tag.pos0) or nil
+                        local pageno = matched_hl and (tonumber(matched_hl.pageno)
+                            or (type(matched_hl.page) == "number" and matched_hl.page)) or 0
+                        if pageno == 0 and pos0 and document and type(document.getPageFromXPointer) == "function" then
+                            local ok_p, rp = pcall(document.getPageFromXPointer, document, pos0)
+                            if ok_p and tonumber(rp) and tonumber(rp) > 0 then
+                                pageno = tonumber(rp)
+                            end
+                        end
+                        local chapter = (matched_hl and trim(matched_hl.chapter))
+                            or (not hl_tag and trim(pg.title)) or nil
+                        local dt = (matched_hl and (matched_hl.datetime_updated or matched_hl.datetime))
+                            or (hl_tag and type(hl_tag.dt) == "string" and hl_tag.dt)
+                            or nb_dt
+                        local note = #texts > 0 and table.concat(texts, "\n") or nil
+                        addEntry({
+                            pageno = pageno,
+                            pos0 = pos0,
+                            chapter = chapter,
+                            datetime = dt,
+                            note = note,
+                        }, nil, #strokes > 0 and strokes or nil)
+                    end
+                end
+            end
+        end
+    end
+end
+
 --- Collect all handwritten/stylus annotations for `file`.
 -- @string file book file path
--- @tparam table ds DocSettings instance
+-- @tparam table|nil ds DocSettings instance
 -- @tparam table|nil raw raw `annotations` table from DocSettings
+-- @tparam table|nil document open KOReader document instance (optional, for xpointer page lookup)
 -- @treturn table list of raw handwritten descriptors
-function handwritten.collect(file, ds, raw)
+function handwritten.collect(file, ds, raw, document)
     local out = {}
-    if not ds and not raw then
+    if not file and not ds and not raw then
         return out
     end
     local sdr_dir = handwritten.getSidecarDir(file)
@@ -376,8 +871,15 @@ function handwritten.collect(file, ds, raw)
         local user_note = raw_note or raw_text
         local ext = (img_file and img_file.ext) or "svg"
         local drawing_id = nextDrawingId(pageno)
+        local w_num = tonumber(item.width or item.page_width or item.screen_width)
+        local h_num = tonumber(item.height or item.page_height or item.screen_height)
+        local digest
+        if strokes then
+            local preview_svg = handwritten.renderStrokesToSvg(strokes, w_num, h_num)
+            digest = adler32Hex((preview_svg or "") .. "\31" .. tostring(user_note or ""))
+        end
         out[#out + 1] = {
-            pageno = pageno,
+            pageno = pageno > 0 and pageno or nil,
             pageref = item.pageref or (pageno > 0 and tostring(pageno) or nil),
             page = item.page,
             pos0 = item.pos0,
@@ -388,10 +890,11 @@ function handwritten.collect(file, ds, raw)
             special = item.tomedown_special or nil,
             drawing_source = img_file and img_file.path or nil,
             drawing_strokes = strokes,
-            drawing_width = tonumber(item.width or item.page_width or item.screen_width),
-            drawing_height = tonumber(item.height or item.page_height or item.screen_height),
+            drawing_width = w_num,
+            drawing_height = h_num,
             drawing_ext = ext,
             drawing_id = drawing_id,
+            drawing_digest = digest,
         }
     end
 
@@ -503,6 +1006,9 @@ function handwritten.collect(file, ds, raw)
         end
     end
 
+    -- 4. InkAway (`ink-away.koplugin`) sidecar `<sdr>/inkaway.lua` + linked `.inkaway` notebooks
+    collectInkAway(sdr_dir, raw, document, addEntry)
+
     return out
 end
 
@@ -554,17 +1060,23 @@ function handwritten.ensureDrawings(book, dir, folder)
             local rel = handwritten.relPath(leaf, a.drawing_id, a.drawing_ext, sub)
             local abs_target = dir .. "/" .. rel
             local ok_file = lfs.attributes(abs_target, "mode") == "file"
-            if not ok_file then
-                local target_dir = abs_target:match("^(.*)/[^/]+$")
-                if target_dir then
-                    util.makePath(target_dir)
-                end
-                if a.drawing_source and lfs.attributes(a.drawing_source, "mode") == "file" then
+            local target_dir = abs_target:match("^(.*)/[^/]+$")
+            if a.drawing_source and lfs.attributes(a.drawing_source, "mode") == "file" then
+                if not ok_file then
+                    if target_dir then
+                        util.makePath(target_dir)
+                    end
                     ok_file = copyBinaryFile(a.drawing_source, abs_target)
-                elseif a.drawing_strokes then
-                    local svg = handwritten.renderStrokesToSvg(
-                        a.drawing_strokes, a.drawing_width, a.drawing_height)
-                    if svg then
+                end
+            elseif a.drawing_strokes then
+                local svg = handwritten.renderStrokesToSvg(
+                    a.drawing_strokes, a.drawing_width, a.drawing_height)
+                if svg then
+                    local existing = ok_file and readFileBytes(abs_target) or nil
+                    if existing ~= svg then
+                        if target_dir then
+                            util.makePath(target_dir)
+                        end
                         local ok_w = util.writeToFile(svg, abs_target, true, false, true)
                         ok_file = ok_w == true and lfs.attributes(abs_target, "mode") == "file"
                     end

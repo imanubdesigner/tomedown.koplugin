@@ -297,9 +297,9 @@ function M:cleanAnnotations(raw)
 end
 
 -- collects handwritten/stylus annotations from .sdr and DocSettings
-function M:cleanHandwritten(file, ds, raw)
+function M:cleanHandwritten(file, ds, raw, document)
     local out = {}
-    local items = Handwritten.collect(file, ds, raw)
+    local items = Handwritten.collect(file, ds, raw, document)
     if type(items) ~= "table" or #items == 0 then
         return out
     end
@@ -329,6 +329,7 @@ function M:cleanHandwritten(file, ds, raw)
             drawing_height = item.drawing_height,
             drawing_ext = item.drawing_ext or "png",
             drawing_id = drawing_id,
+            drawing_digest = item.drawing_digest,
             id_seed = item.datetime or ("hw:" .. tostring(drawing_id)),
             id_pos = pos or ("p:" .. tostring(pageno)),
             id_text = "handwritten:" .. tostring(drawing_id),
@@ -452,6 +453,9 @@ local function hashBook(title, author, annotations, meta, bookmarks)
         }, "\31")
         if a.handwritten then
             entry = entry .. "\31hw:" .. tostring(a.drawing_id or "")
+            if a.drawing_digest then
+                entry = entry .. ":" .. tostring(a.drawing_digest)
+            end
         end
         parts[#parts + 1] = entry
     end
@@ -659,7 +663,7 @@ function M:buildBook(file, live_annotations)
             end
             local annotations = self:cleanAnnotations(raw)
             local include_hw = getIncludeHandwritten(file)
-            local hw = include_hw and self:cleanHandwritten(file, ds, raw) or {}
+            local hw = include_hw and self:cleanHandwritten(file, ds, raw, open and open.document) or {}
             if #hw > 0 then
                 for __, h in ipairs(hw) do
                     if not h.chapter and #annotations > 0 then
