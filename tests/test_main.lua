@@ -5270,7 +5270,7 @@ do
         "28: Reset to global style settings disabled when no overrides exist")
 
     local bnh = bstyle[3].sub_item_table_func()
-    T.check(#bnh == 10
+    T.check(#bnh == 11
             and bnh[1].key == "special_marker"
             and bnh[2].key == "highlight_details"
             and bnh[3].key == "highlight_context"
@@ -5280,7 +5280,7 @@ do
             and bnh[7].key == "chapter_headings"
             and bnh[8].key == "include_bookmarks"
             and bnh[9].key == "highlight_color"
-            and bnh[10].key == "include_handwritten",
+            and bnh[11].key == "include_handwritten",
         "28: Current book -> Notes & highlights mirrors all 10 Global visual options")
 
     -- Pin FILE to chapter_headings = "none", highlight_details = "none", include_bookmarks = true,
@@ -6407,11 +6407,13 @@ do
     T.check(not T.contains(perbook_off_md, "Key idea") and not T.contains(perbook_off_md, "· Blue"),
         "37: per-book override false omits colour labels from book Markdown")
 
-    -- Current book -> Format & layout -> Notes & highlights exposes Highlight color: %1
+    -- Current book -> Format & layout -> Notes & highlights exposes Highlight color: %1 and Color aliases
     local fmt_sub = plugin:genBookStyleMenu(FILE)
     local cur_nh = findMenuItem(fmt_sub, "Notes & highlights").sub_item_table_func()
     T.check(findMenuItem(cur_nh, "Highlight color:") ~= nil,
         "37: Current book -> Format & layout -> Notes & highlights exposes Highlight color override")
+    T.check(findMenuItem(cur_nh, "Color aliases") ~= nil,
+        "37: Current book -> Format & layout -> Notes & highlights exposes Color aliases")
 
     -- Settings backup round-trip preserves highlight_color and highlight_color_aliases
     local bkp_path = DIR .. "/tomedown_settings_backup.lua"

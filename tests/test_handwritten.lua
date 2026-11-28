@@ -974,6 +974,24 @@ do
     T.check(nb2_item and nb2_item.chapter == "Chapter One" and #nb2_item.drawing_strokes >= 1,
         "4g.5e: untagged Book notes continuation page inherits 'Chapter One' and exports flood-fill runs")
 
+    -- 4g.6: Text highlight and linked handwritten note at same page/time sort highlight FIRST, handwritten AFTER
+    local paired = {
+        {
+            text = "Handwritten note",
+            handwritten = true,
+            sort_page = 27,
+            sort_time = "2026-11-28 12:47:00",
+        },
+        {
+            text = "He set the time of his visit at ten the following morning.",
+            sort_page = 27,
+            sort_time = "2026-11-28 12:47:00",
+        },
+    }
+    Export:sortAnnotations(paired)
+    T.check(not paired[1].handwritten and paired[2].handwritten,
+        "4g.6: text highlight sorts before linked handwritten note on same page/time")
+
     T.rmrf(INK_WORK)
 end
 

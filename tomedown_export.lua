@@ -246,6 +246,9 @@ local function sortAnnotationItems(out)
         if a.sort_time ~= b.sort_time then
             return a.sort_time < b.sort_time
         end
+        if (a.handwritten == true) ~= (b.handwritten == true) then
+            return not a.handwritten
+        end
         return tostring(a.text or "") < tostring(b.text or "")
     end)
     return out
@@ -429,6 +432,9 @@ function M:cleanBookmarks(raw, skip_pencil_notes)
         end
         if a.sort_time ~= b.sort_time then
             return a.sort_time < b.sort_time
+        end
+        if (a.handwritten == true) ~= (b.handwritten == true) then
+            return not a.handwritten
         end
         return tostring(a.text or "") < tostring(b.text or "")
     end)
