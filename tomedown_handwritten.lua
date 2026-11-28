@@ -796,6 +796,7 @@ local function collectInkAway(sdr_dir, raw, document, addEntry)
                             pageno = pageno,
                             pos0 = pos0,
                             chapter = chapter,
+                            toc_index = (not hl_tag and tag and tonumber(tag.toc)) or nil,
                             datetime = dt,
                             note = note,
                         }, nil, #strokes > 0 and strokes or nil)
@@ -806,13 +807,89 @@ local function collectInkAway(sdr_dir, raw, document, addEntry)
     end
 end
 
+local function cleanTocTitle(title)
+    if type(title) ~= "string" then
+        return nil
+    end
+    return trim(title:gsub("\13", ""))
+end
+
+local function lookupChapterInTocList(toc_list, pageno)
+    local p = tonumber(pageno)
+    if type(toc_list) ~= "table" or #toc_list == 0 or not p or p <= 0 then
+        return nil
+    end
+    local prev_idx = nil
+    for i, entry in ipairs(toc_list) do
+        local ep = type(entry) == "table" and tonumber(entry.page) or nil
+        if ep then
+            if ep == p then
+                prev_idx = i
+                break
+            elseif ep > p then
+                break
+            end
+            prev_idx = i
+        end
+    end
+    if prev_idx and toc_list[prev_idx] then
+        return cleanTocTitle(toc_list[prev_idx].title)
+    end
+    return nil
+end
+
+local function loadBookTocList(file, ds, document, toc_module)
+    if type(toc_module) == "table" then
+        if type(toc_module.fillToc) == "function" and type(toc_module.toc) ~= "table" then
+            pcall(toc_module.fillToc, toc_module)
+        end
+        if type(toc_module.toc) == "table" and #toc_module.toc > 0 then
+            return toc_module.toc
+        end
+    end
+    if ds and type(ds.readSetting) == "function" then
+        if ds:readSetting("handmade_toc_enabled") == true then
+            local hm = ds:readSetting("handmade_toc")
+            if type(hm) == "table" and #hm > 0 then
+                return hm
+            end
+        end
+    end
+    if document and type(document.getToc) == "function" then
+        local ok_t, t = pcall(document.getToc, document)
+        if ok_t and type(t) == "table" and #t > 0 then
+            return t
+        end
+    end
+    if type(file) == "string" and file ~= "" and lfs.attributes(file, "mode") == "file" then
+        local ok_dr, DocumentRegistry = pcall(require, "document/documentregistry")
+        if ok_dr and DocumentRegistry and type(DocumentRegistry.openDocument) == "function" then
+            local ok_doc, temp_doc = pcall(DocumentRegistry.openDocument, DocumentRegistry, file)
+            if ok_doc and temp_doc then
+                local ok_t, t = nil, nil
+                if type(temp_doc.getToc) == "function" then
+                    ok_t, t = pcall(temp_doc.getToc, temp_doc)
+                end
+                if type(temp_doc.close) == "function" then
+                    pcall(temp_doc.close, temp_doc)
+                end
+                if ok_t and type(t) == "table" and #t > 0 then
+                    return t
+                end
+            end
+        end
+    end
+    return nil
+end
+
 --- Collect all handwritten/stylus annotations for `file`.
 -- @string file book file path
 -- @tparam table|nil ds DocSettings instance
 -- @tparam table|nil raw raw `annotations` table from DocSettings
--- @tparam table|nil document open KOReader document instance (optional, for xpointer page lookup)
+-- @tparam table|nil document open KOReader document instance (optional, for xpointer page/TOC lookup)
+-- @tparam table|nil toc_module open KOReader ReaderToc instance (`ui.toc`, optional)
 -- @treturn table list of raw handwritten descriptors
-function handwritten.collect(file, ds, raw, document)
+function handwritten.collect(file, ds, raw, document, toc_module)
     local out = {}
     if not file and not ds and not raw then
         return out
@@ -884,6 +961,7 @@ function handwritten.collect(file, ds, raw, document)
             page = item.page,
             pos0 = item.pos0,
             chapter = trim(item.chapter),
+            toc_index = item.toc_index,
             datetime = datetime,
             datetime_updated = item.datetime_updated,
             note = user_note,
@@ -1008,6 +1086,52 @@ function handwritten.collect(file, ds, raw, document)
 
     -- 4. InkAway (`ink-away.koplugin`) sidecar `<sdr>/inkaway.lua` + linked `.inkaway` notebooks
     collectInkAway(sdr_dir, raw, document, addEntry)
+
+    -- 5. Resolve missing chapter titles (and TOC positions for chapter notebook pages)
+    --    via live `toc_module:getTocTitleByPage`, `document:getToc()`, `handmade_toc`, or `DocumentRegistry`
+    local needs_toc_list = false
+    for __, item in ipairs(out) do
+        if not item.chapter and type(toc_module) == "table"
+                and type(toc_module.getTocTitleByPage) == "function" then
+            local target = (type(item.pos0) == "string" and item.pos0 ~= "") and item.pos0 or item.pageno
+            if target then
+                local ok_c, chap = pcall(toc_module.getTocTitleByPage, toc_module, target)
+                local cleaned = ok_c and cleanTocTitle(chap) or nil
+                if not cleaned and target ~= item.pageno and item.pageno then
+                    ok_c, chap = pcall(toc_module.getTocTitleByPage, toc_module, item.pageno)
+                    cleaned = ok_c and cleanTocTitle(chap) or nil
+                end
+                if cleaned then
+                    item.chapter = cleaned
+                end
+            end
+        end
+        if not item.chapter or (item.toc_index and not item.pageno and not item.pos0) then
+            needs_toc_list = true
+        end
+    end
+    if needs_toc_list then
+        local toc_list = loadBookTocList(file, ds, document, toc_module)
+        if toc_list then
+            for __, item in ipairs(out) do
+                if item.toc_index and type(toc_list[item.toc_index]) == "table" then
+                    local te = toc_list[item.toc_index]
+                    if not item.chapter then
+                        item.chapter = cleanTocTitle(te.title)
+                    end
+                    if not item.pageno and tonumber(te.page) and tonumber(te.page) > 0 then
+                        item.pageno = tonumber(te.page)
+                    end
+                    if not item.pos0 and type(te.xpointer) == "string" and te.xpointer ~= "" then
+                        item.pos0 = te.xpointer
+                    end
+                end
+                if not item.chapter and item.pageno then
+                    item.chapter = lookupChapterInTocList(toc_list, item.pageno)
+                end
+            end
+        end
+    end
 
     return out
 end

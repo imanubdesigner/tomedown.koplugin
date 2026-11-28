@@ -548,6 +548,102 @@ do
     T.check(by_page["22"] ~= nil,
         "4d: pinned reflowable page pg=22 extracted")
 
+    -- 4e. Chapter resolution from Document TOC (PDF without text highlights),
+    --     EPUB xpointer (sort_pos) precedence over shifted pageno, and
+    --     Book notes chapter page sorting into its own chapter
+    local mock_pdf_doc = {
+        getToc = function()
+            return {
+                { page = 1,  depth = 1, title = "Preface" },
+                { page = 5,  depth = 1, title = "1. Vector Spaces\13" },
+                { page = 15, depth = 1, title = "2. Orthogonality" },
+            }
+        end,
+    }
+    local pdf_hw_toc = Export:cleanHandwritten(pdf_path, nil, nil, mock_pdf_doc)
+    T.check(pdf_hw_toc[1] and pdf_hw_toc[1].chapter == "1. Vector Spaces"
+            and pdf_hw_toc[2] and pdf_hw_toc[2].chapter == "2. Orthogonality",
+        "4e: PDF without text highlights resolves chapter titles from document:getToc()")
+
+    -- Test Confessions of Zeno scenario:
+    -- Highlight in DocFragment[6] ("The Last Cigarette", p. 19),
+    -- InkAway drawing in DocFragment[6]/p[145] (reflowed p. 21),
+    -- Highlight in DocFragment[7] ("The Death of My Father", p. 21),
+    -- plus Book notes chapter page for "The Death of My Father" (no pageno).
+    local zeno_book = INK_WORK .. "/books/Zeno.epub"
+    local zeno_sdr = zeno_book .. ".sdr"
+    local zeno_nb = INK_WORK .. "/Book notes/Zeno.inkaway"
+    util.makePath(zeno_sdr)
+    writeBytes(zeno_nb, [[return {
+        ["v"]=2,["w"]=1261,["h"]=688,
+        ["pages"]={
+            {
+                ["id"]=1,
+                ["title"]="The Death of My Father",
+                ["book"]={["toc"]=7,},
+                ["ops"]={
+                    {["kind"]="ink",["width"]=4,["pts"]={10,10,50,50,},},
+                    {["kind"]="text",["paras"]={{["spans"]={{["t"]="rtgfr",},},},},},
+                },
+            },
+        },
+    }]])
+    writeBytes(zeno_sdr .. "/inkaway.lua", string.format([[return {
+        ["version"]=1,
+        ["notes"]=%q,
+        ["items"]={
+            {
+                ["op"]={["kind"]="ink",["width"]=4,["pts"]={0,0,40,20,},},
+                ["a"]={["xp0"]="/body/DocFragment[6]/body/section/p[145]/text().113",["xp1"]="/body/DocFragment[6]/body/section/p[145]/text().118",["dx"]=56,["dy"]=1,},
+            },
+        },
+    }]], zeno_nb))
+    local zeno_raw = {
+        {
+            drawer = "lighten",
+            text = "I came back discouraged to the table.",
+            chapter = "The Last Cigarette",
+            page = "/body/DocFragment[6]/body/section/p[5]/text().0",
+            pos0 = "/body/DocFragment[6]/body/section/p[5]/text().0",
+            pos1 = "/body/DocFragment[6]/body/section/p[5]/text().37",
+            pageno = 8,
+            pageref = "8",
+            datetime = "2026-11-26 00:08:47",
+        },
+        {
+            drawer = "lighten",
+            text = "For whoever it may interest let me explain.",
+            chapter = "The Death of My Father",
+            page = "/body/DocFragment[7]/body/section/p[2]/text()[1].0",
+            pos0 = "/body/DocFragment[7]/body/section/p[2]/text()[1].0",
+            pos1 = "/body/DocFragment[7]/body/section/p[2]/text()[2].200",
+            pageno = 21,
+            pageref = "21",
+            datetime = "2026-11-26 00:09:18",
+        },
+    }
+    local zeno_doc = {
+        getPageFromXPointer = function(_, xp)
+            if xp:find("DocFragment%[6%]") then return 21 end
+            return nil
+        end,
+    }
+    local zeno_anns = Export:cleanAnnotations(zeno_raw)
+    local zeno_hw = Export:cleanHandwritten(zeno_book, nil, zeno_raw, zeno_doc)
+    Export:assignHandwrittenChapters(zeno_hw, zeno_anns)
+    T.check(zeno_hw[1].chapter == "The Last Cigarette"
+            and zeno_hw[2].chapter == "The Death of My Father",
+        "4e: DocFragment[6] drawing gets 'The Last Cigarette' via sort_pos despite pageno=21 tie with DocFragment[7]")
+    for __, h in ipairs(zeno_hw) do
+        zeno_anns[#zeno_anns + 1] = h
+    end
+    Export:sortAnnotations(zeno_anns)
+    T.check(zeno_anns[1].chapter == "The Last Cigarette"
+            and zeno_anns[2].chapter == "The Last Cigarette"
+            and zeno_anns[3].chapter == "The Death of My Father"
+            and zeno_anns[4].chapter == "The Death of My Father",
+        "4e: Book notes chapter page sorts inside 'The Death of My Father' after 'The Last Cigarette' (no split chapters)")
+
     T.rmrf(INK_WORK)
 end
 

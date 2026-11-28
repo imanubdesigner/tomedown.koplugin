@@ -297,10 +297,66 @@ function M:cleanAnnotations(raw)
     return sortAnnotationItems(out)
 end
 
+function M:sortAnnotations(out)
+    return sortAnnotationItems(out)
+end
+
+-- Associate handwritten items with book chapters and align unpositioned
+-- chapter notebook pages (`sort_page == 0`, no `sort_pos`) with the start
+-- of their chapter in `annotations` so they never float to page 0.
+function M:assignHandwrittenChapters(hw, annotations)
+    if type(hw) ~= "table" or #hw == 0 or type(annotations) ~= "table" or #annotations == 0 then
+        return
+    end
+    for __, h in ipairs(hw) do
+        if not h.chapter then
+            local best_chap
+            if h.sort_pos then
+                for ___, a in ipairs(annotations) do
+                    if a.chapter and a.sort_pos and posCompare(a.sort_pos, h.sort_pos) <= 0 then
+                        best_chap = a.chapter
+                    end
+                end
+                if not best_chap and h.sort_pos[1] and h.sort_pos[2]
+                        and type(h.sort_pos[1].text) == "string"
+                        and h.sort_pos[1].text:find("DocFragment", 1, true) then
+                    local frag_num = h.sort_pos[2].num
+                    for ___, a in ipairs(annotations) do
+                        if a.chapter and a.sort_pos and a.sort_pos[1] and a.sort_pos[2]
+                                and a.sort_pos[1].text == h.sort_pos[1].text
+                                and a.sort_pos[2].num == frag_num then
+                            best_chap = a.chapter
+                            break
+                        end
+                    end
+                end
+            end
+            if not best_chap and (tonumber(h.sort_page) or 0) > 0 then
+                for ___, a in ipairs(annotations) do
+                    if a.chapter and (tonumber(a.sort_page) or 0) <= (tonumber(h.sort_page) or 0) then
+                        best_chap = a.chapter
+                    end
+                end
+            end
+            h.chapter = best_chap
+        end
+        if h.chapter and (tonumber(h.sort_page) or 0) == 0 and not h.sort_pos then
+            for ___, a in ipairs(annotations) do
+                if a.chapter == h.chapter then
+                    h.sort_page = tonumber(a.sort_page) or 0
+                    h.sort_pos = a.sort_pos
+                    break
+                end
+            end
+        end
+    end
+    sortAnnotationItems(hw)
+end
+
 -- collects handwritten/stylus annotations from .sdr and DocSettings
-function M:cleanHandwritten(file, ds, raw, document)
+function M:cleanHandwritten(file, ds, raw, document, toc_module)
     local out = {}
-    local items = Handwritten.collect(file, ds, raw, document)
+    local items = Handwritten.collect(file, ds, raw, document, toc_module)
     if type(items) ~= "table" or #items == 0 then
         return out
     end
@@ -665,18 +721,12 @@ function M:buildBook(file, live_annotations)
             end
             local annotations = self:cleanAnnotations(raw)
             local include_hw = getIncludeHandwritten(file)
-            local hw = include_hw and self:cleanHandwritten(file, ds, raw, open and open.document) or {}
+            local hw = include_hw
+                and self:cleanHandwritten(file, ds, raw, open and open.document, open and open.toc)
+                or {}
             if #hw > 0 then
+                self:assignHandwrittenChapters(hw, annotations)
                 for __, h in ipairs(hw) do
-                    if not h.chapter and #annotations > 0 then
-                        local best_chap
-                        for ___, a in ipairs(annotations) do
-                            if a.chapter and (tonumber(a.sort_page) or 0) <= (tonumber(h.sort_page) or 0) then
-                                best_chap = a.chapter
-                            end
-                        end
-                        h.chapter = best_chap
-                    end
                     annotations[#annotations + 1] = h
                 end
                 sortAnnotationItems(annotations)
