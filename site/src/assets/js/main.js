@@ -1418,11 +1418,7 @@
       var q = norm(query).trim();
       var toks = words(q);
       if (!toks.length) {
-        var seen = {};
-        return index.filter(function (e) {
-          if (e.c !== "Docs" || seen[e.p]) return false;
-          seen[e.p] = true; return true;
-        }).slice(0, 8).map(function (e) { return { e: e, snippet: e.t.slice(0, 140) }; });
+        return [];
       }
       var out = [];
       index.forEach(function (e) {
@@ -1473,12 +1469,20 @@
     }
 
     function render(query) {
+      var trimmed = String(query || "").trim();
       results = run(query);
       active = results.length ? 0 : -1;
       var toks = words(norm(query));
+      if (!trimmed) {
+        list.innerHTML = '<li class="search-empty" role="presentation">Type to search docs, settings, formats, and changelog\u2026</li>';
+        status.textContent = "";
+        input.removeAttribute("aria-activedescendant");
+        return;
+      }
       if (!results.length) {
-        list.innerHTML = '<li class="search-empty" role="presentation">No results for \u201c' + esc(query) + '\u201d. Try fewer or different words.</li>';
+        list.innerHTML = '<li class="search-empty" role="presentation">No results for \u201c' + esc(trimmed) + '\u201d. Try fewer or different words.</li>';
         status.textContent = "No results.";
+        input.removeAttribute("aria-activedescendant");
         return;
       }
       list.innerHTML = results.map(function (r, i) {
