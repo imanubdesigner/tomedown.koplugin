@@ -2427,4 +2427,62 @@ do
         "Reading Digest includes highlight colour / alias in metadata line")
 end
 
+-- Highlight separators (none, line, dots, editorial_dots, editorial_line) across all 3 markdown profiles
+do
+    local sep_book = {
+        title = "The Three Just Men",
+        author = "Edgar Wallace",
+        annotations = {
+            { text = "First quote.", page = "3", date = "23 Nov 2026 | 22:17", color = "yellow", chapter = "I: The Firm" },
+            { text = "Second quote.", page = "4", date = "25 Nov 2026 | 12:40", color = "blue", note = "My note", chapter = "I: The Firm" },
+            { text = "Next chapter quote.", page = "10", date = "26 Nov 2026 | 09:00", chapter = "II: The Return" },
+        },
+    }
+
+    local md_line = render.buildBookMd(sep_book, { highlight_separator = "line" })
+    T.check(T.contains(md_line, "## I: The Firm")
+            and T.contains(md_line, "- **p. 3** · 23 Nov 2026 | 22:17\n\n---\n\n> Second quote."),
+        "highlight_separator=line uses ## chapter headings and --- between notes")
+
+    local md_dots = render.buildBookMd(sep_book, { highlight_separator = "dots" })
+    T.check(T.contains(md_dots, "# I: The Firm")
+            and T.contains(md_dots, "- **p. 3** · 23 Nov 2026 | 22:17\n\n· · ·\n\n> Second quote."),
+        "highlight_separator=dots uses · · · between notes and keeps # chapter headings")
+
+    local md_ed_dots = render.buildBookMd(sep_book, {
+        highlight_separator = "editorial_dots",
+        highlight_color = true,
+        markdown_style = "commonmark",
+        markers = false,
+    })
+    T.check(T.contains(md_ed_dots, "> First quote.\n> — _p. 3 · 23 Nov 2026 | 22:17 · Yellow_\n\n· · ·\n\n> Second quote.")
+            and T.contains(md_ed_dots, "**Note:** My note")
+            and not T.contains(md_ed_dots, "<"),
+        "highlight_separator=editorial_dots formats inline quote attribution + dots in pure CommonMark")
+
+    local md_ed_line = render.buildBookMd(sep_book, {
+        highlight_separator = "editorial_line",
+        chapter_headings = "h1",
+        highlight_color = true,
+    })
+    T.check(T.contains(md_ed_line, "## I: The Firm")
+            and T.contains(md_ed_line, "> First quote.\n> — *p. 3 · 23 Nov 2026 | 22:17 · Yellow*\n\n---\n\n> Second quote."),
+        "highlight_separator=editorial_line formats ## headings (even with explicit chapter_headings=h1) + inline attribution + ---")
+
+    local md_ed_fn = render.buildBookMd(sep_book, {
+        highlight_separator = "editorial_dots",
+        note_style = "footnote",
+    })
+    T.check(T.contains(md_ed_fn, "> Second quote.\n> — *p. 4 · 25 Nov 2026 | 12:40* [^1]")
+            and T.contains(md_ed_fn, "[^1]: My note"),
+        "highlight_separator=editorial_dots works when note_style=footnote")
+
+    local md_ed_co = render.buildBookMd(sep_book, {
+        highlight_separator = "editorial_dots",
+        note_style = "callout",
+    })
+    T.check(T.contains(md_ed_co, "> Second quote.\n> — *p. 4 · 25 Nov 2026 | 12:40*\n\n> [!note] Note\n> My note"),
+        "highlight_separator=editorial_dots works when note_style=callout")
+end
+
 T.finish("test_render")

@@ -488,6 +488,31 @@ local function setNoteStyle(style)
     end
 end
 
+local VALID_HIGHLIGHT_SEPARATORS = {
+    none = true,
+    line = true,
+    dots = true,
+    editorial_dots = true,
+    editorial_line = true,
+}
+
+local function getHighlightSeparator(file)
+    local override = file and getBookStyleOverride(file, "highlight_separator")
+    local sep = override or getSetting("highlight_separator", "none")
+    if VALID_HIGHLIGHT_SEPARATORS[sep] then
+        return sep
+    end
+    return "none"
+end
+
+local function setHighlightSeparator(sep)
+    if VALID_HIGHLIGHT_SEPARATORS[sep] and sep ~= "none" then
+        setSetting("highlight_separator", sep)
+    else
+        setSetting("highlight_separator", nil)
+    end
+end
+
 -- Folder settings (covers, drawings) accept a nested vault-relative path
 -- such as "assets/covers": every segment is made filesystem-safe on its own
 -- ("/" is the only separator, "\" is accepted too), "." and ".." segments
@@ -1880,6 +1905,8 @@ return {
     getHighlightColorAliases = getHighlightColorAliases,
     setHighlightColorAlias = setHighlightColorAlias,
     resetHighlightColorAliases = resetHighlightColorAliases,
+    getHighlightSeparator = getHighlightSeparator,
+    setHighlightSeparator = setHighlightSeparator,
     getSpecialMarker = getSpecialMarker,
     getBlockIds = getBlockIds,
     getEveryHighlightSpecial = getEveryHighlightSpecial,

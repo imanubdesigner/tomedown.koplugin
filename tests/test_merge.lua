@@ -994,6 +994,32 @@ do
             and T.contains(cn_merged, "> [!note] Note\n> Nota aggiornata da KOReader")
             and T.contains(cn_merged, "Commento aggiunto in Obsidian sotto il callout."),
         "callout personal notes update cleanly while preserving Obsidian quote comments below them")
+
+    -- Switching highlight_separator (dots <-> editorial_dots <-> line <-> none) in preserve mode
+    -- never mistakes '· · ·' or editorial '**Note:**' for user comments, and preserves real user comments
+    local sep_ann = {
+        { text = "Prima citazione.", chapter = "Cap I", page = "3", date = "03/09/2026", note = "Nota KO" },
+        { text = "Seconda citazione.", chapter = "Cap I", page = "4", date = "03/09/2026" },
+    }
+    local sep_dots_md = renderBook(sep_ann, { notes_title = "Le mie note", highlight_separator = "dots" })
+    local sep_line_md = renderBook(sep_ann, { notes_title = "Le mie note", highlight_separator = "line" })
+    local dots_to_line, dtl_info = merge.apply(sep_dots_md, sep_line_md,
+        merge.fingerprints(merge.split(sep_dots_md)),
+        { mode = "preserve", notes_title = "Le mie note" })
+    T.check(dtl_info.reason == "merged" and dtl_info.backup == false
+            and not T.contains(dots_to_line, "· · ·")
+            and T.contains(dots_to_line, "## Cap I"),
+        "switching highlight_separator from dots to line in preserve mode removes · · · without false backup")
+
+    local sep_ed_md = renderBook(sep_ann, { notes_title = "Le mie note", highlight_separator = "editorial_dots" })
+    local sep_ed_with_comment = sep_ed_md:gsub("(%*%*Note:%*%* Nota KO\n)", "%1\nCommento Obsidian sotto editorial.\n", 1)
+    local ed_to_dots, etd_info = merge.apply(sep_ed_with_comment, sep_dots_md,
+        merge.fingerprints(merge.split(sep_ed_md)),
+        { mode = "preserve", notes_title = "Le mie note" })
+    T.check(etd_info.reason == "merged" and etd_info.backup == false
+            and T.contains(ed_to_dots, "Commento Obsidian sotto editorial.")
+            and not T.contains(ed_to_dots, "**Note:** Nota KO"),
+        "switching from editorial_dots to dots preserves Obsidian comment and drops old editorial Note line")
 end
 
 T.finish("test_merge")

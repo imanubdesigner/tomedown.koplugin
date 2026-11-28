@@ -242,15 +242,6 @@ When *Settings → Notes & highlights → Highlight context* is enabled, Tomedow
   - **Context:** *…leading thought before the sentence. …following argument after.*
 ```
 
-### Highlight colour & semantic aliases
-
-When *Settings → Notes & highlights → Highlight color* is enabled (off by default), Tomedown appends the highlight's KOReader colour name—or any custom label mapped in *Color aliases* (such as `Yellow → Key idea` or `Red → Disagree`)—directly to the metadata line:
-
-```markdown
-- **p. 10** · 16 Nov 2026 | 10:20 · Yellow
-- **p. 12** · 16 Nov 2026 | 10:25 · Key idea
-```
-
 <figure class="doc-specimen">
   <div class="doc-specimen-mat">
     <div class="doc-specimen-head">
@@ -261,6 +252,73 @@ When *Settings → Notes & highlights → Highlight color* is enabled (off by de
     </div>
   </div>
   <figcaption>Surrounding sentence context captured automatically below the quote, preserving reading flow in Obsidian.</figcaption>
+</figure>
+
+### Highlight colour & semantic aliases
+
+When *Settings → Notes & highlights → Highlight color* is enabled (off by default), Tomedown appends the highlight's KOReader colour name—or any custom label mapped in *Color aliases* (such as `Yellow → Key idea` or `Red → Disagree`)—directly to the metadata line:
+
+```markdown
+- **p. 10** · 16 Nov 2026 | 10:20 · Yellow
+- **p. 12** · 16 Nov 2026 | 10:25 · Key idea
+```
+
+### Highlight separators
+
+When *Settings → Notes & highlights → Highlight separator* (or *Current book → Format & layout → Notes & highlights → Highlight separator*) is configured, Tomedown separates consecutive highlights inside each chapter using pure CommonMark syntax compatible with **Obsidian**, **Standard (GitHub / HTML)**, and **CommonMark**:
+
+- **None** *(default)*: blank line between highlights (`---` only between chapters).
+- **Line (`---`)**: horizontal rule `---` between highlights, promoting chapters to `##` to preserve hierarchy.
+- **Dots (`· · ·`)**: light typographic `· · ·` divider between highlights, keeping `---` for chapter breaks.
+- **Editorial + Dots (`· · ·`)**: folds page/date/colour metadata directly inside the blockquote (`> — *p. 3 · 23 Nov 2026 | 22:17 · Yellow*`) with `· · ·` between notes.
+- **Editorial + Line (`---`)**: combines inline quote attribution with `---` between notes and `##` chapter headings.
+
+<figure class="doc-specimen">
+  <div class="doc-specimen-mat">
+    <div class="doc-specimen-head">
+      <span class="doc-specimen-label">Highlight separator · Line (---)</span>
+    </div>
+    <div class="doc-specimen-viewport">
+      <img src="../assets/obsidian/line-separator.webp" alt="Highlight separator Line (---)" loading="lazy" decoding="async" />
+    </div>
+  </div>
+  <figcaption>Classic <code>---</code> horizontal rule between highlights, with chapters automatically promoted to <code>##</code> headings.</figcaption>
+</figure>
+
+<figure class="doc-specimen">
+  <div class="doc-specimen-mat">
+    <div class="doc-specimen-head">
+      <span class="doc-specimen-label">Highlight separator · Dots (· · ·)</span>
+    </div>
+    <div class="doc-specimen-viewport">
+      <img src="../assets/obsidian/dots-separator.webp" alt="Highlight separator Dots (· · ·)" loading="lazy" decoding="async" />
+    </div>
+  </div>
+  <figcaption>Typographic <code>· · ·</code> divider between highlights, reserving full <code>---</code> horizontal rules for chapter boundaries.</figcaption>
+</figure>
+
+<figure class="doc-specimen">
+  <div class="doc-specimen-mat">
+    <div class="doc-specimen-head">
+      <span class="doc-specimen-label">Highlight separator · Editorial + Dots (· · ·)</span>
+    </div>
+    <div class="doc-specimen-viewport">
+      <img src="../assets/obsidian/editorial-dots.webp" alt="Highlight separator Editorial + Dots" loading="lazy" decoding="async" />
+    </div>
+  </div>
+  <figcaption>Editorial attribution folded directly into the blockquote (<code>&gt; — *p. 3 · …*</code>) paired with a light <code>· · ·</code> separator.</figcaption>
+</figure>
+
+<figure class="doc-specimen">
+  <div class="doc-specimen-mat">
+    <div class="doc-specimen-head">
+      <span class="doc-specimen-label">Highlight separator · Editorial + Line (---)</span>
+    </div>
+    <div class="doc-specimen-viewport">
+      <img src="../assets/obsidian/editorial-line.webp" alt="Highlight separator Editorial + Line" loading="lazy" decoding="async" />
+    </div>
+  </div>
+  <figcaption>Editorial inline quote attribution combined with full-width <code>---</code> separators and <code>##</code> chapter headings.</figcaption>
 </figure>
 
 <a id="links-to-a-single-highlight"></a>

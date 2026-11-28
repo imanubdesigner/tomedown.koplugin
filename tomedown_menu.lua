@@ -3003,6 +3003,92 @@ function M:genSettingsMenu()
         {
             text_func = function()
                 local labels = {
+                    none = _("None"),
+                    line = _("Line (---)"),
+                    dots = _("Dots (· · ·)"),
+                    editorial_dots = _("Editorial + Dots (· · ·)"),
+                    editorial_line = _("Editorial + Line (---)"),
+                }
+                local current = shared.getHighlightSeparator()
+                return T(_("Highlight separator: %1"),
+                    labels[current] or labels.none)
+            end,
+            sub_item_table = {
+                {
+                    text = _("None"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return shared.getHighlightSeparator() == "none"
+                    end,
+                    callback = function()
+                        if shared.getHighlightSeparator() ~= "none" then
+                            shared.setHighlightSeparator("none")
+                            self:invalidateExportHashes()
+                        end
+                    end,
+                },
+                {
+                    text = _("Line (---)"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return shared.getHighlightSeparator() == "line"
+                    end,
+                    callback = function()
+                        if shared.getHighlightSeparator() ~= "line" then
+                            shared.setHighlightSeparator("line")
+                            self:invalidateExportHashes()
+                        end
+                    end,
+                },
+                {
+                    text = _("Dots (· · ·)"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return shared.getHighlightSeparator() == "dots"
+                    end,
+                    callback = function()
+                        if shared.getHighlightSeparator() ~= "dots" then
+                            shared.setHighlightSeparator("dots")
+                            self:invalidateExportHashes()
+                        end
+                    end,
+                },
+                {
+                    text = _("Editorial + Dots (· · ·)"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return shared.getHighlightSeparator() == "editorial_dots"
+                    end,
+                    callback = function()
+                        if shared.getHighlightSeparator() ~= "editorial_dots" then
+                            shared.setHighlightSeparator("editorial_dots")
+                            self:invalidateExportHashes()
+                        end
+                    end,
+                },
+                {
+                    text = _("Editorial + Line (---)"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return shared.getHighlightSeparator() == "editorial_line"
+                    end,
+                    callback = function()
+                        if shared.getHighlightSeparator() ~= "editorial_line" then
+                            shared.setHighlightSeparator("editorial_line")
+                            self:invalidateExportHashes()
+                        end
+                    end,
+                },
+            },
+        },
+        {
+            text_func = function()
+                local labels = {
                     h1 = _("Heading 1 (# Chapter)"),
                     h2 = _("Heading 2 (## Chapter)"),
                     h3 = _("Heading 3 (### Chapter)"),
@@ -5369,7 +5455,7 @@ function M:genBookStyleMenu(file, target_table)
     -- Group 1 in Current book -> Format & layout: Notes & highlights (100% parity with Global).
     local nh_keys = {
         "special_marker", "highlight_details", "highlight_context",
-        "highlight_color", "block_ids", "callout", "note_style",
+        "highlight_color", "highlight_separator", "block_ids", "callout", "note_style",
         "chapter_headings", "include_bookmarks", "include_handwritten",
     }
     local book_nh_rows = {}
@@ -5555,6 +5641,26 @@ function M:genBookStyleMenu(file, target_table)
                 footnote = _("Footnotes"),
             },
             note_style_opts
+        )
+
+        nh_rows[#nh_rows + 1] = choiceRow(
+            _("Highlight separator: %1"),
+            "highlight_separator",
+            shared.getHighlightSeparator,
+            {
+                none = _("None"),
+                line = _("Line (---)"),
+                dots = _("Dots (· · ·)"),
+                editorial_dots = _("Editorial + Dots (· · ·)"),
+                editorial_line = _("Editorial + Line (---)"),
+            },
+            {
+                { val = "none",           text = _("None") },
+                { val = "line",           text = _("Line (---)") },
+                { val = "dots",           text = _("Dots (· · ·)") },
+                { val = "editorial_dots", text = _("Editorial + Dots (· · ·)") },
+                { val = "editorial_line", text = _("Editorial + Line (---)") },
+            }
         )
 
         nh_rows[#nh_rows + 1] = choiceRow(

@@ -511,7 +511,7 @@ end
 -- reshaped). A residual clash gets a numeric suffix.
 function render.assignBlockIds(annotations)
     local seen_seed, taken = {}, {}
-    for __, a in ipairs(annotations) do
+    for ann_idx, a in ipairs(annotations) do
         local seed
         if a.id_seed ~= nil and tostring(a.id_seed) ~= "" then
             seed = tostring(a.id_seed)
@@ -592,7 +592,7 @@ local function annotationChapter(a, no_chapter_label)
 end
 
 local function hasAnyChapter(annotations)
-    for __, a in ipairs(annotations) do
+    for ann_idx, a in ipairs(annotations) do
         if type(a.chapter) == "string" and a.chapter ~= "" then
             return true
         end
@@ -642,7 +642,7 @@ function render.buildBookMd(book, opts)
     local annotations = book.annotations or {}
     local count = book.count or #annotations
     local special_count = 0
-    for __, a in ipairs(annotations) do
+    for ann_idx, a in ipairs(annotations) do
         if a.special then
             special_count = special_count + 1
         end
@@ -1226,7 +1226,7 @@ function render.buildBookMd(book, opts)
             add("> [!highlight]- " .. show_heading)
         end
         local first_sp = true
-        for __, a in ipairs(annotations) do
+        for ann_idx, a in ipairs(annotations) do
             if a.special then
                 if not first_sp then
                     if is_std then
@@ -1277,8 +1277,12 @@ function render.buildBookMd(book, opts)
     end
 
     local chapter_mode = opts.chapter_headings or "h1"
+    local sep_mode = opts.highlight_separator or "none"
+    local is_editorial_sep = (sep_mode == "editorial_dots" or sep_mode == "editorial_line")
+    local sep_str = (sep_mode == "line" or sep_mode == "editorial_line") and "---"
+        or ((sep_mode == "dots" or sep_mode == "editorial_dots") and "· · ·" or nil)
     local chapter_prefix = "# "
-    if chapter_mode == "h2" then
+    if chapter_mode == "h2" or (chapter_mode == "h1" and (sep_mode == "line" or sep_mode == "editorial_line")) then
         chapter_prefix = "## "
     elseif chapter_mode == "h3" then
         chapter_prefix = "### "
@@ -1316,7 +1320,7 @@ function render.buildBookMd(book, opts)
         return nil
     end
 
-    for __, a in ipairs(annotations) do
+    for ann_idx, a in ipairs(annotations) do
         if with_chapters then
             local chapter = annotationChapter(a, opts.no_chapter_label)
             if chapter ~= current_chapter then
@@ -1424,7 +1428,56 @@ function render.buildBookMd(book, opts)
                 note_lines = nil
             end
         end
-        if #meta > 0 or ctx_line or note_lines or details_mode ~= "none" then
+        if is_editorial_sep and not a.handwritten then
+            local ed_meta = {}
+            if show_page and a.page and tostring(a.page) ~= "" then
+                ed_meta[#ed_meta + 1] = "p. " .. tostring(a.page)
+            end
+            if show_date and a.date and tostring(a.date) ~= "" then
+                ed_meta[#ed_meta + 1] = tostring(a.date)
+            end
+            if show_color then
+                local col_label = formatHighlightColor(a.color, color_aliases)
+                if col_label then
+                    ed_meta[#ed_meta + 1] = col_label
+                end
+            end
+            local fn_ref
+            if use_footnotes and note_lines then
+                footnotes[#footnotes + 1] = note_lines
+                fn_ref = "[^" .. #footnotes .. "]"
+                note_lines = nil
+            end
+            if #ed_meta > 0 then
+                local attr = "> — " .. em .. table.concat(ed_meta, " · ") .. em
+                if fn_ref then
+                    attr = attr .. " " .. fn_ref
+                end
+                add(attr)
+            elseif fn_ref then
+                add("> — " .. fn_ref)
+            end
+            if ctx_line then
+                add("")
+                add("**" .. _("Context:") .. "** " .. em .. ctx_line .. em)
+            end
+            if note_lines then
+                add("")
+                if use_note_callout then
+                    add("> [!note] " .. _("Note"))
+                    for __, line in ipairs(note_lines) do
+                        add("> " .. line)
+                    end
+                elseif #note_lines == 1 then
+                    add("**" .. _("Note:") .. "** " .. note_lines[1])
+                else
+                    add("**" .. _("Note:") .. "**")
+                    for __, line in ipairs(note_lines) do
+                        add(line)
+                    end
+                end
+            end
+        elseif #meta > 0 or ctx_line or note_lines or details_mode ~= "none" then
             add("")
             local has_top_bullet = #meta > 0
             if use_footnotes and note_lines then
@@ -1464,6 +1517,15 @@ function render.buildBookMd(book, opts)
                 elseif not has_top_bullet then
                     add("- …")
                 end
+            end
+        end
+        if sep_str and ann_idx < #annotations then
+            local next_a = annotations[ann_idx + 1]
+            local same_chapter = not with_chapters
+                or (annotationChapter(next_a, opts.no_chapter_label) == current_chapter)
+            if same_chapter then
+                add("")
+                add(sep_str)
             end
         end
         open = true
@@ -2782,7 +2844,7 @@ function render.buildBookTxt(book, opts)
     local annotations = book.annotations or {}
     local count = book.count or #annotations
     local special_count = 0
-    for __, a in ipairs(annotations) do
+    for ann_idx, a in ipairs(annotations) do
         if a.special then
             special_count = special_count + 1
         end
@@ -2856,7 +2918,7 @@ function render.buildBookTxt(book, opts)
         return nil
     end
 
-    for __, a in ipairs(annotations) do
+    for ann_idx, a in ipairs(annotations) do
         if with_chapters then
             local chapter = annotationChapter(a, opts.no_chapter_label)
             if chapter ~= current_chapter then

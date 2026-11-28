@@ -1325,6 +1325,7 @@ function M:runExport(files, opts)
                         highlight_context = getHighlightContext(file),
                         highlight_color = shared.getHighlightColor(file),
                         color_aliases = shared.getHighlightColorAliases(),
+                        highlight_separator = shared.getHighlightSeparator(file),
                         book_heading = getBookHeading(file),
                         overview_style = getOverviewStyle(file),
                         reading_dashboard = getReadingDashboard(file),

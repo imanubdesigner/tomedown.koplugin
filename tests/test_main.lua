@@ -1291,7 +1291,7 @@ end
 -- Notes & highlights: 12 static rows
 do
     local style_group = settings[3].sub_item_table
-    T.check(#style_group == 12, "notes & highlights rows: " .. #style_group)
+    T.check(#style_group == 13, "notes & highlights rows: " .. #style_group)
     T.check(type(style_group[1].text_func) == "function", "special marker row present")
     T.check(T.contains(style_group[1].text_func(), "Callout"),
         "special marker default Callout")
@@ -1304,10 +1304,10 @@ do
     T.check(style_group[7].text == "Every highlight is special", "callout entry")
     T.check(style_group[7].checked_func() == false, "callout off by default")
     T.check(style_group[8].text_func() == "Personal notes format: Inline", "note style entry")
-    T.check(style_group[10].text == "Page bookmarks", "page bookmarks entry")
-    T.check(style_group[10].checked_func() == false, "page bookmarks off by default")
-    T.check(style_group[12].text == "Book page", "book page submenu")
-    local book_page = style_group[12].sub_item_table
+    T.check(style_group[11].text == "Page bookmarks", "page bookmarks entry")
+    T.check(style_group[11].checked_func() == false, "page bookmarks off by default")
+    T.check(style_group[13].text == "Book page", "book page submenu")
+    local book_page = style_group[13].sub_item_table
     T.check(book_page[2].text == "Book cover image" and book_page[2].checked_func() == false,
         "book cover image sits in Book page and starts off")
 end
@@ -1509,7 +1509,7 @@ T.check(notes[3] == nil,
 
 -- Notes & highlights: note formatting and highlights
 local highlights = settings[3].sub_item_table
-T.check(#highlights == 12, "notes & highlights rows: " .. #highlights)
+T.check(#highlights == 13, "notes & highlights rows: " .. #highlights)
 T.check(highlights[7].text == "Every highlight is special",
     "callout entry")
 T.check(highlights[7].checked_func() == false, "callout off by default")
@@ -1779,9 +1779,9 @@ settings[2].sub_item_table[1].callback()
 T.check(store.tomedown.with_index == false, "index disabled")
 settings[2].sub_item_table[1].callback()
 T.check(store.tomedown.with_index == true, "index re-enabled")
-settings[3].sub_item_table[10].callback()
+settings[3].sub_item_table[11].callback()
 T.check(store.tomedown.include_bookmarks == true, "page bookmarks enabled")
-settings[3].sub_item_table[10].callback()
+settings[3].sub_item_table[11].callback()
 T.check(store.tomedown.include_bookmarks == false, "page bookmarks disabled")
 developer[2].callback()
 T.check(store.tomedown.beta_releases == true, "beta releases enabled")
@@ -2010,7 +2010,7 @@ store.tomedown = { import_prompt_done = true }
 
 -- ----------------------------------------------- 5b. page bookmarks
 
-settings[3].sub_item_table[10].callback() -- enable "Page bookmarks"
+settings[3].sub_item_table[11].callback() -- enable "Page bookmarks"
 T.check(store.tomedown.include_bookmarks == true, "page bookmarks enabled for the export")
 plugin:runExport({ FILE }, {})
 UIManager:runPending()
@@ -2046,7 +2046,7 @@ if onlyBmMd then
 end
 
 -- disabled again: the section disappears
-settings[3].sub_item_table[10].callback()
+settings[3].sub_item_table[11].callback()
 T.check(store.tomedown.include_bookmarks == false, "page bookmarks disabled again")
 plugin:runExport({ FILE }, {})
 UIManager:runPending()
@@ -2587,11 +2587,11 @@ NetworkMgr.connected = true
 uploadSetup()
 plugin:runExport({ FILE }, {})
 T.check(store.tomedown.exports[FILE].hash ~= nil, "hash stored by the export")
-settings[3].sub_item_table[12].sub_item_table[2].callback()
+settings[3].sub_item_table[13].sub_item_table[2].callback()
 T.check(store.tomedown.covers == true, "covers toggled on")
 T.check(store.tomedown.exports[FILE].hash == nil,
     "the covers toggle invalidates the stored hash")
-settings[3].sub_item_table[12].sub_item_table[2].callback()
+settings[3].sub_item_table[13].sub_item_table[2].callback()
 T.check(store.tomedown.covers == false, "covers toggled off again")
 plugin:runExport({ FILE }, {})
 T.check(store.tomedown.exports[FILE].hash ~= nil, "hash back after the export")
@@ -5270,24 +5270,25 @@ do
         "28: Reset to global style settings disabled when no overrides exist")
 
     local bnh = bstyle[3].sub_item_table_func()
-    T.check(#bnh == 11
+    T.check(#bnh == 12
             and bnh[1].key == "special_marker"
             and bnh[2].key == "highlight_details"
             and bnh[3].key == "highlight_context"
             and bnh[4].key == "block_ids"
             and bnh[5].key == "callout"
             and bnh[6].key == "note_style"
-            and bnh[7].key == "chapter_headings"
-            and bnh[8].key == "include_bookmarks"
-            and bnh[9].key == "highlight_color"
-            and bnh[11].key == "include_handwritten",
+            and bnh[7].key == "highlight_separator"
+            and bnh[8].key == "chapter_headings"
+            and bnh[9].key == "include_bookmarks"
+            and bnh[10].key == "highlight_color"
+            and bnh[12].key == "include_handwritten",
         "28: Current book -> Notes & highlights mirrors all 10 Global visual options")
 
     -- Pin FILE to chapter_headings = "none", highlight_details = "none", include_bookmarks = true,
     -- block_ids = true, and special_marker = "highlight" via submenu callbacks
-    bnh[7].sub_item_table[5].callback() -- chapter_headings = "none"
+    bnh[8].sub_item_table[5].callback() -- chapter_headings = "none"
     bnh[2].sub_item_table[5].callback() -- highlight_details = "none"
-    bnh[8].sub_item_table[2].callback() -- include_bookmarks = true
+    bnh[9].sub_item_table[2].callback() -- include_bookmarks = true
     bnh[4].sub_item_table[2].callback() -- block_ids = true
     bnh[1].sub_item_table[4].callback() -- special_marker = "highlight" (==text==)
     -- Pin FILE to hide progress in frontmatter via Frontmatter fields
@@ -5296,8 +5297,8 @@ do
             and shared.isFrontmatterKeyEnabled("progress") == true,
         "28: progress hidden for FILE only, global still enabled")
     T.check(bstyle[3].mandatory_func() == "Custom"
-            and bnh[7].mandatory_func() == "Custom"
             and bnh[8].mandatory_func() == "Custom"
+            and bnh[9].mandatory_func() == "Custom"
             and bnh[4].mandatory_func() == "Custom"
             and bnh[1].mandatory_func() == "Custom"
             and bstyle[6].mandatory_func() == "Custom"
@@ -5625,8 +5626,8 @@ do
                 and sp_sub[3].enabled_func() == false
                 and sp_sub[4].enabled_func() == false,
             "31: Callout, Alert, ==text== and ==**text**== are disabled in Standard Markdown mode")
-        local card_group = g_style[12].sub_item_table
-        T.check(g_style[12].text == "Book page"
+        local card_group = g_style[13].sub_item_table
+        T.check(g_style[13].text == "Book page"
                 and #card_group == 9
                 and card_group[9].text == "Section styles",
             "31: Book page has 9 fixed rows with Section styles submenu at the bottom")
@@ -6112,7 +6113,7 @@ do
     shared.setBookSynopsis(true)
     shared.setSynopsisMode("collapsed")
     local g_style = plugin:genSettingsMenu()[3].sub_item_table_func()
-    local g_card = g_style[12].sub_item_table
+    local g_card = g_style[13].sub_item_table
     local g_syn_disp = g_card[6]
     T.check(T.contains(g_syn_disp.text_func(), "Expanded")
             and g_syn_disp.sub_item_table[1].enabled_func() == false
@@ -6437,6 +6438,98 @@ do
     plugin:runExport({ FILE }, { force = true })
     UIManager:runPending()
     UIManager:reset()
+
+    -- 38. Highlight separator: Global vs Current book independence
+    do
+        local sep_anns1 = {
+            { drawer = "lighten", text = "Quote A1", chapter = "Ch 1", pageno = 10, datetime = "2026-09-03 10:00:00" },
+            { drawer = "lighten", text = "Quote A2", chapter = "Ch 1", pageno = 11, datetime = "2026-09-03 10:05:00", note = "Note A2" },
+        }
+        local sep_anns2 = {
+            { drawer = "lighten", text = "Quote B1", chapter = "Ch 1", pageno = 3, datetime = "2026-09-03 11:00:00" },
+            { drawer = "lighten", text = "Quote B2", chapter = "Ch 1", pageno = 4, datetime = "2026-09-03 11:05:00" },
+        }
+        local prev_a1 = BookList.registry[FILE].annotations
+        local prev_a2 = BookList.registry[FILE2].annotations
+        BookList.registry[FILE].annotations = sep_anns1
+        BookList.registry[FILE2].annotations = sep_anns2
+        plugin.ui.document = { file = FILE }
+
+        -- 1) Set Global Highlight separator = "line" via Global Settings menu
+        local g_settings = plugin:genSettingsMenu()
+        local g_nh = findMenuItem(g_settings, "Notes & highlights").sub_item_table
+        local g_sep = findMenuItem(g_nh, "Highlight separator:")
+        T.check(g_sep ~= nil, "38: Global menu has Highlight separator row")
+        findMenuItem(g_sep.sub_item_table, "Line (---)").callback()
+        T.check(shared.getHighlightSeparator() == "line"
+                and shared.getHighlightSeparator(FILE) == "line"
+                and shared.getHighlightSeparator(FILE2) == "line",
+            "38: Global Highlight separator set to line")
+
+        -- 2) In Current book (FILE), set Highlight separator = "dots"
+        local b_style = plugin:genBookStyleMenu(FILE)
+        local b_nh = findMenuItem(b_style, "Notes & highlights").sub_item_table_func()
+        local b_sep = findMenuItem(b_nh, "Highlight separator:")
+        T.check(b_sep ~= nil and b_sep.mandatory_func() == "Global", "38: Current book Highlight separator starts on Global")
+        findMenuItem(b_sep.sub_item_table, "Dots (· · ·)").callback()
+        T.check(b_sep.mandatory_func() == "Custom"
+                and shared.getHighlightSeparator(FILE) == "dots"
+                and shared.getHighlightSeparator(FILE2) == "line"
+                and shared.getHighlightSeparator() == "line",
+            "38: Current book override to dots is independent from Global line")
+
+        plugin:runExport({ FILE, FILE2 }, {})
+        UIManager:runPending()
+        local f1_base = (store.tomedown.exports[FILE] or {}).base
+        local f2_base = (store.tomedown.exports[FILE2] or {}).base
+        local f1_md = T.readFile(DIR .. "/" .. f1_base .. ".md") or ""
+        local f2_md = T.readFile(DIR .. "/" .. f2_base .. ".md") or ""
+        local tr = require("tomedown_render")
+        local dt_a1 = tr.fmtDateTime("2026-09-03 10:00:00")
+        local dt_b1 = tr.fmtDateTime("2026-09-03 11:00:00")
+        T.check(T.contains(f1_md, "# Ch 1") and T.contains(f1_md, "\n· · ·\n"),
+            "38: FILE exports with per-book dots and # Ch 1 while Global is line")
+        T.check(T.contains(f2_md, "## Ch 1") and T.contains(f2_md, "**p. 3** · " .. dt_b1 .. "\n\n---\n\n> Quote B2"),
+            "38: FILE2 exports with Global line and promoted ## Ch 1")
+
+        -- 3) Change Current book (FILE) to Editorial + Dots (· · ·)
+        findMenuItem(b_sep.sub_item_table, "Editorial + Dots (· · ·)").callback()
+        T.check(shared.getHighlightSeparator(FILE) == "editorial_dots",
+            "38: Current book updated to editorial_dots")
+
+        -- 4) Change Global from Line to Dots and run Export all books again:
+        -- FILE must keep editorial_dots while FILE2 switches to dots
+        findMenuItem(g_sep.sub_item_table, "Dots (· · ·)").callback()
+        T.check(shared.getHighlightSeparator() == "dots"
+                and shared.getHighlightSeparator(FILE) == "editorial_dots"
+                and shared.getHighlightSeparator(FILE2) == "dots",
+            "38: Changing Global to dots preserves FILE's editorial_dots override")
+        plugin:runExport({ FILE, FILE2 }, {})
+        UIManager:runPending()
+        f1_md = T.readFile(DIR .. "/" .. f1_base .. ".md") or ""
+        f2_md = T.readFile(DIR .. "/" .. f2_base .. ".md") or ""
+        T.check(T.contains(f1_md, "> Quote A1\n> — *p. 10 · " .. dt_a1 .. "*\n\n· · ·\n")
+                and T.contains(f1_md, ":* Note A2") or T.contains(f1_md, ":** Note A2"),
+            "38: FILE retains editorial_dots after Global changed to dots and Export all books again ran")
+        T.check(T.contains(f2_md, "# Ch 1")
+                and T.contains(f2_md, "- **p. 3** · " .. dt_b1 .. "\n\n· · ·\n\n> Quote B2"),
+            "38: FILE2 updates to Global dots after Export all books again")
+
+        -- 5) Reset Current book (FILE) to Follow global setting
+        findMenuItem(b_sep.sub_item_table, "Follow global setting").callback()
+        T.check(b_sep.mandatory_func() == "Global"
+                and shared.getHighlightSeparator(FILE) == "dots",
+            "38: Follow global setting clears per-book override")
+
+        shared.setHighlightSeparator("none")
+        shared.clearBookStyleOverrides(FILE)
+        BookList.registry[FILE].annotations = prev_a1
+        BookList.registry[FILE2].annotations = prev_a2
+        cleanDir()
+        plugin:runExport({ FILE }, { force = true })
+        UIManager:runPending()
+        UIManager:reset()
+    end
 end
 
 T.finish("test_main")

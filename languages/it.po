@@ -1372,3 +1372,21 @@ msgstr "Oliva"
 
 msgid "Cyan"
 msgstr "Ciano"
+
+msgid "Highlight separator: %1"
+msgstr "Separatore note: %1"
+
+msgid "Line (---)"
+msgstr "Linea (---)"
+
+msgid "Dots (· · ·)"
+msgstr "Punti (· · ·)"
+
+msgid "Editorial + Dots (· · ·)"
+msgstr "Editoriale + Punti (· · ·)"
+
+msgid "Editorial + Line (---)"
+msgstr "Editoriale + Linea (---)"
+
+msgid "Note:"
+msgstr "Nota:"
