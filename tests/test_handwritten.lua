@@ -644,6 +644,164 @@ do
             and zeno_anns[4].chapter == "The Death of My Father",
         "4e: Book notes chapter page sorts inside 'The Death of My Father' after 'The Last Cigarette' (no split chapters)")
 
+    -- 4f. Regression: closed EPUB (unrendered CreDocument in DocumentRegistry)
+    --     must NEVER call C++ getToc()/getPageFromXPointer() (SIGSEGV in libkoreader-cre.so+0x608aa),
+    --     locked PDFs must not call getToc(), closed PDFs cache TOC once, and
+    --     cached EPUB xpointer TOC resolves chapters after close even with zero highlights.
+    writeBytes(zeno_book, "PK\3\4fake-epub")
+    local cre_toc_called = false
+    local cre_xp_called = false
+    local locked_toc_called = false
+    local locked_closed = false
+    local pdf_open_count = 0
+    local pdf_close_count = 0
+    local closed_pdf = INK_WORK .. "/books/DraculaClosed.pdf"
+    local closed_pdf_sdr = closed_pdf .. ".sdr"
+    local locked_pdf = INK_WORK .. "/books/Locked.pdf"
+    local locked_pdf_sdr = locked_pdf .. ".sdr"
+    util.makePath(closed_pdf_sdr)
+    util.makePath(locked_pdf_sdr)
+    writeBytes(closed_pdf, "%PDF-1.4 fake")
+    writeBytes(locked_pdf, "%PDF-1.4 locked")
+    writeBytes(closed_pdf_sdr .. "/inkaway.lua", [[return {
+        ["version"]=1,
+        ["items"]={
+            {["op"]={["kind"]="ink",["width"]=3,["pts"]={0,0,10,10,},},["a"]={["pg"]=4,["fx"]=0,["fy"]=0,},},
+            {["op"]={["kind"]="ink",["width"]=3,["pts"]={0,0,10,10,},},["a"]={["pg"]=7,["fx"]=0,["fy"]=0,},},
+        },
+    }]])
+    writeBytes(locked_pdf_sdr .. "/inkaway.lua", [[return {
+        ["version"]=1,
+        ["items"]={
+            {["op"]={["kind"]="ink",["width"]=3,["pts"]={0,0,10,10,},},["a"]={["pg"]=2,["fx"]=0,["fy"]=0,},},
+        },
+    }]])
+
+    local prev_dr = package.loaded["document/documentregistry"]
+    package.loaded["document/documentregistry"] = {
+        getProvider = function(_, path)
+            if path:match("%.epub$") then
+                return { loadDocument = function() end, info = { has_pages = false } }
+            end
+            return { info = { has_pages = true } }
+        end,
+        openDocument = function(_, path)
+            if path:match("%.epub$") then
+                return {
+                    loadDocument = function() end,
+                    been_rendered = false,
+                    info = { has_pages = false },
+                    getToc = function()
+                        cre_toc_called = true
+                        error("SIGSEGV in libkoreader-cre.so+0x608aa")
+                    end,
+                    close = function() end,
+                }
+            elseif path == locked_pdf then
+                return {
+                    is_locked = true,
+                    info = { has_pages = true },
+                    getToc = function()
+                        locked_toc_called = true
+                        return {}
+                    end,
+                    close = function()
+                        locked_closed = true
+                    end,
+                }
+            elseif path == closed_pdf then
+                pdf_open_count = pdf_open_count + 1
+                return {
+                    is_locked = false,
+                    info = { has_pages = true },
+                    getToc = function()
+                        return {
+                            { page = 3, depth = 1, title = "Prefazione" },
+                            { page = 6, depth = 1, title = "Capitolo I" },
+                        }
+                    end,
+                    close = function()
+                        pdf_close_count = pdf_close_count + 1
+                    end,
+                }
+            end
+            return nil
+        end,
+    }
+
+    -- 4f.1: Closed EPUB on disk must not invoke getToc() on unloaded CreDocument
+    local zeno_closed_hw = Export:cleanHandwritten(zeno_book, nil, zeno_raw, nil, nil)
+    Export:assignHandwrittenChapters(zeno_closed_hw, Export:cleanAnnotations(zeno_raw))
+    T.check(not cre_toc_called,
+        "4f.1: closed EPUB on disk never calls getToc() on unloaded CreDocument")
+    T.check(zeno_closed_hw[1].chapter == "The Last Cigarette"
+            and zeno_closed_hw[2].chapter == "The Death of My Father",
+        "4f.1: closed EPUB still resolves chapters from highlight DocFragments and Book notes")
+
+    -- 4f.2: Unrendered live CreDocument passed directly must not invoke C++ getToc/getPageFromXPointer
+    local unrendered_cre = {
+        loadDocument = function() end,
+        been_rendered = false,
+        info = { has_pages = false },
+        getToc = function() cre_toc_called = true; return {} end,
+        getPageFromXPointer = function() cre_xp_called = true; return 5 end,
+    }
+    Export:cleanHandwritten(zeno_book, nil, zeno_raw, unrendered_cre, {
+        fillToc = function() cre_toc_called = true end,
+        getTocTitleByPage = function() cre_toc_called = true; return "Bad" end,
+    })
+    T.check(not cre_toc_called and not cre_xp_called,
+        "4f.2: unrendered live CreDocument never triggers getToc, fillToc, or getPageFromXPointer")
+
+    -- 4f.3: Password-locked PDF opened offscreen closes cleanly without calling getToc
+    Export:cleanHandwritten(locked_pdf, nil, nil, nil, nil)
+    T.check(not locked_toc_called and locked_closed,
+        "4f.3: locked PDF opened via DocumentRegistry never calls getToc() and still closes")
+
+    -- 4f.4: Closed PDF resolves chapters via DocumentRegistry once and caches TOC
+    local drac1 = Export:cleanHandwritten(closed_pdf, nil, nil, nil, nil)
+    local drac2 = Export:cleanHandwritten(closed_pdf, nil, nil, nil, nil)
+    T.check(drac1[1].chapter == "Prefazione" and drac1[2].chapter == "Capitolo I"
+            and drac2[1].chapter == "Prefazione" and drac2[2].chapter == "Capitolo I",
+        "4f.4: closed PDF resolves Prefazione (p. 4) and Capitolo I (p. 7) without text highlights")
+    T.check(pdf_open_count == 1 and pdf_close_count == 1,
+        "4f.4: closed PDF TOC is cached after first lookup (open_count=" .. tostring(pdf_open_count) .. ")")
+
+    -- 4f.5: Closed EPUB with zero text highlights resolves chapters after cacheBookToc on close
+    local nohl_epub = INK_WORK .. "/books/NoHighlights.epub"
+    local nohl_sdr = nohl_epub .. ".sdr"
+    util.makePath(nohl_sdr)
+    writeBytes(nohl_epub, "PK\3\4fake-epub-2")
+    writeBytes(nohl_sdr .. "/inkaway.lua", [[return {
+        ["version"]=1,
+        ["items"]={
+            {["op"]={["kind"]="ink",["width"]=3,["pts"]={0,0,10,10,},},["a"]={["xp0"]="/body/DocFragment[6]/body/section/p[145]/text().113",["dx"]=10,["dy"]=0,},},
+            {["op"]={["kind"]="ink",["width"]=3,["pts"]={0,0,10,10,},},["a"]={["xp0"]="/body/DocFragment[7]/body/section/p[3]/text().700",["dx"]=10,["dy"]=0,},},
+        },
+    }]])
+    local rendered_cre = {
+        loadDocument = function() end,
+        been_rendered = true,
+        info = { has_pages = false },
+        getToc = function()
+            return {
+                { page = 8,  depth = 1, title = "The Last Cigarette",     xpointer = "/body/DocFragment[6]/body/h1[1]" },
+                { page = 21, depth = 1, title = "The Death of My Father", xpointer = "/body/DocFragment[7]/body/h1[1]" },
+            }
+        end,
+    }
+    T.check(type(Handwritten.cacheBookToc) == "function",
+        "4f.5: Handwritten.cacheBookToc exists for caching live TOC before close")
+    if type(Handwritten.cacheBookToc) == "function" then
+        Handwritten.cacheBookToc(nohl_epub, rendered_cre, nil)
+    end
+    local nohl_hw = Export:cleanHandwritten(nohl_epub, nil, {}, nil, nil)
+    T.check(nohl_hw[1] and nohl_hw[1].chapter == "The Last Cigarette"
+            and nohl_hw[2] and nohl_hw[2].chapter == "The Death of My Father"
+            and not cre_toc_called,
+        "4f.5: closed EPUB with zero highlights resolves chapters from cached xpointer TOC without opening CreDocument")
+
+    package.loaded["document/documentregistry"] = prev_dr
     T.rmrf(INK_WORK)
 end
 

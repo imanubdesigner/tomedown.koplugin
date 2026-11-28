@@ -30,6 +30,35 @@ local util = require("util")
 local handwritten = {}
 
 local DEFAULT_FOLDER = "drawings"
+local toc_cache = {}
+
+local function isDocTocReady(doc)
+    if type(doc) ~= "table" or doc.is_locked then
+        return false
+    end
+    -- CreDocument (`doc.loadDocument` exists, `doc.info.has_pages == false`)
+    -- creates an unloaded C++ LVDocView in `init()`. Calling `getToc()` or
+    -- `getPageFromXPointer()` before `render()` (`been_rendered == true`)
+    -- dereferences a NULL pointer in `libkoreader-cre.so`.
+    if doc.loadDocument ~= nil and not doc.been_rendered then
+        return false
+    end
+    if type(doc.info) == "table" and doc.info.has_pages == false and not doc.been_rendered then
+        return false
+    end
+    return true
+end
+
+local function tocCacheKey(file)
+    if type(file) ~= "string" or file == "" then
+        return nil
+    end
+    local attr = lfs.attributes(file)
+    if type(attr) == "table" and attr.mode == "file" then
+        return string.format("%s\31%s\31%s", file, tostring(attr.modification or 0), tostring(attr.size or 0))
+    end
+    return file
+end
 
 local function trim(s)
     if type(s) ~= "string" then
@@ -717,7 +746,7 @@ local function collectInkAway(sdr_dir, raw, document, addEntry)
             else
                 key = "idx:" .. tostring(idx)
             end
-            if pageno == 0 and pos0 and document and type(document.getPageFromXPointer) == "function" then
+            if pageno == 0 and pos0 and isDocTocReady(document) and type(document.getPageFromXPointer) == "function" then
                 local ok_p, rp = pcall(document.getPageFromXPointer, document, pos0)
                 if ok_p and tonumber(rp) and tonumber(rp) > 0 then
                     pageno = tonumber(rp)
@@ -780,7 +809,7 @@ local function collectInkAway(sdr_dir, raw, document, addEntry)
                             or (hl_tag and type(hl_tag.pos0) == "string" and hl_tag.pos0) or nil
                         local pageno = matched_hl and (tonumber(matched_hl.pageno)
                             or (type(matched_hl.page) == "number" and matched_hl.page)) or 0
-                        if pageno == 0 and pos0 and document and type(document.getPageFromXPointer) == "function" then
+                        if pageno == 0 and pos0 and isDocTocReady(document) and type(document.getPageFromXPointer) == "function" then
                             local ok_p, rp = pcall(document.getPageFromXPointer, document, pos0)
                             if ok_p and tonumber(rp) and tonumber(rp) > 0 then
                                 pageno = tonumber(rp)
@@ -838,12 +867,148 @@ local function lookupChapterInTocList(toc_list, pageno)
     return nil
 end
 
+local function xpTokens(s)
+    local out = {}
+    local i = 1
+    while i <= #s do
+        local d0, d1 = s:find("%d+", i)
+        if not d0 then
+            out[#out + 1] = { text = s:sub(i) }
+            break
+        end
+        if d0 > i then
+            out[#out + 1] = { text = s:sub(i, d0 - 1) }
+        end
+        out[#out + 1] = { num = tonumber(s:sub(d0, d1)) }
+        i = d1 + 1
+    end
+    return out
+end
+
+local function xpCompare(a, b)
+    local n = math.min(#a, #b)
+    for k = 1, n do
+        local x, y = a[k], b[k]
+        if x.num and y.num then
+            if x.num ~= y.num then
+                return x.num < y.num and -1 or 1
+            end
+        elseif x.num or y.num then
+            return x.num and -1 or 1
+        elseif x.text ~= y.text then
+            return x.text < y.text and -1 or 1
+        end
+    end
+    if #a == #b then
+        return 0
+    end
+    return #a < #b and -1 or 1
+end
+
+local function lookupChapterByXPointer(toc_list, pos0)
+    if type(toc_list) ~= "table" or #toc_list == 0 or type(pos0) ~= "string" or pos0 == "" then
+        return nil
+    end
+    local target_tok = xpTokens(pos0)
+    local target_frag = tonumber(pos0:match("DocFragment%[(%d+)%]"))
+    local prev_idx = nil
+    local first_same_frag = nil
+    local matched_same_frag = false
+    for i, entry in ipairs(toc_list) do
+        local xp = type(entry) == "table" and entry.xpointer or nil
+        if type(xp) == "string" and xp ~= "" then
+            local efrag = tonumber(xp:match("DocFragment%[(%d+)%]"))
+            if target_frag and efrag then
+                if efrag > target_frag then
+                    break
+                elseif efrag < target_frag then
+                    prev_idx = i
+                else
+                    first_same_frag = first_same_frag or i
+                    if xpCompare(xpTokens(xp), target_tok) <= 0 then
+                        prev_idx = i
+                        matched_same_frag = true
+                    end
+                end
+            else
+                if xpCompare(xpTokens(xp), target_tok) <= 0 then
+                    prev_idx = i
+                end
+            end
+        end
+    end
+    if target_frag and first_same_frag and not matched_same_frag then
+        prev_idx = first_same_frag
+    end
+    if prev_idx and toc_list[prev_idx] then
+        return cleanTocTitle(toc_list[prev_idx].title)
+    end
+    return nil
+end
+
+local function hasSidecarHandwrittenFiles(file)
+    local sdr = handwritten.getSidecarDir(file)
+    if not sdr then
+        return false
+    end
+    if lfs.attributes(sdr .. "/inkaway.lua", "mode") == "file"
+            or lfs.attributes(sdr .. "/inkaway.lua.old", "mode") == "file"
+            or lfs.attributes(sdr .. "/pencil", "mode") == "directory"
+            or lfs.attributes(sdr .. "/drawings", "mode") == "directory"
+            or lfs.attributes(sdr .. "/stylus", "mode") == "directory" then
+        return true
+    end
+    return #scanSdrDrawings(sdr) > 0
+end
+
+--- Cache a live book's Table of Contents in memory while its ReaderUI document
+-- is still open and rendered, so delayed close-exports (`onCloseDocument`) or
+-- FileManager batch exports can resolve EPUB xpointer chapters without ever
+-- opening an unrendered `CreDocument` offscreen.
+function handwritten.cacheBookToc(file, document, toc_module, opts)
+    local key = tocCacheKey(file)
+    if not key then
+        return nil
+    end
+    if type(toc_module) == "table" and type(toc_module.toc) == "table" and #toc_module.toc > 0 then
+        toc_cache[key] = toc_module.toc
+        return toc_module.toc
+    end
+    if opts and opts.only_if_needed and not hasSidecarHandwrittenFiles(file) then
+        return nil
+    end
+    local doc_ready = (document == nil) or isDocTocReady(document)
+    if not doc_ready then
+        return nil
+    end
+    if type(toc_module) == "table" and type(toc_module.fillToc) == "function" then
+        pcall(toc_module.fillToc, toc_module)
+        if type(toc_module.toc) == "table" and #toc_module.toc > 0 then
+            toc_cache[key] = toc_module.toc
+            return toc_module.toc
+        end
+    end
+    if isDocTocReady(document) and type(document.getToc) == "function" then
+        local ok_t, t = pcall(document.getToc, document)
+        if ok_t and type(t) == "table" and #t > 0 then
+            toc_cache[key] = t
+            return t
+        end
+    end
+    return nil
+end
+
 local function loadBookTocList(file, ds, document, toc_module)
-    if type(toc_module) == "table" then
+    local cache_key = tocCacheKey(file)
+    local toc_ready = (document == nil) or isDocTocReady(document)
+    if toc_ready and type(toc_module) == "table" then
         if type(toc_module.fillToc) == "function" and type(toc_module.toc) ~= "table" then
             pcall(toc_module.fillToc, toc_module)
         end
         if type(toc_module.toc) == "table" and #toc_module.toc > 0 then
+            if cache_key then
+                toc_cache[cache_key] = toc_module.toc
+            end
             return toc_module.toc
         end
     end
@@ -855,26 +1020,48 @@ local function loadBookTocList(file, ds, document, toc_module)
             end
         end
     end
-    if document and type(document.getToc) == "function" then
+    if isDocTocReady(document) and type(document.getToc) == "function" then
         local ok_t, t = pcall(document.getToc, document)
         if ok_t and type(t) == "table" and #t > 0 then
+            if cache_key then
+                toc_cache[cache_key] = t
+            end
             return t
         end
+    end
+    if cache_key and toc_cache[cache_key] ~= nil then
+        return toc_cache[cache_key] or nil
     end
     if type(file) == "string" and file ~= "" and lfs.attributes(file, "mode") == "file" then
         local ok_dr, DocumentRegistry = pcall(require, "document/documentregistry")
         if ok_dr and DocumentRegistry and type(DocumentRegistry.openDocument) == "function" then
-            local ok_doc, temp_doc = pcall(DocumentRegistry.openDocument, DocumentRegistry, file)
-            if ok_doc and temp_doc then
-                local ok_t, t = nil, nil
-                if type(temp_doc.getToc) == "function" then
-                    ok_t, t = pcall(temp_doc.getToc, temp_doc)
+            local can_open_offscreen = true
+            if type(DocumentRegistry.getProvider) == "function" then
+                local ok_prov, prov = pcall(DocumentRegistry.getProvider, DocumentRegistry, file)
+                if not ok_prov or type(prov) ~= "table"
+                        or prov.loadDocument ~= nil
+                        or (type(prov.info) == "table" and prov.info.has_pages == false) then
+                    can_open_offscreen = false
                 end
-                if type(temp_doc.close) == "function" then
-                    pcall(temp_doc.close, temp_doc)
-                end
-                if ok_t and type(t) == "table" and #t > 0 then
-                    return t
+            end
+            if can_open_offscreen then
+                local ok_doc, temp_doc = pcall(DocumentRegistry.openDocument, DocumentRegistry, file)
+                if ok_doc and temp_doc then
+                    local ok_t, t = nil, nil
+                    if isDocTocReady(temp_doc) and type(temp_doc.getToc) == "function" then
+                        ok_t, t = pcall(temp_doc.getToc, temp_doc)
+                    end
+                    if type(temp_doc.close) == "function" then
+                        pcall(temp_doc.close, temp_doc)
+                    end
+                    if ok_t and type(t) == "table" then
+                        if cache_key then
+                            toc_cache[cache_key] = (#t > 0) and t or false
+                        end
+                        if #t > 0 then
+                            return t
+                        end
+                    end
                 end
             end
         end
@@ -1088,10 +1275,12 @@ function handwritten.collect(file, ds, raw, document, toc_module)
     collectInkAway(sdr_dir, raw, document, addEntry)
 
     -- 5. Resolve missing chapter titles (and TOC positions for chapter notebook pages)
-    --    via live `toc_module:getTocTitleByPage`, `document:getToc()`, `handmade_toc`, or `DocumentRegistry`
+    --    via live `toc_module:getTocTitleByPage`, `document:getToc()`, `handmade_toc`,
+    --    cached TOC, or fixed-page `DocumentRegistry`
+    local toc_ready = (document == nil) or isDocTocReady(document)
     local needs_toc_list = false
     for __, item in ipairs(out) do
-        if not item.chapter and type(toc_module) == "table"
+        if not item.chapter and toc_ready and type(toc_module) == "table"
                 and type(toc_module.getTocTitleByPage) == "function" then
             local target = (type(item.pos0) == "string" and item.pos0 ~= "") and item.pos0 or item.pageno
             if target then
@@ -1106,7 +1295,8 @@ function handwritten.collect(file, ds, raw, document, toc_module)
                 end
             end
         end
-        if not item.chapter or (item.toc_index and not item.pageno and not item.pos0) then
+        if (item.toc_index and (not item.chapter or (not item.pageno and not item.pos0)))
+                or (not item.chapter and (item.pageno or (type(item.pos0) == "string" and item.pos0 ~= ""))) then
             needs_toc_list = true
         end
     end
@@ -1125,6 +1315,9 @@ function handwritten.collect(file, ds, raw, document, toc_module)
                     if not item.pos0 and type(te.xpointer) == "string" and te.xpointer ~= "" then
                         item.pos0 = te.xpointer
                     end
+                end
+                if not item.chapter and type(item.pos0) == "string" and item.pos0 ~= "" then
+                    item.chapter = lookupChapterByXPointer(toc_list, item.pos0)
                 end
                 if not item.chapter and item.pageno then
                     item.chapter = lookupChapterInTocList(toc_list, item.pageno)
