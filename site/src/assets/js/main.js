@@ -878,13 +878,12 @@
     searchInput.addEventListener("input", filterDocs);
 
     window.addEventListener("keydown", function (e) {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        searchInput.focus();
-        searchInput.select();
-      } else if (e.key === "Escape" && document.activeElement === searchInput && searchInput.value) {
+      if (e.key === "Escape" && document.activeElement === searchInput && searchInput.value) {
         searchInput.value = "";
         filterDocs();
+      } else if (e.key === "Enter" && document.activeElement === searchInput && searchInput.value.trim()) {
+        e.preventDefault();
+        if (window.tomedownSearch) window.tomedownSearch.open(searchInput.value.trim());
       }
     });
   }
@@ -1341,4 +1340,234 @@
       });
     });
   });
+  // 9. Site-wide documentation search (Ctrl/Cmd+K or "/"): full text of every
+  // docs section from /search-index.json, built by site/build.py.
+  (function () {
+    var openers = document.querySelectorAll(".js-search-open");
+    var base = (openers[0] && openers[0].getAttribute("data-base")) || "";
+    var isApple = /Mac|iPhone|iPad|iPod/i.test(navigator.platform || navigator.userAgent || "");
+    document.querySelectorAll(".site-search-kbd").forEach(function (k) {
+      k.textContent = isApple ? "\u2318K" : "Ctrl K";
+    });
+
+    var index = null, loading = null, dialog, input, list, status, lastFocus, results = [], active = -1;
+
+    function norm(str) {
+      return String(str).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    }
+    function esc(str) {
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+    function words(str) {
+      return str.split(/[^a-z0-9]+/).filter(Boolean);
+    }
+    function within(a, b, max) {
+      // Levenshtein distance <= max (rows kept tiny: words are short)
+      if (Math.abs(a.length - b.length) > max) return false;
+      var prev = [], cur, i, j;
+      for (j = 0; j <= b.length; j++) prev[j] = j;
+      for (i = 1; i <= a.length; i++) {
+        cur = [i];
+        for (j = 1; j <= b.length; j++) {
+          cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+        }
+        prev = cur;
+      }
+      return prev[b.length] <= max;
+    }
+
+    function load() {
+      if (index) return Promise.resolve(index);
+      if (!loading) {
+        loading = fetch(base + "/search-index.json").then(function (r) { return r.json(); }).then(function (data) {
+          data.forEach(function (e) {
+            e.nh = norm(e.h); e.np = norm(e.p); e.nt = norm(e.t);
+            e.hw = words(e.nh); e.tw = words(e.nt);
+          });
+          index = data;
+          return data;
+        });
+      }
+      return loading;
+    }
+
+    function tokenScore(tok, e) {
+      var s = 0, i;
+      for (i = 0; i < e.hw.length; i++) { if (e.hw[i] === tok) { s += 12; break; } if (e.hw[i].indexOf(tok) === 0) { s += 9; break; } }
+      if (!s && e.nh.indexOf(tok) !== -1) s += 6;
+      if (e.np.indexOf(tok) !== -1) s += 3;
+      for (i = 0; i < e.tw.length; i++) { if (e.tw[i] === tok) { s += 4; break; } if (e.tw[i].indexOf(tok) === 0) { s += 3; break; } }
+      if (!s && e.nt.indexOf(tok) !== -1) s += 1;
+      if (!s && tok.length >= 4) {
+        var max = tok.length >= 9 ? 2 : 1;
+        var pool = e.hw.concat(e.tw);
+        for (i = 0; i < pool.length; i++) {
+          if (pool[i][0] === tok[0] && within(tok, pool[i], max)) { s += 2; break; }
+        }
+      }
+      return s;
+    }
+
+    function run(query) {
+      var q = norm(query).trim();
+      var toks = words(q);
+      if (!toks.length) {
+        var seen = {};
+        return index.filter(function (e) {
+          if (seen[e.p]) return false;
+          seen[e.p] = true; return true;
+        }).slice(0, 8).map(function (e) { return { e: e, snippet: e.t.slice(0, 140) }; });
+      }
+      var out = [];
+      index.forEach(function (e) {
+        var total = 0;
+        for (var i = 0; i < toks.length; i++) {
+          var s = tokenScore(toks[i], e);
+          if (!s) return;
+          total += s;
+        }
+        if (toks.length > 1) {
+          if (e.nh.indexOf(q) !== -1) total += 10;
+          else if (e.nt.indexOf(q) !== -1) total += 5;
+        }
+        out.push({ e: e, score: total, toks: toks });
+      });
+      out.sort(function (a, b) { return b.score - a.score; });
+      return out.slice(0, 12);
+    }
+
+    function highlight(text, toks) {
+      var n = norm(text);
+      if (n.length !== text.length || !toks) return esc(text);
+      var ranges = [];
+      toks.forEach(function (t) {
+        var from = 0, at;
+        while ((at = n.indexOf(t, from)) !== -1) { ranges.push([at, at + t.length]); from = at + t.length; }
+      });
+      ranges.sort(function (a, b) { return a[0] - b[0]; });
+      var html = "", pos = 0;
+      ranges.forEach(function (r) {
+        if (r[0] < pos) return;
+        html += esc(text.slice(pos, r[0])) + "<mark>" + esc(text.slice(r[0], r[1])) + "</mark>";
+        pos = r[1];
+      });
+      return html + esc(text.slice(pos));
+    }
+
+    function snippetFor(r) {
+      var t = r.e.t;
+      if (!r.toks) return t.slice(0, 140);
+      var n = r.e.nt, at = -1;
+      for (var i = 0; i < r.toks.length && at === -1; i++) at = n.indexOf(r.toks[i]);
+      if (at === -1) return t.slice(0, 140);
+      var start = Math.max(0, at - 50);
+      var cut = t.slice(start, start + 150);
+      return (start > 0 ? "\u2026" : "") + cut + (start + 150 < t.length ? "\u2026" : "");
+    }
+
+    function render(query) {
+      results = run(query);
+      active = results.length ? 0 : -1;
+      var toks = words(norm(query));
+      if (!results.length) {
+        list.innerHTML = '<li class="search-empty" role="presentation">No results for \u201c' + esc(query) + '\u201d. Try fewer or different words.</li>';
+        status.textContent = "No results.";
+        return;
+      }
+      list.innerHTML = results.map(function (r, i) {
+        var e = r.e, sn = r.snippet || snippetFor(r);
+        var crumb = e.h === e.p ? esc(e.p) : esc(e.p) + " \u203a " + highlight(e.h, toks);
+        return '<li role="option" id="search-opt-' + i + '" data-i="' + i + '"' + (i === 0 ? ' aria-selected="true"' : "") + ">" +
+          '<a href="' + base + e.u + '" tabindex="-1"><span class="search-crumb">' + crumb + "</span>" +
+          '<span class="search-snippet">' + highlight(sn, toks) + "</span></a></li>";
+      }).join("");
+      status.textContent = results.length + (results.length === 1 ? " result." : " results.");
+      input.setAttribute("aria-activedescendant", "search-opt-0");
+    }
+
+    function setActive(i) {
+      if (!results.length) return;
+      active = (i + results.length) % results.length;
+      list.querySelectorAll("[role=option]").forEach(function (li) {
+        li.setAttribute("aria-selected", li.getAttribute("data-i") === String(active) ? "true" : "false");
+      });
+      var cur = document.getElementById("search-opt-" + active);
+      input.setAttribute("aria-activedescendant", "search-opt-" + active);
+      if (cur) cur.scrollIntoView({ block: "nearest" });
+    }
+
+    function build() {
+      dialog = document.createElement("div");
+      dialog.className = "search-modal";
+      dialog.hidden = true;
+      dialog.innerHTML =
+        '<div class="search-backdrop" data-close></div>' +
+        '<div class="search-panel" role="dialog" aria-modal="true" aria-label="Search the documentation">' +
+        '<div class="search-field"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>' +
+        '<input type="search" class="search-input" placeholder="Search the docs\u2026" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="true" aria-controls="search-list" aria-label="Search the documentation">' +
+        '<kbd>Esc</kbd></div>' +
+        '<ul class="search-list" id="search-list" role="listbox" aria-label="Search results"></ul>' +
+        '<p class="search-foot"><span><kbd>\u2191</kbd><kbd>\u2193</kbd> navigate</span><span><kbd>\u21b5</kbd> open</span></p>' +
+        '<p class="sr-only" role="status" aria-live="polite" id="search-status"></p></div>';
+      document.body.appendChild(dialog);
+      input = dialog.querySelector(".search-input");
+      list = dialog.querySelector(".search-list");
+      status = dialog.querySelector("#search-status");
+      dialog.addEventListener("click", function (e) {
+        if (e.target.hasAttribute("data-close")) close();
+        var a = e.target.closest && e.target.closest("a");
+        if (a) close();
+      });
+      list.addEventListener("mousemove", function (e) {
+        var li = e.target.closest && e.target.closest("[role=option]");
+        if (li && li.getAttribute("data-i") !== String(active)) setActive(parseInt(li.getAttribute("data-i"), 10));
+      });
+      input.addEventListener("input", function () { if (index) render(input.value); });
+      input.addEventListener("keydown", function (e) {
+        if (e.key === "ArrowDown") { e.preventDefault(); setActive(active + 1); }
+        else if (e.key === "ArrowUp") { e.preventDefault(); setActive(active - 1); }
+        else if (e.key === "Enter" && results[active]) { e.preventDefault(); location.href = base + results[active].e.u; }
+        else if (e.key === "Tab") { e.preventDefault(); }
+      });
+    }
+
+    function open(initial) {
+      if (!dialog) build();
+      lastFocus = document.activeElement;
+      dialog.hidden = false;
+      document.body.style.overflow = "hidden";
+      input.value = initial || "";
+      input.focus();
+      input.select();
+      list.innerHTML = '<li class="search-empty" role="presentation">Loading\u2026</li>';
+      load().then(function () { render(input.value); }).catch(function () {
+        list.innerHTML = '<li class="search-empty" role="presentation">Search is unavailable right now.</li>';
+      });
+    }
+
+    function close() {
+      if (!dialog || dialog.hidden) return;
+      dialog.hidden = true;
+      document.body.style.overflow = "";
+      if (lastFocus && lastFocus.focus) lastFocus.focus();
+    }
+
+    openers.forEach(function (b) { b.addEventListener("click", function () { open(); }); });
+    window.tomedownSearch = { open: open, close: close };
+
+    window.addEventListener("keydown", function (e) {
+      var typing = /^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName || "") ||
+        (document.activeElement && document.activeElement.isContentEditable);
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        if (dialog && !dialog.hidden) close(); else open();
+      } else if (e.key === "/" && !typing && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        e.preventDefault();
+        open();
+      } else if (e.key === "Escape" && dialog && !dialog.hidden) {
+        e.preventDefault();
+        close();
+      }
+    });
+  })();
 })();

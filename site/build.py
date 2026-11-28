@@ -134,7 +134,33 @@ def doc_path(docs_root, name):
     return SRC / "docs-extra" / name[6:] if name.startswith("extra/") else docs_root / name
 
 
+def index_sections(slug, page_title, body):
+    """One search entry per h2/h3 section of a rendered doc page (plus the
+    intro before the first heading), with the section's plain text."""
+    def plain(fragment):
+        text = html.unescape(re.sub(r"<[^>]+>", " ", fragment))
+        return re.sub(r"\s+", " ", text).strip()
+
+    parts = re.split(r'(<h[23] id="[^"]*"[^>]*>.*?</h[23]>)', body, flags=re.S)
+    out = []
+    heading, anchor = page_title, ""
+    for i, part in enumerate(parts):
+        if i % 2 == 1:
+            m = re.match(r'<h[23] id="([^"]*)"', part)
+            anchor = f"#{m.group(1)}"
+            heading = plain(part).rstrip("#").strip() or page_title
+            text = ""
+        else:
+            text = plain(part)
+        if i % 2 == 1 or (i == 0 and text):
+            out.append({"p": page_title, "h": heading, "u": f"/docs/{slug}/{anchor}", "t": ""})
+        if text and out:
+            out[-1]["t"] = text[:1500]
+    return out
+
+
 def build_docs(site, docs_root, slugmap, nav):
+    search_index = []
     entries = []
     for section in nav["sections"]:
         for item in section["items"]:
@@ -217,6 +243,7 @@ def build_docs(site, docs_root, slugmap, nav):
         md.reset()
         body = fix_links(md.convert(text))
         body = re.sub(r'(<a class="header-anchor"[^>]*>)#</a>', r'\1' + anchor_svg + '</a>', body)
+        search_index.extend(index_sections(item["slug"], item["title"], body))
         toc_html = render_toc(getattr(md, "toc_tokens", []))
         toc_mobile_btn = ('<button type="button" class="docs-mobile-btn docs-mobile-toc-toggle" id="docs-toc-toggle" aria-expanded="false" aria-label="Toggle section outline">'
                           '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>'
@@ -237,6 +264,10 @@ def build_docs(site, docs_root, slugmap, nav):
                 f'<article class="prose">{body}</article>{toc_html}</div>')
         site.render(f'/docs/{item["slug"]}/', f'{item["title"]} · Tomedown docs',
                     item.get("description", "Tomedown documentation"), page)
+
+    DIST.mkdir(parents=True, exist_ok=True)
+    (DIST / "search-index.json").write_text(
+        json.dumps(search_index, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
 
     first = entries[0][1]["slug"]
     
