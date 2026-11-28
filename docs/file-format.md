@@ -242,6 +242,15 @@ When *Settings → Notes & highlights → Highlight context* is enabled, Tomedow
   - **Context:** *…leading thought before the sentence. …following argument after.*
 ```
 
+### Highlight colour & semantic aliases
+
+When *Settings → Notes & highlights → Highlight color* is enabled (off by default), Tomedown appends the highlight's KOReader colour name—or any custom label mapped in *Color aliases* (such as `Yellow → Key idea` or `Red → Disagree`)—directly to the metadata line:
+
+```markdown
+- **p. 10** · 16 Nov 2026 | 10:20 · Yellow
+- **p. 12** · 16 Nov 2026 | 10:25 · Key idea
+```
+
 <figure class="doc-specimen">
   <div class="doc-specimen-mat">
     <div class="doc-specimen-head">

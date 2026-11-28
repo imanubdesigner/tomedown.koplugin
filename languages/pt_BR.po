@@ -1325,3 +1325,51 @@ msgstr "Estável"
 
 msgid "Go back to the stable version…"
 msgstr "Voltar para a versão estável…"
+
+msgid "Highlight color"
+msgstr "Cor do destaque"
+
+msgid "Highlight color: %1"
+msgstr "Cor do destaque: %1"
+
+msgid "Color aliases"
+msgstr "Aliases de cores"
+
+msgid "Alias for %1"
+msgstr "Alias para %1"
+
+msgid "e.g. Key idea (empty = default name)"
+msgstr "ex.: Ideia-chave (vazio = nome padrão)"
+
+msgid "Reset all aliases…"
+msgstr "Redefinir todos os aliases…"
+
+msgid "Yellow"
+msgstr "Amarelo"
+
+msgid "Red"
+msgstr "Vermelho"
+
+msgid "Orange"
+msgstr "Laranja"
+
+msgid "Green"
+msgstr "Verde"
+
+msgid "Blue"
+msgstr "Azul"
+
+msgid "Purple"
+msgstr "Roxo"
+
+msgid "Pink"
+msgstr "Rosa"
+
+msgid "Gray"
+msgstr "Cinza"
+
+msgid "Olive"
+msgstr "Oliva"
+
+msgid "Cyan"
+msgstr "Ciano"

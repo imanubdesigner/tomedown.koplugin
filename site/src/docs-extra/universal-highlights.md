@@ -180,6 +180,7 @@ In **Settings → Notes & highlights**:
 - **Highlight details**: choose **Page and date** (`- **p. 15** · 16 Nov 2026 | 10:20`), **Page only**, **Date only**, or **None**.
 - **Chapter headings**: choose **Heading 1 (`#`)**, **Heading 2 (`##`)**, **Heading 3 (`###`)**, or **None (continuous list)**.
 - **Highlight context**: on reflowable books (EPUB, FB2, MOBI…), extracts the words right before and after your highlight and adds a `- **Context:** *…*` line below the quote.
+- **Highlight color & Color aliases**: appends the highlight's colour (`· Yellow`) or a custom semantic alias configured in **Color aliases** (e.g. `Yellow → Key idea`, `Blue → Question`) to the metadata line.
 - **Link IDs on highlights**: appends a stable `^hl-xxxxxxxx` block ID at the end of each quote so Obsidian can link to or embed a single highlight.
 
 <figure class="doc-specimen">
