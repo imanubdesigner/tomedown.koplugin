@@ -2786,6 +2786,124 @@ function M:genSettingsMenu()
             end,
         },
         {
+            text = _("Highlight color"),
+            checked_func = function()
+                return shared.getHighlightColor()
+            end,
+            keep_menu_open = true,
+            callback = function()
+                shared.setHighlightColor(not shared.getHighlightColor())
+                setSetting("digest_dirty", true)
+                self:invalidateExportHashes()
+            end,
+        },
+        {
+            text = _("Color aliases"),
+            enabled_func = function()
+                return shared.getHighlightColor()
+            end,
+            sub_item_table_func = function()
+                local color_names = {
+                    yellow = _("Yellow"),
+                    red = _("Red"),
+                    orange = _("Orange"),
+                    green = _("Green"),
+                    blue = _("Blue"),
+                    purple = _("Purple"),
+                    pink = _("Pink"),
+                    gray = _("Gray"),
+                    olive = _("Olive"),
+                    cyan = _("Cyan"),
+                }
+                local aliases = shared.getHighlightColorAliases()
+                local rows = {}
+                local seen = {}
+                local ordered = {}
+                for __, c in ipairs(shared.HIGHLIGHT_COLORS) do
+                    seen[c] = true
+                    ordered[#ordered + 1] = c
+                end
+                for k in pairs(aliases) do
+                    if not seen[k] then
+                        seen[k] = true
+                        ordered[#ordered + 1] = k
+                    end
+                end
+                for __, c in ipairs(ordered) do
+                    local color_key = c
+                    local display_name = color_names[color_key]
+                        or (color_key:sub(1, 1):upper() .. color_key:sub(2))
+                    rows[#rows + 1] = {
+                        text_func = function()
+                            local mapped = shared.getHighlightColorAliases()[color_key]
+                            if mapped then
+                                return display_name .. " → " .. mapped
+                            end
+                            return display_name
+                        end,
+                        keep_menu_open = true,
+                        callback = function(touchmenu)
+                            local cur = shared.getHighlightColorAliases()[color_key] or ""
+                            local dlg
+                            dlg = InputDialog:new{
+                                title = T(_("Alias for %1"), display_name),
+                                input = cur,
+                                hint = _("e.g. Key idea (empty = default name)"),
+                                buttons = {
+                                    {
+                                        {
+                                            text = _("Cancel"),
+                                            id = "close",
+                                            callback = function()
+                                                UIManager:close(dlg)
+                                            end,
+                                        },
+                                    },
+                                    {
+                                        {
+                                            text = _("Save"),
+                                            is_enter_default = true,
+                                            callback = function()
+                                                local val = dlg:getInputText()
+                                                UIManager:close(dlg)
+                                                shared.setHighlightColorAlias(color_key, val)
+                                                setSetting("digest_dirty", true)
+                                                self:invalidateExportHashes()
+                                                if touchmenu and touchmenu.updateItems then
+                                                    touchmenu:updateItems()
+                                                end
+                                            end,
+                                        },
+                                    },
+                                },
+                            }
+                            UIManager:show(dlg)
+                            if dlg.onShowKeyboard then
+                                dlg:onShowKeyboard()
+                            end
+                        end,
+                    }
+                end
+                rows[#rows + 1] = {
+                    text = _("Reset all aliases…"),
+                    separator = true,
+                    enabled_func = function()
+                        return next(shared.getHighlightColorAliases()) ~= nil
+                    end,
+                    keep_menu_open = true,
+                    callback = function(touchmenu)
+                        shared.resetHighlightColorAliases()
+                        setSetting("digest_dirty", true)
+                        self:invalidateExportHashes()
+                        if touchmenu and touchmenu.updateItems then
+                            touchmenu:updateItems()
+                        end
+                    end,
+                }
+                return rows
+            end,
+        },
+        {
             text = _("Link IDs on highlights"),
             enabled_func = function()
                 return shared.isObsidianStyle()
@@ -2877,6 +2995,92 @@ function M:genSettingsMenu()
                             setNoteStyle("footnote")
                             self:invalidateExportHashes()
                             setSetting("digest_dirty", true)
+                        end
+                    end,
+                },
+            },
+        },
+        {
+            text_func = function()
+                local labels = {
+                    none = _("None"),
+                    line = _("Line (---)"),
+                    dots = _("Dots (· · ·)"),
+                    editorial_dots = _("Editorial + Dots (· · ·)"),
+                    editorial_line = _("Editorial + Line (---)"),
+                }
+                local current = shared.getHighlightSeparator()
+                return T(_("Highlight separator: %1"),
+                    labels[current] or labels.none)
+            end,
+            sub_item_table = {
+                {
+                    text = _("None"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return shared.getHighlightSeparator() == "none"
+                    end,
+                    callback = function()
+                        if shared.getHighlightSeparator() ~= "none" then
+                            shared.setHighlightSeparator("none")
+                            self:invalidateExportHashes()
+                        end
+                    end,
+                },
+                {
+                    text = _("Line (---)"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return shared.getHighlightSeparator() == "line"
+                    end,
+                    callback = function()
+                        if shared.getHighlightSeparator() ~= "line" then
+                            shared.setHighlightSeparator("line")
+                            self:invalidateExportHashes()
+                        end
+                    end,
+                },
+                {
+                    text = _("Dots (· · ·)"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return shared.getHighlightSeparator() == "dots"
+                    end,
+                    callback = function()
+                        if shared.getHighlightSeparator() ~= "dots" then
+                            shared.setHighlightSeparator("dots")
+                            self:invalidateExportHashes()
+                        end
+                    end,
+                },
+                {
+                    text = _("Editorial + Dots (· · ·)"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return shared.getHighlightSeparator() == "editorial_dots"
+                    end,
+                    callback = function()
+                        if shared.getHighlightSeparator() ~= "editorial_dots" then
+                            shared.setHighlightSeparator("editorial_dots")
+                            self:invalidateExportHashes()
+                        end
+                    end,
+                },
+                {
+                    text = _("Editorial + Line (---)"),
+                    radio = true,
+                    keep_menu_open = true,
+                    checked_func = function()
+                        return shared.getHighlightSeparator() == "editorial_line"
+                    end,
+                    callback = function()
+                        if shared.getHighlightSeparator() ~= "editorial_line" then
+                            shared.setHighlightSeparator("editorial_line")
+                            self:invalidateExportHashes()
                         end
                     end,
                 },
@@ -5251,8 +5455,8 @@ function M:genBookStyleMenu(file, target_table)
     -- Group 1 in Current book -> Format & layout: Notes & highlights (100% parity with Global).
     local nh_keys = {
         "special_marker", "highlight_details", "highlight_context",
-        "block_ids", "callout", "note_style", "chapter_headings",
-        "include_bookmarks", "include_handwritten",
+        "highlight_color", "highlight_separator", "block_ids", "callout", "note_style",
+        "chapter_headings", "include_bookmarks", "include_handwritten",
     }
     local book_nh_rows = {}
     local function buildBookNotesHighlightsMenu(target)
@@ -5440,6 +5644,26 @@ function M:genBookStyleMenu(file, target_table)
         )
 
         nh_rows[#nh_rows + 1] = choiceRow(
+            _("Highlight separator: %1"),
+            "highlight_separator",
+            shared.getHighlightSeparator,
+            {
+                none = _("None"),
+                line = _("Line (---)"),
+                dots = _("Dots (· · ·)"),
+                editorial_dots = _("Editorial + Dots (· · ·)"),
+                editorial_line = _("Editorial + Line (---)"),
+            },
+            {
+                { val = "none",           text = _("None") },
+                { val = "line",           text = _("Line (---)") },
+                { val = "dots",           text = _("Dots (· · ·)") },
+                { val = "editorial_dots", text = _("Editorial + Dots (· · ·)") },
+                { val = "editorial_line", text = _("Editorial + Line (---)") },
+            }
+        )
+
+        nh_rows[#nh_rows + 1] = choiceRow(
             _("Chapter headings: %1"),
             "chapter_headings",
             getChapterHeadings,
@@ -5470,6 +5694,126 @@ function M:genBookStyleMenu(file, target_table)
                 { val = false, text = _("Disabled") },
             }
         )
+
+        nh_rows[#nh_rows + 1] = choiceRow(
+            _("Highlight color: %1"),
+            "highlight_color",
+            shared.getHighlightColor,
+            {
+                [true] = _("Enabled"),
+                [false] = _("Disabled"),
+            },
+            {
+                { val = true,  text = _("Enabled") },
+                { val = false, text = _("Disabled") },
+            },
+            false,
+            function()
+                setSetting("digest_dirty", true)
+            end
+        )
+
+        nh_rows[#nh_rows + 1] = {
+            text = _("Color aliases"),
+            enabled_func = function()
+                return shared.getHighlightColor(file)
+            end,
+            sub_item_table_func = function()
+                local color_names = {
+                    yellow = _("Yellow"),
+                    red = _("Red"),
+                    orange = _("Orange"),
+                    green = _("Green"),
+                    blue = _("Blue"),
+                    purple = _("Purple"),
+                    pink = _("Pink"),
+                    gray = _("Gray"),
+                    olive = _("Olive"),
+                    cyan = _("Cyan"),
+                }
+                local aliases = shared.getHighlightColorAliases()
+                local rows = {}
+                local seen = {}
+                local ordered = {}
+                for __, c in ipairs(shared.HIGHLIGHT_COLORS) do
+                    seen[c] = true
+                    ordered[#ordered + 1] = c
+                end
+                for k in pairs(aliases) do
+                    if not seen[k] then
+                        seen[k] = true
+                        ordered[#ordered + 1] = k
+                    end
+                end
+                for __, c in ipairs(ordered) do
+                    local color_key = c
+                    local display_name = color_names[color_key]
+                        or (color_key:sub(1, 1):upper() .. color_key:sub(2))
+                    rows[#rows + 1] = {
+                        text_func = function()
+                            local mapped = shared.getHighlightColorAliases()[color_key]
+                            if mapped then
+                                return display_name .. " → " .. mapped
+                            end
+                            return display_name
+                        end,
+                        keep_menu_open = true,
+                        callback = function(touchmenu)
+                            local cur = shared.getHighlightColorAliases()[color_key] or ""
+                            local dlg
+                            dlg = InputDialog:new{
+                                title = T(_("Alias for %1"), display_name),
+                                input = cur,
+                                hint = _("e.g. Key idea (empty = default name)"),
+                                buttons = {
+                                    {
+                                        {
+                                            text = _("Cancel"),
+                                            id = "close",
+                                            callback = function()
+                                                UIManager:close(dlg)
+                                            end,
+                                        },
+                                        {
+                                            text = _("Save"),
+                                            is_enter_default = true,
+                                            callback = function()
+                                                local val = dlg:getInputText()
+                                                UIManager:close(dlg)
+                                                shared.setHighlightColorAlias(color_key, val)
+                                                setSetting("digest_dirty", true)
+                                                self:invalidateExportHashes()
+                                                if touchmenu and touchmenu.updateItems then
+                                                    touchmenu:updateItems()
+                                                end
+                                            end,
+                                        },
+                                    },
+                                },
+                            }
+                            UIManager:show(dlg)
+                            dlg:onShowKeyboard()
+                        end,
+                    }
+                end
+                rows[#rows + 1] = {
+                    text = _("Reset all aliases…"),
+                    enabled_func = function()
+                        return next(shared.getHighlightColorAliases()) ~= nil
+                    end,
+                    keep_menu_open = true,
+                    callback = function(touchmenu)
+                        shared.resetHighlightColorAliases()
+                        setSetting("digest_dirty", true)
+                        self:invalidateExportHashes()
+                        if touchmenu and touchmenu.updateItems then
+                            touchmenu:updateItems()
+                        end
+                    end,
+                }
+                return rows
+            end,
+        }
 
         nh_rows[#nh_rows + 1] = choiceRow(
             _("Handwritten notes: %1"),

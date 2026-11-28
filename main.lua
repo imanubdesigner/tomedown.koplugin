@@ -30,6 +30,7 @@ local Update = require("tomedown_update")
 
 local shared = require("tomedown_shared")
 local metadata = require("tomedown_metadata")
+local Handwritten = require("tomedown_handwritten")
 local SETTINGS_KEY = shared.SETTINGS_KEY
 local DEFAULT_LOCAL_SUBDIR = shared.DEFAULT_LOCAL_SUBDIR
 local getSetting = shared.getSetting
@@ -201,11 +202,14 @@ end
 -- auto-export (first row of the Tomedown menu, off by default)
 
 function Tomedown:onCloseDocument()
+    local doc = self.ui and self.ui.document
+    local path = doc and doc.file
+    if path then
+        Handwritten.cacheBookToc(path, doc, self.ui and self.ui.toc, { only_if_needed = true })
+    end
     if not getSetting("auto_export", false) then
         return
     end
-    local doc = self.ui and self.ui.document
-    local path = doc and doc.file
     if not path then
         return
     end

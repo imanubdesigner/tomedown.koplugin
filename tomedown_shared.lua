@@ -488,6 +488,31 @@ local function setNoteStyle(style)
     end
 end
 
+local VALID_HIGHLIGHT_SEPARATORS = {
+    none = true,
+    line = true,
+    dots = true,
+    editorial_dots = true,
+    editorial_line = true,
+}
+
+local function getHighlightSeparator(file)
+    local override = file and getBookStyleOverride(file, "highlight_separator")
+    local sep = override or getSetting("highlight_separator", "none")
+    if VALID_HIGHLIGHT_SEPARATORS[sep] then
+        return sep
+    end
+    return "none"
+end
+
+local function setHighlightSeparator(sep)
+    if VALID_HIGHLIGHT_SEPARATORS[sep] and sep ~= "none" then
+        setSetting("highlight_separator", sep)
+    else
+        setSetting("highlight_separator", nil)
+    end
+end
+
 -- Folder settings (covers, drawings) accept a nested vault-relative path
 -- such as "assets/covers": every segment is made filesystem-safe on its own
 -- ("/" is the only separator, "\" is accepted too), "." and ".." segments
@@ -1271,6 +1296,72 @@ local function setHighlightContext(enabled)
     end
 end
 
+local HIGHLIGHT_COLORS = {
+    "yellow", "red", "orange", "green", "blue", "purple", "pink", "gray", "olive", "cyan",
+}
+
+local function getHighlightColor(file)
+    if file then
+        local override = getBookStyleOverride(file, "highlight_color")
+        if override ~= nil then
+            return override == true
+        end
+    end
+    return getSetting("highlight_color", false) == true
+end
+
+local function setHighlightColor(on)
+    if on then
+        setSetting("highlight_color", true)
+    else
+        setSetting("highlight_color", nil)
+    end
+end
+
+local function getHighlightColorAliases()
+    local raw = getSetting("highlight_color_aliases", nil)
+    if type(raw) ~= "table" then
+        return {}
+    end
+    local out = {}
+    for k, v in pairs(raw) do
+        if type(k) == "string" and type(v) == "string" then
+            local ck = k:gsub("^%s+", ""):gsub("%s+$", ""):lower()
+            local cv = v:gsub("^%s+", ""):gsub("%s+$", "")
+            if ck ~= "" and cv ~= "" then
+                out[ck] = cv
+            end
+        end
+    end
+    return out
+end
+
+local function setHighlightColorAlias(color, label)
+    if type(color) ~= "string" then
+        return
+    end
+    local ck = color:gsub("^%s+", ""):gsub("%s+$", ""):lower()
+    if ck == "" then
+        return
+    end
+    local aliases = getHighlightColorAliases()
+    local cv = type(label) == "string" and label:gsub("^%s+", ""):gsub("%s+$", "") or ""
+    if cv == "" then
+        aliases[ck] = nil
+    else
+        aliases[ck] = cv
+    end
+    if next(aliases) == nil then
+        setSetting("highlight_color_aliases", nil)
+    else
+        setSetting("highlight_color_aliases", aliases)
+    end
+end
+
+local function resetHighlightColorAliases()
+    setSetting("highlight_color_aliases", nil)
+end
+
 local function getSpecialMarker(file)
     local override = file and getBookStyleOverride(file, "special_marker")
     local marker = override or getSetting("special_marker", "callout")
@@ -1808,6 +1899,14 @@ return {
     setChapterHeadings = setChapterHeadings,
     getHighlightContext = getHighlightContext,
     setHighlightContext = setHighlightContext,
+    HIGHLIGHT_COLORS = HIGHLIGHT_COLORS,
+    getHighlightColor = getHighlightColor,
+    setHighlightColor = setHighlightColor,
+    getHighlightColorAliases = getHighlightColorAliases,
+    setHighlightColorAlias = setHighlightColorAlias,
+    resetHighlightColorAliases = resetHighlightColorAliases,
+    getHighlightSeparator = getHighlightSeparator,
+    setHighlightSeparator = setHighlightSeparator,
     getSpecialMarker = getSpecialMarker,
     getBlockIds = getBlockIds,
     getEveryHighlightSpecial = getEveryHighlightSpecial,

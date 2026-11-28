@@ -4,6 +4,7 @@ tests/kodata/
 # install archives and device logs
 *.zip
 crash.log
+luac.out
 
 # screenshot backups kept next to the real ones
 *.png.bak

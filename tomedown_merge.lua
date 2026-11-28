@@ -482,6 +482,12 @@ local function regionEdited(db, stored_fp, alt_text)
     return false
 end
 
+local function isEditorialAttrLine(line)
+    local s = (line or ""):gsub("^>%s?", ""):gsub("%s+$", "")
+    return s:find("^—%s+[*_].*[*_]") ~= nil
+        or s:find("^—%s+%[%^%d+%]$") ~= nil
+end
+
 local function canonicalQuoteKey(quote_lines)
     if #quote_lines > 0 then
         local first = quote_lines[1]:gsub("^>%s?", ""):gsub("%s+$", "")
@@ -491,16 +497,16 @@ local function canonicalQuoteKey(quote_lines)
     end
     local norm = {}
     for idx, raw in ipairs(quote_lines) do
-        local s = raw:gsub("^>%s?", "")
-        if s ~= "[!highlight]" and s ~= "[!IMPORTANT]" then
-            if idx == #quote_lines then
-                s = s:gsub("%s+%^hl%-[%w]+$", "")
+        if not (idx == #quote_lines and isEditorialAttrLine(raw)) then
+            local s = raw:gsub("^>%s?", "")
+            if s ~= "[!highlight]" and s ~= "[!IMPORTANT]" then
+                s = s:gsub("%s+%^hl%-[%w%-]+$", "")
+                s = s:gsub("^⭐%s*", "")
+                s = s:gsub("^==%*%*(.*)%*%*==$", "%1")
+                s = s:gsub("^%*%*(.*)%*%*$", "%1")
+                s = s:gsub("^==(.*)==$", "%1")
+                norm[#norm + 1] = s:gsub("^%s+", ""):gsub("%s+$", "")
             end
-            s = s:gsub("^⭐%s*", "")
-            s = s:gsub("^==%*%*(.*)%*%*==$", "%1")
-            s = s:gsub("^%*%*(.*)%*%*$", "%1")
-            s = s:gsub("^==(.*)==$", "%1")
-            norm[#norm + 1] = s:gsub("^%s+", ""):gsub("%s+$", "")
         end
     end
     local key = table.concat(norm, "\n"):gsub("^%s+", ""):gsub("%s+$", "")
@@ -511,6 +517,8 @@ local function isStructuralLine(line)
     return line:find("^>") ~= nil
         or line:find("^#") ~= nil
         or line:find("^%-%-%-+%s*$") ~= nil
+        or line:find("^· · ·%s*$") ~= nil
+        or line:find("^!%[") ~= nil
         or line:find("^%[%^%d+%]:") ~= nil
 end
 
@@ -555,24 +563,42 @@ local function preserveQuoteComments(disk_text, rendered_text)
                 idx = idx + 1
             end
             local qkey = canonicalQuoteKey(qlines)
-            -- copy optional blank line + generated metadata bullets
+            local had_editorial_attr = #qlines > 1 and isEditorialAttrLine(qlines[#qlines])
+            -- copy optional blank line + generated metadata bullets or editorial lines
             local probe = idx
             while probe <= #dlines and dlines[probe]:match("^%s*$") do
                 probe = probe + 1
             end
             local has_bullet = probe <= #dlines and dlines[probe]:find("^%- ") ~= nil
-            if has_bullet then
+            if has_bullet or had_editorial_attr then
                 if qkey then
                     seen_counts[qkey] = (seen_counts[qkey] or 0) + 1
                     qkey = qkey .. "#" .. tostring(seen_counts[qkey])
                 end
-                while idx < probe do
-                    stripped[#stripped + 1] = dlines[idx]
-                    idx = idx + 1
-                end
-                while idx <= #dlines and isGeneratedBulletLine(dlines, idx) do
-                    stripped[#stripped + 1] = dlines[idx]
-                    idx = idx + 1
+                if has_bullet then
+                    while idx < probe do
+                        stripped[#stripped + 1] = dlines[idx]
+                        idx = idx + 1
+                    end
+                    while idx <= #dlines and isGeneratedBulletLine(dlines, idx) do
+                        stripped[#stripped + 1] = dlines[idx]
+                        idx = idx + 1
+                    end
+                elseif had_editorial_attr then
+                    while true do
+                        local ep = idx
+                        while ep <= #dlines and dlines[ep]:match("^%s*$") do
+                            ep = ep + 1
+                        end
+                        if ep <= #dlines and dlines[ep]:find("^%*%*[^*\n]+:%*%*") then
+                            while idx <= ep do
+                                stripped[#stripped + 1] = dlines[idx]
+                                idx = idx + 1
+                            end
+                        else
+                            break
+                        end
+                    end
                 end
                 local np = idx
                 while np <= #dlines and dlines[np]:match("^%s*$") do
@@ -657,22 +683,41 @@ local function preserveQuoteComments(disk_text, rendered_text)
                 ridx = ridx + 1
             end
             local qkey = canonicalQuoteKey(qlines)
+            local had_editorial_attr = #qlines > 1 and isEditorialAttrLine(qlines[#qlines])
             local probe = ridx
             while probe <= #rlines and rlines[probe]:match("^%s*$") do
                 probe = probe + 1
             end
-            if probe <= #rlines and rlines[probe]:find("^%- ") then
+            local has_bullet = probe <= #rlines and rlines[probe]:find("^%- ") ~= nil
+            if has_bullet or had_editorial_attr then
                 if qkey then
                     rseen[qkey] = (rseen[qkey] or 0) + 1
                     qkey = qkey .. "#" .. tostring(rseen[qkey])
                 end
-                while ridx < probe do
-                    out[#out + 1] = rlines[ridx]
-                    ridx = ridx + 1
-                end
-                while ridx <= #rlines and isGeneratedBulletLine(rlines, ridx) do
-                    out[#out + 1] = rlines[ridx]
-                    ridx = ridx + 1
+                if has_bullet then
+                    while ridx < probe do
+                        out[#out + 1] = rlines[ridx]
+                        ridx = ridx + 1
+                    end
+                    while ridx <= #rlines and isGeneratedBulletLine(rlines, ridx) do
+                        out[#out + 1] = rlines[ridx]
+                        ridx = ridx + 1
+                    end
+                elseif had_editorial_attr then
+                    while true do
+                        local ep = ridx
+                        while ep <= #rlines and rlines[ep]:match("^%s*$") do
+                            ep = ep + 1
+                        end
+                        if ep <= #rlines and rlines[ep]:find("^%*%*[^*\n]+:%*%*") then
+                            while ridx <= ep do
+                                out[#out + 1] = rlines[ridx]
+                                ridx = ridx + 1
+                            end
+                        else
+                            break
+                        end
+                    end
                 end
                 local np = ridx
                 while np <= #rlines and rlines[np]:match("^%s*$") do

@@ -65,12 +65,14 @@ Changing any option in **Index & library** marks the index as stale, so the next
 | *Special highlight style: %1* | Visual style for marked highlights: **Callout ([!highlight])**, **Alert ([!IMPORTANT])**, **Highlight (==text==)**, **Highlight & Bold (==\*\*text\*\*==)**, **Star & Bold (⭐ \*\*text\*\*)**, or **Bold (\*\*text\*\*)** |
 | *Highlight details: %1* | Defaults to **Page and date** (`- **p. 15** · 16 Nov 2026 \| 10:20`); can be set to **Page only**, **Date only**, or **None** |
 | *Highlight context* | Off by default: on reflowable books (EPUB, FB2, MOBI…), extracts surrounding words and renders a `- **Context:** *…*` line below the quote |
+| *Highlight color* | Off by default: appends the highlight's colour name (e.g. `- **p. 15** · 16 Nov 2026 \| 10:20 · Yellow`) or a custom semantic alias to each highlight's metadata line across book notes, `00 - Reading Digest.md`, and `.txt` exports |
+| *Color aliases ▸* | Active while *Highlight color* is on: map any KOReader highlight colour (*Yellow*, *Red*, *Orange*, *Green*, *Blue*, *Purple*, *Pink*, *Gray*, *Olive*, *Cyan*) to a custom label (e.g. `Yellow → Key idea`, `Red → Disagree`) or reset all aliases |
 | *Link IDs on highlights* | Off by default: writes a stable `^hl-xxxxxxxx` ID at the end of every quote so Obsidian can link to or transclude a single highlight (available when *Markdown style* is **Obsidian**) |
 | *Every highlight is special* | Off by default: renders every highlight using your chosen special highlight style |
 | *Personal notes format: %1* | **Inline** (smart indented bullet under the quote: italic for brief plain notes, clean roman text with preserved sub-lists and Markdown for rich/multi-line notes, default), **Callout ([!note])** (renders personal notes inside a dedicated `> [!note]` callout in Obsidian), or **Footnotes** (appends notes as numbered Markdown footnotes `[^1]` at the end of the file) |
 | *Chapter headings: %1* | Defaults to **Heading 1 (`# Chapter`)**; can be set to **Heading 2 (`## Chapter`)**, **Heading 3 (`### Chapter`)**, or **None (continuous list)** |
 | *Page bookmarks* | Off by default: adds a `# Page bookmarks` section (bookmarked page + note) after the highlights |
-| *Handwritten notes* | On by default: extracts stylus/pencil drawings from `.sdr` folders, renders them as pure vector SVG or PNG images into `drawings/`, and embeds them into your Markdown notes |
+| *Handwritten notes* | On by default: extracts stylus and pencil drawings from `.sdr` folders (including `ink-away.koplugin` on PDFs and EPUBs, and `pencil.koplugin`), renders them as pure vector SVG or PNG images into `drawings/`, and embeds them into your Markdown notes |
 | *Book page ▸* | Opens the submenu for the book note header and visual modules (see [Book page & Section styles](#book-page-section-styles) below) |
 
 ### Book page & Section styles

@@ -254,6 +254,73 @@ When *Settings → Notes & highlights → Highlight context* is enabled, Tomedow
   <figcaption>Surrounding sentence context captured automatically below the quote, preserving reading flow in Obsidian.</figcaption>
 </figure>
 
+### Highlight colour & semantic aliases
+
+When *Settings → Notes & highlights → Highlight color* is enabled (off by default), Tomedown appends the highlight's KOReader colour name—or any custom label mapped in *Color aliases* (such as `Yellow → Key idea` or `Red → Disagree`)—directly to the metadata line:
+
+```markdown
+- **p. 10** · 16 Nov 2026 | 10:20 · Yellow
+- **p. 12** · 16 Nov 2026 | 10:25 · Key idea
+```
+
+### Highlight separators
+
+When *Settings → Notes & highlights → Highlight separator* (or *Current book → Format & layout → Notes & highlights → Highlight separator*) is configured, Tomedown separates consecutive highlights inside each chapter using pure CommonMark syntax compatible with **Obsidian**, **Standard (GitHub / HTML)**, and **CommonMark**:
+
+- **None** *(default)*: blank line between highlights (`---` only between chapters).
+- **Line (`---`)**: horizontal rule `---` between highlights, promoting chapters to `##` to preserve hierarchy.
+- **Dots (`· · ·`)**: light typographic `· · ·` divider between highlights, keeping `---` for chapter breaks.
+- **Editorial + Dots (`· · ·`)**: folds page/date/colour metadata directly inside the blockquote (`> — *p. 3 · 23 Nov 2026 | 22:17 · Yellow*`) with `· · ·` between notes.
+- **Editorial + Line (`---`)**: combines inline quote attribution with `---` between notes and `##` chapter headings.
+
+<figure class="doc-specimen">
+  <div class="doc-specimen-mat">
+    <div class="doc-specimen-head">
+      <span class="doc-specimen-label">Highlight separator · Line (---)</span>
+    </div>
+    <div class="doc-specimen-viewport">
+      <img src="../assets/obsidian/line-separator.webp" alt="Highlight separator Line (---)" loading="lazy" decoding="async" />
+    </div>
+  </div>
+  <figcaption>Classic <code>---</code> horizontal rule between highlights, with chapters automatically promoted to <code>##</code> headings.</figcaption>
+</figure>
+
+<figure class="doc-specimen">
+  <div class="doc-specimen-mat">
+    <div class="doc-specimen-head">
+      <span class="doc-specimen-label">Highlight separator · Dots (· · ·)</span>
+    </div>
+    <div class="doc-specimen-viewport">
+      <img src="../assets/obsidian/dots-separator.webp" alt="Highlight separator Dots (· · ·)" loading="lazy" decoding="async" />
+    </div>
+  </div>
+  <figcaption>Typographic <code>· · ·</code> divider between highlights, reserving full <code>---</code> horizontal rules for chapter boundaries.</figcaption>
+</figure>
+
+<figure class="doc-specimen">
+  <div class="doc-specimen-mat">
+    <div class="doc-specimen-head">
+      <span class="doc-specimen-label">Highlight separator · Editorial + Dots (· · ·)</span>
+    </div>
+    <div class="doc-specimen-viewport">
+      <img src="../assets/obsidian/editorial-dots.webp" alt="Highlight separator Editorial + Dots" loading="lazy" decoding="async" />
+    </div>
+  </div>
+  <figcaption>Editorial attribution folded directly into the blockquote (<code>&gt; — *p. 3 · …*</code>) paired with a light <code>· · ·</code> separator.</figcaption>
+</figure>
+
+<figure class="doc-specimen">
+  <div class="doc-specimen-mat">
+    <div class="doc-specimen-head">
+      <span class="doc-specimen-label">Highlight separator · Editorial + Line (---)</span>
+    </div>
+    <div class="doc-specimen-viewport">
+      <img src="../assets/obsidian/editorial-line.webp" alt="Highlight separator Editorial + Line" loading="lazy" decoding="async" />
+    </div>
+  </div>
+  <figcaption>Editorial inline quote attribution combined with full-width <code>---</code> separators and <code>##</code> chapter headings.</figcaption>
+</figure>
+
 <a id="links-to-a-single-highlight"></a>
 ## Granular link IDs (Block references)
 
@@ -374,16 +441,16 @@ Under *Settings → Index & library*, you can enable modular components in `00 -
 
 ## Handwritten notes & Stylus drawings
 
-For devices equipped with a stylus (Kindle Scribe, Kobo Sage/Elipsa, Android e-ink, or via KOReader's `pencil.koplugin`), Tomedown automatically discovers handwritten annotations in the book's `.sdr` directory:
+For devices equipped with a stylus (Kindle Scribe, Kobo Sage/Elipsa, Onyx Boox, Android e-ink, or via KOReader plugins like `ink-away.koplugin`, `pencil.koplugin`, and `stylus-annotations`), Tomedown automatically discovers handwritten annotations across both EPUB reflowable books and fixed-page documents like PDF:
 
 1. **Drawing Extraction**:
-   - Vector drawings (point-sequence strokes) are transformed into scalable, sharp **SVG** vector files via a pure Lua vector generator.
+   - Vector drawings, stylus strokes, and shapes (including InkAway freehand lines, rectangles, circles, arrows, and highlighters) are transformed into scalable, sharp **SVG** vector files via a pure Lua vector generator.
    - Raster drawings (e.g. pencil PNGs) are extracted with transparent borders.
    - Images are placed into the `drawings/` folder inside your vault (customizable via *Settings → Export → File names & folders → Drawings folder*, including nested paths up to 3 levels such as `assets/drawings` with automatic file migration).
 2. **Standard Markdown Embeds**:
    - In the book note, drawings are embedded natively using standard Markdown image syntax.
    - Each drawing receives an Obsidian block ID (`^hl-...`), allowing you to link directly to or embed the handwritten drawing anywhere in your vault: `![[Book Title#^hl-3a8f19bc]]`.
-   - Any text note attached to the stylus annotation in KOReader appears right below as a formatted user note.
+   - Any text note attached to the stylus annotation in KOReader (or InkAway text boxes) appears right below as a formatted user note.
 
 ```markdown
 ![Handwritten note · p. 25](drawings/Author%20-%20Title%20-%20note-1.svg) ^hl-3a8f19bc

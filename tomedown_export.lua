@@ -246,6 +246,9 @@ local function sortAnnotationItems(out)
         if a.sort_time ~= b.sort_time then
             return a.sort_time < b.sort_time
         end
+        if (a.handwritten == true) ~= (b.handwritten == true) then
+            return not a.handwritten
+        end
         return tostring(a.text or "") < tostring(b.text or "")
     end)
     return out
@@ -274,6 +277,7 @@ function M:cleanAnnotations(raw)
                     text = text,
                     note = trim(item.note),
                     chapter = trim(item.chapter),
+                    color = trim(item.color),
                     page = pageLabel(item),
                     date = render.fmtDateTime(datetime),
                     sort_pos = pos and posTokens(pos) or nil,
@@ -296,10 +300,66 @@ function M:cleanAnnotations(raw)
     return sortAnnotationItems(out)
 end
 
+function M:sortAnnotations(out)
+    return sortAnnotationItems(out)
+end
+
+-- Associate handwritten items with book chapters and align unpositioned
+-- chapter notebook pages (`sort_page == 0`, no `sort_pos`) with the start
+-- of their chapter in `annotations` so they never float to page 0.
+function M:assignHandwrittenChapters(hw, annotations)
+    if type(hw) ~= "table" or #hw == 0 or type(annotations) ~= "table" or #annotations == 0 then
+        return
+    end
+    for __, h in ipairs(hw) do
+        if not h.chapter then
+            local best_chap
+            if h.sort_pos then
+                for ___, a in ipairs(annotations) do
+                    if a.chapter and a.sort_pos and posCompare(a.sort_pos, h.sort_pos) <= 0 then
+                        best_chap = a.chapter
+                    end
+                end
+                if not best_chap and h.sort_pos[1] and h.sort_pos[2]
+                        and type(h.sort_pos[1].text) == "string"
+                        and h.sort_pos[1].text:find("DocFragment", 1, true) then
+                    local frag_num = h.sort_pos[2].num
+                    for ___, a in ipairs(annotations) do
+                        if a.chapter and a.sort_pos and a.sort_pos[1] and a.sort_pos[2]
+                                and a.sort_pos[1].text == h.sort_pos[1].text
+                                and a.sort_pos[2].num == frag_num then
+                            best_chap = a.chapter
+                            break
+                        end
+                    end
+                end
+            end
+            if not best_chap and (tonumber(h.sort_page) or 0) > 0 then
+                for ___, a in ipairs(annotations) do
+                    if a.chapter and (tonumber(a.sort_page) or 0) <= (tonumber(h.sort_page) or 0) then
+                        best_chap = a.chapter
+                    end
+                end
+            end
+            h.chapter = best_chap
+        end
+        if h.chapter and (tonumber(h.sort_page) or 0) == 0 and not h.sort_pos then
+            for ___, a in ipairs(annotations) do
+                if a.chapter == h.chapter then
+                    h.sort_page = tonumber(a.sort_page) or 0
+                    h.sort_pos = a.sort_pos
+                    break
+                end
+            end
+        end
+    end
+    sortAnnotationItems(hw)
+end
+
 -- collects handwritten/stylus annotations from .sdr and DocSettings
-function M:cleanHandwritten(file, ds, raw)
+function M:cleanHandwritten(file, ds, raw, document, toc_module)
     local out = {}
-    local items = Handwritten.collect(file, ds, raw)
+    local items = Handwritten.collect(file, ds, raw, document, toc_module)
     if type(items) ~= "table" or #items == 0 then
         return out
     end
@@ -329,6 +389,7 @@ function M:cleanHandwritten(file, ds, raw)
             drawing_height = item.drawing_height,
             drawing_ext = item.drawing_ext or "png",
             drawing_id = drawing_id,
+            drawing_digest = item.drawing_digest,
             id_seed = item.datetime or ("hw:" .. tostring(drawing_id)),
             id_pos = pos or ("p:" .. tostring(pageno)),
             id_text = "handwritten:" .. tostring(drawing_id),
@@ -371,6 +432,9 @@ function M:cleanBookmarks(raw, skip_pencil_notes)
         end
         if a.sort_time ~= b.sort_time then
             return a.sort_time < b.sort_time
+        end
+        if (a.handwritten == true) ~= (b.handwritten == true) then
+            return not a.handwritten
         end
         return tostring(a.text or "") < tostring(b.text or "")
     end)
@@ -444,6 +508,7 @@ local function hashBook(title, author, annotations, meta, bookmarks)
             tostring(a.sort_time or ""),
             tostring(a.page or ""),
             tostring(a.chapter or ""),
+            tostring(a.color or ""),
             a.text,
             tostring(a.note or ""),
             -- the Special Highlight mark changes the rendering, the hash
@@ -452,6 +517,9 @@ local function hashBook(title, author, annotations, meta, bookmarks)
         }, "\31")
         if a.handwritten then
             entry = entry .. "\31hw:" .. tostring(a.drawing_id or "")
+            if a.drawing_digest then
+                entry = entry .. ":" .. tostring(a.drawing_digest)
+            end
         end
         parts[#parts + 1] = entry
     end
@@ -659,18 +727,12 @@ function M:buildBook(file, live_annotations)
             end
             local annotations = self:cleanAnnotations(raw)
             local include_hw = getIncludeHandwritten(file)
-            local hw = include_hw and self:cleanHandwritten(file, ds, raw) or {}
+            local hw = include_hw
+                and self:cleanHandwritten(file, ds, raw, open and open.document, open and open.toc)
+                or {}
             if #hw > 0 then
+                self:assignHandwrittenChapters(hw, annotations)
                 for __, h in ipairs(hw) do
-                    if not h.chapter and #annotations > 0 then
-                        local best_chap
-                        for ___, a in ipairs(annotations) do
-                            if a.chapter and (tonumber(a.sort_page) or 0) <= (tonumber(h.sort_page) or 0) then
-                                best_chap = a.chapter
-                            end
-                        end
-                        h.chapter = best_chap
-                    end
                     annotations[#annotations + 1] = h
                 end
                 sortAnnotationItems(annotations)
@@ -956,7 +1018,7 @@ function M:buildDigestBooks()
             local book = self:buildBook(file, live)
             if book and book.annotations and #book.annotations > 0 then
                 if getIncludeHandwritten(file) then
-                    local hw = Handwritten.ensureDrawings(book, dir, drawings_folder)
+                    local hw = Handwritten.ensureDrawings(book, dir, drawings_folder, { prune = true })
                     for __, p in ipairs(hw or {}) do
                         if not seen_drawings[p] then
                             seen_drawings[p] = true
@@ -970,6 +1032,7 @@ function M:buildDigestBooks()
                     author = book.author,
                     has_block_ids = shared.getBlockIds(file)
                         and getMarkdownStyle(file) == "obsidian",
+                    highlight_color = shared.getHighlightColor(file),
                     annotations = book.annotations,
                 }
             end
@@ -1003,6 +1066,8 @@ function M:exportDigest(touchmenu)
             or digest_raw_marker == "highlight_bold")) and "bold" or digest_raw_marker,
         note_style = getNoteStyle(),
         overview_style = getOverviewStyle(),
+        highlight_color = shared.getHighlightColor(),
+        color_aliases = shared.getHighlightColorAliases(),
     })
     local ok, err = util.writeToFile(digest_md, digest_path, true, false, true)
     if not ok then
@@ -1237,7 +1302,7 @@ function M:runExport(files, opts)
                         book_cover = "../" .. book_cover
                     end
                     local hw_written = (write_md and getIncludeHandwritten(file))
-                        and Handwritten.ensureDrawings(book, dir, current_drawings) or {}
+                        and Handwritten.ensureDrawings(book, dir, current_drawings, { prune = true }) or {}
                     local is_std_book = (getMarkdownStyle(file) ~= "obsidian")
                     local raw_marker = shared.getSpecialMarker(file)
                     local render_opts = {
@@ -1258,6 +1323,9 @@ function M:runExport(files, opts)
                         highlight_details = getHighlightDetails(file),
                         chapter_headings = getChapterHeadings(file),
                         highlight_context = getHighlightContext(file),
+                        highlight_color = shared.getHighlightColor(file),
+                        color_aliases = shared.getHighlightColorAliases(),
+                        highlight_separator = shared.getHighlightSeparator(file),
                         book_heading = getBookHeading(file),
                         overview_style = getOverviewStyle(file),
                         reading_dashboard = getReadingDashboard(file),
@@ -1647,6 +1715,8 @@ function M:runExport(files, opts)
                     or digest_raw_marker == "highlight_bold")) and "bold" or digest_raw_marker,
                 note_style = getNoteStyle(),
                 overview_style = getOverviewStyle(),
+                highlight_color = shared.getHighlightColor(),
+                color_aliases = shared.getHighlightColorAliases(),
             })
             local digest_ok, digest_err =
                 util.writeToFile(digest_md, digest_path, true, false, true)
