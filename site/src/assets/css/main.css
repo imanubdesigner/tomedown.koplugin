@@ -2823,6 +2823,16 @@ dialog.guide-lightbox::backdrop {
 .footer-col-title { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 4px; }
 .footer-col a { text-decoration: none; color: var(--ink-2); }
 .footer-col a:hover { color: var(--ink); text-decoration: underline; }
+.footer-colophon {
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+  font-size: .85rem;
+  color: var(--muted);
+}
+.footer-colophon p { margin: 0; }
+.footer-colophon a { color: var(--ink-2); font-weight: 600; text-decoration: none; }
+.footer-colophon a:hover { color: var(--ink); text-decoration: underline; }
 @media (max-width: 760px) {
   .footer-grid { grid-template-columns: 1fr; gap: 28px; }
   .footer-links-col { gap: 36px; }
